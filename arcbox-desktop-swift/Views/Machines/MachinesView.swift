@@ -6,29 +6,6 @@ struct MachinesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                HStack(spacing: 12) {
-                    Text("Machines")
-                        .font(.system(size: 13, weight: .semibold))
-
-                    Text("\(vm.runningCount) / \(vm.totalCount) running")
-                        .badgeStyle()
-                }
-
-                Spacer()
-
-                Button(action: {}) {
-                    Text("+ New Machine")
-                        .font(.system(size: 13))
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-            }
-            .frame(height: 52)
-            .padding(.horizontal, 16)
-            .overlay(alignment: .bottom) { Divider() }
-
             // Machine list
             ScrollView {
                 if vm.machines.isEmpty {
@@ -53,6 +30,18 @@ struct MachinesView: View {
             }
         }
         .background(AppColors.background)
+        .navigationTitle("Machines")
+        .navigationSubtitle("\(vm.runningCount) / \(vm.totalCount) running")
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(action: {}) {
+                    Text("+ New Machine")
+                        .font(.system(size: 13))
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+        }
         .onAppear { vm.loadSampleData() }
     }
 }

@@ -8,9 +8,6 @@ struct ContainersListView: View {
         HStack(spacing: 0) {
             // Left: list panel
             VStack(spacing: 0) {
-                // Header bar (52pt height)
-                containerListHeader
-
                 // Container list or empty state
                 if vm.containers.isEmpty {
                     ContainerEmptyState()
@@ -63,41 +60,22 @@ struct ContainersListView: View {
                 activeTab: $vm.activeTab
             )
         }
+        .navigationTitle("Containers")
+        .navigationSubtitle("\(vm.runningCount) running")
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                SortMenuButton()
+                IconButton(symbol: "magnifyingglass") {}
+                IconButton(symbol: "plus") {
+                    vm.showNewContainerSheet = true
+                }
+            }
+        }
         .onAppear {
             vm.loadSampleData()
         }
         .sheet(isPresented: $vm.showNewContainerSheet) {
             NewContainerSheet()
-        }
-    }
-
-    // MARK: - Header
-
-    private var containerListHeader: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Containers")
-                    .font(.system(size: 13, weight: .semibold))
-                Text("\(vm.runningCount) running")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppColors.textSecondary)
-            }
-
-            Spacer()
-
-            HStack(spacing: 4) {
-                IconButton(symbol: "plus") {
-                    vm.showNewContainerSheet = true
-                }
-                IconButton(symbol: "magnifyingglass") {
-                    // TODO: toggle search
-                }
-            }
-        }
-        .frame(height: 52)
-        .padding(.horizontal, 16)
-        .overlay(alignment: .bottom) {
-            Divider()
         }
     }
 }
