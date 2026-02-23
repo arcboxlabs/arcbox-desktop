@@ -9,15 +9,38 @@ struct SortMenuButton<Field: Hashable & CaseIterable & RawRepresentable>: View
 
     var body: some View {
         Menu {
-            Picker("Sort By", selection: $sortBy) {
+            Section("Sort By") {
                 ForEach(Field.allCases, id: \.self) { field in
-                    Text(field.rawValue).tag(field)
+                    Button {
+                        sortBy = field
+                    } label: {
+                        if sortBy == field {
+                            Label(field.rawValue, systemImage: "checkmark")
+                        } else {
+                            Text(field.rawValue)
+                        }
+                    }
                 }
             }
-            Divider()
-            Picker("Order", selection: $ascending) {
-                Label("Ascending", systemImage: "arrow.up").tag(true)
-                Label("Descending", systemImage: "arrow.down").tag(false)
+            Section("Order") {
+                Button {
+                    ascending = true
+                } label: {
+                    if ascending {
+                        Label("Ascending", systemImage: "checkmark")
+                    } else {
+                        Text("Ascending")
+                    }
+                }
+                Button {
+                    ascending = false
+                } label: {
+                    if !ascending {
+                        Label("Descending", systemImage: "checkmark")
+                    } else {
+                        Text("Descending")
+                    }
+                }
             }
         } label: {
             Label("Sort", systemImage: "arrow.up.arrow.down")
