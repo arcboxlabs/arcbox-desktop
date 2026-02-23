@@ -45,6 +45,8 @@ struct ContainerViewModel: Identifiable, Hashable {
     var cpuPercent: Double
     var memoryMB: Double
     var memoryLimitMB: Double
+    var domain: String?
+    var ipAddress: String?
 
     var isRunning: Bool { state.isRunning }
 

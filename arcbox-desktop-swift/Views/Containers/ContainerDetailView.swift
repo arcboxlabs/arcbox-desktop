@@ -27,11 +27,11 @@ struct ContainerDetailView: View {
                 case .info:
                     ContainerInfoTab(container: container)
                 case .logs:
-                    ContainerLogsTab()
+                    ContainerLogsTab(container: container)
                 case .terminal:
-                    ContainerTerminalTab()
+                    ContainerTerminalTab(container: container)
                 case .files:
-                    ContainerFilesTab()
+                    ContainerFilesTab(container: container)
                 }
             } else {
                 Spacer()

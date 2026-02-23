@@ -20,7 +20,9 @@ enum SampleData {
             ],
             cpuPercent: 2.3,
             memoryMB: 45.2,
-            memoryLimitMB: 512.0
+            memoryLimitMB: 512.0,
+            domain: "web-frontend.orb.local",
+            ipAddress: "192.168.215.2"
         ),
         ContainerViewModel(
             id: "b2c3d4e5f6g7",
@@ -36,7 +38,9 @@ enum SampleData {
             ],
             cpuPercent: 8.1,
             memoryMB: 128.5,
-            memoryLimitMB: 1024.0
+            memoryLimitMB: 1024.0,
+            domain: "api-server.orb.local",
+            ipAddress: "192.168.215.3"
         ),
         ContainerViewModel(
             id: "c3d4e5f6g7h8",
@@ -52,7 +56,9 @@ enum SampleData {
             ],
             cpuPercent: 1.2,
             memoryMB: 256.0,
-            memoryLimitMB: 2048.0
+            memoryLimitMB: 2048.0,
+            domain: "postgres-db.orb.local",
+            ipAddress: "192.168.215.4"
         ),
         ContainerViewModel(
             id: "d4e5f6g7h8i9",
