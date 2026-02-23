@@ -1,29 +1,16 @@
 import SwiftUI
 
-/// Template detail panel with tabs
+/// Column 3: template detail with tab-based toolbar
 struct TemplateDetailView: View {
-    let template: TemplateViewModel?
-    @Binding var activeTab: TemplateDetailTab
+    @Environment(TemplatesViewModel.self) private var vm
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Detail toolbar
-            HStack {
-                Picker("Tab", selection: $activeTab) {
-                    ForEach(TemplateDetailTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 200)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+        @Bindable var vm = vm
+        let template = vm.selectedTemplate
 
+        VStack(spacing: 0) {
             if let template {
-                switch activeTab {
+                switch vm.activeTab {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
@@ -53,5 +40,16 @@ struct TemplateDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Tab", selection: $vm.activeTab) {
+                    ForEach(TemplateDetailTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 200)
+            }
+        }
     }
 }

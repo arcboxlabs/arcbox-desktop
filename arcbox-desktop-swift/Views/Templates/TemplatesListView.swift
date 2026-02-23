@@ -1,44 +1,32 @@
 import SwiftUI
 
-/// Templates list + detail panel
+/// Column 2: templates list with toolbar
 struct TemplatesListView: View {
-    @State private var vm = TemplatesViewModel()
+    @Environment(TemplatesViewModel.self) private var vm
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left: list panel
-            VStack(spacing: 0) {
-                if vm.templates.isEmpty {
-                    TemplateEmptyState()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(vm.sortedTemplates) { template in
-                                TemplateRowView(
-                                    template: template,
-                                    isSelected: vm.selectedID == template.id,
-                                    onSelect: { vm.selectTemplate(template.id) }
-                                )
-                            }
+        VStack(spacing: 0) {
+            if vm.templates.isEmpty {
+                TemplateEmptyState()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.sortedTemplates) { template in
+                            TemplateRowView(
+                                template: template,
+                                isSelected: vm.selectedID == template.id,
+                                onSelect: { vm.selectTemplate(template.id) }
+                            )
                         }
                     }
                 }
             }
-            .frame(width: vm.listWidth)
-
-            ListResizeHandle(width: $vm.listWidth, min: 200, max: 500)
-
-            // Right: detail panel
-            TemplateDetailView(
-                template: vm.selectedTemplate,
-                activeTab: $vm.activeTab
-            )
         }
         .navigationTitle("Templates")
         .navigationSubtitle("\(vm.templateCount) total")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                SortMenuButton(sortBy: $vm.sortBy, ascending: $vm.sortAscending)
+                SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
                 Button(action: {}) {
                     Image(systemName: "magnifyingglass")
                 }

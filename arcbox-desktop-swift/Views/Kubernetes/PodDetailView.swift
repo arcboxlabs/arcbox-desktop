@@ -1,29 +1,16 @@
 import SwiftUI
 
-/// Pod detail panel with tabs
+/// Column 3: pod detail with tab-based toolbar
 struct PodDetailView: View {
-    let pod: PodViewModel?
-    @Binding var activeTab: PodDetailTab
+    @Environment(PodsViewModel.self) private var vm
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Detail toolbar
-            HStack {
-                Picker("Tab", selection: $activeTab) {
-                    ForEach(PodDetailTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 250)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+        @Bindable var vm = vm
+        let pod = vm.selectedPod
 
+        VStack(spacing: 0) {
             if let pod {
-                switch activeTab {
+                switch vm.activeTab {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
@@ -57,5 +44,16 @@ struct PodDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Tab", selection: $vm.activeTab) {
+                    ForEach(PodDetailTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 250)
+            }
+        }
     }
 }

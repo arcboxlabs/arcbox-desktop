@@ -1,45 +1,32 @@
 import SwiftUI
 
-/// Networks list + detail panel
+/// Column 2: networks list with toolbar
 struct NetworksListView: View {
-    @State private var vm = NetworksViewModel()
+    @Environment(NetworksViewModel.self) private var vm
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left: list panel
-            VStack(spacing: 0) {
-                // Network list or empty state
-                if vm.networks.isEmpty {
-                    NetworkEmptyState()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(vm.sortedNetworks) { network in
-                                NetworkRowView(
-                                    network: network,
-                                    isSelected: vm.selectedID == network.id,
-                                    onSelect: { vm.selectNetwork(network.id) }
-                                )
-                            }
+        VStack(spacing: 0) {
+            if vm.networks.isEmpty {
+                NetworkEmptyState()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.sortedNetworks) { network in
+                            NetworkRowView(
+                                network: network,
+                                isSelected: vm.selectedID == network.id,
+                                onSelect: { vm.selectNetwork(network.id) }
+                            )
                         }
                     }
                 }
             }
-            .frame(width: vm.listWidth)
-
-            ListResizeHandle(width: $vm.listWidth, min: 200, max: 500)
-
-            // Right: detail panel
-            NetworkDetailView(
-                network: vm.selectedNetwork,
-                activeTab: $vm.activeTab
-            )
         }
         .navigationTitle("Networks")
         .navigationSubtitle("\(vm.networkCount) total")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                SortMenuButton(sortBy: $vm.sortBy, ascending: $vm.sortAscending)
+                SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
                 Button(action: {}) {
                     Image(systemName: "magnifyingglass")
                 }
@@ -48,7 +35,7 @@ struct NetworksListView: View {
                 }
             }
         }
-        .sheet(isPresented: $vm.showNewNetworkSheet) {
+        .sheet(isPresented: Bindable(vm).showNewNetworkSheet) {
             NewNetworkSheet()
         }
         .onAppear { vm.loadSampleData() }

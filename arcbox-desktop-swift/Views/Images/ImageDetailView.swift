@@ -1,29 +1,16 @@
 import SwiftUI
 
-/// Image detail panel with tabs
+/// Column 3: image detail with tab-based toolbar
 struct ImageDetailView: View {
-    let image: ImageViewModel?
-    @Binding var activeTab: ImageDetailTab
+    @Environment(ImagesViewModel.self) private var vm
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Detail toolbar
-            HStack {
-                Picker("Tab", selection: $activeTab) {
-                    ForEach(ImageDetailTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 250)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+        @Bindable var vm = vm
+        let image = vm.selectedImage
 
+        VStack(spacing: 0) {
             if let image {
-                switch activeTab {
+                switch vm.activeTab {
                 case .info:
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
@@ -76,5 +63,16 @@ struct ImageDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Tab", selection: $vm.activeTab) {
+                    ForEach(ImageDetailTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 250)
+            }
+        }
     }
 }

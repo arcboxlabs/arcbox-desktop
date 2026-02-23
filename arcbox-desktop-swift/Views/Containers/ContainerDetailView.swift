@@ -1,29 +1,16 @@
 import SwiftUI
 
-/// Right panel: tab-based detail view
+/// Column 3: container detail with tab-based toolbar
 struct ContainerDetailView: View {
-    let container: ContainerViewModel?
-    @Binding var activeTab: ContainerDetailTab
+    @Environment(ContainersViewModel.self) private var vm
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Detail toolbar
-            HStack {
-                Picker("Tab", selection: $activeTab) {
-                    ForEach(ContainerDetailTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 300)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+        @Bindable var vm = vm
+        let container = vm.selectedContainer
 
+        VStack(spacing: 0) {
             if let container {
-                switch activeTab {
+                switch vm.activeTab {
                 case .info:
                     ContainerInfoTab(container: container)
                 case .logs:
@@ -43,5 +30,16 @@ struct ContainerDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Tab", selection: $vm.activeTab) {
+                    ForEach(ContainerDetailTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 300)
+            }
+        }
     }
 }

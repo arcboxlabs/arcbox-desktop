@@ -1,55 +1,42 @@
 import SwiftUI
 
-/// Volumes list + detail panel
+/// Column 2: volumes list with toolbar
 struct VolumesListView: View {
-    @State private var vm = VolumesViewModel()
+    @Environment(VolumesViewModel.self) private var vm
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left: list panel
-            VStack(spacing: 0) {
-                // "In Use" section header
-                HStack {
-                    Text("In Use")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+        VStack(spacing: 0) {
+            // "In Use" section header
+            HStack {
+                Text("In Use")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.textSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
 
-                // Volume list or empty state
-                if vm.volumes.isEmpty {
-                    VolumeEmptyState()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(vm.sortedVolumes) { volume in
-                                VolumeRowView(
-                                    volume: volume,
-                                    isSelected: vm.selectedID == volume.id,
-                                    onSelect: { vm.selectVolume(volume.id) }
-                                )
-                            }
+            if vm.volumes.isEmpty {
+                VolumeEmptyState()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.sortedVolumes) { volume in
+                            VolumeRowView(
+                                volume: volume,
+                                isSelected: vm.selectedID == volume.id,
+                                onSelect: { vm.selectVolume(volume.id) }
+                            )
                         }
                     }
                 }
             }
-            .frame(width: vm.listWidth)
-
-            ListResizeHandle(width: $vm.listWidth, min: 200, max: 500)
-
-            // Right: detail panel
-            VolumeDetailView(
-                volume: vm.selectedVolume,
-                activeTab: $vm.activeTab
-            )
         }
         .navigationTitle("Volumes")
         .navigationSubtitle(vm.totalSize)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                SortMenuButton(sortBy: $vm.sortBy, ascending: $vm.sortAscending)
+                SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
                 Button(action: {}) {
                     Image(systemName: "magnifyingglass")
                 }
@@ -58,7 +45,7 @@ struct VolumesListView: View {
                 }
             }
         }
-        .sheet(isPresented: $vm.showNewVolumeSheet) {
+        .sheet(isPresented: Bindable(vm).showNewVolumeSheet) {
             NewVolumeSheet()
         }
         .onAppear { vm.loadSampleData() }

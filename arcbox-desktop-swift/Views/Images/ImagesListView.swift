@@ -1,55 +1,42 @@
 import SwiftUI
 
-/// Images list + detail panel
+/// Column 2: images list with toolbar
 struct ImagesListView: View {
-    @State private var vm = ImagesViewModel()
+    @Environment(ImagesViewModel.self) private var vm
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left: list panel
-            VStack(spacing: 0) {
-                // "In Use" section header
-                HStack {
-                    Text("In Use")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+        VStack(spacing: 0) {
+            // "In Use" section header
+            HStack {
+                Text("In Use")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.textSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
 
-                // Image list or empty state
-                if vm.images.isEmpty {
-                    ImageEmptyState()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(vm.sortedImages) { image in
-                                ImageRowView(
-                                    image: image,
-                                    isSelected: vm.selectedID == image.id,
-                                    onSelect: { vm.selectImage(image.id) }
-                                )
-                            }
+            if vm.images.isEmpty {
+                ImageEmptyState()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.sortedImages) { image in
+                            ImageRowView(
+                                image: image,
+                                isSelected: vm.selectedID == image.id,
+                                onSelect: { vm.selectImage(image.id) }
+                            )
                         }
                     }
                 }
             }
-            .frame(width: vm.listWidth)
-
-            ListResizeHandle(width: $vm.listWidth, min: 200, max: 500)
-
-            // Right: detail panel
-            ImageDetailView(
-                image: vm.selectedImage,
-                activeTab: $vm.activeTab
-            )
         }
         .navigationTitle("Images")
         .navigationSubtitle(vm.totalSize)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                SortMenuButton(sortBy: $vm.sortBy, ascending: $vm.sortAscending)
+                SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
                 Button(action: {}) {
                     Image(systemName: "magnifyingglass")
                 }
@@ -58,7 +45,7 @@ struct ImagesListView: View {
                 }
             }
         }
-        .sheet(isPresented: $vm.showPullImageSheet) {
+        .sheet(isPresented: Bindable(vm).showPullImageSheet) {
             PullImageSheet()
         }
         .onAppear { vm.loadSampleData() }

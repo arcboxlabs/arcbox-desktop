@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Card-based machine layout (full-width, no list/detail split)
+/// Column 2: card-based machine layout
 struct MachinesView: View {
-    @State private var vm = MachinesViewModel()
+    @Environment(MachinesViewModel.self) private var vm
 
     var body: some View {
         VStack(spacing: 0) {
-            // Machine list
             ScrollView {
                 if vm.machines.isEmpty {
                     MachineEmptyState()

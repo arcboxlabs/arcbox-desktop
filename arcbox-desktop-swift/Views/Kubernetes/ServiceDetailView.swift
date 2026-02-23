@@ -1,29 +1,16 @@
 import SwiftUI
 
-/// Service detail panel
+/// Column 3: service detail with tab-based toolbar
 struct ServiceDetailView: View {
-    let service: ServiceViewModel?
-    @Binding var activeTab: ServiceDetailTab
+    @Environment(ServicesViewModel.self) private var vm
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Detail toolbar
-            HStack {
-                Picker("Tab", selection: $activeTab) {
-                    ForEach(ServiceDetailTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 120)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+        @Bindable var vm = vm
+        let service = vm.selectedService
 
+        VStack(spacing: 0) {
             if let service {
-                switch activeTab {
+                switch vm.activeTab {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
@@ -47,5 +34,16 @@ struct ServiceDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Tab", selection: $vm.activeTab) {
+                    ForEach(ServiceDetailTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 120)
+            }
+        }
     }
 }

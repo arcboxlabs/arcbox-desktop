@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// Sandbox detail panel with tabs
+/// Column 3: sandbox detail with tab-based toolbar
 struct SandboxDetailView: View {
-    let sandbox: SandboxViewModel?
-    @Binding var activeTab: SandboxDetailTab
+    @Environment(SandboxesViewModel.self) private var vm
 
     private func stateColor(_ state: SandboxState) -> Color {
         switch state {
@@ -14,24 +13,12 @@ struct SandboxDetailView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Detail toolbar
-            HStack {
-                Picker("Tab", selection: $activeTab) {
-                    ForEach(SandboxDetailTab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 200)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+        @Bindable var vm = vm
+        let sandbox = vm.selectedSandbox
 
+        VStack(spacing: 0) {
             if let sandbox {
-                switch activeTab {
+                switch vm.activeTab {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
@@ -62,5 +49,16 @@ struct SandboxDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Tab", selection: $vm.activeTab) {
+                    ForEach(SandboxDetailTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 200)
+            }
+        }
     }
 }

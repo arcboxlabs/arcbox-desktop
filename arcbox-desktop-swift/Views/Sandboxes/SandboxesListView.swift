@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Sandboxes page with Monitoring and List tabs
+/// Column 2: sandboxes page with Monitoring and List tabs
 struct SandboxesListView: View {
-    @State private var vm = SandboxesViewModel()
+    @Environment(SandboxesViewModel.self) private var vm
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,7 +48,7 @@ struct SandboxesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.pageTab == .list {
-                    SortMenuButton(sortBy: $vm.sortBy, ascending: $vm.sortAscending)
+                    SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
                     Button(action: {}) {
                         Image(systemName: "magnifyingglass")
                     }
@@ -62,34 +62,22 @@ struct SandboxesListView: View {
     }
 
     private var sandboxListContent: some View {
-        HStack(spacing: 0) {
-            // Left: list panel
-            VStack(spacing: 0) {
-                if vm.sandboxes.isEmpty {
-                    SandboxEmptyState()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(vm.sortedSandboxes) { sandbox in
-                                SandboxRowView(
-                                    sandbox: sandbox,
-                                    isSelected: vm.selectedID == sandbox.id,
-                                    onSelect: { vm.selectSandbox(sandbox.id) }
-                                )
-                            }
+        VStack(spacing: 0) {
+            if vm.sandboxes.isEmpty {
+                SandboxEmptyState()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.sortedSandboxes) { sandbox in
+                            SandboxRowView(
+                                sandbox: sandbox,
+                                isSelected: vm.selectedID == sandbox.id,
+                                onSelect: { vm.selectSandbox(sandbox.id) }
+                            )
                         }
                     }
                 }
             }
-            .frame(width: vm.listWidth)
-
-            ListResizeHandle(width: $vm.listWidth, min: 200, max: 500)
-
-            // Right: detail panel
-            SandboxDetailView(
-                sandbox: vm.selectedSandbox,
-                activeTab: $vm.activeTab
-            )
         }
     }
 }
