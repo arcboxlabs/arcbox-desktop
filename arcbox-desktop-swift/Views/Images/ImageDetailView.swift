@@ -62,15 +62,9 @@ struct ImageDetailView: View {
                         .padding(16)
                     }
                 case .terminal:
-                    Spacer()
-                    Text("Terminal coming soon...")
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
+                    ImageTerminalTab(image: image)
                 case .files:
-                    Spacer()
-                    Text("Files coming soon...")
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
+                    ImageFilesTab(image: image)
                 }
             } else {
                 Spacer()

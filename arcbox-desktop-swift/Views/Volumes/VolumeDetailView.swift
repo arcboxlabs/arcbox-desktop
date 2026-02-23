@@ -35,10 +35,7 @@ struct VolumeDetailView: View {
                         .padding(16)
                     }
                 case .files:
-                    Spacer()
-                    Text("Files coming soon...")
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
+                    VolumeFilesTab(volume: volume)
                 }
             } else {
                 Spacer()

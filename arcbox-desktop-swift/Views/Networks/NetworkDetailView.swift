@@ -39,10 +39,7 @@ struct NetworkDetailView: View {
                         .padding(16)
                     }
                 case .containers:
-                    Spacer()
-                    Text("Containers coming soon...")
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
+                    NetworkContainersTab(network: network)
                 }
             } else {
                 Spacer()
