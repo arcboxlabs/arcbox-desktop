@@ -1,4 +1,5 @@
 import SwiftUI
+import DockerClient
 
 /// Detail tab for images
 enum ImageDetailTab: String, CaseIterable, Identifiable {
@@ -61,7 +62,59 @@ class ImagesViewModel {
         selectedID = id
     }
 
+    // MARK: - Docker API Operations
+
+    /// Load images from Docker Engine API.
+    func loadImages(docker: DockerClient?) async {
+        guard let docker else {
+            print("[ImagesVM] No docker client available")
+            return
+        }
+
+        do {
+            let response = try await docker.api.ImageList(.init())
+            let imageList = try response.ok.body.json
+            images = imageList.flatMap { ImageViewModel.fromDocker($0) }
+            print("[ImagesVM] Loaded \(images.count) images")
+        } catch {
+            print("[ImagesVM] Error loading images: \(error)")
+        }
+    }
+
+    func removeImage(_ id: String, docker: DockerClient?) async {
+        guard let docker else { return }
+        _ = try? await docker.api.ImageDelete(path: .init(name: id))
+        await loadImages(docker: docker)
+    }
+
     func loadSampleData() {
         images = SampleData.images
+    }
+}
+
+// MARK: - Docker API → UI Model Conversion
+
+extension ImageViewModel {
+    /// Create ImageViewModels from a Docker Engine API ImageSummary.
+    /// One ImageSummary can have multiple RepoTags, producing multiple view models.
+    static func fromDocker(_ summary: Components.Schemas.ImageSummary) -> [ImageViewModel] {
+        let tags = summary.RepoTags.isEmpty ? ["<none>:<none>"] : summary.RepoTags
+
+        return tags.map { repoTag in
+            let parts = repoTag.split(separator: ":", maxSplits: 1)
+            let repository = parts.first.map(String.init) ?? "<none>"
+            let tag = parts.count > 1 ? String(parts[1]) : "<none>"
+
+            return ImageViewModel(
+                id: summary.Id,
+                repository: repository,
+                tag: tag,
+                sizeBytes: UInt64(summary.Size),
+                createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created)),
+                inUse: summary.Containers > 0,
+                os: "",
+                architecture: ""
+            )
+        }
     }
 }

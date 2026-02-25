@@ -1,8 +1,10 @@
 import SwiftUI
+import DockerClient
 
 /// Column 2: networks list with toolbar
 struct NetworksListView: View {
     @Environment(NetworksViewModel.self) private var vm
+    @Environment(\.dockerClient) private var docker
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,6 +40,6 @@ struct NetworksListView: View {
         .sheet(isPresented: Bindable(vm).showNewNetworkSheet) {
             NewNetworkSheet()
         }
-        .onAppear { vm.loadSampleData() }
+        .task { await vm.loadNetworks(docker: docker) }
     }
 }

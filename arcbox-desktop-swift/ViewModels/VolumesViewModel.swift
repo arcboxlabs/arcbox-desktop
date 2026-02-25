@@ -1,4 +1,5 @@
 import SwiftUI
+import DockerClient
 
 /// Detail tab for volumes
 enum VolumeDetailTab: String, CaseIterable, Identifiable {
@@ -60,7 +61,58 @@ class VolumesViewModel {
         selectedID = id
     }
 
+    // MARK: - Docker API Operations
+
+    /// Load volumes from Docker Engine API.
+    func loadVolumes(docker: DockerClient?) async {
+        guard let docker else {
+            print("[VolumesVM] No docker client available")
+            return
+        }
+
+        do {
+            let response = try await docker.api.VolumeList(.init())
+            let volumeResponse = try response.ok.body.json
+            volumes = (volumeResponse.Volumes ?? []).map { VolumeViewModel(fromDocker: $0) }
+            print("[VolumesVM] Loaded \(volumes.count) volumes")
+        } catch {
+            print("[VolumesVM] Error loading volumes: \(error)")
+        }
+    }
+
+    func removeVolume(_ name: String, docker: DockerClient?) async {
+        guard let docker else { return }
+        _ = try? await docker.api.VolumeDelete(path: .init(name: name))
+        await loadVolumes(docker: docker)
+    }
+
     func loadSampleData() {
         volumes = SampleData.volumes
+    }
+}
+
+// MARK: - Docker API → UI Model Conversion
+
+extension VolumeViewModel {
+    /// Create a VolumeViewModel from a Docker Engine API Volume.
+    init(fromDocker volume: Components.Schemas.Volume) {
+        let createdAt: Date
+        if let created = volume.CreatedAt {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            createdAt = formatter.date(from: created) ?? Date()
+        } else {
+            createdAt = Date()
+        }
+
+        self.init(
+            name: volume.Name,
+            driver: volume.Driver,
+            mountPoint: volume.Mountpoint,
+            sizeBytes: nil,
+            createdAt: createdAt,
+            inUse: false,
+            containerNames: []
+        )
     }
 }

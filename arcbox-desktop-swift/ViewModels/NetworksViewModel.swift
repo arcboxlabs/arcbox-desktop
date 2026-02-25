@@ -1,4 +1,5 @@
 import SwiftUI
+import DockerClient
 
 /// Detail tab for networks
 enum NetworkDetailTab: String, CaseIterable, Identifiable {
@@ -49,7 +50,61 @@ class NetworksViewModel {
         selectedID = id
     }
 
+    // MARK: - Docker API Operations
+
+    /// Load networks from Docker Engine API.
+    func loadNetworks(docker: DockerClient?) async {
+        guard let docker else {
+            print("[NetworksVM] No docker client available")
+            return
+        }
+
+        do {
+            let response = try await docker.api.NetworkList(.init())
+            let networkList = try response.ok.body.json
+            networks = networkList.compactMap(NetworkViewModel.init(fromDocker:))
+            print("[NetworksVM] Loaded \(networks.count) networks")
+        } catch {
+            print("[NetworksVM] Error loading networks: \(error)")
+        }
+    }
+
+    func removeNetwork(_ id: String, docker: DockerClient?) async {
+        guard let docker else { return }
+        _ = try? await docker.api.NetworkDelete(path: .init(id: id))
+        await loadNetworks(docker: docker)
+    }
+
     func loadSampleData() {
         networks = SampleData.networks
+    }
+}
+
+// MARK: - Docker API → UI Model Conversion
+
+extension NetworkViewModel {
+    /// Create a NetworkViewModel from a Docker Engine API Network.
+    init?(fromDocker network: Components.Schemas.Network) {
+        guard let id = network.Id, let name = network.Name else { return nil }
+
+        let createdAt: Date
+        if let created = network.Created {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            createdAt = formatter.date(from: created) ?? Date()
+        } else {
+            createdAt = Date()
+        }
+
+        self.init(
+            id: id,
+            name: name,
+            driver: network.Driver ?? "unknown",
+            scope: network.Scope ?? "local",
+            createdAt: createdAt,
+            internal: network.Internal ?? false,
+            attachable: network.Attachable ?? false,
+            containerCount: 0
+        )
     }
 }

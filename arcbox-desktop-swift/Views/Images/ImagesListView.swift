@@ -1,8 +1,10 @@
 import SwiftUI
+import DockerClient
 
 /// Column 2: images list with toolbar
 struct ImagesListView: View {
     @Environment(ImagesViewModel.self) private var vm
+    @Environment(\.dockerClient) private var docker
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +50,6 @@ struct ImagesListView: View {
         .sheet(isPresented: Bindable(vm).showPullImageSheet) {
             PullImageSheet()
         }
-        .onAppear { vm.loadSampleData() }
+        .task { await vm.loadImages(docker: docker) }
     }
 }

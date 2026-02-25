@@ -1,5 +1,6 @@
 import SwiftUI
 import ArcBoxClient
+import DockerClient
 
 /// Detail panel tab for containers
 enum ContainerDetailTab: String, CaseIterable, Identifiable {
@@ -143,6 +144,49 @@ class ContainersViewModel {
         await loadContainers(client: client)
     }
 
+    // MARK: - Docker API Operations
+
+    /// Load containers from Docker Engine API.
+    func loadContainersFromDocker(docker: DockerClient?) async {
+        guard let docker else {
+            print("[ContainersVM] No docker client available")
+            return
+        }
+
+        do {
+            let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
+            let containerList = try response.ok.body.json
+            let viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
+            containers = viewModels
+            print("[ContainersVM] Loaded \(containers.count) containers")
+            for container in containers {
+                if let project = container.composeProject {
+                    expandedGroups.insert(project)
+                }
+            }
+        } catch {
+            print("[ContainersVM] Error loading containers: \(error)")
+        }
+    }
+
+    func startContainerDocker(_ id: String, docker: DockerClient?) async {
+        guard let docker else { return }
+        _ = try? await docker.api.ContainerStart(path: .init(id: id))
+        await loadContainersFromDocker(docker: docker)
+    }
+
+    func stopContainerDocker(_ id: String, docker: DockerClient?) async {
+        guard let docker else { return }
+        _ = try? await docker.api.ContainerStop(path: .init(id: id))
+        await loadContainersFromDocker(docker: docker)
+    }
+
+    func removeContainerDocker(_ id: String, docker: DockerClient?) async {
+        guard let docker else { return }
+        _ = try? await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
+        await loadContainersFromDocker(docker: docker)
+    }
+
     /// Load sample data (fallback when daemon is not available)
     func loadSampleData() {
         containers = SampleData.containers
@@ -191,6 +235,47 @@ extension ContainerViewModel {
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.created)),
             composeProject: composeProject,
             labels: summary.labels,
+            cpuPercent: 0,
+            memoryMB: 0,
+            memoryLimitMB: 0
+        )
+    }
+
+    /// Create a ContainerViewModel from a Docker Engine API ContainerSummary.
+    init(fromDocker summary: Components.Schemas.ContainerSummary) {
+        let name = summary.Names?.first.map {
+            $0.hasPrefix("/") ? String($0.dropFirst()) : $0
+        } ?? summary.Id?.prefix(12).description ?? "unknown"
+
+        let state: ContainerState = switch summary.State?.lowercased() {
+        case "running": .running
+        case "paused": .paused
+        case "restarting": .restarting
+        case "dead": .dead
+        default: .stopped // created, exited, removing -> stopped
+        }
+
+        let ports = (summary.Ports ?? []).compactMap { port -> PortMapping? in
+            guard let publicPort = port.PublicPort else { return nil }
+            return PortMapping(
+                hostPort: UInt16(publicPort),
+                containerPort: UInt16(port.PrivatePort),
+                protocol: port._Type.rawValue
+            )
+        }
+
+        let labels = summary.Labels?.additionalProperties ?? [:]
+        let composeProject = labels["com.docker.compose.project"]
+
+        self.init(
+            id: summary.Id ?? "",
+            name: name,
+            image: summary.Image ?? "",
+            state: state,
+            ports: ports,
+            createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created ?? 0)),
+            composeProject: composeProject,
+            labels: labels,
             cpuPercent: 0,
             memoryMB: 0,
             memoryLimitMB: 0

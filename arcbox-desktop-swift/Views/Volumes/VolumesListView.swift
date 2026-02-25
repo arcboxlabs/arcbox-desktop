@@ -1,8 +1,10 @@
 import SwiftUI
+import DockerClient
 
 /// Column 2: volumes list with toolbar
 struct VolumesListView: View {
     @Environment(VolumesViewModel.self) private var vm
+    @Environment(\.dockerClient) private var docker
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +50,6 @@ struct VolumesListView: View {
         .sheet(isPresented: Bindable(vm).showNewVolumeSheet) {
             NewVolumeSheet()
         }
-        .onAppear { vm.loadSampleData() }
+        .task { await vm.loadVolumes(docker: docker) }
     }
 }
