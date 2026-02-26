@@ -21,9 +21,12 @@ struct ImageViewModel: Identifiable, Hashable {
     var sizeDisplay: String {
         let mb = Double(sizeBytes) / 1_000_000.0
         if mb >= 1000.0 {
-            return String(format: "%.1f GB", mb / 1000.0)
+            return String(format: "%.2f GB", mb / 1000.0)
+        } else if mb >= 1.0 {
+            return String(format: "%.1f MB", mb)
+        } else {
+            return String(format: "%.1f KB", Double(sizeBytes) / 1000.0)
         }
-        return String(format: "%.0f MB", mb)
     }
 
     var createdAgo: String {
