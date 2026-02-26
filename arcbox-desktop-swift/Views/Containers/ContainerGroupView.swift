@@ -81,7 +81,7 @@ struct ContainerGroupView: View {
                     }
                 }
             }
-            .frame(height: 36)
+            .frame(height: 44)
             .padding(.horizontal, 8)
             .background(
                 RoundedRectangle(cornerRadius: 6)
