@@ -11,6 +11,8 @@ struct ContainerRowView: View {
 
     @State private var isHovered: Bool = false
 
+    private var isStopped: Bool { !container.isRunning && !container.isTransitioning }
+
     /// Generate a consistent color based on image name
     private var containerColor: Color {
         let colors: [Color] = [
@@ -39,22 +41,31 @@ struct ContainerRowView: View {
                         Image(systemName: "shippingbox")
                             .font(.system(size: 16))
                             .foregroundStyle(
-                                isSelected ? AppColors.onAccent : containerColor
+                                isSelected
+                                    ? AppColors.onAccent
+                                    : (isStopped ? AppColors.textMuted : containerColor)
                             )
                     }
 
                 // Status dot
-                Circle()
-                    .fill(container.state.color)
-                    .frame(width: 12, height: 12)
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                isSelected ? AppColors.selection : AppColors.background,
-                                lineWidth: 2
-                            )
-                    )
-                    .offset(x: 2, y: 2)
+                if container.isTransitioning {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .frame(width: 12, height: 12)
+                        .offset(x: 2, y: 2)
+                } else {
+                    Circle()
+                        .fill(container.state.color)
+                        .frame(width: 12, height: 12)
+                        .overlay(
+                            Circle()
+                                .stroke(
+                                    isSelected ? AppColors.selection : AppColors.background,
+                                    lineWidth: 2
+                                )
+                        )
+                        .offset(x: 2, y: 2)
+                }
             }
 
             // Name + image text
@@ -62,12 +73,17 @@ struct ContainerRowView: View {
                 Text(container.name)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
+                    .foregroundStyle(
+                        isSelected
+                            ? AppColors.onAccent
+                            : (isStopped ? AppColors.textSecondary : AppColors.text)
+                    )
                 Text(container.image)
                     .font(.system(size: 11))
                     .foregroundStyle(
                         isSelected
                             ? Color.white.opacity(0.67)
-                            : AppColors.textSecondary
+                            : (isStopped ? AppColors.textMuted : AppColors.textSecondary)
                     )
                     .lineLimit(1)
             }
@@ -76,11 +92,17 @@ struct ContainerRowView: View {
             // Action buttons (show on hover or selection)
             if isHovered || isSelected {
                 HStack(spacing: 4) {
-                    IconButton(
-                        symbol: container.isRunning ? "stop.fill" : "play.fill",
-                        action: onStartStop,
-                        color: isSelected ? AppColors.onAccent : AppColors.textSecondary
-                    )
+                    if container.isTransitioning {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 26, height: 26)
+                    } else {
+                        IconButton(
+                            symbol: container.isRunning ? "stop.fill" : "play.fill",
+                            action: onStartStop,
+                            color: isSelected ? AppColors.onAccent : AppColors.textSecondary
+                        )
+                    }
                     IconButton(
                         symbol: "trash",
                         action: onDelete,
