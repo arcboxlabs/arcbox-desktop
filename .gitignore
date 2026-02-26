@@ -14,6 +14,9 @@ xcuserdata/
 # VSCode
 .vscode/
 
+# Claude AI
+.claude/
+
 # Swift Package Manager
 .build/
 .swiftpm/
