@@ -10937,7 +10937,7 @@ components:
           example:
             com.example.some-label: some-value
             com.example.some-other-label: some-other-value
-          nullable: false
+          nullable: true
         Containers:
           description: >
             Number of containers using this image. Includes both stopped and
@@ -11081,6 +11081,7 @@ components:
             device: tmpfs
             o: size=100m,uid=1000
             type: tmpfs
+          nullable: true
         UsageData:
           type: object
           x-go-name: UsageData
