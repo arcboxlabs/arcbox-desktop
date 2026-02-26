@@ -37,7 +37,8 @@ struct ContainerViewModel: Identifiable, Hashable {
     let id: String
     let name: String
     let image: String
-    let state: ContainerState
+    var state: ContainerState
+    var isTransitioning: Bool = false
     let ports: [PortMapping]
     let createdAt: Date
     let composeProject: String?
@@ -72,6 +73,6 @@ struct ContainerViewModel: Identifiable, Hashable {
     }
 
     static func == (lhs: ContainerViewModel, rhs: ContainerViewModel) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.state == rhs.state && lhs.isTransitioning == rhs.isTransitioning
     }
 }

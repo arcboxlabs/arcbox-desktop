@@ -10,8 +10,26 @@ struct ContainerGroupView: View {
     let onSelect: (String) -> Void
     let onStartStop: (String, Bool) -> Void
     let onDelete: (String) -> Void
+    let onStartStopAll: ([String], Bool) -> Void
+    let onDeleteAll: ([String]) -> Void
 
     @State private var isHovered: Bool = false
+
+    private var hasAnyRunning: Bool {
+        containers.contains(where: \.isRunning)
+    }
+
+    private var isAnyTransitioning: Bool {
+        containers.contains(where: \.isTransitioning)
+    }
+
+    private var allContainerIDs: [String] {
+        containers.map(\.id)
+    }
+
+    private var runningCount: Int {
+        containers.filter(\.isRunning).count
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,7 +53,33 @@ struct ContainerGroupView: View {
                 Text(project)
                     .font(.system(size: 13, weight: .medium))
 
+                Text("\(runningCount)/\(containers.count)")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.textSecondary)
+
                 Spacer()
+
+                // Group action buttons (show on hover)
+                if isHovered {
+                    HStack(spacing: 4) {
+                        if isAnyTransitioning {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(width: 26, height: 26)
+                        } else {
+                            IconButton(
+                                symbol: hasAnyRunning ? "stop.fill" : "play.fill",
+                                action: { onStartStopAll(allContainerIDs, hasAnyRunning) },
+                                color: AppColors.textSecondary
+                            )
+                        }
+                        IconButton(
+                            symbol: "trash",
+                            action: { onDeleteAll(allContainerIDs) },
+                            color: AppColors.textSecondary
+                        )
+                    }
+                }
             }
             .frame(height: 36)
             .padding(.horizontal, 8)

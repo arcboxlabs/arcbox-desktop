@@ -20,6 +20,7 @@ enum ContainerSortField: String, CaseIterable {
 }
 
 /// Container list state, selection, tabs, grouping
+@MainActor
 @Observable
 class ContainersViewModel {
     var containers: [ContainerViewModel] = []
@@ -90,6 +91,36 @@ class ContainersViewModel {
         expandedGroups.contains(group)
     }
 
+    private func applyExpandedGroups(from list: [ContainerViewModel]) {
+        for container in list {
+            if let project = container.composeProject {
+                expandedGroups.insert(project)
+            }
+        }
+    }
+
+    private func setContainerRunningState(_ id: String, isRunning: Bool) {
+        guard let index = containers.firstIndex(where: { $0.id == id }) else { return }
+        containers[index].state = isRunning ? .running : .stopped
+    }
+
+    private func setTransitioning(_ id: String, _ value: Bool) {
+        guard let index = containers.firstIndex(where: { $0.id == id }) else { return }
+        containers[index].isTransitioning = value
+    }
+
+    /// IDs currently transitioning, used to preserve state across container reloads
+    private var transitioningIDs: Set<String> {
+        Set(containers.filter(\.isTransitioning).map(\.id))
+    }
+
+    private func removeContainerLocally(_ id: String) {
+        containers.removeAll { $0.id == id }
+        if selectedID == id {
+            selectedID = nil
+        }
+    }
+
     // MARK: - gRPC Operations
 
     /// Load containers from daemon via gRPC, falling back to sample data.
@@ -99,20 +130,19 @@ class ContainersViewModel {
             return
         }
 
+        let currentTransitioning = transitioningIDs
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
             let response = try await client.containers.list(request)
-            let viewModels = response.containers.map { summary in
+            var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)
             }
-            containers = viewModels
-            // Expand all compose groups by default
-            for container in containers {
-                if let project = container.composeProject {
-                    expandedGroups.insert(project)
-                }
+            for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
+                viewModels[i].isTransitioning = true
             }
+            containers = viewModels
+            applyExpandedGroups(from: containers)
         } catch {
             // Fallback to sample data on error
             loadSampleData()
@@ -121,17 +151,31 @@ class ContainersViewModel {
 
     func startContainer(_ id: String, client: ArcBoxClient?) async {
         guard let client else { return }
+        setTransitioning(id, true)
         var request = Arcbox_V1_StartContainerRequest()
         request.id = id
-        _ = try? await client.containers.start(request)
+        do {
+            _ = try await client.containers.start(request)
+            setContainerRunningState(id, isRunning: true)
+        } catch {
+            print("[ContainersVM] Error starting container \(id): \(error)")
+        }
+        setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
     func stopContainer(_ id: String, client: ArcBoxClient?) async {
         guard let client else { return }
+        setTransitioning(id, true)
         var request = Arcbox_V1_StopContainerRequest()
         request.id = id
-        _ = try? await client.containers.stop(request)
+        do {
+            _ = try await client.containers.stop(request)
+            setContainerRunningState(id, isRunning: false)
+        } catch {
+            print("[ContainersVM] Error stopping container \(id): \(error)")
+        }
+        setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
@@ -140,7 +184,12 @@ class ContainersViewModel {
         var request = Arcbox_V1_RemoveContainerRequest()
         request.id = id
         request.force = true
-        _ = try? await client.containers.remove(request)
+        do {
+            _ = try await client.containers.remove(request)
+            removeContainerLocally(id)
+        } catch {
+            print("[ContainersVM] Error removing container \(id): \(error)")
+        }
         await loadContainers(client: client)
     }
 
@@ -153,17 +202,18 @@ class ContainersViewModel {
             return
         }
 
+        let currentTransitioning = transitioningIDs
         do {
             let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
             let containerList = try response.ok.body.json
-            let viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
+            var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
+            // Preserve transitioning state across reload
+            for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
+                viewModels[i].isTransitioning = true
+            }
             containers = viewModels
             print("[ContainersVM] Loaded \(containers.count) containers")
-            for container in containers {
-                if let project = container.composeProject {
-                    expandedGroups.insert(project)
-                }
-            }
+            applyExpandedGroups(from: containers)
         } catch {
             print("[ContainersVM] Error loading containers: \(error)")
         }
@@ -171,31 +221,109 @@ class ContainersViewModel {
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {
         guard let docker else { return }
-        _ = try? await docker.api.ContainerStart(path: .init(id: id))
+        setTransitioning(id, true)
+        do {
+            _ = try await docker.api.ContainerStart(path: .init(id: id))
+            setContainerRunningState(id, isRunning: true)
+        } catch {
+            print("[ContainersVM] Error starting container \(id): \(error)")
+        }
+        setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func stopContainerDocker(_ id: String, docker: DockerClient?) async {
         guard let docker else { return }
-        _ = try? await docker.api.ContainerStop(path: .init(id: id))
+        setTransitioning(id, true)
+        do {
+            _ = try await docker.api.ContainerStop(path: .init(id: id))
+            setContainerRunningState(id, isRunning: false)
+        } catch {
+            print("[ContainersVM] Error stopping container \(id): \(error)")
+        }
+        setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func removeContainerDocker(_ id: String, docker: DockerClient?) async {
         guard let docker else { return }
-        _ = try? await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
+        do {
+            _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
+            removeContainerLocally(id)
+        } catch {
+            print("[ContainersVM] Error removing container \(id): \(error)")
+        }
+        await loadContainersFromDocker(docker: docker)
+    }
+
+    // MARK: - Batch Docker Operations
+
+    func startContainersDocker(_ ids: [String], docker: DockerClient?) async {
+        guard let docker else { return }
+        let stoppedIDs = ids.filter { id in
+            containers.first(where: { $0.id == id })?.isRunning == false
+        }
+        for id in stoppedIDs { setTransitioning(id, true) }
+        await withTaskGroup(of: Void.self) { group in
+            for id in stoppedIDs {
+                group.addTask { [weak self] in
+                    do {
+                        _ = try await docker.api.ContainerStart(path: .init(id: id))
+                        await self?.setContainerRunningState(id, isRunning: true)
+                    } catch {
+                        print("[ContainersVM] Error starting container \(id): \(error)")
+                    }
+                }
+            }
+        }
+        for id in stoppedIDs { setTransitioning(id, false) }
+        await loadContainersFromDocker(docker: docker)
+    }
+
+    func stopContainersDocker(_ ids: [String], docker: DockerClient?) async {
+        guard let docker else { return }
+        let runningIDs = ids.filter { id in
+            containers.first(where: { $0.id == id })?.isRunning == true
+        }
+        for id in runningIDs { setTransitioning(id, true) }
+        await withTaskGroup(of: Void.self) { group in
+            for id in runningIDs {
+                group.addTask { [weak self] in
+                    do {
+                        _ = try await docker.api.ContainerStop(path: .init(id: id))
+                        await self?.setContainerRunningState(id, isRunning: false)
+                    } catch {
+                        print("[ContainersVM] Error stopping container \(id): \(error)")
+                    }
+                }
+            }
+        }
+        for id in runningIDs { setTransitioning(id, false) }
+        await loadContainersFromDocker(docker: docker)
+    }
+
+    func removeContainersDocker(_ ids: [String], docker: DockerClient?) async {
+        guard let docker else { return }
+        for id in ids { setTransitioning(id, true) }
+        await withTaskGroup(of: Void.self) { group in
+            for id in ids {
+                group.addTask { [weak self] in
+                    do {
+                        _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
+                        await self?.removeContainerLocally(id)
+                    } catch {
+                        print("[ContainersVM] Error removing container \(id): \(error)")
+                    }
+                }
+            }
+        }
         await loadContainersFromDocker(docker: docker)
     }
 
     /// Load sample data (fallback when daemon is not available)
     func loadSampleData() {
         containers = SampleData.containers
-        // Expand all compose groups by default
-        for container in containers {
-            if let project = container.composeProject {
-                expandedGroups.insert(project)
-            }
-        }
+        applyExpandedGroups(from: containers)
     }
 }
 
