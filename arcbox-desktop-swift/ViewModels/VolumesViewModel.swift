@@ -34,7 +34,7 @@ class VolumesViewModel {
             return String(format: "%.2f GB total", gb)
         }
         let mb = Double(bytes) / 1_000_000.0
-        return String(format: "%.0f MB total", mb)
+        return String(format: "%.1f MB total", mb)
     }
 
     var sortedVolumes: [VolumeViewModel] {
@@ -63,7 +63,8 @@ class VolumesViewModel {
 
     // MARK: - Docker API Operations
 
-    /// Load volumes from Docker Engine API.
+    /// Load volumes from Docker Engine API using system disk usage endpoint
+    /// to include volume size information.
     func loadVolumes(docker: DockerClient?) async {
         guard let docker else {
             print("[VolumesVM] No docker client available")
@@ -71,9 +72,9 @@ class VolumesViewModel {
         }
 
         do {
-            let response = try await docker.api.VolumeList(.init())
-            let volumeResponse = try response.ok.body.json
-            volumes = (volumeResponse.Volumes ?? []).map { VolumeViewModel(fromDocker: $0) }
+            let response = try await docker.api.SystemDataUsage(query: .init(_type: [.volume]))
+            let dfResponse = try response.ok.body.json
+            volumes = (dfResponse.Volumes ?? []).map { VolumeViewModel(fromDocker: $0) }
             print("[VolumesVM] Loaded \(volumes.count) volumes")
         } catch {
             print("[VolumesVM] Error loading volumes: \(error)")
@@ -105,13 +106,27 @@ extension VolumeViewModel {
             createdAt = Date()
         }
 
+        let sizeBytes: UInt64?
+        if let size = volume.UsageData?.Size, size >= 0 {
+            sizeBytes = UInt64(size)
+        } else {
+            sizeBytes = nil
+        }
+
+        let inUse: Bool
+        if let refCount = volume.UsageData?.RefCount, refCount > 0 {
+            inUse = true
+        } else {
+            inUse = false
+        }
+
         self.init(
             name: volume.Name,
             driver: volume.Driver,
             mountPoint: volume.Mountpoint,
-            sizeBytes: nil,
+            sizeBytes: sizeBytes,
             createdAt: createdAt,
-            inUse: false,
+            inUse: inUse,
             containerNames: []
         )
     }
