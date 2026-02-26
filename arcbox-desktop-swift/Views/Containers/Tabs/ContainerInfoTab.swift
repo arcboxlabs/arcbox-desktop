@@ -20,43 +20,14 @@ struct ContainerInfoTab: View {
                     )
                 }
 
-                // Domain & IP section (if running)
-                if container.isRunning,
-                    container.domain != nil || container.ipAddress != nil
-                {
+                // Domain & IP section
+                if container.domain != nil || container.ipAddress != nil {
                     VStack(spacing: 0) {
                         if let domain = container.domain {
-                            HStack(alignment: .top) {
-                                Text("Domain")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(AppColors.textSecondary)
-                                    .frame(width: 100, alignment: .leading)
-                                Text(domain)
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(AppColors.accent)
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
-                                    .textSelection(.enabled)
-                            }
-                            .padding(.vertical, 8)
-                            .overlay(alignment: .bottom) {
-                                Divider().opacity(0.3)
-                            }
+                            InfoRow(label: "Domain", value: domain)
                         }
                         if let ip = container.ipAddress {
-                            HStack(alignment: .top) {
-                                Text("IP")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(AppColors.textSecondary)
-                                    .frame(width: 100, alignment: .leading)
-                                Text(ip)
-                                    .font(.system(size: 13))
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
-                                    .textSelection(.enabled)
-                            }
-                            .padding(.vertical, 8)
-                            .overlay(alignment: .bottom) {
-                                Divider().opacity(0.3)
-                            }
+                            InfoRow(label: "IP", value: ip)
                         }
                     }
                 }
@@ -100,6 +71,55 @@ struct ContainerInfoTab: View {
                                 .overlay(alignment: .bottom) {
                                     Divider().opacity(0.3)
                                 }
+                            }
+                        }
+                        .background(AppColors.background)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(AppColors.border, lineWidth: 0.5)
+                        )
+                    }
+                }
+
+                // Mounts section
+                if !container.mounts.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Mounts")
+                            .font(.system(size: 13, weight: .semibold))
+
+                        VStack(spacing: 0) {
+                            HStack {
+                                Text("Source")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text("Destination")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(AppColors.surfaceElevated)
+
+                            ForEach(container.mounts) { mount in
+                                HStack(alignment: .top) {
+                                    Text(mount.source)
+                                        .foregroundStyle(AppColors.accent)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                    Text(mount.destination)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                                .font(.system(size: 13))
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 8)
+                                .overlay(alignment: .bottom) {
+                                    Divider().opacity(0.3)
+                                }
+                                .textSelection(.enabled)
                             }
                         }
                         .background(AppColors.background)

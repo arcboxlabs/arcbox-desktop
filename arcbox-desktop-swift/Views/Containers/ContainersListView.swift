@@ -96,7 +96,11 @@ struct ContainersListView: View {
                 isExpanded: vm.isGroupExpanded(group.project),
                 selectedID: vm.selectedID,
                 onToggle: { vm.toggleGroup(group.project) },
-                onSelect: { vm.selectContainer($0) },
+                onSelect: { id in
+                    Task {
+                        await vm.selectContainer(id, client: client, docker: docker)
+                    }
+                },
                 onStartStop: { id, running in
                     Task {
                         if running { await vm.stopContainerDocker(id, docker: docker) }
@@ -131,7 +135,11 @@ struct ContainersListView: View {
                 container: container,
                 isSelected: vm.selectedID == container.id,
                 indented: false,
-                onSelect: { vm.selectContainer(container.id) },
+                onSelect: {
+                    Task {
+                        await vm.selectContainer(container.id, client: client, docker: docker)
+                    }
+                },
                 onStartStop: {
                     Task {
                         if container.isRunning { await vm.stopContainerDocker(container.id, docker: docker) }

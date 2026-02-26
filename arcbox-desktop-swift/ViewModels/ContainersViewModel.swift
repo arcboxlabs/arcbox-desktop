@@ -23,6 +23,12 @@ enum ContainerSortField: String, CaseIterable {
 @MainActor
 @Observable
 class ContainersViewModel {
+    private struct ContainerDetailSnapshot {
+        let domain: String?
+        let ipAddress: String?
+        let mounts: [ContainerMount]
+    }
+
     var containers: [ContainerViewModel] = []
     var selectedID: String? = nil
     var activeTab: ContainerDetailTab = .info
@@ -39,8 +45,16 @@ class ContainersViewModel {
 
     var selectedContainer: ContainerViewModel? {
         guard let id = selectedID else { return nil }
-        return containers.first { $0.id == id }
+        guard var container = containers.first(where: { $0.id == id }) else { return nil }
+        if let details = detailsByID[id] {
+            container.domain = details.domain
+            container.ipAddress = details.ipAddress
+            container.mounts = details.mounts
+        }
+        return container
     }
+
+    private var detailsByID: [String: ContainerDetailSnapshot] = [:]
 
     private func sortedContainers(_ list: [ContainerViewModel]) -> [ContainerViewModel] {
         list.sorted { a, b in
@@ -79,6 +93,20 @@ class ContainersViewModel {
         selectedID = id
     }
 
+    func selectContainer(_ id: String, docker: DockerClient?) async {
+        selectedID = id
+        await loadContainerDetailsFromDocker(id, docker: docker)
+    }
+
+    func selectContainer(_ id: String, client: ArcBoxClient?, docker: DockerClient?) async {
+        selectedID = id
+        if docker != nil {
+            await loadContainerDetailsFromDocker(id, docker: docker)
+        } else {
+            await loadContainerDetails(id, client: client)
+        }
+    }
+
     func toggleGroup(_ group: String) {
         if expandedGroups.contains(group) {
             expandedGroups.remove(group)
@@ -100,13 +128,15 @@ class ContainersViewModel {
     }
 
     private func setContainerRunningState(_ id: String, isRunning: Bool) {
-        guard let index = containers.firstIndex(where: { $0.id == id }) else { return }
-        containers[index].state = isRunning ? .running : .stopped
+        updateContainer(id) { container in
+            container.state = isRunning ? .running : .stopped
+        }
     }
 
     private func setTransitioning(_ id: String, _ value: Bool) {
-        guard let index = containers.firstIndex(where: { $0.id == id }) else { return }
-        containers[index].isTransitioning = value
+        updateContainer(id) { container in
+            container.isTransitioning = value
+        }
     }
 
     /// IDs currently transitioning, used to preserve state across container reloads
@@ -116,8 +146,54 @@ class ContainersViewModel {
 
     private func removeContainerLocally(_ id: String) {
         containers.removeAll { $0.id == id }
+        detailsByID.removeValue(forKey: id)
         if selectedID == id {
             selectedID = nil
+        }
+    }
+
+    private func setContainerDetails(
+        _ id: String,
+        domain: String?,
+        ipAddress: String?,
+        mounts: [ContainerMount]
+    ) {
+        detailsByID[id] = ContainerDetailSnapshot(
+            domain: domain,
+            ipAddress: ipAddress,
+            mounts: mounts
+        )
+        updateContainer(id) { container in
+            container.domain = domain
+            container.ipAddress = ipAddress
+            container.mounts = mounts
+        }
+    }
+
+    private func updateContainer(_ id: String, mutate: (inout ContainerViewModel) -> Void) {
+        guard let index = containers.firstIndex(where: { $0.id == id }) else { return }
+        var snapshot = containers
+        mutate(&snapshot[index])
+        containers = snapshot
+    }
+
+    private func containerDetailsCache() -> [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount])] {
+        Dictionary(
+            uniqueKeysWithValues: detailsByID.map { id, details in
+                (id, (domain: details.domain, ipAddress: details.ipAddress, mounts: details.mounts))
+            }
+        )
+    }
+
+    private func applyCachedDetails(
+        _ cache: [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount])],
+        to viewModels: inout [ContainerViewModel]
+    ) {
+        for i in viewModels.indices {
+            guard let details = cache[viewModels[i].id] else { continue }
+            viewModels[i].domain = details.domain
+            viewModels[i].ipAddress = details.ipAddress
+            viewModels[i].mounts = details.mounts
         }
     }
 
@@ -131,6 +207,7 @@ class ContainersViewModel {
         }
 
         let currentTransitioning = transitioningIDs
+        let cachedDetails = containerDetailsCache()
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
@@ -138,11 +215,15 @@ class ContainersViewModel {
             var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)
             }
+            applyCachedDetails(cachedDetails, to: &viewModels)
             for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
             applyExpandedGroups(from: containers)
+            if let selectedID, containers.contains(where: { $0.id == selectedID }) {
+                await loadContainerDetails(selectedID, client: client)
+            }
         } catch {
             // Fallback to sample data on error
             loadSampleData()
@@ -193,6 +274,32 @@ class ContainersViewModel {
         await loadContainers(client: client)
     }
 
+    func loadContainerDetails(_ id: String, client: ArcBoxClient?) async {
+        guard let client else { return }
+
+        var request = Arcbox_V1_InspectContainerRequest()
+        request.id = id
+
+        do {
+            let details = try await client.containers.inspect(request)
+            setContainerDetails(
+                id,
+                domain: Self.normalized(details.config.domainname),
+                ipAddress: Self.normalized(details.networkSettings.ipAddress),
+                mounts: details.mounts.map { mount in
+                    ContainerMount(
+                        type: mount.type,
+                        source: mount.source,
+                        destination: mount.destination,
+                        isReadOnly: !mount.rw
+                    )
+                }
+            )
+        } catch {
+            print("[ContainersVM] Error inspecting container \(id): \(error)")
+        }
+    }
+
     // MARK: - Docker API Operations
 
     /// Load containers from Docker Engine API.
@@ -203,10 +310,12 @@ class ContainersViewModel {
         }
 
         let currentTransitioning = transitioningIDs
+        let cachedDetails = containerDetailsCache()
         do {
             let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
             let containerList = try response.ok.body.json
             var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
+            applyCachedDetails(cachedDetails, to: &viewModels)
             // Preserve transitioning state across reload
             for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
@@ -214,6 +323,9 @@ class ContainersViewModel {
             containers = viewModels
             print("[ContainersVM] Loaded \(containers.count) containers")
             applyExpandedGroups(from: containers)
+            if let selectedID, containers.contains(where: { $0.id == selectedID }) {
+                await loadContainerDetailsFromDocker(selectedID, docker: docker)
+            }
         } catch {
             print("[ContainersVM] Error loading containers: \(error)")
         }
@@ -254,6 +366,65 @@ class ContainersViewModel {
             print("[ContainersVM] Error removing container \(id): \(error)")
         }
         await loadContainersFromDocker(docker: docker)
+    }
+
+    func loadContainerDetailsFromDocker(_ id: String, docker: DockerClient?) async {
+        guard let docker else { return }
+
+        do {
+            // Prefer raw snapshot to avoid date decoding failures and to support
+            // NetworkSettings.Networks.*.IPAddress fallback consistently.
+            let snapshot = try await docker.inspectContainerSnapshot(id: id)
+            let mounts = snapshot.mounts.compactMap { mount -> ContainerMount? in
+                guard let destination = Self.normalized(mount.destination) else { return nil }
+                let source = Self.normalized(mount.source) ?? "-"
+                return ContainerMount(
+                    type: Self.normalized(mount.type) ?? "unknown",
+                    source: source,
+                    destination: destination,
+                    isReadOnly: !(mount.rw ?? true)
+                )
+            }
+            setContainerDetails(
+                id,
+                domain: Self.normalized(snapshot.domainname),
+                ipAddress: Self.normalized(snapshot.ipAddress),
+                mounts: mounts
+            )
+            print(
+                "[ContainersVM] Raw inspect snapshot for \(id), domain=\(Self.normalized(snapshot.domainname) ?? "-"), ip=\(Self.normalized(snapshot.ipAddress) ?? "-"), mounts=\(mounts.count)"
+            )
+        } catch {
+            print("[ContainersVM] Raw inspect snapshot failed for \(id): \(error)")
+            do {
+                // Fallback to generated inspect model if raw path fails unexpectedly.
+                let response = try await docker.api.ContainerInspect(path: .init(id: id))
+                let details = try response.ok.body.json
+
+                let mounts = (details.Mounts ?? []).compactMap { mount -> ContainerMount? in
+                    guard let destination = Self.normalized(mount.Destination) else { return nil }
+                    let source = Self.normalized(mount.Source) ?? "-"
+                    return ContainerMount(
+                        type: "unknown",
+                        source: source,
+                        destination: destination,
+                        isReadOnly: false
+                    )
+                }
+
+                setContainerDetails(
+                    id,
+                    domain: Self.normalized(details.Config?.Domainname),
+                    ipAddress: Self.normalized(details.NetworkSettings?.IPAddress),
+                    mounts: mounts
+                )
+                print(
+                    "[ContainersVM] Generated inspect fallback for \(id), domain=\(Self.normalized(details.Config?.Domainname) ?? "-"), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-"), mounts=\(mounts.count)"
+                )
+            } catch {
+                print("[ContainersVM] Generated inspect fallback failed for \(id): \(error)")
+            }
+        }
     }
 
     // MARK: - Batch Docker Operations
@@ -323,7 +494,15 @@ class ContainersViewModel {
     /// Load sample data (fallback when daemon is not available)
     func loadSampleData() {
         containers = SampleData.containers
+        detailsByID = [:]
         applyExpandedGroups(from: containers)
+    }
+
+    fileprivate static func normalized(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
     }
 }
 
@@ -394,6 +573,16 @@ extension ContainerViewModel {
 
         let labels = summary.Labels?.additionalProperties ?? [:]
         let composeProject = labels["com.docker.compose.project"]
+        let mounts = (summary.Mounts ?? []).compactMap { mount -> ContainerMount? in
+            guard let destination = ContainersViewModel.normalized(mount.Destination) else { return nil }
+            let source = ContainersViewModel.normalized(mount.Source) ?? "-"
+            return ContainerMount(
+                type: "unknown",
+                source: source,
+                destination: destination,
+                isReadOnly: false
+            )
+        }
 
         self.init(
             id: summary.Id ?? "",
@@ -406,7 +595,8 @@ extension ContainerViewModel {
             labels: labels,
             cpuPercent: 0,
             memoryMB: 0,
-            memoryLimitMB: 0
+            memoryLimitMB: 0,
+            mounts: mounts
         )
     }
 }

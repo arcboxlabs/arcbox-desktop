@@ -32,6 +32,15 @@ struct PortMapping: Hashable, Identifiable {
     let `protocol`: String
 }
 
+/// Mount info for container detail display
+struct ContainerMount: Hashable, Identifiable {
+    var id: String { "\(type):\(source)->\(destination):\(isReadOnly)" }
+    let type: String
+    let source: String
+    let destination: String
+    let isReadOnly: Bool
+}
+
 /// Container view model for UI display
 struct ContainerViewModel: Identifiable, Hashable {
     let id: String
@@ -48,6 +57,7 @@ struct ContainerViewModel: Identifiable, Hashable {
     var memoryLimitMB: Double
     var domain: String?
     var ipAddress: String?
+    var mounts: [ContainerMount] = []
 
     var isRunning: Bool { state.isRunning }
 

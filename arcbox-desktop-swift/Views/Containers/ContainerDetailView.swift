@@ -13,6 +13,9 @@ struct ContainerDetailView: View {
                 switch vm.activeTab {
                 case .info:
                     ContainerInfoTab(container: container)
+                        .id(
+                            "info-\(container.id)-\(container.domain ?? "")-\(container.ipAddress ?? "")-\(container.mounts.count)"
+                        )
                 case .logs:
                     ContainerLogsTab(container: container)
                 case .terminal:

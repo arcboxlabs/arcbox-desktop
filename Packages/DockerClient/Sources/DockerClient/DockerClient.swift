@@ -6,6 +6,41 @@ import NIOCore
 import NIOHTTP1
 import HTTPTypes
 
+@available(macOS 15.0, *)
+public struct ContainerInspectMountSnapshot: Sendable {
+    public let type: String?
+    public let source: String?
+    public let destination: String?
+    public let rw: Bool?
+
+    public init(type: String?, source: String?, destination: String?, rw: Bool?) {
+        self.type = type
+        self.source = source
+        self.destination = destination
+        self.rw = rw
+    }
+}
+
+@available(macOS 15.0, *)
+public struct ContainerInspectSnapshot: Sendable {
+    public let domainname: String?
+    public let ipAddress: String?
+    public let mounts: [ContainerInspectMountSnapshot]
+
+    public init(domainname: String?, ipAddress: String?, mounts: [ContainerInspectMountSnapshot]) {
+        self.domainname = domainname
+        self.ipAddress = ipAddress
+        self.mounts = mounts
+    }
+}
+
+@available(macOS 15.0, *)
+public enum DockerClientError: Error, Sendable {
+    case invalidHTTPStatus(Int)
+    case invalidResponseBody
+    case invalidJSON
+}
+
 /// A custom transport that routes OpenAPI requests through a Unix domain socket
 /// using AsyncHTTPClient's `http+unix://` URL scheme.
 struct UnixSocketTransport: ClientTransport {
@@ -119,6 +154,8 @@ public struct DockerClient: Sendable {
 
     /// The underlying AsyncHTTPClient instance (for lifecycle management).
     private let httpClient: HTTPClient
+    private let socketPath: String
+    private let timeout: TimeAmount
 
     /// Creates a new Docker client targeting the given Unix socket path.
     ///
@@ -127,14 +164,88 @@ public struct DockerClient: Sendable {
         let httpClient = HTTPClient(eventLoopGroupProvider: .singleton)
         let transport = UnixSocketTransport(client: httpClient, socketPath: socketPath)
         self.httpClient = httpClient
+        self.socketPath = socketPath
+        self.timeout = .minutes(1)
         self.api = Client(
             serverURL: Self.defaultServerURL,
             transport: transport
         )
     }
 
+    /// Raw inspect fallback that bypasses generated date decoding.
+    ///
+    /// Docker sometimes returns date fields that fail strict OpenAPI decoding.
+    /// This method parses only the fields we need from raw JSON.
+    public func inspectContainerSnapshot(id: String) async throws -> ContainerInspectSnapshot {
+        let encodedSocket = socketPath
+            .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
+        let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let path = Self.defaultServerURL.path + "/containers/\(encodedID)/json"
+        let urlString = "http+unix://\(encodedSocket)\(path)"
+
+        var request = HTTPClientRequest(url: urlString)
+        request.method = .GET
+        request.headers.add(name: "Accept", value: "application/json")
+
+        let response = try await httpClient.execute(request, timeout: timeout)
+        guard (200..<300).contains(response.status.code) else {
+            throw DockerClientError.invalidHTTPStatus(Int(response.status.code))
+        }
+
+        var data = Data()
+        for try await var chunk in response.body {
+            if let bytes = chunk.readBytes(length: chunk.readableBytes) {
+                data.append(contentsOf: bytes)
+            }
+        }
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw DockerClientError.invalidJSON
+        }
+
+        let config = json["Config"] as? [String: Any]
+        let domainname = Self.normalized(config?["Domainname"] as? String)
+
+        let networkSettings = json["NetworkSettings"] as? [String: Any]
+        let primaryIP = Self.normalized(networkSettings?["IPAddress"] as? String)
+        var ipAddress = primaryIP
+        if ipAddress == nil,
+            let networks = networkSettings?["Networks"] as? [String: Any]
+        {
+            for value in networks.values {
+                guard let endpoint = value as? [String: Any] else { continue }
+                if let ip = Self.normalized(endpoint["IPAddress"] as? String) {
+                    ipAddress = ip
+                    break
+                }
+            }
+        }
+
+        let mountsArray = json["Mounts"] as? [[String: Any]] ?? []
+        let mounts = mountsArray.map { mount in
+            ContainerInspectMountSnapshot(
+                type: Self.normalized(mount["Type"] as? String),
+                source: Self.normalized(mount["Source"] as? String),
+                destination: Self.normalized(mount["Destination"] as? String),
+                rw: mount["RW"] as? Bool
+            )
+        }
+
+        return ContainerInspectSnapshot(
+            domainname: domainname,
+            ipAddress: ipAddress,
+            mounts: mounts
+        )
+    }
+
     /// Gracefully shut down the underlying HTTP client.
     public func shutdown() async throws {
         try await httpClient.shutdown()
+    }
+
+    private static func normalized(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
