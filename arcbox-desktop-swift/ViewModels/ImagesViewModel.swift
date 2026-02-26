@@ -35,7 +35,7 @@ class ImagesViewModel {
             return String(format: "%.2f GB total", gb)
         }
         let mb = Double(bytes) / 1_000_000.0
-        return String(format: "%.0f MB total", mb)
+        return String(format: "%.1f MB total", mb)
     }
 
     var sortedImages: [ImageViewModel] {
