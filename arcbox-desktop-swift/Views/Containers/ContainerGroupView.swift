@@ -47,11 +47,12 @@ struct ContainerGroupView: View {
                     .overlay {
                         Image(systemName: "square.3.layers.3d")
                             .font(.system(size: 14))
-                            .foregroundStyle(AppColors.accent)
+                            .foregroundStyle(hasAnyRunning ? AppColors.accent : AppColors.textMuted)
                     }
 
                 Text(project)
                     .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(hasAnyRunning ? AppColors.text : AppColors.textSecondary)
 
                 Text("\(runningCount)/\(containers.count)")
                     .font(.system(size: 11))
