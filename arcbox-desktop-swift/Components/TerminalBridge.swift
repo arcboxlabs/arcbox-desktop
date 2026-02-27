@@ -1,0 +1,45 @@
+import AppKit
+import SwiftTerm
+
+/// Bridges SwiftTerm delegate callbacks to DockerTerminalSession.
+///
+/// This class is intentionally not MainActor-isolated because SwiftTerm
+/// invokes delegate methods on various threads.
+nonisolated class TerminalBridge: NSObject, TerminalViewDelegate {
+    private let session: DockerTerminalSession
+
+    init(session: DockerTerminalSession) {
+        self.session = session
+    }
+
+    func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        let sendData = Data(data)
+        Task { @MainActor in
+            session.send(sendData)
+        }
+    }
+
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        Task { @MainActor in
+            session.resize(cols: newCols, rows: newRows)
+        }
+    }
+
+    func scrolled(source: TerminalView, position: Double) {}
+    func setTerminalTitle(source: TerminalView, title: String) {}
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    func clipboardCopy(source: TerminalView, content: Data) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setData(content, forType: .string)
+    }
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        if let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+    func bell(source: TerminalView) {
+        NSSound.beep()
+    }
+    func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {}
+}
