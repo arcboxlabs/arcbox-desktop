@@ -23,6 +23,11 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, NSOutlineViewDataSource, NSOutlineViewDelegate {
+        private enum FinderListMetrics {
+            static let regularRowHeight: CGFloat = 20
+            static let groupRowHeight: CGFloat = 18
+        }
+
         private final class Node: NSObject {
             let entry: LocalFileEntry
             weak var parent: Node?
@@ -105,8 +110,13 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             outline.dataSource = self
             outline.delegate = self
             outline.headerView = NSTableHeaderView()
-            outline.usesAlternatingRowBackgroundColors = false
-            outline.rowSizeStyle = .default
+            outline.usesAlternatingRowBackgroundColors = true
+            outline.selectionHighlightStyle = .regular
+            outline.backgroundColor = .white
+            outline.rowSizeStyle = .small
+            outline.rowHeight = FinderListMetrics.regularRowHeight
+            outline.indentationPerLevel = 14
+            outline.indentationMarkerFollowsCell = true
             outline.allowsMultipleSelection = false
             outline.allowsColumnReordering = false
             outline.allowsColumnResizing = true
@@ -420,6 +430,16 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             parent.selectedPath = node.entry.id
         }
 
+        func outlineView(_ outlineView: NSOutlineView, isGroupItem item: Any) -> Bool {
+            false
+        }
+
+        func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
+            self.outlineView(outlineView, isGroupItem: item)
+                ? FinderListMetrics.groupRowHeight
+                : FinderListMetrics.regularRowHeight
+        }
+
         func outlineView(
             _ outlineView: NSOutlineView,
             viewFor tableColumn: NSTableColumn?,
@@ -494,7 +514,7 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             cell.imageView?.image = NSWorkspace.shared.icon(forFile: node.entry.url.path)
             cell.imageView?.contentTintColor = nil
             cell.textField?.stringValue = node.entry.name
-            cell.textField?.font = .systemFont(ofSize: 13)
+            cell.textField?.font = .systemFont(ofSize: 12)
             return cell
         }
 
@@ -514,7 +534,7 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
 
                 let textField = NSTextField(labelWithString: "")
                 textField.translatesAutoresizingMaskIntoConstraints = false
-                textField.font = .systemFont(ofSize: 12)
+                textField.font = .systemFont(ofSize: 11)
                 textField.textColor = NSColor.secondaryLabelColor
                 textField.lineBreakMode = .byTruncatingTail
                 created.addSubview(textField)
