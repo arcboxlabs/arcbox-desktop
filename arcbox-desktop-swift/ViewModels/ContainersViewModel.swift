@@ -27,6 +27,7 @@ class ContainersViewModel {
         let domain: String?
         let ipAddress: String?
         let mounts: [ContainerMount]
+        let rootfsMountPath: String?
     }
 
     var containers: [ContainerViewModel] = []
@@ -50,6 +51,7 @@ class ContainersViewModel {
             container.domain = details.domain
             container.ipAddress = details.ipAddress
             container.mounts = details.mounts
+            container.rootfsMountPath = details.rootfsMountPath
         }
         return container
     }
@@ -156,17 +158,28 @@ class ContainersViewModel {
         _ id: String,
         domain: String?,
         ipAddress: String?,
-        mounts: [ContainerMount]
+        mounts: [ContainerMount],
+        rootfsMountPath: String? = nil
     ) {
+        let currentContainer = containers.first(where: { $0.id == id })
+        let labels = currentContainer?.labels ?? [:]
+        let inferredRootfsMountPath = ContainerViewModel.inferRootFSMountPath(
+            explicitPath: rootfsMountPath ?? currentContainer?.rootfsMountPath,
+            labels: labels,
+            mounts: mounts
+        )
+
         detailsByID[id] = ContainerDetailSnapshot(
             domain: domain,
             ipAddress: ipAddress,
-            mounts: mounts
+            mounts: mounts,
+            rootfsMountPath: inferredRootfsMountPath
         )
         updateContainer(id) { container in
             container.domain = domain
             container.ipAddress = ipAddress
             container.mounts = mounts
+            container.rootfsMountPath = inferredRootfsMountPath
         }
     }
 
@@ -177,16 +190,24 @@ class ContainersViewModel {
         containers = snapshot
     }
 
-    private func containerDetailsCache() -> [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount])] {
+    private func containerDetailsCache() -> [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount], rootfsMountPath: String?)] {
         Dictionary(
             uniqueKeysWithValues: detailsByID.map { id, details in
-                (id, (domain: details.domain, ipAddress: details.ipAddress, mounts: details.mounts))
+                (
+                    id,
+                    (
+                        domain: details.domain,
+                        ipAddress: details.ipAddress,
+                        mounts: details.mounts,
+                        rootfsMountPath: details.rootfsMountPath
+                    )
+                )
             }
         )
     }
 
     private func applyCachedDetails(
-        _ cache: [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount])],
+        _ cache: [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount], rootfsMountPath: String?)],
         to viewModels: inout [ContainerViewModel]
     ) {
         for i in viewModels.indices {
@@ -194,6 +215,7 @@ class ContainersViewModel {
             viewModels[i].domain = details.domain
             viewModels[i].ipAddress = details.ipAddress
             viewModels[i].mounts = details.mounts
+            viewModels[i].rootfsMountPath = details.rootfsMountPath
         }
     }
 
@@ -532,6 +554,11 @@ extension ContainerViewModel {
         }
 
         let composeProject = summary.labels["com.docker.compose.project"]
+        let rootfsMountPath = ContainerViewModel.inferRootFSMountPath(
+            explicitPath: nil,
+            labels: summary.labels,
+            mounts: []
+        )
 
         self.init(
             id: summary.id,
@@ -544,7 +571,8 @@ extension ContainerViewModel {
             labels: summary.labels,
             cpuPercent: 0,
             memoryMB: 0,
-            memoryLimitMB: 0
+            memoryLimitMB: 0,
+            rootfsMountPath: rootfsMountPath
         )
     }
 
@@ -583,6 +611,11 @@ extension ContainerViewModel {
                 isReadOnly: false
             )
         }
+        let rootfsMountPath = ContainerViewModel.inferRootFSMountPath(
+            explicitPath: nil,
+            labels: labels,
+            mounts: mounts
+        )
 
         self.init(
             id: summary.Id ?? "",
@@ -596,7 +629,8 @@ extension ContainerViewModel {
             cpuPercent: 0,
             memoryMB: 0,
             memoryLimitMB: 0,
-            mounts: mounts
+            mounts: mounts,
+            rootfsMountPath: rootfsMountPath
         )
     }
 }
