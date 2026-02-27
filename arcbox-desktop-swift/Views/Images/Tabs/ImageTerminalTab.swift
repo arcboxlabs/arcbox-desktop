@@ -1,107 +1,132 @@
 import SwiftUI
+import SwiftTerm
 
-/// Terminal tab showing an interactive-style terminal view for images
+/// Terminal tab providing an interactive shell into a temporary container spawned from an image.
 struct ImageTerminalTab: View {
     let image: ImageViewModel
 
-    @State private var inputText = ""
-    @State private var terminalLines: [TerminalLine] = []
+    @State private var session = DockerTerminalSession()
+    @State private var selectedShell = "/bin/sh"
+
+    private let availableShells = ["/bin/sh", "/bin/bash", "/bin/zsh"]
 
     var body: some View {
         VStack(spacing: 0) {
-            // Terminal content
-            VStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            // Welcome message
-                            Text("Interactive shell for image \(image.fullName)")
-                                .foregroundStyle(Color.cyan)
-                                .padding(.bottom, 8)
-
-                            // Output lines
-                            ForEach(terminalLines) { line in
-                                Text(line.text)
-                                    .foregroundStyle(line.color)
-                                    .id(line.id)
-                            }
-
-                            // Current prompt line with input
-                            HStack(spacing: 0) {
-                                Text("/ # ")
-                                    .foregroundStyle(Color.white)
-                                TextField("", text: $inputText)
-                                    .textFieldStyle(.plain)
-                                    .foregroundStyle(Color.white)
-                                    .onSubmit {
-                                        submitCommand()
-                                    }
-                            }
-                            .id("prompt")
-                        }
-                        .font(.system(size: 13, design: .monospaced))
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .onChange(of: terminalLines.count) {
-                        proxy.scrollTo("prompt", anchor: .bottom)
+            // Toolbar
+            HStack(spacing: 8) {
+                Picker("Shell", selection: $selectedShell) {
+                    ForEach(availableShells, id: \.self) { shell in
+                        Text(shell).tag(shell)
                     }
                 }
+                .pickerStyle(.menu)
+                .frame(width: 140)
+                .disabled(session.state == .connected)
+
+                Spacer()
+
+                if session.state == .connected {
+                    Button(action: { session.disconnect() }) {
+                        Image(systemName: "xmark.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Disconnect")
+                } else if session.state == .disconnected || session.state == .idle {
+                    Button(action: reconnect) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Reconnect")
+                }
             }
-            .background(Color(red: 0.1, green: 0.1, blue: 0.1))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+
+            Divider()
+
+            // Terminal content
+            switch session.state {
+            case .error(let message):
+                errorView(message)
+            default:
+                terminalContent
+            }
         }
-        .background(Color(red: 0.1, green: 0.1, blue: 0.1))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background)
+        .onDisappear {
+            session.disconnect()
+        }
     }
 
-    private func submitCommand() {
-        let cmd = inputText.trimmingCharacters(in: .whitespaces)
-        guard !cmd.isEmpty else { return }
+    private var terminalContent: some View {
+        SwiftTermView(delegate: TerminalBridge(session: session)) { terminalView in
+            // Configure light-theme appearance
+            terminalView.nativeBackgroundColor = NSColor.white
+            terminalView.nativeForegroundColor = NSColor.black
+            terminalView.caretColor = NSColor.black
+            terminalView.selectedTextBackgroundColor = NSColor(
+                red: 0.0, green: 0.48, blue: 1.0, alpha: 0.2
+            )
 
-        terminalLines.append(
-            TerminalLine(text: "/ # \(cmd)", color: .white)
-        )
+            // Install light-friendly ANSI palette (16 colors)
+            func c(_ r: UInt16, _ g: UInt16, _ b: UInt16) -> SwiftTerm.Color {
+                SwiftTerm.Color(red: r * 257, green: g * 257, blue: b * 257)
+            }
+            terminalView.installColors([
+                // Normal colors (0-7)
+                c(0x00, 0x00, 0x00),   // black
+                c(0xC4, 0x1A, 0x16),   // red
+                c(0x2D, 0xA4, 0x4E),   // green
+                c(0xCF, 0x8F, 0x09),   // yellow
+                c(0x1A, 0x5C, 0xC8),   // blue
+                c(0xB9, 0x39, 0xB5),   // magenta
+                c(0x0E, 0x83, 0x87),   // cyan
+                c(0xBF, 0xBF, 0xBF),   // white
+                // Bright colors (8-15)
+                c(0x60, 0x60, 0x60),   // bright black
+                c(0xDE, 0x35, 0x35),   // bright red
+                c(0x3F, 0xC5, 0x5F),   // bright green
+                c(0xEB, 0xB5, 0x20),   // bright yellow
+                c(0x3A, 0x7C, 0xF0),   // bright blue
+                c(0xD0, 0x5F, 0xCC),   // bright magenta
+                c(0x1C, 0xAB, 0xAF),   // bright cyan
+                c(0xFF, 0xFF, 0xFF),   // bright white
+            ])
 
-        let response = simulateCommand(cmd)
-        for line in response {
-            terminalLines.append(line)
+            // Launch ephemeral container from image
+            session.runImage(
+                imageName: image.fullName,
+                shell: selectedShell,
+                terminalView: terminalView
+            )
         }
-
-        inputText = ""
     }
 
-    private func simulateCommand(_ cmd: String) -> [TerminalLine] {
-        switch cmd.lowercased() {
-        case "ls":
-            return [
-                TerminalLine(
-                    text: "bin   dev   etc   home   lib   media   mnt   opt   proc   root   run   sbin   srv   sys   tmp   usr   var",
-                    color: .white)
-            ]
-        case "whoami":
-            return [TerminalLine(text: "root", color: .white)]
-        case "hostname":
-            return [TerminalLine(text: String(image.id.prefix(12)), color: .white)]
-        case "pwd":
-            return [TerminalLine(text: "/", color: .white)]
-        case "uname -a", "uname":
-            return [
-                TerminalLine(
-                    text: "Linux \(String(image.id.prefix(12))) 6.6.12-linuxkit #1 SMP \(image.architecture) GNU/Linux",
-                    color: .white)
-            ]
-        case "cat /etc/os-release":
-            return [
-                TerminalLine(text: "PRETTY_NAME=\"\(image.repository) \(image.tag)\"", color: .white),
-                TerminalLine(text: "NAME=\"\(image.repository)\"", color: .white),
-                TerminalLine(text: "VERSION=\"\(image.tag)\"", color: .white),
-            ]
-        case "arch":
-            return [TerminalLine(text: image.architecture, color: .white)]
-        default:
-            return [
-                TerminalLine(text: "sh: \(cmd): not found", color: Color.red.opacity(0.8))
-            ]
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 32))
+                .foregroundStyle(AppColors.textMuted)
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundStyle(AppColors.textSecondary)
+            Button("Retry") {
+                reconnect()
+            }
+            .buttonStyle(.bordered)
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func reconnect() {
+        session.disconnect()
+        session.state = .idle
     }
 }

@@ -26,6 +26,22 @@ class DockerTerminalSession {
 
     /// Connect to a container's shell via `docker exec -it`.
     func connect(containerID: String, shell: String, terminalView: TerminalView) {
+        launchDockerSession(
+            arguments: ["exec", "-it", containerID, shell],
+            terminalView: terminalView
+        )
+    }
+
+    /// Run a temporary interactive container from an image via `docker run -it --rm`.
+    func runImage(imageName: String, shell: String, terminalView: TerminalView) {
+        launchDockerSession(
+            arguments: ["run", "-it", "--rm", imageName, shell],
+            terminalView: terminalView
+        )
+    }
+
+    /// Shared implementation: launch a docker CLI process with PTY.
+    private func launchDockerSession(arguments: [String], terminalView: TerminalView) {
         disconnect()
         self.terminalView = terminalView
         state = .connecting
@@ -56,7 +72,7 @@ class DockerTerminalSession {
         // Configure process
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: dockerPath)
-        proc.arguments = ["exec", "-it", containerID, shell]
+        proc.arguments = arguments
         // Ensure docker CLI connects to the ArcBox daemon socket
         var env = ProcessInfo.processInfo.environment
         env["DOCKER_HOST"] = "unix://\(DaemonManager.dockerSocketPath)"
