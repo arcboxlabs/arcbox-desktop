@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 /// Container state representation
@@ -58,8 +59,56 @@ struct ContainerViewModel: Identifiable, Hashable {
     var domain: String?
     var ipAddress: String?
     var mounts: [ContainerMount] = []
+    var rootfsMountPath: String?
 
     var isRunning: Bool { state.isRunning }
+
+    static let rootfsMountPathLabelKeys = [
+        "arcbox.rootfs.mount.path",
+        "com.arcbox.rootfs.mount.path",
+        "arcbox.rootfs.path",
+        "com.arcbox.rootfs.path",
+        "rootfs.mount.path",
+    ]
+
+    var preferredRootFSMountPath: String? {
+        Self.inferRootFSMountPath(
+            explicitPath: rootfsMountPath,
+            labels: labels,
+            mounts: mounts
+        )
+    }
+
+    var resolvedRootFSMountPath: String? {
+        if let preferredRootFSMountPath {
+            return preferredRootFSMountPath
+        }
+        return Self.inferOrbStackRootFSMountPath(containerName: name)
+    }
+
+    static func inferRootFSMountPath(
+        explicitPath: String?,
+        labels: [String: String],
+        mounts: [ContainerMount]
+    ) -> String? {
+        if let explicitPath = normalizedPath(explicitPath) {
+            return explicitPath
+        }
+
+        for key in rootfsMountPathLabelKeys {
+            if let labelPath = normalizedPath(labels[key]) {
+                return labelPath
+            }
+        }
+
+        if let rootMount = mounts.first(where: { $0.destination == "/" }),
+           let sourcePath = normalizedPath(rootMount.source)
+        {
+            return sourcePath
+        }
+
+        return nil
+    }
 
     var portsDisplay: String {
         if ports.isEmpty { return "-" }
@@ -84,5 +133,32 @@ struct ContainerViewModel: Identifiable, Hashable {
 
     static func == (lhs: ContainerViewModel, rhs: ContainerViewModel) -> Bool {
         lhs.id == rhs.id && lhs.state == rhs.state && lhs.isTransitioning == rhs.isTransitioning
+    }
+
+    private static func normalizedPath(_ path: String?) -> String? {
+        guard let path else { return nil }
+        let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.hasPrefix("/") else { return nil }
+        return trimmed
+    }
+
+    private static func inferOrbStackRootFSMountPath(containerName: String) -> String? {
+        guard !containerName.isEmpty else { return nil }
+
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let candidateURL = home
+            .appendingPathComponent("OrbStack", isDirectory: true)
+            .appendingPathComponent("docker", isDirectory: true)
+            .appendingPathComponent("containers", isDirectory: true)
+            .appendingPathComponent(containerName, isDirectory: true)
+
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: candidateURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue
+        else {
+            return nil
+        }
+
+        return candidateURL.path
     }
 }
