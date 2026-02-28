@@ -20,6 +20,7 @@ struct ContainerDetailView: View {
                     ContainerLogsTab(container: container)
                 case .terminal:
                     ContainerTerminalTab(container: container)
+                        .id(container.id)
                 case .files:
                     ContainerFilesTab(container: container)
                 }
