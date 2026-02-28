@@ -19,10 +19,18 @@ class DockerTerminalSession {
 
     var state: State = .idle
 
-    private var process: Process?
-    private var masterFD: Int32 = -1
-    private var readTask: Task<Void, Never>?
-    private weak var terminalView: TerminalView?
+    @ObservationIgnored private var process: Process?
+    @ObservationIgnored private var masterFD: Int32 = -1
+    @ObservationIgnored private var readTask: Task<Void, Never>?
+    @ObservationIgnored private weak var terminalView: TerminalView?
+    /// Monotonically increasing counter to distinguish sessions.
+    /// Stale readTask / terminationHandler callbacks check this before modifying state.
+    @ObservationIgnored private var sessionGeneration: Int = 0
+
+    /// Store a terminal view reference for later use (called from makeNSView).
+    func setTerminalView(_ tv: TerminalView) {
+        self.terminalView = tv
+    }
 
     /// Connect to a container's shell via `docker exec -it`.
     func connect(containerID: String, shell: String, terminalView: TerminalView) {
@@ -35,15 +43,31 @@ class DockerTerminalSession {
     /// Run a temporary interactive container from an image via `docker run -it --rm`.
     func runImage(imageName: String, shell: String, terminalView: TerminalView) {
         launchDockerSession(
-            arguments: ["run", "-it", "--rm", imageName, shell],
+            arguments: ["run", "-it", "--rm", "--stop-timeout", "1", imageName, shell],
             terminalView: terminalView
+        )
+    }
+
+    /// Connect to an image using the previously stored TerminalView.
+    func connectImage(imageName: String, shell: String) {
+        guard let tv = terminalView else { return }
+        tv.feed(text: "\u{1b}[2J\u{1b}[H")
+        launchDockerSession(
+            arguments: ["run", "-it", "--rm", "--stop-timeout", "1", imageName, shell],
+            terminalView: tv
         )
     }
 
     /// Shared implementation: launch a docker CLI process with PTY.
     private func launchDockerSession(arguments: [String], terminalView: TerminalView) {
-        disconnect()
+        // Tear down old process without touching state (avoids intermediate .disconnected flicker)
+        teardownProcess()
         self.terminalView = terminalView
+
+        // Bump generation so stale callbacks from the old session are ignored
+        sessionGeneration += 1
+        let currentGen = sessionGeneration
+
         state = .connecting
 
         guard let dockerPath = Self.findDockerCLI() else {
@@ -100,17 +124,19 @@ class DockerTerminalSession {
             }
 
             await MainActor.run { [weak self] in
-                if self?.state == .connected {
-                    self?.state = .disconnected
+                guard let self, self.sessionGeneration == currentGen else { return }
+                if self.state == .connected {
+                    self.state = .disconnected
                 }
             }
         }
 
-        // Handle process termination
+        // Handle process termination — only modify state if this session is still current
         proc.terminationHandler = { [weak self] _ in
             Task { @MainActor [weak self] in
-                if self?.state == .connected {
-                    self?.state = .disconnected
+                guard let self, self.sessionGeneration == currentGen else { return }
+                if self.state == .connected {
+                    self.state = .disconnected
                 }
             }
         }
@@ -149,23 +175,40 @@ class DockerTerminalSession {
 
     /// Disconnect and clean up the session.
     func disconnect() {
+        teardownProcess()
+        terminalView = nil
+        if state == .connected || state == .connecting {
+            state = .disconnected
+        }
+    }
+
+    /// Tear down the current process and PTY without changing state or terminalView.
+    /// Used by `launchDockerSession` to avoid intermediate `.disconnected` state flicker.
+    private func teardownProcess() {
         readTask?.cancel()
         readTask = nil
 
-        if let proc = process, proc.isRunning {
-            proc.terminate()
-        }
+        // Capture references before nilling them out
+        let dyingProcess = process
+        let oldMasterFD = masterFD
         process = nil
+        masterFD = -1
 
-        if masterFD >= 0 {
-            close(masterFD)
-            masterFD = -1
-        }
-
-        terminalView = nil
-
-        if state == .connected || state == .connecting {
-            state = .disconnected
+        // Move kill + close + dealloc entirely off the main thread.
+        // Foundation's Process deallocation uses Mach ports that can
+        // trigger "Unable to obtain a task name port right" errors
+        // and potentially block the main thread.
+        if dyingProcess != nil || oldMasterFD >= 0 {
+            DispatchQueue.global(qos: .utility).async {
+                if let proc = dyingProcess {
+                    kill(proc.processIdentifier, SIGKILL)
+                }
+                if oldMasterFD >= 0 {
+                    close(oldMasterFD)
+                }
+                // dyingProcess is released here when the closure exits,
+                // allowing Foundation to deallocate on this background thread.
+            }
         }
     }
 
