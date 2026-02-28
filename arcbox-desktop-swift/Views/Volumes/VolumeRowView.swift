@@ -5,6 +5,7 @@ struct VolumeRowView: View {
     let volume: VolumeViewModel
     let isSelected: Bool
     let onSelect: () -> Void
+    let onDelete: () -> Void
 
     @State private var isHovered: Bool = false
 
@@ -39,7 +40,7 @@ struct VolumeRowView: View {
             if isHovered || isSelected {
                 IconButton(
                     symbol: "trash",
-                    action: {},
+                    action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
             }

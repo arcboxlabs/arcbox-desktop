@@ -2,6 +2,11 @@ import SwiftUI
 import ArcBoxClient
 import DockerClient
 
+extension Notification.Name {
+    /// Posted when Docker resources change (e.g. container deleted) so other sections can refresh.
+    static let dockerDataChanged = Notification.Name("dockerDataChanged")
+}
+
 /// Detail panel tab for containers
 enum ContainerDetailTab: String, CaseIterable, Identifiable {
     case info = "Info"
@@ -384,6 +389,7 @@ class ContainersViewModel {
         do {
             _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
             removeContainerLocally(id)
+            NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
             print("[ContainersVM] Error removing container \(id): \(error)")
         }
@@ -511,6 +517,7 @@ class ContainersViewModel {
                 }
             }
         }
+        NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         await loadContainersFromDocker(docker: docker)
     }
 

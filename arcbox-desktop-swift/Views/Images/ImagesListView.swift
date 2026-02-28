@@ -27,7 +27,10 @@ struct ImagesListView: View {
                             ImageRowView(
                                 image: image,
                                 isSelected: vm.selectedID == image.id,
-                                onSelect: { vm.selectImage(image.id) }
+                                onSelect: { vm.selectImage(image.id) },
+                                onDelete: {
+                                    Task { await vm.removeImage(image.id, docker: docker) }
+                                }
                             )
                         }
                     }
@@ -51,5 +54,8 @@ struct ImagesListView: View {
             PullImageSheet()
         }
         .task { await vm.loadImages(docker: docker) }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
+            Task { await vm.loadImages(docker: docker) }
+        }
     }
 }

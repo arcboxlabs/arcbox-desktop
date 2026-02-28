@@ -83,7 +83,14 @@ class ImagesViewModel {
 
     func removeImage(_ id: String, docker: DockerClient?) async {
         guard let docker else { return }
-        _ = try? await docker.api.ImageDelete(path: .init(name: id))
+        if selectedID == id { selectedID = nil }
+        do {
+            let response = try await docker.api.ImageDelete(path: .init(name: id), query: .init(force: true))
+            _ = try response.ok
+            print("[ImagesVM] Successfully removed image \(id)")
+        } catch {
+            print("[ImagesVM] Error removing image \(id): \(error)")
+        }
         await loadImages(docker: docker)
     }
 

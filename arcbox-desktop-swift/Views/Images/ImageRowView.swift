@@ -5,6 +5,7 @@ struct ImageRowView: View {
     let image: ImageViewModel
     let isSelected: Bool
     let onSelect: () -> Void
+    let onDelete: () -> Void
 
     @State private var isHovered: Bool = false
 
@@ -69,7 +70,7 @@ struct ImageRowView: View {
             if isHovered || isSelected {
                 IconButton(
                     symbol: "trash",
-                    action: {},
+                    action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
             }

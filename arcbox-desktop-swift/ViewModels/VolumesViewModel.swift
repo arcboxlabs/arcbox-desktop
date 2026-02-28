@@ -83,7 +83,14 @@ class VolumesViewModel {
 
     func removeVolume(_ name: String, docker: DockerClient?) async {
         guard let docker else { return }
-        _ = try? await docker.api.VolumeDelete(path: .init(name: name))
+        if selectedID == name { selectedID = nil }
+        do {
+            let response = try await docker.api.VolumeDelete(path: .init(name: name), query: .init(force: true))
+            _ = try response.noContent
+            print("[VolumesVM] Successfully removed volume \(name)")
+        } catch {
+            print("[VolumesVM] Error removing volume \(name): \(error)")
+        }
         await loadVolumes(docker: docker)
     }
 

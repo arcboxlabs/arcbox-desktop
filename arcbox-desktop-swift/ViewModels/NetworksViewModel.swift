@@ -71,7 +71,14 @@ class NetworksViewModel {
 
     func removeNetwork(_ id: String, docker: DockerClient?) async {
         guard let docker else { return }
-        _ = try? await docker.api.NetworkDelete(path: .init(id: id))
+        if selectedID == id { selectedID = nil }
+        do {
+            let response = try await docker.api.NetworkDelete(path: .init(id: id))
+            _ = try response.noContent
+            print("[NetworksVM] Successfully removed network \(id)")
+        } catch {
+            print("[NetworksVM] Error removing network \(id): \(error)")
+        }
         await loadNetworks(docker: docker)
     }
 

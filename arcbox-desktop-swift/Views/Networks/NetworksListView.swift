@@ -17,7 +17,10 @@ struct NetworksListView: View {
                             NetworkRowView(
                                 network: network,
                                 isSelected: vm.selectedID == network.id,
-                                onSelect: { vm.selectNetwork(network.id) }
+                                onSelect: { vm.selectNetwork(network.id) },
+                                onDelete: {
+                                    Task { await vm.removeNetwork(network.id, docker: docker) }
+                                }
                             )
                         }
                     }
@@ -41,5 +44,8 @@ struct NetworksListView: View {
             NewNetworkSheet()
         }
         .task { await vm.loadNetworks(docker: docker) }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
+            Task { await vm.loadNetworks(docker: docker) }
+        }
     }
 }

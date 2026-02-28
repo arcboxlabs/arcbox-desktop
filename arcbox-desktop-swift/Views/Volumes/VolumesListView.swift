@@ -27,7 +27,10 @@ struct VolumesListView: View {
                             VolumeRowView(
                                 volume: volume,
                                 isSelected: vm.selectedID == volume.id,
-                                onSelect: { vm.selectVolume(volume.id) }
+                                onSelect: { vm.selectVolume(volume.id) },
+                                onDelete: {
+                                    Task { await vm.removeVolume(volume.name, docker: docker) }
+                                }
                             )
                         }
                     }
@@ -51,5 +54,8 @@ struct VolumesListView: View {
             NewVolumeSheet()
         }
         .task { await vm.loadVolumes(docker: docker) }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
+            Task { await vm.loadVolumes(docker: docker) }
+        }
     }
 }
