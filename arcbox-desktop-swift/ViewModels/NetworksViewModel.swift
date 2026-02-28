@@ -14,13 +14,26 @@ class NetworksViewModel {
     var selectedID: String? = nil
     var listWidth: CGFloat = 320
     var showNewNetworkSheet: Bool = false
+    var searchText: String = ""
+    var isSearching: Bool = false
     var sortBy: NetworkSortField = .name
     var sortAscending: Bool = true
 
     var networkCount: Int { networks.count }
 
     var sortedNetworks: [NetworkViewModel] {
-        networks.sorted { a, b in
+        let filtered: [NetworkViewModel]
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            filtered = networks.filter {
+                $0.name.lowercased().contains(query)
+                    || $0.driver.lowercased().contains(query)
+            }
+        } else {
+            filtered = networks
+        }
+
+        return filtered.sorted { a, b in
             let result: Bool
             switch sortBy {
             case .name:
@@ -71,6 +84,61 @@ class NetworksViewModel {
             print("[NetworksVM] Error removing network \(id): \(error)")
         }
         await loadNetworks(docker: docker)
+    }
+
+    func createNetwork(name: String, enableIPv6: Bool, docker: DockerClient?) async -> String? {
+        guard let docker else {
+            return "Docker client unavailable."
+        }
+
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            return "Network name is required."
+        }
+
+        let payload = Operations.NetworkCreate.Input.Body.jsonPayload(
+            Name: trimmedName,
+            Driver: "bridge",
+            EnableIPv6: enableIPv6
+        )
+
+        do {
+            let output = try await docker.api.NetworkCreate(body: .json(payload))
+            switch output {
+            case .created:
+                print("[NetworksVM] Successfully created network \(trimmedName)")
+                await loadNetworks(docker: docker)
+                return nil
+            case let .badRequest(response):
+                return Self.errorMessage(from: response.body)
+            case let .forbidden(response):
+                return Self.errorMessage(from: response.body)
+            case let .notFound(response):
+                return Self.errorMessage(from: response.body)
+            case let .internalServerError(response):
+                return Self.errorMessage(from: response.body)
+            case let .undocumented(status, _):
+                return "Unexpected response status: \(status)."
+            }
+        } catch {
+            print("[NetworksVM] Error creating network \(trimmedName): \(error)")
+            return error.localizedDescription
+        }
+    }
+
+    private static func errorMessage<T>(from body: T) -> String where T: Sendable {
+        switch body {
+        case let value as Operations.NetworkCreate.Output.BadRequest.Body:
+            return (try? value.json.message) ?? "Invalid request."
+        case let value as Operations.NetworkCreate.Output.Forbidden.Body:
+            return (try? value.json.message) ?? "Operation forbidden."
+        case let value as Operations.NetworkCreate.Output.NotFound.Body:
+            return (try? value.json.message) ?? "Resource not found."
+        case let value as Operations.NetworkCreate.Output.InternalServerError.Body:
+            return (try? value.json.message) ?? "Server error."
+        default:
+            return "Failed to create network."
+        }
     }
 
 }

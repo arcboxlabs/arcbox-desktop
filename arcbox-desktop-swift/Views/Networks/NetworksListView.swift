@@ -8,6 +8,16 @@ struct NetworksListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // "In Use" section header
+            HStack {
+                Text("In Use")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.textSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
             if vm.networks.isEmpty {
                 NetworkEmptyState()
             } else {
@@ -29,12 +39,13 @@ struct NetworksListView: View {
         }
         .navigationTitle("Networks")
         .navigationSubtitle("\(vm.networkCount) total")
+        .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
+        .onChange(of: vm.isSearching) { _, newValue in
+            if !newValue { vm.searchText = "" }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: {}) {
-                    Image(systemName: "magnifyingglass")
-                }
                 Button(action: { vm.showNewNetworkSheet = true }) {
                     Image(systemName: "plus")
                 }
