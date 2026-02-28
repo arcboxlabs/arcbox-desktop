@@ -25,6 +25,8 @@ class ImagesViewModel {
     var activeTab: ImageDetailTab = .info
     var listWidth: CGFloat = 320
     var showPullImageSheet: Bool = false
+    var searchText: String = ""
+    var isSearching: Bool = false
     var sortBy: ImageSortField = .name
     var sortAscending: Bool = true
 
@@ -39,7 +41,17 @@ class ImagesViewModel {
     }
 
     var sortedImages: [ImageViewModel] {
-        images.sorted { a, b in
+        let filtered: [ImageViewModel]
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            filtered = images.filter {
+                $0.repository.lowercased().contains(query)
+                    || $0.tag.lowercased().contains(query)
+            }
+        } else {
+            filtered = images
+        }
+        return filtered.sorted { a, b in
             let result: Bool
             switch sortBy {
             case .name:

@@ -41,6 +41,7 @@ class ContainersViewModel {
     var expandedGroups: Set<String> = []
     var listWidth: CGFloat = 320
     var searchText: String = ""
+    var isSearching: Bool = false
     var showNewContainerSheet: Bool = false
     var sortBy: ContainerSortField = .name
     var sortAscending: Bool = true
@@ -78,10 +79,18 @@ class ContainersViewModel {
         }
     }
 
+    private func matchesSearch(_ container: ContainerViewModel) -> Bool {
+        guard !searchText.isEmpty else { return true }
+        let query = searchText.lowercased()
+        return container.name.lowercased().contains(query)
+            || container.image.lowercased().contains(query)
+            || (container.composeProject?.lowercased().contains(query) ?? false)
+    }
+
     /// Group containers by compose project
     var composeGroups: [(project: String, containers: [ContainerViewModel])] {
         var groups: [String: [ContainerViewModel]] = [:]
-        for container in containers {
+        for container in containers where matchesSearch(container) {
             if let project = container.composeProject {
                 groups[project, default: []].append(container)
             }
@@ -93,7 +102,7 @@ class ContainersViewModel {
 
     /// Containers without a compose project
     var standaloneContainers: [ContainerViewModel] {
-        sortedContainers(containers.filter { $0.composeProject == nil })
+        sortedContainers(containers.filter { $0.composeProject == nil && matchesSearch($0) })
     }
 
     func selectContainer(_ id: String) {

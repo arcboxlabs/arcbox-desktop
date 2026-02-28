@@ -55,12 +55,13 @@ struct ContainersListView: View {
         }
         .navigationTitle("Containers")
         .navigationSubtitle("\(vm.runningCount) running")
+        .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
+        .onChange(of: vm.isSearching) { _, newValue in
+            if !newValue { vm.searchText = "" }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: {}) {
-                    Image(systemName: "magnifyingglass")
-                }
                 Button(action: { vm.showNewContainerSheet = true }) {
                     Image(systemName: "plus")
                 }

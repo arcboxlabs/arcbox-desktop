@@ -24,6 +24,8 @@ class VolumesViewModel {
     var activeTab: VolumeDetailTab = .info
     var listWidth: CGFloat = 320
     var showNewVolumeSheet: Bool = false
+    var searchText: String = ""
+    var isSearching: Bool = false
     var sortBy: VolumeSortField = .name
     var sortAscending: Bool = true
 
@@ -38,7 +40,17 @@ class VolumesViewModel {
     }
 
     var sortedVolumes: [VolumeViewModel] {
-        volumes.sorted { a, b in
+        let filtered: [VolumeViewModel]
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            filtered = volumes.filter {
+                $0.name.lowercased().contains(query)
+                    || $0.driver.lowercased().contains(query)
+            }
+        } else {
+            filtered = volumes
+        }
+        return filtered.sorted { a, b in
             let result: Bool
             switch sortBy {
             case .name:
