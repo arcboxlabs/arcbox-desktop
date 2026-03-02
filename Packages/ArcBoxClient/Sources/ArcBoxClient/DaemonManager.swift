@@ -1,93 +1,162 @@
 import Foundation
 import Observation
+import ServiceManagement
 
-/// Daemon connection state.
+/// Daemon connection state derived from SMAppService registration + reachability.
 public enum DaemonState: Sendable, Equatable {
-    case stopped
-    case starting
-    case running
+    case stopped        // Not registered with launchd
+    case transitioning  // Enable/disable in progress
+    case registered     // Registered but not yet reachable
+    case running        // Registered and /_ping reachable
     case error(String)
 
     public var isRunning: Bool { self == .running }
 }
 
-/// Manages the arcbox daemon lifecycle: discovery, health checking, and startup.
+/// Manages the arcbox daemon lifecycle via SMAppService (LaunchAgent).
+///
+/// The daemon binary is bundled in the app at `Contents/Helpers/io.arcbox.desktop.daemon`
+/// and managed by launchd. `KeepAlive` in the plist ensures automatic restart on crash.
 @Observable
 @MainActor
 public final class DaemonManager {
     /// Current daemon state.
     public private(set) var state: DaemonState = .stopped
 
-    /// Path to the Docker-compatible socket used for health checks.
+    /// Whether the daemon is reachable via Docker socket.
+    public private(set) var isReachable: Bool = false
+
+    /// Last error message from enable/disable operations.
+    public private(set) var errorMessage: String?
+
+    /// Path to the Docker-compatible socket used for health checks and DockerClient.
     public nonisolated(unsafe) static let dockerSocketPath: String = {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return "\(home)/.arcbox/docker.sock"
     }()
 
-    private var daemonProcess: Process?
+    private static let plistName = "io.arcbox.desktop.daemon.plist"
+
+    private var service: SMAppService {
+        SMAppService.agent(plistName: Self.plistName)
+    }
+
+    private var monitorTask: Task<Void, Never>?
 
     public init() {}
 
-    // MARK: - Binary Discovery
+    // MARK: - State
 
-    /// Search for the arcboxd binary in standard locations.
-    ///
-    /// Search order:
-    /// 1. App bundle Resources
-    /// 2. Directory alongside the app bundle
-    /// 3. Sibling workspace (../arcbox/target/{release,debug}/arcboxd)
-    /// 4. System PATH
-    public nonisolated func findBinary() -> String? {
-        // 1. App bundle
-        if let url = Bundle.main.url(forResource: "arcboxd", withExtension: nil) {
-            return url.path
+    /// Refresh registration status from SMAppService and derive state.
+    public func refresh() {
+        let status = service.status
+        if isReachable {
+            state = .running
+        } else if status == .enabled {
+            state = .registered
+        } else {
+            state = .stopped
         }
-
-        // 2. Alongside the app bundle
-        let bundleDir = Bundle.main.bundleURL.deletingLastPathComponent()
-        let siblingBin = bundleDir.appendingPathComponent("arcboxd")
-        if FileManager.default.isExecutableFile(atPath: siblingBin.path) {
-            return siblingBin.path
-        }
-
-        // 3. Sibling workspace
-        let workspaceDir = bundleDir.deletingLastPathComponent()
-        for config in ["release", "debug"] {
-            let candidate = workspaceDir
-                .appendingPathComponent("arcbox/target/\(config)/arcboxd")
-            if FileManager.default.isExecutableFile(atPath: candidate.path) {
-                return candidate.path
-            }
-        }
-
-        // 4. PATH lookup
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-        process.arguments = ["arcboxd"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-            process.waitUntilExit()
-            if process.terminationStatus == 0 {
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                if let path = String(data: data, encoding: .utf8)?
-                    .trimmingCharacters(in: .whitespacesAndNewlines),
-                    !path.isEmpty {
-                    return path
-                }
-            }
-        } catch {}
-
-        return nil
     }
 
-    // MARK: - Health Check
+    // MARK: - Daemon Lifecycle
 
-    /// Check if the daemon is reachable by sending HTTP GET /_ping to the Docker socket.
+    /// Register the daemon with launchd and wait for it to become reachable.
+    public func enableDaemon() async {
+        errorMessage = nil
+        state = .transitioning
+
+        // Ensure log directory exists (launchd fails if it can't create stdout/stderr paths)
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let logDir = "\(home)/.arcbox/logs"
+        try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
+
+        let status = service.status
+        print("[DaemonManager] Current SMAppService status: \(status)")
+
+        do {
+            try service.register()
+            print("[DaemonManager] Service registered successfully")
+        } catch {
+            print("[DaemonManager] Failed to register: \(error)")
+            errorMessage = error.localizedDescription
+            state = .error("Failed to register daemon: \(error.localizedDescription)")
+            return
+        }
+
+        // Poll for reachability (up to 10 seconds)
+        for i in 0..<20 {
+            try? await Task.sleep(for: .milliseconds(500))
+            await checkReachability()
+            if isReachable {
+                print("[DaemonManager] Daemon reachable after \(i + 1) checks")
+                break
+            }
+        }
+
+        if !isReachable {
+            print("[DaemonManager] Daemon registered but not reachable after 10s")
+            errorMessage = "Daemon registered but not responding. Check Console.app for launch errors."
+            state = .registered
+        } else {
+            state = .running
+        }
+    }
+
+    /// Unregister the daemon from launchd.
+    public func disableDaemon() async {
+        errorMessage = nil
+        state = .transitioning
+
+        do {
+            try await service.unregister()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        // Wait up to 5 seconds for daemon to stop
+        for _ in 0..<10 {
+            try? await Task.sleep(for: .milliseconds(500))
+            await checkReachability()
+            if !isReachable { break }
+        }
+
+        refresh()
+    }
+
+    // MARK: - Health Monitoring
+
+    /// Start periodic reachability monitoring (every 3 seconds).
     ///
-    /// Uses raw POSIX socket API to communicate over Unix domain socket.
+    /// Automatically updates `state` and `isReachable`.
+    public func startMonitoring() {
+        monitorTask?.cancel()
+        monitorTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.checkReachability()
+                self?.refresh()
+                try? await Task.sleep(for: .seconds(3))
+            }
+        }
+    }
+
+    /// Stop periodic monitoring.
+    public func stopMonitoring() {
+        monitorTask?.cancel()
+        monitorTask = nil
+    }
+
+    // MARK: - Reachability Check
+
+    /// Check if the daemon is reachable by sending `GET /_ping` to the Docker socket.
+    @discardableResult
+    public func checkReachability() async -> Bool {
+        let reachable = healthCheck()
+        isReachable = reachable
+        return reachable
+    }
+
+    /// Check if the daemon is reachable via raw POSIX socket to `/_ping`.
     public nonisolated func healthCheck() -> Bool {
         let path = Self.dockerSocketPath
 
@@ -126,67 +195,5 @@ public final class DaemonManager {
 
         let response = String(bytes: buffer[0..<bytesRead], encoding: .utf8) ?? ""
         return response.contains("200")
-    }
-
-    // MARK: - Daemon Lifecycle
-
-    /// Start the daemon and wait for it to become ready.
-    ///
-    /// If the daemon is already running (health check passes), transitions directly to `.running`.
-    /// Otherwise, attempts to find and launch the daemon binary.
-    public func startDaemon() async {
-        // Already healthy?
-        if healthCheck() {
-            state = .running
-            return
-        }
-
-        state = .starting
-
-        guard let binary = findBinary() else {
-            state = .error("arcboxd binary not found")
-            return
-        }
-
-        // Launch daemon process
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: binary)
-        process.arguments = ["daemon"]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-        } catch {
-            state = .error("Failed to start daemon: \(error.localizedDescription)")
-            return
-        }
-
-        daemonProcess = process
-
-        // Poll for readiness (up to 10 seconds)
-        for _ in 0..<20 {
-            try? await Task.sleep(for: .milliseconds(500))
-
-            if healthCheck() {
-                state = .running
-                return
-            }
-
-            // Process died
-            if !process.isRunning {
-                state = .error("Daemon exited with code \(process.terminationStatus)")
-                return
-            }
-        }
-
-        state = .error("Daemon did not become ready in time")
-    }
-
-    /// Stop the daemon process if we started it.
-    public func stopDaemon() {
-        daemonProcess?.terminate()
-        daemonProcess = nil
-        state = .stopped
     }
 }

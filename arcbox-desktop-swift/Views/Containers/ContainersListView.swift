@@ -70,6 +70,9 @@ struct ContainersListView: View {
         .task {
             await vm.loadContainersFromDocker(docker: docker)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
+            Task { await vm.loadContainersFromDocker(docker: docker) }
+        }
         .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
             NewContainerSheet()
         }

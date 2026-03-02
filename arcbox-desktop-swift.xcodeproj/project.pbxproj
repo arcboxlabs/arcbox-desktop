@@ -8,13 +8,29 @@
 
 /* Begin PBXBuildFile section */
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
+		AB0D00022F60000000000001 /* io.arcbox.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Contents/Library/LaunchAgents";
+			dstSubfolderSpec = 1;
+			files = (
+				AB0D00022F60000000000001 /* io.arcbox.desktop.daemon.plist in Copy LaunchDaemon Plist */,
+			);
+			name = "Copy LaunchDaemon Plist";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox Desktop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		657F65A02F3A2ADB00C7005A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
+		AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "io.arcbox.desktop.daemon.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -44,8 +60,17 @@
 			children = (
 				657F65A02F3A2ADB00C7005A /* Local.xcconfig */,
 				657F657D2F3A2ADB00C7005A /* arcbox-desktop-swift */,
+				AB0D00062F60000000000001 /* LaunchDaemons */,
 				657F657C2F3A2ADB00C7005A /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		AB0D00062F60000000000001 /* LaunchDaemons */ = {
+			isa = PBXGroup;
+			children = (
+				AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */,
+			);
+			path = LaunchDaemons;
 			sourceTree = "<group>";
 		};
 		657F657C2F3A2ADB00C7005A /* Products */ = {
@@ -63,9 +88,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "arcbox-desktop-swift" */;
 			buildPhases = (
+				AB0D00032F60000000000001 /* Build Rust Daemon */,
 				657F65772F3A2ADB00C7005A /* Sources */,
 				657F65782F3A2ADB00C7005A /* Frameworks */,
 				657F65792F3A2ADB00C7005A /* Resources */,
+				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
+				AB0D00052F60000000000001 /* Sign Rust Daemon */,
 			);
 			buildRules = (
 			);
@@ -133,6 +161,38 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		AB0D00032F60000000000001 /* Build Rust Daemon */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Daemon";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "#!/bin/bash\nset -euo pipefail\n\nRUST_DIR=\"${PROJECT_DIR}/../arcbox\"\nDAEMON_NAME=\"io.arcbox.desktop.daemon\"\n\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    CARGO_FLAGS=\"--release\"; RUST_PROFILE=\"release\"\nelse\n    CARGO_FLAGS=\"\"; RUST_PROFILE=\"debug\"\nfi\n\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\ncd \"${RUST_DIR}\"\ncargo build ${CARGO_FLAGS} -p arcbox-daemon\n\nOUTPUT_DIR=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers\"\nmkdir -p \"${OUTPUT_DIR}\"\ncp -f \"${RUST_DIR}/target/${RUST_PROFILE}/arcbox-daemon\" \"${OUTPUT_DIR}/${DAEMON_NAME}\"\n";
+		};
+		AB0D00052F60000000000001 /* Sign Rust Daemon */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Rust Daemon";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/io.arcbox.desktop.daemon\"\nENTITLEMENTS=\"${PROJECT_DIR}/arcbox-desktop-swift/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"io.arcbox.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		657F65772F3A2ADB00C7005A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -182,7 +242,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -246,7 +306,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
