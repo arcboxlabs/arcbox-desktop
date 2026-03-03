@@ -179,6 +179,7 @@
 		};
 		AB0D00052F60000000000001 /* Sign Rust Daemon */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
