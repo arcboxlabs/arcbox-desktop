@@ -270,32 +270,38 @@ struct ContainerLogsTab: View {
 
         // Phase 2: Stream only new logs going forward
         guard isFollowing else { return }
-        let sinceTimestamp = Int(Date().timeIntervalSince1970)
-        let stream = docker.streamContainerLogs(
-            id: container.id,
-            tail: 0,
-            timestamps: true,
-            since: sinceTimestamp
-        )
+        startStreamTask()
+    }
 
-        do {
-            for try await line in stream {
-                if Task.isCancelled { break }
-                let entry = LogEntry(
-                    timestamp: line.timestamp,
-                    stream: line.stream == .stderr ? .stderr : .stdout,
-                    message: line.message
-                )
-                logEntries.append(entry)
-
-                // Trim if we exceed max
-                if logEntries.count > maxLogEntries {
-                    logEntries.removeFirst(logEntries.count - maxLogEntries)
+    private func startStreamTask() {
+        cancelStreaming()
+        streamTask = Task {
+            guard let docker else { return }
+            let sinceTimestamp = Int(Date().timeIntervalSince1970)
+            let stream = docker.streamContainerLogs(
+                id: container.id,
+                tail: 0,
+                timestamps: true,
+                since: sinceTimestamp
+            )
+            do {
+                for try await line in stream {
+                    if Task.isCancelled { break }
+                    let entry = LogEntry(
+                        timestamp: line.timestamp,
+                        stream: line.stream == .stderr ? .stderr : .stdout,
+                        message: line.message
+                    )
+                    logEntries.append(entry)
+                    if logEntries.count > maxLogEntries {
+                        logEntries.removeFirst(logEntries.count - maxLogEntries)
+                    }
                 }
-            }
-        } catch {
-            if !Task.isCancelled {
-                errorMessage = error.localizedDescription
+            } catch {
+                if !Task.isCancelled {
+                    errorMessage = error.localizedDescription
+                    isFollowing = false
+                }
             }
         }
     }
@@ -303,34 +309,8 @@ struct ContainerLogsTab: View {
     private func toggleFollow() {
         isFollowing.toggle()
         if isFollowing {
-            // Resume streaming for new logs
-            streamTask?.cancel()
-            streamTask = Task {
-                guard let docker else { return }
-                let sinceTimestamp = Int(Date().timeIntervalSince1970)
-                let stream = docker.streamContainerLogs(
-                    id: container.id,
-                    tail: 0,
-                    timestamps: true,
-                    since: sinceTimestamp
-                )
-                do {
-                    for try await line in stream {
-                        if Task.isCancelled { break }
-                        let entry = LogEntry(
-                            timestamp: line.timestamp,
-                            stream: line.stream == .stderr ? .stderr : .stdout,
-                            message: line.message
-                        )
-                        logEntries.append(entry)
-                        if logEntries.count > maxLogEntries {
-                            logEntries.removeFirst(logEntries.count - maxLogEntries)
-                        }
-                    }
-                } catch {}
-            }
+            startStreamTask()
         } else {
-            // Pause: cancel the streaming task, keep existing logs
             cancelStreaming()
         }
     }
