@@ -1,12 +1,17 @@
-import SwiftUI
 import AppKit
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        let keepRunning = UserDefaults.standard.bool(forKey: "keepRunning")
+        return !keepRunning
+    }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let daemonManager else { return .terminateNow }
@@ -28,6 +33,7 @@ struct ArcBoxDesktopApp: App {
     @State private var daemonManager = DaemonManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
+    @AppStorage("showInMenuBar") private var showInMenuBar = false
 
     var body: some Scene {
         WindowGroup {
@@ -66,6 +72,58 @@ struct ArcBoxDesktopApp: App {
                 }
         }
         .defaultSize(width: 1200, height: 800)
+        .commands {
+            SettingsCommands()
+        }
+
+        Window("", id: "settings") {
+            SettingsView()
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(.suppressed)
+
+        MenuBarExtra("ArcBox", systemImage: "shippingbox.fill", isInserted: $showInMenuBar) {
+            MenuBarContentView()
+        }
+    }
+}
+
+// MARK: - Settings Menu Command
+
+struct SettingsCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings...") {
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            .keyboardShortcut(",")
+        }
+    }
+}
+
+// MARK: - Menu Bar Content
+
+struct MenuBarContentView: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Open ArcBox") {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        Divider()
+        Button("Settings...") {
+            openWindow(id: "settings")
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        .keyboardShortcut(",")
+        Divider()
+        Button("Quit ArcBox") {
+            NSApp.terminate(nil)
+        }
+        .keyboardShortcut("q")
     }
 }
 
