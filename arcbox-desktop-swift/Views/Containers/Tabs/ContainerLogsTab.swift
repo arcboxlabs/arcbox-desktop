@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import DockerClient
 
@@ -245,6 +246,9 @@ struct ContainerLogsTab: View {
             return
         }
 
+        // Capture timestamp before history fetch to avoid gaps between phases
+        let streamSince = Int(Date().timeIntervalSince1970)
+
         // Phase 1: Batch-load historical logs (all at once)
         do {
             let historyLines = try await docker.fetchContainerLogs(
@@ -270,14 +274,14 @@ struct ContainerLogsTab: View {
 
         // Phase 2: Stream only new logs going forward
         guard isFollowing else { return }
-        startStreamTask()
+        startStreamTask(since: streamSince)
     }
 
-    private func startStreamTask() {
+    private func startStreamTask(since: Int? = nil) {
         cancelStreaming()
         streamTask = Task {
             guard let docker else { return }
-            let sinceTimestamp = Int(Date().timeIntervalSince1970)
+            let sinceTimestamp = since ?? Int(Date().timeIntervalSince1970)
             let stream = docker.streamContainerLogs(
                 id: container.id,
                 tail: 0,
