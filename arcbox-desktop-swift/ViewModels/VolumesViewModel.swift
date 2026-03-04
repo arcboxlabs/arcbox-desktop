@@ -117,9 +117,15 @@ extension VolumeViewModel {
         if let created = volume.CreatedAt {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            createdAt = formatter.date(from: created) ?? Date()
+            if let parsed = formatter.date(from: created) {
+                createdAt = parsed
+            } else {
+                // Retry without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                createdAt = formatter.date(from: created) ?? .distantPast
+            }
         } else {
-            createdAt = Date()
+            createdAt = .distantPast
         }
 
         let sizeBytes: UInt64?
