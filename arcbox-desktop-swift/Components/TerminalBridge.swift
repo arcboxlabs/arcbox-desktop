@@ -30,7 +30,9 @@ nonisolated class TerminalBridge: NSObject, TerminalViewDelegate {
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
     func clipboardCopy(source: TerminalView, content: Data) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setData(content, forType: .string)
+        if let string = String(data: content, encoding: .utf8) {
+            NSPasteboard.general.setString(string, forType: .string)
+        }
     }
     func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
     func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
