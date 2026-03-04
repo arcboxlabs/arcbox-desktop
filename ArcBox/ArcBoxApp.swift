@@ -37,6 +37,7 @@ struct ArcBoxDesktopApp: App {
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
     @State private var startupOrchestrator: StartupOrchestrator?
+    @AppStorage("showInMenuBar") private var showInMenuBar = false
 
     // Shared ViewModels used by both main window and menu bar
     @State private var containersVM = ContainersViewModel()
@@ -146,9 +147,16 @@ struct ArcBoxDesktopApp: App {
             CommandGroup(after: .appInfo) {
                 CheckForUpdatesView(updater: updaterController.updater)
             }
+            SettingsCommands()
         }
 
-        MenuBarExtra("ArcBox", systemImage: "shippingbox") {
+        Window("", id: "settings") {
+            SettingsView()
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(.suppressed)
+
+        MenuBarExtra("ArcBox", systemImage: "shippingbox", isInserted: $showInMenuBar) {
             MenuBarView()
                 .environment(appVM)
                 .environment(daemonManager)
