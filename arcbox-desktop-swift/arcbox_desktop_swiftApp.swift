@@ -26,6 +26,7 @@ struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appVM = AppViewModel()
     @State private var daemonManager = DaemonManager()
+    @State private var bootAssetManager = BootAssetManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
 
@@ -34,21 +35,25 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
+                .environment(bootAssetManager)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
 
-                    // Start health monitoring; if daemon is already registered
+                    // 1. Seed boot-assets from bundle → ~/.arcbox/boot/
+                    await bootAssetManager.ensureAssets()
+
+                    // 2. Start health monitoring; if daemon is already registered
                     // via LaunchAgent, it will be detected automatically.
                     daemonManager.startMonitoring()
 
-                    // Always register via SMAppService to ensure launchd management.
+                    // 3. Register via SMAppService to ensure launchd management.
                     // register() is idempotent and also polls for reachability.
                     await daemonManager.enableDaemon()
 
-                    // Initialize clients when daemon is running
+                    // 4. Initialize clients when daemon is running
                     if daemonManager.state.isRunning {
                         dockerClient = DockerClient()
 
@@ -62,6 +67,12 @@ struct ArcBoxDesktopApp: App {
                         DispatchQueue.main.async {
                             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
                         }
+                    }
+
+                    // 5. Background: check for boot-asset updates after a delay
+                    Task.detached {
+                        try? await Task.sleep(for: .seconds(5))
+                        await bootAssetManager.checkForUpdates()
                     }
                 }
         }
