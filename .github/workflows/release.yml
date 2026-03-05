@@ -1,0 +1,165 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag (e.g. v1.0.0-alpha.1)'
+        required: true
+        type: string
+      arcbox_ref:
+        description: 'arcbox repo ref to build Rust from (branch, tag, or SHA)'
+        required: false
+        default: 'master'
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-dmg:
+    name: Build DMG (macOS ARM64)
+    runs-on: macos-26
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      dmg: ${{ steps.dmg.outputs.dmg }}
+
+    steps:
+      - name: Checkout arcbox-desktop-swift
+        uses: actions/checkout@v4
+
+      - name: Checkout arcbox
+        uses: actions/checkout@v4
+        with:
+          repository: arcboxd/arcbox
+          token: ${{ secrets.ARCBOX_REPO_TOKEN }}
+          path: arcbox
+          ref: ${{ inputs.arcbox_ref || 'master' }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.tag }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if echo "$VERSION" | grep -qE '(alpha|beta|rc)'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Building version: $VERSION"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: brew install protobuf create-dmg
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            arcbox/target/
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('arcbox/**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+            ${{ runner.os }}-cargo-
+
+      - name: Build Rust binaries (release)
+        timeout-minutes: 15
+        working-directory: arcbox
+        run: cargo build --release --locked -p arcbox-cli -p arcbox-daemon
+
+      - name: Prefetch boot-assets
+        working-directory: arcbox
+        run: |
+          codesign --entitlements tests/resources/entitlements.plist \
+            --force -s - target/release/arcbox-daemon
+          codesign --force -s - target/release/arcbox
+          target/release/arcbox boot prefetch
+
+      - name: Build DMG
+        id: dmg
+        run: |
+          DESKTOP_REPO="${GITHUB_WORKSPACE}" \
+            arcbox/scripts/package-dmg.sh
+          DMG_PATH=$(ls arcbox/target/ArcBox-*.dmg | head -1)
+          DMG_NAME=$(basename "$DMG_PATH")
+          echo "dmg=$DMG_NAME" >> "$GITHUB_OUTPUT"
+          echo "dmg_path=$DMG_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Generate checksum
+        run: |
+          DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
+          shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
+          cat "${DMG_PATH}.sha256"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcbox-desktop-dmg
+          path: |
+            ${{ steps.dmg.outputs.dmg_path }}
+            ${{ steps.dmg.outputs.dmg_path }}.sha256
+          retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: [build-dmg]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Collect release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts/ -type f \( -name '*.dmg' -o -name '*.sha256' \) \
+            -exec cp {} release-assets/ \;
+          echo "=== Release assets ==="
+          ls -lh release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-dmg.outputs.version || github.ref_name }}
+          name: ArcBox Desktop ${{ needs.build-dmg.outputs.version || github.ref_name }}
+          prerelease: ${{ needs.build-dmg.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            release-assets/*.dmg
+            release-assets/*.sha256
+          body: |
+            ## Installation
+
+            Download `${{ needs.build-dmg.outputs.dmg }}`, open the DMG, and drag ArcBox Desktop to Applications.
+
+            Boot-assets and daemon are bundled — no additional setup required.
+
+            ### Verify checksum
+
+            ```bash
+            shasum -a 256 -c ${{ needs.build-dmg.outputs.dmg }}.sha256
+            ```
