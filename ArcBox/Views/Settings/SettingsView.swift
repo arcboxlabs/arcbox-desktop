@@ -44,7 +44,7 @@ struct SettingsView: View {
                 .navigationTitle(selectedTab.rawValue)
         }
         .toolbar(removing: .sidebarToggle)
-        .frame(width: 700, height: 500)
+        .frame(width: 700, height: 580)
     }
 
     @ViewBuilder
@@ -52,6 +52,12 @@ struct SettingsView: View {
         switch selectedTab {
         case .general:
             GeneralSettingsView()
+        case .system:
+            SystemSettingsView()
+        case .network:
+            NetworkSettingsView()
+        case .storage:
+            StorageSettingsView()
         default:
             Text(selectedTab.rawValue)
                 .font(.title2)
