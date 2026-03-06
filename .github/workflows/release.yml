@@ -140,6 +140,9 @@ jobs:
           codesign --force -s - target/release/arcbox
           target/release/arcbox boot prefetch
 
+      - name: Create Local.xcconfig
+        run: touch Local.xcconfig
+
       - name: Trust SwiftPM plugins
         run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
 
