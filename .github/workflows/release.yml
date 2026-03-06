@@ -143,9 +143,12 @@ jobs:
 
       - name: Build DMG
         id: dmg
+        env:
+          DESKTOP_REPO: ${{ github.workspace }}
+          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
         run: |
-          DESKTOP_REPO="${GITHUB_WORKSPACE}" \
-            arcbox/scripts/package-dmg.sh \
+          arcbox/scripts/package-dmg.sh \
             --sign "${{ secrets.APPLE_SIGNING_IDENTITY }}" \
             --notarize
           DMG_PATH=$(ls arcbox/target/ArcBox-*.dmg | head -1)
