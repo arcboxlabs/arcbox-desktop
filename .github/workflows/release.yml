@@ -37,7 +37,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: arcboxd/arcbox
-          token: ${{ secrets.ARCBOX_REPO_TOKEN }}
           path: arcbox
           ref: ${{ inputs.arcbox_ref || 'master' }}
 
