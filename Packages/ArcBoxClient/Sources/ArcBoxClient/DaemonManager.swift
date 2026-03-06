@@ -64,6 +64,13 @@ public final class DaemonManager {
 
     /// Register the daemon with launchd and wait for it to become reachable.
     public func enableDaemon() async {
+        // Fast path: daemon already reachable (subsequent launches)
+        await checkReachability()
+        if isReachable {
+            state = .running
+            return
+        }
+
         errorMessage = nil
         state = .starting
 
@@ -152,7 +159,7 @@ public final class DaemonManager {
     /// Check if the daemon is reachable by sending `GET /_ping` to the Docker socket.
     @discardableResult
     public func checkReachability() async -> Bool {
-        let reachable = healthCheck()
+        let reachable = await Task.detached { self.healthCheck() }.value
         isReachable = reachable
         return reachable
     }
