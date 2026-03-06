@@ -82,6 +82,52 @@ jobs:
             ${{ runner.os }}-cargo-release-
             ${{ runner.os }}-cargo-
 
+      - name: Import signing certificate
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "$APPLE_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          rm "$RUNNER_TEMP/cert.p12"
+
+          # Allow codesign to access the keychain without prompt
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Add to search list
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          # Verify
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      - name: Store notarization credentials
+        env:
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          echo "$NOTARY_KEY" > "$RUNNER_TEMP/private_keys/AuthKey.p8"
+          xcrun notarytool store-credentials "arcbox-notarize" \
+            --key "$RUNNER_TEMP/private_keys/AuthKey.p8" \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER"
+          rm "$RUNNER_TEMP/private_keys/AuthKey.p8"
+
       - name: Build Rust binaries (release)
         timeout-minutes: 15
         working-directory: arcbox
@@ -99,7 +145,9 @@ jobs:
         id: dmg
         run: |
           DESKTOP_REPO="${GITHUB_WORKSPACE}" \
-            arcbox/scripts/package-dmg.sh
+            arcbox/scripts/package-dmg.sh \
+            --sign "${{ secrets.APPLE_SIGNING_IDENTITY }}" \
+            --notarize
           DMG_PATH=$(ls arcbox/target/ArcBox-*.dmg | head -1)
           DMG_NAME=$(basename "$DMG_PATH")
           echo "dmg=$DMG_NAME" >> "$GITHUB_OUTPUT"
@@ -119,6 +167,14 @@ jobs:
             ${{ steps.dmg.outputs.dmg_path }}
             ${{ steps.dmg.outputs.dmg_path }}.sha256
           retention-days: 30
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
 
   create-release:
     name: Create Release
