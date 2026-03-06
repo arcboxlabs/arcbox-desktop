@@ -141,10 +141,7 @@ jobs:
           target/release/arcbox boot prefetch
 
       - name: Trust SwiftPM plugins
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -scheme arcbox-desktop-swift \
-            -skipPackagePluginValidation
+        run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
 
       - name: Build DMG
         id: dmg
