@@ -70,7 +70,7 @@ struct ContainersListView: View {
                 }
             }
         }
-        .task {
+        .task(id: docker != nil) {
             await vm.loadContainersFromDocker(docker: docker)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in

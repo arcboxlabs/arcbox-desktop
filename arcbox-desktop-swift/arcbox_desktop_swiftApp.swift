@@ -54,20 +54,7 @@ struct ArcBoxDesktopApp: App {
                     await daemonManager.enableDaemon()
 
                     // 4. Initialize clients when daemon is running
-                    if daemonManager.state.isRunning {
-                        dockerClient = DockerClient()
-
-                        do {
-                            let client = try ArcBoxClient()
-                            Task { try await client.runConnections() }
-                            arcboxClient = client
-                        } catch {}
-
-                        // Post after next run loop so SwiftUI propagates the new dockerClient environment
-                        DispatchQueue.main.async {
-                            NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
-                        }
-                    }
+                    initClientsIfNeeded()
 
                     // 5. Background: check for boot-asset updates after a delay.
                     // Uses child Task (not .detached) so it's cancelled when .task tears down.
@@ -76,8 +63,32 @@ struct ArcBoxDesktopApp: App {
                         await bootAssetManager.checkForUpdates()
                     }
                 }
+                // Re-create clients whenever daemon transitions to running
+                // (covers the case where monitoring detects the daemon after
+                // the initial .task check has already passed).
+                .onChange(of: daemonManager.state) { _, newState in
+                    if newState.isRunning {
+                        initClientsIfNeeded()
+                    }
+                }
         }
         .defaultSize(width: 1200, height: 800)
+    }
+
+    private func initClientsIfNeeded() {
+        guard daemonManager.state.isRunning else { return }
+
+        if dockerClient == nil {
+            dockerClient = DockerClient()
+        }
+
+        if arcboxClient == nil {
+            do {
+                let client = try ArcBoxClient()
+                Task { try await client.runConnections() }
+                arcboxClient = client
+            } catch {}
+        }
     }
 }
 
