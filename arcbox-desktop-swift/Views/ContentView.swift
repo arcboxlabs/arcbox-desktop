@@ -53,7 +53,7 @@ struct ContentView: View {
                     .navigationSplitViewColumnWidth(0)
             } else {
                 contentColumn
-                    .navigationSplitViewColumnWidth(280)
+                    .navigationSplitViewColumnWidth(min: 150, ideal: 280, max: 600)
             }
         } detail: {
             detailColumn
