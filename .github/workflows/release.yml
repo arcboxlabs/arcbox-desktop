@@ -116,16 +116,24 @@ jobs:
         run: |
           REF="${{ inputs.arcbox_ref || 'master' }}"
 
-          # Only attempt download for version tags
-          if [[ ! "$REF" =~ ^v[0-9] ]]; then
-            echo "Ref '$REF' is not a version tag, skipping download"
-            exit 1
+          # Resolve which release to download:
+          #   - If REF is a version tag (v*), use that exact release
+          #   - Otherwise, use the latest release
+          if [[ "$REF" =~ ^v[0-9] ]]; then
+            RELEASE_TAG="$REF"
+          else
+            RELEASE_TAG=$(gh release list --repo arcboxlabs/arcbox --limit 1 --json tagName -q '.[0].tagName')
+            if [ -z "$RELEASE_TAG" ]; then
+              echo "No arcbox releases found, will build from source"
+              exit 1
+            fi
+            echo "Ref '$REF' is not a version tag, using latest release: $RELEASE_TAG"
           fi
 
-          echo "Checking for pre-built binaries in arcboxlabs/arcbox release $REF..."
+          echo "Downloading arcbox binaries from release $RELEASE_TAG..."
 
           DOWNLOAD_DIR="$(mktemp -d)"
-          gh release download "$REF" \
+          gh release download "$RELEASE_TAG" \
             --repo arcboxlabs/arcbox \
             --dir "$DOWNLOAD_DIR" \
             --skip-existing
