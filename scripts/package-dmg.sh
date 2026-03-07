@@ -96,16 +96,46 @@ cp -R "$BUILT_APP" "$APP_BUNDLE"
 echo "  App bundle: $APP_BUNDLE"
 
 # ---------------------------------------------------------------------------
-# 2. Embed boot-assets if available
+# 2. Embed boot-assets
 # ---------------------------------------------------------------------------
-BOOT_ASSETS_DIR="$ARCBOX_DIR/target/boot-assets"
-if [ -d "$BOOT_ASSETS_DIR" ]; then
-    echo "--- Embedding boot-assets ---"
-    RESOURCES_DIR="$APP_BUNDLE/Contents/Resources/boot-assets"
-    mkdir -p "$RESOURCES_DIR"
-    cp -R "$BOOT_ASSETS_DIR"/* "$RESOURCES_DIR"/
-    echo "  Copied boot-assets to $RESOURCES_DIR"
+echo "--- Embedding boot-assets ---"
+
+# Read version from boot-assets.lock.
+LOCK_FILE="$ARCBOX_DIR/boot-assets.lock"
+if [ ! -f "$LOCK_FILE" ]; then
+    echo "error: $LOCK_FILE not found" >&2
+    exit 1
 fi
+BOOT_VERSION=$(grep '^version' "$LOCK_FILE" | head -1 | sed 's/.*= *"\(.*\)"/\1/')
+echo "  Boot-asset version: $BOOT_VERSION"
+
+# Locate cached boot-assets (after `arcbox boot prefetch`).
+BOOT_CACHE=""
+for candidate in \
+    "$ARCBOX_DIR/target/boot-assets/$BOOT_VERSION" \
+    "$HOME/.arcbox/boot/$BOOT_VERSION"; do
+    if [ -f "$candidate/manifest.json" ]; then
+        BOOT_CACHE="$candidate"
+        break
+    fi
+done
+
+if [ -z "$BOOT_CACHE" ]; then
+    echo "error: boot-assets v$BOOT_VERSION not found." >&2
+    echo "  Run 'arcbox boot prefetch' first." >&2
+    exit 1
+fi
+
+# Copy boot-assets.lock → Contents/Resources/ (fallback path uses it).
+cp "$LOCK_FILE" "$APP_BUNDLE/Contents/Resources/boot-assets.lock"
+
+# Copy boot files → Contents/Resources/boot/{version}/ (matches BootAssetManager.bundledBootDir).
+BOOT_DEST="$APP_BUNDLE/Contents/Resources/boot/$BOOT_VERSION"
+mkdir -p "$BOOT_DEST"
+cp "$BOOT_CACHE/kernel"        "$BOOT_DEST/kernel"
+cp "$BOOT_CACHE/rootfs.erofs"  "$BOOT_DEST/rootfs.erofs"
+cp "$BOOT_CACHE/manifest.json" "$BOOT_DEST/manifest.json"
+echo "  Embedded boot-assets from $BOOT_CACHE → $BOOT_DEST"
 
 # ---------------------------------------------------------------------------
 # 3. Embed arcbox CLI if available
