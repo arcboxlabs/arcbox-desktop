@@ -175,7 +175,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "#!/bin/bash\nset -euo pipefail\n\nRUST_DIR=\"${PROJECT_DIR}/../arcbox\"\nDAEMON_NAME=\"io.arcbox.desktop.daemon\"\n\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    CARGO_FLAGS=\"--release\"; RUST_PROFILE=\"release\"\nelse\n    CARGO_FLAGS=\"\"; RUST_PROFILE=\"debug\"\nfi\n\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\ncd \"${RUST_DIR}\"\ncargo build ${CARGO_FLAGS} -p arcbox-daemon\n\nOUTPUT_DIR=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers\"\nmkdir -p \"${OUTPUT_DIR}\"\ncp -f \"${RUST_DIR}/target/${RUST_PROFILE}/arcbox-daemon\" \"${OUTPUT_DIR}/${DAEMON_NAME}\"\n";
+			shellScript = "#!/bin/bash\nset -euo pipefail\n\nRUST_DIR=\"${PROJECT_DIR}/../arcbox\"\nDAEMON_NAME=\"io.arcbox.desktop.daemon\"\n\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    CARGO_FLAGS=\"--release\"; RUST_PROFILE=\"release\"\nelse\n    CARGO_FLAGS=\"\"; RUST_PROFILE=\"debug\"\nfi\n\n# Skip cargo build if pre-built binary already exists (e.g. downloaded from release)\nif [ -f \"${RUST_DIR}/target/${RUST_PROFILE}/arcbox-daemon\" ]; then\n    echo \"note: Using existing arcbox-daemon, skipping cargo build\"\nelse\n    export PATH=\"$HOME/.cargo/bin:$PATH\"\n    cd \"${RUST_DIR}\"\n    cargo build ${CARGO_FLAGS} -p arcbox-daemon\nfi\n\nOUTPUT_DIR=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers\"\nmkdir -p \"${OUTPUT_DIR}\"\ncp -f \"${RUST_DIR}/target/${RUST_PROFILE}/arcbox-daemon\" \"${OUTPUT_DIR}/${DAEMON_NAME}\"\n";
 		};
 		AB0D00052F60000000000001 /* Sign Rust Daemon */ = {
 			isa = PBXShellScriptBuildPhase;
