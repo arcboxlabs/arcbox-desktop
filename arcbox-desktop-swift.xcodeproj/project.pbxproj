@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
+		65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 65D867EC2F5C228600DAAEE6 /* Sparkle */; };
 		AB0D00022F60000000000001 /* io.arcbox.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
@@ -50,6 +51,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */,
+				65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */,
 				DC0A11012F4E000000000001 /* DockerClient in Frameworks */,
 				DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */,
 			);
@@ -145,6 +147,7 @@
 				657F65912F3A2ADB00C7005A /* ArcBoxClient */,
 				DC0A11002F4E000000000001 /* DockerClient */,
 				DC0B11002F4E000000000001 /* SwiftTerm */,
+				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 			);
 			productName = "arcbox-desktop-swift";
 			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */;
@@ -197,6 +200,7 @@
 				657F65902F3A2ADB00C7005A /* XCLocalSwiftPackageReference "Packages/ArcBoxClient" */,
 				DC0A11022F4E000000000001 /* XCLocalSwiftPackageReference "Packages/DockerClient" */,
 				DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+				65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 657F657C2F3A2ADB00C7005A /* Products */;
@@ -553,6 +557,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.0;
+			};
+		};
 		DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
@@ -567,6 +579,11 @@
 		657F65912F3A2ADB00C7005A /* ArcBoxClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ArcBoxClient;
+		};
+		65D867EC2F5C228600DAAEE6 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 		DC0A11002F4E000000000001 /* DockerClient */ = {
 			isa = XCSwiftPackageProductDependency;
