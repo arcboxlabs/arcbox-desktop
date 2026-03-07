@@ -27,6 +27,7 @@ struct ArcBoxDesktopApp: App {
     @State private var appVM = AppViewModel()
     @State private var daemonManager = DaemonManager()
     @State private var bootAssetManager = BootAssetManager()
+    @State private var dockerToolSetupManager = DockerToolSetupManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
 
@@ -36,6 +37,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(appVM)
                 .environment(daemonManager)
                 .environment(bootAssetManager)
+                .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .frame(minWidth: 900, minHeight: 600)
@@ -50,11 +52,12 @@ struct ArcBoxDesktopApp: App {
                     // Failures are non-fatal — users can run `arcbox setup install` manually.
                     if let cli = try? CLIRunner() {
                         try? await cli.run(arguments: ["setup", "install"])
-                        // Install Docker CLI tools from app bundle xbin/ → ~/.arcbox/bin/
-                        try? await cli.run(arguments: ["docker", "setup"])
-                        // Set "arcbox" as the default Docker context.
-                        try? await cli.run(arguments: ["docker", "enable"])
                     }
+
+                    // 1.6. Install Docker CLI tools and set arcbox as default context.
+                    // Uses NDJSON streaming for progress — UI can observe
+                    // dockerToolSetupManager.state.
+                    await dockerToolSetupManager.installAndEnable()
 
                     // 2. Start health monitoring; if daemon is already registered
                     // via LaunchAgent, it will be detected automatically.
