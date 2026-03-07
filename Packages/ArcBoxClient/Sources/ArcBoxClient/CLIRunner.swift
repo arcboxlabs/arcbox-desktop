@@ -1,18 +1,18 @@
 import Foundation
 
-/// Lightweight wrapper around Foundation `Process` for invoking the arcbox CLI.
+/// Lightweight wrapper around Foundation `Process` for invoking the abctl CLI.
 ///
 /// All process execution runs off the main actor. Callers are responsible for
 /// dispatching state updates back to `@MainActor` as needed.
 public struct CLIRunner: Sendable {
-    /// Absolute path to the arcbox CLI binary.
+    /// Absolute path to the abctl CLI binary.
     public let path: String
 
     /// Locate the CLI and create a runner.
     ///
     /// Search order:
     /// 1. `ARCBOX_CLI_PATH` environment variable (development override)
-    /// 2. `Contents/Helpers/arcbox` inside the app bundle (production)
+    /// 2. `Contents/Helpers/abctl` inside the app bundle (production)
     public init() throws {
         if let envPath = ProcessInfo.processInfo.environment["ARCBOX_CLI_PATH"],
            FileManager.default.isExecutableFile(atPath: envPath) {
@@ -21,7 +21,7 @@ public struct CLIRunner: Sendable {
         }
 
         let bundled = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Helpers/arcbox")
+            .appendingPathComponent("Contents/Helpers/abctl")
         if FileManager.default.isExecutableFile(atPath: bundled.path) {
             self.path = bundled.path
             return
@@ -157,7 +157,7 @@ public enum CLIRunnerError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .cliNotFound:
-            "arcbox CLI not found"
+            "abctl CLI not found"
         case .nonZeroExit(let code, let stderr):
             "CLI exited with code \(code)\(stderr.map { ": \($0)" } ?? "")"
         case .emptyOutput:
