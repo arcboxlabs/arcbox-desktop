@@ -59,6 +59,9 @@ struct ImagesListView: View {
             PullImageSheet()
         }
         .task(id: docker != nil) { await vm.loadImages(docker: docker) }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
+            Task { await vm.loadImages(docker: docker) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
             Task { await vm.loadImages(docker: docker) }
         }

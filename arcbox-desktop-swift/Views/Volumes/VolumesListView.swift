@@ -59,6 +59,9 @@ struct VolumesListView: View {
             NewVolumeSheet()
         }
         .task(id: docker != nil) { await vm.loadVolumes(docker: docker) }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
+            Task { await vm.loadVolumes(docker: docker) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
             Task { await vm.loadVolumes(docker: docker) }
         }

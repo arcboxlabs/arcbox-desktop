@@ -59,6 +59,9 @@ struct NetworksListView: View {
             NewNetworkSheet()
         }
         .task(id: docker != nil) { await vm.loadNetworks(docker: docker) }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
+            Task { await vm.loadNetworks(docker: docker) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
             Task { await vm.loadNetworks(docker: docker) }
         }

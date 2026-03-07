@@ -7,8 +7,10 @@ import DockerClient
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
+    var eventMonitor: DockerEventMonitor?
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        eventMonitor?.stop()
         guard let daemonManager else { return .terminateNow }
         Task { @MainActor in
             daemonManager.stopMonitoring()
@@ -30,6 +32,7 @@ struct ArcBoxDesktopApp: App {
     @State private var dockerToolSetupManager = DockerToolSetupManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
+    @State private var eventMonitor = DockerEventMonitor()
 
     var body: some Scene {
         WindowGroup {
@@ -43,6 +46,7 @@ struct ArcBoxDesktopApp: App {
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
+                    appDelegate.eventMonitor = eventMonitor
 
                     // 1. Seed boot-assets from bundle → ~/.arcbox/boot/
                     await bootAssetManager.ensureAssets()
@@ -83,6 +87,11 @@ struct ArcBoxDesktopApp: App {
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         initClientsIfNeeded()
+                        if let dockerClient {
+                            eventMonitor.start(docker: dockerClient)
+                        }
+                    } else {
+                        eventMonitor.stop()
                     }
                 }
         }
