@@ -135,8 +135,8 @@ jobs:
 
           # Find CLI and daemon binaries (skip checksums, archives, etc.)
           mkdir -p arcbox/target/release
-          CLI_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-*" \
-            ! -name "*daemon*" ! -name "*.sha*" ! -name "*.tar*" \
+          CLI_BIN=$(find "$DOWNLOAD_DIR" -type f -name "abctl" -o -name "abctl-*" \
+            ! -name "*.sha*" ! -name "*.tar*" \
             ! -name "*.zip*" ! -name "*.sig" | head -1)
           DAEMON_BIN=$(find "$DOWNLOAD_DIR" -type f -name "*daemon*" \
             ! -name "*.sha*" ! -name "*.tar*" ! -name "*.zip*" \
@@ -147,10 +147,10 @@ jobs:
             exit 1
           fi
 
-          cp "$CLI_BIN" arcbox/target/release/arcbox
+          cp "$CLI_BIN" arcbox/target/release/abctl
           cp "$DAEMON_BIN" arcbox/target/release/arcbox-daemon
-          chmod +x arcbox/target/release/arcbox arcbox/target/release/arcbox-daemon
-          file arcbox/target/release/arcbox arcbox/target/release/arcbox-daemon
+          chmod +x arcbox/target/release/abctl arcbox/target/release/arcbox-daemon
+          file arcbox/target/release/abctl arcbox/target/release/arcbox-daemon
           echo "found=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Rust
@@ -185,10 +185,10 @@ jobs:
         run: |
           codesign --entitlements tests/resources/entitlements.plist \
             --force -s - target/release/arcbox-daemon
-          codesign --force -s - target/release/arcbox
-          target/release/arcbox boot prefetch
+          codesign --force -s - target/release/abctl
+          target/release/abctl boot prefetch
 
-      - name: Symlink arcbox for Xcode build phase
+      - name: Symlink arcbox repo for Xcode build phase
         run: ln -s "$GITHUB_WORKSPACE/arcbox" ../arcbox
 
       - name: Create Local.xcconfig

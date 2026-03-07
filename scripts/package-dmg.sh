@@ -109,7 +109,7 @@ fi
 BOOT_VERSION=$(grep '^version' "$LOCK_FILE" | head -1 | sed 's/.*= *"\(.*\)"/\1/')
 echo "  Boot-asset version: $BOOT_VERSION"
 
-# Locate cached boot-assets (after `arcbox boot prefetch`).
+# Locate cached boot-assets (after `abctl boot prefetch`).
 BOOT_CACHE=""
 for candidate in \
     "$ARCBOX_DIR/target/boot-assets/$BOOT_VERSION" \
@@ -122,7 +122,7 @@ done
 
 if [ -z "$BOOT_CACHE" ]; then
     echo "error: boot-assets v$BOOT_VERSION not found." >&2
-    echo "  Run 'arcbox boot prefetch' first." >&2
+    echo "  Run 'abctl boot prefetch' first." >&2
     exit 1
 fi
 
@@ -140,17 +140,17 @@ echo "  Embedded boot-assets from $BOOT_CACHE → $BOOT_DEST"
 # ---------------------------------------------------------------------------
 # 3. Embed arcbox CLI if available
 # ---------------------------------------------------------------------------
-CLI_BIN="$ARCBOX_DIR/target/release/arcbox"
+CLI_BIN="$ARCBOX_DIR/target/release/abctl"
 if [ -f "$CLI_BIN" ]; then
-    echo "--- Embedding arcbox CLI ---"
+    echo "--- Embedding abctl CLI ---"
     HELPERS_DIR="$APP_BUNDLE/Contents/Helpers"
     mkdir -p "$HELPERS_DIR"
-    cp -f "$CLI_BIN" "$HELPERS_DIR/arcbox"
+    cp -f "$CLI_BIN" "$HELPERS_DIR/abctl"
     if [ -n "$SIGN_IDENTITY" ]; then
         codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp "$HELPERS_DIR/arcbox"
+            --timestamp "$HELPERS_DIR/abctl"
     fi
-    echo "  Copied arcbox CLI"
+    echo "  Copied abctl CLI"
 fi
 
 # ---------------------------------------------------------------------------
