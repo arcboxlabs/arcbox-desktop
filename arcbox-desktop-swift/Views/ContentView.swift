@@ -64,7 +64,7 @@ struct ContentView: View {
         appVM.currentNav == .sandboxes || appVM.currentNav == .templates
     }
 
-    // MARK: - Content column
+    // MARK: - Content column 
 
     @ViewBuilder
     private var contentColumn: some View {
@@ -99,7 +99,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Detail column
+    // MARK: - Detail column 
 
     @ViewBuilder
     private var detailColumn: some View {

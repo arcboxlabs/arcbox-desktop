@@ -21,9 +21,17 @@ struct ContainerInfoTab: View {
                 }
 
                 // Domain & IP section
-                if container.domain != nil || container.ipAddress != nil {
+                if !container.hostPorts.isEmpty || container.domain != nil
+                    || container.ipAddress != nil
+                {
                     VStack(spacing: 0) {
-                        if let domain = container.domain {
+                        if !container.hostPorts.isEmpty {
+                            InfoRow(
+                                label: "Domain",
+                                value: "localhost",
+                                link: URL(string: "http://localhost:\(container.hostPorts[0])")
+                            )
+                        } else if let domain = container.domain {
                             InfoRow(label: "Domain", value: domain)
                         }
                         if let ip = container.ipAddress {

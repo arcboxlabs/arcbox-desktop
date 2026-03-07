@@ -107,6 +107,10 @@ struct ContainerViewModel: Identifiable, Hashable {
         return nil
     }
 
+    var hostPorts: [UInt16] {
+        ports.compactMap { $0.hostPort > 0 ? $0.hostPort : nil }
+    }
+
     var portsDisplay: String {
         if ports.isEmpty { return "-" }
         return ports.map { "\($0.hostPort):\($0.containerPort)" }.joined(separator: ", ")

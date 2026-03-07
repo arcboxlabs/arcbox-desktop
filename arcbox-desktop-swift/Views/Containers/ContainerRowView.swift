@@ -25,6 +25,12 @@ struct ContainerRowView: View {
         return colors[abs(hash) % colors.count]
     }
 
+    private func openLocalhost(port: UInt16) {
+        if let url = URL(string: "http://localhost:\(port)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             // Container icon with status dot
@@ -92,6 +98,37 @@ struct ContainerRowView: View {
             // Action buttons (show on hover or selection)
             if isHovered || isSelected {
                 HStack(spacing: 4) {
+                    // Link button for containers with port mappings
+                    if !container.hostPorts.isEmpty {
+                        if container.hostPorts.count == 1,
+                           let port = container.hostPorts.first
+                        {
+                            IconButton(
+                                symbol: "link",
+                                action: { openLocalhost(port: port) },
+                                color: isSelected ? AppColors.onAccent : AppColors.textSecondary
+                            )
+                        } else {
+                            Menu {
+                                ForEach(container.hostPorts, id: \.self) { port in
+                                    Button("localhost:\(port)") {
+                                        openLocalhost(port: port)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "link")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(
+                                        isSelected ? AppColors.onAccent : AppColors.textSecondary
+                                    )
+                                    .frame(width: 26, height: 26)
+                            }
+                            .menuStyle(.borderlessButton)
+                            .menuIndicator(.hidden)
+                            .fixedSize()
+                        }
+                    }
+
                     if container.isTransitioning {
                         ProgressView()
                             .controlSize(.small)
