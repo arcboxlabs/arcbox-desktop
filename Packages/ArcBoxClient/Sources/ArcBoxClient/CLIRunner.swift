@@ -12,7 +12,7 @@ public struct CLIRunner: Sendable {
     ///
     /// Search order:
     /// 1. `ARCBOX_CLI_PATH` environment variable (development override)
-    /// 2. `Contents/Helpers/abctl` inside the app bundle (production)
+    /// 2. `Contents/MacOS/bin/abctl` inside the app bundle (production)
     public init() throws {
         if let envPath = ProcessInfo.processInfo.environment["ARCBOX_CLI_PATH"],
            FileManager.default.isExecutableFile(atPath: envPath) {
@@ -21,7 +21,7 @@ public struct CLIRunner: Sendable {
         }
 
         let bundled = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Helpers/abctl")
+            .appendingPathComponent("Contents/MacOS/bin/abctl")
         if FileManager.default.isExecutableFile(atPath: bundled.path) {
             self.path = bundled.path
             return

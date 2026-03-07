@@ -281,7 +281,7 @@ public final class BootAssetManager {
     /// Path to bundled boot-assets for a given version.
     private nonisolated static func bundledBootDir(version: String) -> String? {
         let candidate = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Resources/boot/\(version)")
+            .appendingPathComponent("Contents/Resources/assets/\(version)")
         if FileManager.default.fileExists(atPath: candidate.path) {
             return candidate.path
         }

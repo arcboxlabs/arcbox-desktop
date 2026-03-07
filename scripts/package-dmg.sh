@@ -10,6 +10,26 @@
 #   TEAM_ID        - Apple Developer Team ID (required for signing)
 #   ARCBOX_DIR     - Path to arcbox checkout (default: DESKTOP_REPO/../arcbox or ./arcbox)
 #   PSTRAMP_DIR    - Path to pstramp checkout (default: ARCBOX_DIR/../pstramp)
+#
+# App bundle layout (matches OrbStack conventions):
+#
+#   Contents/
+#   ├── MacOS/
+#   │   ├── ArcBox Desktop          # Main GUI app
+#   │   ├── pstramp                 # Process spawn trampoline
+#   │   ├── bin/
+#   │   │   └── abctl               # CLI binary
+#   │   └── xbin/
+#   │       ├── docker              # Docker CLI tools
+#   │       ├── docker-buildx
+#   │       ├── docker-compose
+#   │       └── docker-credential-osxkeychain
+#   ├── Helpers/
+#   │   └── io.arcbox.desktop.daemon
+#   ├── Resources/
+#   │   ├── assets.lock
+#   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
+#   │   └── completions/{bash,zsh,fish}/
 
 set -euo pipefail
 
@@ -97,7 +117,7 @@ cp -R "$BUILT_APP" "$APP_BUNDLE"
 echo "  App bundle: $APP_BUNDLE"
 
 # ---------------------------------------------------------------------------
-# 2. Embed boot-assets
+# 2. Embed boot-assets → Contents/Resources/assets/{version}/
 # ---------------------------------------------------------------------------
 echo "--- Embedding boot-assets ---"
 
@@ -127,11 +147,11 @@ if [ -z "$BOOT_CACHE" ]; then
     exit 1
 fi
 
-# Copy assets.lock → Contents/Resources/ (fallback path uses it).
+# Copy assets.lock → Contents/Resources/
 cp "$LOCK_FILE" "$APP_BUNDLE/Contents/Resources/assets.lock"
 
-# Copy boot files → Contents/Resources/boot/{version}/ (matches BootAssetManager.bundledBootDir).
-BOOT_DEST="$APP_BUNDLE/Contents/Resources/boot/$BOOT_VERSION"
+# Copy boot files → Contents/Resources/assets/{version}/
+BOOT_DEST="$APP_BUNDLE/Contents/Resources/assets/$BOOT_VERSION"
 mkdir -p "$BOOT_DEST"
 cp "$BOOT_CACHE/kernel"        "$BOOT_DEST/kernel"
 cp "$BOOT_CACHE/rootfs.erofs"  "$BOOT_DEST/rootfs.erofs"
@@ -139,28 +159,28 @@ cp "$BOOT_CACHE/manifest.json" "$BOOT_DEST/manifest.json"
 echo "  Embedded boot-assets from $BOOT_CACHE → $BOOT_DEST"
 
 # ---------------------------------------------------------------------------
-# 3. Embed arcbox CLI if available
+# 3. Embed abctl CLI → Contents/MacOS/bin/abctl
 # ---------------------------------------------------------------------------
 CLI_BIN="$ARCBOX_DIR/target/release/abctl"
 if [ -f "$CLI_BIN" ]; then
     echo "--- Embedding abctl CLI ---"
-    HELPERS_DIR="$APP_BUNDLE/Contents/Helpers"
-    mkdir -p "$HELPERS_DIR"
-    cp -f "$CLI_BIN" "$HELPERS_DIR/abctl"
+    BIN_DIR="$APP_BUNDLE/Contents/MacOS/bin"
+    mkdir -p "$BIN_DIR"
+    cp -f "$CLI_BIN" "$BIN_DIR/abctl"
     if [ -n "$SIGN_IDENTITY" ]; then
         codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp "$HELPERS_DIR/abctl"
+            --timestamp "$BIN_DIR/abctl"
     fi
-    echo "  Copied abctl CLI"
+    echo "  Copied abctl → MacOS/bin/abctl"
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Embed Docker CLI tools
+# 4. Embed Docker CLI tools → Contents/MacOS/xbin/
 # ---------------------------------------------------------------------------
 echo "--- Embedding Docker CLI tools ---"
 
 DOCKER_TOOLS_SRC="$HOME/.arcbox/runtime/bin"
-DOCKER_DEST="$APP_BUNDLE/Contents/Helpers/docker"
+DOCKER_DEST="$APP_BUNDLE/Contents/MacOS/xbin"
 DOCKER_TOOLS=(docker docker-buildx docker-compose docker-credential-osxkeychain)
 DOCKER_EMBEDDED=0
 
@@ -172,7 +192,7 @@ for tool in "${DOCKER_TOOLS[@]}"; do
             codesign --force --options runtime --sign "$SIGN_IDENTITY" \
                 --timestamp "$DOCKER_DEST/$tool"
         fi
-        echo "  Embedded $tool"
+        echo "  Embedded $tool → MacOS/xbin/$tool"
         DOCKER_EMBEDDED=$((DOCKER_EMBEDDED + 1))
     fi
 done
@@ -184,7 +204,7 @@ if [ "$DOCKER_EMBEDDED" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Embed Docker shell completions
+# 5. Embed Docker shell completions → Contents/Resources/completions/
 # ---------------------------------------------------------------------------
 echo "--- Embedding Docker completions ---"
 
@@ -201,7 +221,7 @@ for shell_dir in zsh bash fish; do
 done
 
 # ---------------------------------------------------------------------------
-# 6. Embed pstramp
+# 6. Embed pstramp → Contents/MacOS/pstramp
 # ---------------------------------------------------------------------------
 echo "--- Embedding pstramp ---"
 
