@@ -12,25 +12,13 @@ struct ContainerTerminalTab: View {
     @Environment(\.dockerClient) private var docker
 
     @State private var session = DockerTerminalSession()
-    @State private var selectedShell = "/bin/sh"
     @State private var terminalToken = UUID()
-
-    private let availableShells = ["/bin/sh", "/bin/bash", "/bin/zsh"]
 
     var body: some View {
         VStack(spacing: 0) {
             if container.state == .running {
                 // Toolbar
                 HStack(spacing: 8) {
-                    Picker("Shell", selection: $selectedShell) {
-                        ForEach(availableShells, id: \.self) { shell in
-                            Text(shell).tag(shell)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 140)
-                    .disabled(session.state == .connected)
-
                     Spacer()
 
                     if session.state == .connected {
@@ -123,7 +111,7 @@ struct ContainerTerminalTab: View {
             // Connect session
             session.connect(
                 containerID: container.id,
-                shell: selectedShell,
+                shell: "/bin/sh",
                 terminalView: terminalView
             )
         }

@@ -11,24 +11,12 @@ struct ImageTerminalTab: View {
     let isActive: Bool
 
     @State private var session = DockerTerminalSession()
-    @State private var selectedShell = "/bin/sh"
     @State private var connectedImageID: String = ""
-
-    private let availableShells = ["/bin/sh", "/bin/bash", "/bin/zsh"]
 
     var body: some View {
         VStack(spacing: 0) {
             // Toolbar
             HStack(spacing: 8) {
-                Picker("Shell", selection: $selectedShell) {
-                    ForEach(availableShells, id: \.self) { shell in
-                        Text(shell).tag(shell)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 140)
-                .disabled(session.state == .connected)
-
                 Spacer()
 
                 if session.state == .connected {
@@ -123,17 +111,16 @@ struct ImageTerminalTab: View {
             // If the terminal tab is already active, connect on next run loop
             let active = isActive
             let img = image
-            let shell = selectedShell
             DispatchQueue.main.async {
                 guard active else { return }
                 connectedImageID = img.id
-                session.connectImage(imageName: img.fullName, shell: shell)
+                session.connectImage(imageName: img.fullName, shell: "/bin/sh")
             }
         }
     }
 
     private func connectToCurrentImage() {
-        session.connectImage(imageName: image.fullName, shell: selectedShell)
+        session.connectImage(imageName: image.fullName, shell: "/bin/sh")
         connectedImageID = image.id
     }
 
