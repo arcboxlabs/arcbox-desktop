@@ -88,7 +88,8 @@ final class DockerEventMonitor {
 
     // MARK: Event Dispatch
 
-    private func handleEvent(_ event: DockerClient.DockerEvent) {
+    /// Visible to tests via @testable import.
+    func handleEvent(_ event: DockerClient.DockerEvent) {
         switch event.type {
         case "container":
             guard Self.containerActions.contains(event.action) else { return }
