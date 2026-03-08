@@ -124,7 +124,8 @@ struct ContentView: View {
             ServiceDetailView()
                 .environment(servicesVM)
         case .machines:
-            DetailPlaceholderView()
+            MachineDetailView()
+                .environment(machinesVM)
         case .sandboxes:
             SandboxesListView()
                 .environment(sandboxesVM)

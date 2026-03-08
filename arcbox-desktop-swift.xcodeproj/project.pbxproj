@@ -7,12 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		28A943735F87431C981A8744 /* DockerEventMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */; };
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
 		AB0D00022F60000000000001 /* io.arcbox.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
-		28A943735F87431C981A8744 /* DockerEventMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 657F65732F3A2ADB00C7005A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 657F657A2F3A2ADB00C7005A;
+			remoteInfo = "arcbox-desktop-swift";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */ = {
@@ -31,9 +41,9 @@
 /* Begin PBXFileReference section */
 		657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox Desktop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		657F65A02F3A2ADB00C7005A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
-		AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = io.arcbox.desktop.daemon.plist; sourceTree = "<group>"; };
 		8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
 		8AFC409B6C134B0BBFA4D294 /* arcbox-desktop-swiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "arcbox-desktop-swiftTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = io.arcbox.desktop.daemon.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -45,6 +55,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0814FB54EA8A4F7EBD5E4CEC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		657F65782F3A2ADB00C7005A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,34 +72,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0814FB54EA8A4F7EBD5E4CEC /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
-/* Begin PBXContainerItemProxy section */
-		3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 657F65732F3A2ADB00C7005A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 657F657A2F3A2ADB00C7005A;
-			remoteInfo = "arcbox-desktop-swift";
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXTargetDependency section */
-		007CD6A408984FAB9380FC71 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 657F657A2F3A2ADB00C7005A /* arcbox-desktop-swift */;
-			targetProxy = 3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXGroup section */
+		336ADECAFDFE4B28898C3637 /* arcbox-desktop-swiftTests */ = {
+			isa = PBXGroup;
+			children = (
+				8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */,
+			);
+			path = "arcbox-desktop-swiftTests";
+			sourceTree = "<group>";
+		};
 		657F65722F3A2ADB00C7005A = {
 			isa = PBXGroup;
 			children = (
@@ -109,14 +109,6 @@
 				AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */,
 			);
 			path = LaunchDaemons;
-			sourceTree = "<group>";
-		};
-		336ADECAFDFE4B28898C3637 /* arcbox-desktop-swiftTests */ = {
-			isa = PBXGroup;
-			children = (
-				8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */,
-			);
-			path = "arcbox-desktop-swiftTests";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -253,13 +245,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		657F65772F3A2ADB00C7005A /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		11596CADADF044D08FA0FF86 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -268,9 +253,40 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		657F65772F3A2ADB00C7005A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		007CD6A408984FAB9380FC71 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 657F657A2F3A2ADB00C7005A /* arcbox-desktop-swift */;
+			targetProxy = 3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		481FF2A2F2214C7695FFA851 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.arcboxlabs.arcbox-desktop-swiftTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox Desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox Desktop";
+			};
+			name = Debug;
+		};
 		657F65842F3A2ADD00C7005A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 657F65A02F3A2ADB00C7005A /* Local.xcconfig */;
@@ -476,22 +492,6 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
-		};
-		481FF2A2F2214C7695FFA851 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcboxlabs.arcbox-desktop-swiftTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox Desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox Desktop";
-			};
-			name = Debug;
 		};
 		7209DBAF6359408FBA85C294 /* Release */ = {
 			isa = XCBuildConfiguration;
