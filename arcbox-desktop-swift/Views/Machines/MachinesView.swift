@@ -5,11 +5,11 @@ struct MachinesView: View {
     @Environment(MachinesViewModel.self) private var vm
 
     private var runningMachines: [MachineViewModel] {
-        vm.machines.filter(\.isRunning)
+        vm.filteredMachines.filter(\.isRunning)
     }
 
     private var stoppedMachines: [MachineViewModel] {
-        vm.machines.filter { !$0.isRunning }
+        vm.filteredMachines.filter { !$0.isRunning }
     }
 
     var body: some View {
@@ -50,6 +50,10 @@ struct MachinesView: View {
         .background(AppColors.background)
         .navigationTitle("Machines")
         .navigationSubtitle("\(vm.runningCount) / \(vm.totalCount) running")
+        .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
+        .onChange(of: vm.isSearching) { _, newValue in
+            if !newValue { vm.searchText = "" }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button(action: {}) {
