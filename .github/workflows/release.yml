@@ -235,7 +235,7 @@ jobs:
           SIGN_OUTPUT=$("$RUNNER_TEMP/bin/sign_update" "$DMG_PATH" -f <(echo "$SPARKLE_PRIVATE_KEY"))
           ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -o 'sparkle:edSignature="[^"]*"' | cut -d'"' -f2)
           DMG_LENGTH=$(stat -f%z "$DMG_PATH")
-          DOWNLOAD_URL="https://github.com/arcboxlabs/arcbox-desktop-swift/releases/download/${VERSION}/${DMG_NAME}"
+          DOWNLOAD_URL="https://github.com/arcboxlabs/arcbox-desktop/releases/download/${VERSION}/${DMG_NAME}"
 
           # Build appcast.xml
           cat > "$(dirname "$DMG_PATH")/appcast.xml" <<APPCAST_EOF
