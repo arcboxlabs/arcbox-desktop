@@ -193,7 +193,7 @@ jobs:
 
       - name: Create Local.xcconfig
         env:
-          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
         run: |
           FEED_URL="https://github.com/${{ github.repository }}/releases/latest/download/appcast.xml"
           cat > Local.xcconfig <<XCEOF
