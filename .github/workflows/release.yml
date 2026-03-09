@@ -248,7 +248,7 @@ jobs:
           CHANNEL="${{ steps.version.outputs.channel }}"
           cat > Local.xcconfig <<EOF
           INFOPLIST_KEY_SUFeedURL = https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml
-          INFOPLIST_KEY_SUPublicEDKey = ${{ vars.SPARKLE_PUBLIC_KEY }}
+          INFOPLIST_KEY_SUPublicEDKey = ${{ secrets.SPARKLE_PUBLIC_KEY }}
           EOF
 
       - name: Trust SwiftPM plugins
