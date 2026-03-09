@@ -248,7 +248,7 @@ jobs:
           CHANNEL="${{ steps.version.outputs.channel }}"
           cat > Local.xcconfig <<EOF
           INFOPLIST_KEY_SUFeedURL = https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml
-          INFOPLIST_KEY_SUPublicEDKey = ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          INFOPLIST_KEY_SUPublicEDKey = ${{ vars.SPARKLE_PUBLIC_KEY }}
           EOF
 
       - name: Trust SwiftPM plugins
@@ -280,19 +280,35 @@ jobs:
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
+          set -euo pipefail
+
+          if [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "::error::SPARKLE_PRIVATE_KEY secret is not set"
+            exit 1
+          fi
+
           # Download Sparkle 2.9.0 and extract sign_update
-          SPARKLE_URL="https://github.com/sparkle-project/Sparkle/releases/download/2.9.0/Sparkle-2.9.0.tar.xz"
-          SPARKLE_DIR="$(mktemp -d)"
-          curl -fsSL "$SPARKLE_URL" | tar xJ -C "$SPARKLE_DIR"
-          SIGN_UPDATE="$SPARKLE_DIR/bin/sign_update"
+          SPARKLE_VER="2.9.0"
+          SPARKLE_URL="https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
+          echo "Downloading Sparkle ${SPARKLE_VER}..."
+          curl -fSL "$SPARKLE_URL" -o "$RUNNER_TEMP/Sparkle.tar.xz"
+          tar xJf "$RUNNER_TEMP/Sparkle.tar.xz" -C "$RUNNER_TEMP"
+          SIGN_UPDATE="$RUNNER_TEMP/bin/sign_update"
           chmod +x "$SIGN_UPDATE"
+          echo "sign_update ready: $($SIGN_UPDATE --help 2>&1 | head -1)"
 
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
 
           # Write private key to temp file for sign_update
           KEY_FILE="$(mktemp)"
           echo "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
-          SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE")
+          echo "Signing $DMG_PATH..."
+          SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE" 2>&1) || {
+            echo "::error::sign_update failed"
+            echo "$SIGN_OUTPUT"
+            rm -f "$KEY_FILE"
+            exit 1
+          }
           rm -f "$KEY_FILE"
           echo "sign_update output: $SIGN_OUTPUT"
 
@@ -305,12 +321,15 @@ jobs:
             DMG_LENGTH=$(stat -f%z "$DMG_PATH")
           fi
 
+          if [ -z "$ED_SIGNATURE" ]; then
+            echo "::error::Failed to extract EdDSA signature from: $SIGN_OUTPUT"
+            exit 1
+          fi
+
           echo "ed_signature=$ED_SIGNATURE" >> "$GITHUB_OUTPUT"
           echo "dmg_length=$DMG_LENGTH" >> "$GITHUB_OUTPUT"
           echo "EdDSA signature: ${ED_SIGNATURE:0:20}..."
           echo "DMG length: $DMG_LENGTH"
-
-          rm -rf "$SPARKLE_DIR"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
