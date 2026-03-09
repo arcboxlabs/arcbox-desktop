@@ -1,11 +1,15 @@
 import Sparkle
 import Combine
 
-final class CheckForUpdatesViewModel: ObservableObject {
-    @Published var canCheckForUpdates = false
+@Observable
+final class CheckForUpdatesViewModel {
+    var canCheckForUpdates = false
+
+    @ObservationIgnored
+    private var cancellable: AnyCancellable?
 
     init(updater: SPUUpdater) {
-        updater.publisher(for: \.canCheckForUpdates)
-            .assign(to: &$canCheckForUpdates)
+        cancellable = updater.publisher(for: \.canCheckForUpdates)
+            .assign(to: \.canCheckForUpdates, on: self)
     }
 }
