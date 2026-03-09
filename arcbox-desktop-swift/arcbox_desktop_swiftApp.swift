@@ -35,12 +35,13 @@ struct ArcBoxDesktopApp: App {
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
 
+    private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
 
     init() {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
-            updaterDelegate: nil,
+            updaterDelegate: updaterDelegate,
             userDriverDelegate: nil
         )
     }
