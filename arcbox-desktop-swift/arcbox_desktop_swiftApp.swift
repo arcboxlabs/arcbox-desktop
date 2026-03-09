@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ArcBoxClient
 import DockerClient
+import Sparkle
 
 // MARK: - App Delegate
 
@@ -33,6 +34,17 @@ struct ArcBoxDesktopApp: App {
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
+
+    private let updaterDelegate = UpdaterDelegate()
+    private let updaterController: SPUStandardUpdaterController
+
+    init() {
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: updaterDelegate,
+            userDriverDelegate: nil
+        )
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -96,6 +108,11 @@ struct ArcBoxDesktopApp: App {
                 }
         }
         .defaultSize(width: 1200, height: 800)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesView(updater: updaterController.updater)
+            }
+        }
     }
 
     private func initClientsIfNeeded() {
