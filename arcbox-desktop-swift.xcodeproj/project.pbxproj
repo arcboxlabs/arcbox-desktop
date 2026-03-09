@@ -428,7 +428,6 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "arcbox-desktop-swift/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
 				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -471,7 +470,6 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "arcbox-desktop-swift/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
 				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
