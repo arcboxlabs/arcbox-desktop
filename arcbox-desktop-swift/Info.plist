@@ -2,9 +2,5 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>SUFeedURL</key>
-	<string>https://github.com/arcboxlabs/arcbox-desktop/releases/latest/download/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>IoUmltTaVaGaaxRX1q+8u0GHqGgR7sQTf4HjFSUW+CI=</string>
 </dict>
 </plist>
