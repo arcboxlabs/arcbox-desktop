@@ -27,7 +27,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
+      channel: ${{ steps.version.outputs.channel }}
       dmg: ${{ steps.dmg.outputs.dmg }}
+      ed_signature: ${{ steps.sparkle_sign.outputs.ed_signature }}
+      dmg_length: ${{ steps.sparkle_sign.outputs.dmg_length }}
 
     steps:
       - name: Checkout arcbox-desktop-swift
@@ -54,6 +57,17 @@ jobs:
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Determine Sparkle update channel
+          if echo "$VERSION" | grep -qE 'alpha'; then
+            echo "channel=alpha" >> "$GITHUB_OUTPUT"
+          elif echo "$VERSION" | grep -qE 'beta'; then
+            echo "channel=beta" >> "$GITHUB_OUTPUT"
+          elif echo "$VERSION" | grep -qE 'rc'; then
+            echo "channel=rc" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
           fi
 
           echo "Building version: $VERSION"
@@ -230,7 +244,12 @@ jobs:
         run: ln -s "$GITHUB_WORKSPACE/arcbox" ../arcbox
 
       - name: Create Local.xcconfig
-        run: touch Local.xcconfig
+        run: |
+          CHANNEL="${{ steps.version.outputs.channel }}"
+          cat > Local.xcconfig <<EOF
+          INFOPLIST_KEY_SUFeedURL = https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml
+          INFOPLIST_KEY_SUPublicEDKey = ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          EOF
 
       - name: Trust SwiftPM plugins
         run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
@@ -255,6 +274,43 @@ jobs:
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
           shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
           cat "${DMG_PATH}.sha256"
+
+      - name: Sign DMG with Sparkle EdDSA
+        id: sparkle_sign
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          # Download Sparkle 2.9.0 and extract sign_update
+          SPARKLE_URL="https://github.com/sparkle-project/Sparkle/releases/download/2.9.0/Sparkle-2.9.0.tar.xz"
+          SPARKLE_DIR="$(mktemp -d)"
+          curl -fsSL "$SPARKLE_URL" | tar xJ -C "$SPARKLE_DIR"
+          SIGN_UPDATE="$SPARKLE_DIR/bin/sign_update"
+          chmod +x "$SIGN_UPDATE"
+
+          DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
+
+          # Write private key to temp file for sign_update
+          KEY_FILE="$(mktemp)"
+          echo "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+          SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE")
+          rm -f "$KEY_FILE"
+          echo "sign_update output: $SIGN_OUTPUT"
+
+          # Parse sparkle:edSignature="..." length="..."
+          ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+          DMG_LENGTH=$(echo "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
+
+          # Fallback: get length from stat if not in output
+          if [ -z "$DMG_LENGTH" ]; then
+            DMG_LENGTH=$(stat -f%z "$DMG_PATH")
+          fi
+
+          echo "ed_signature=$ED_SIGNATURE" >> "$GITHUB_OUTPUT"
+          echo "dmg_length=$DMG_LENGTH" >> "$GITHUB_OUTPUT"
+          echo "EdDSA signature: ${ED_SIGNATURE:0:20}..."
+          echo "DMG length: $DMG_LENGTH"
+
+          rm -rf "$SPARKLE_DIR"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
@@ -316,3 +372,156 @@ jobs:
             ```bash
             shasum -a 256 -c ${{ needs.build-dmg.outputs.dmg }}.sha256
             ```
+
+  upload-cdn:
+    name: Upload to CDN
+    needs: [build-dmg]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arcbox-desktop-dmg
+          path: artifacts/
+
+      - name: Determine channel
+        id: channel
+        run: |
+          VERSION="${{ needs.build-dmg.outputs.version }}"
+          CHANNEL="${{ needs.build-dmg.outputs.channel }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "Channel: $CHANNEL, Version: $VERSION"
+
+      - name: Download existing appcast from CDN
+        id: existing_appcast
+        continue-on-error: true
+        run: |
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          mkdir -p existing
+          curl -fsSL --max-time 15 \
+            "https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml" \
+            -o existing/appcast.xml
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "Fetched existing appcast for channel $CHANNEL"
+
+      - name: Download existing latest.json from CDN
+        id: existing_latest
+        continue-on-error: true
+        run: |
+          curl -fsSL --max-time 15 \
+            "https://release.arcboxcdn.com/desktop/latest.json" \
+            -o existing/latest.json
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "Fetched existing latest.json"
+
+      - name: Generate appcast
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+          DMG_URL="https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}"
+
+          APPCAST_ARGS=(
+            --version "$VERSION"
+            --dmg-url "$DMG_URL"
+            --dmg-length "${{ needs.build-dmg.outputs.dmg_length }}"
+            --ed-signature "${{ needs.build-dmg.outputs.ed_signature }}"
+            --channel "$CHANNEL"
+            --min-macos "15.0"
+            --output cdn-staging/desktop/appcast/${CHANNEL}.xml
+          )
+
+          if [ "${{ steps.existing_appcast.outputs.found }}" = "true" ]; then
+            APPCAST_ARGS+=(--existing existing/appcast.xml)
+          fi
+
+          mkdir -p cdn-staging/desktop/appcast
+          bash scripts/generate-appcast.sh "${APPCAST_ARGS[@]}"
+
+      - name: Update latest.json
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+
+          LATEST_ARGS=(
+            --version "$VERSION"
+            --channel "$CHANNEL"
+            --output cdn-staging/desktop/latest.json
+          )
+
+          if [ "${{ steps.existing_latest.outputs.found }}" = "true" ]; then
+            LATEST_ARGS+=(--existing existing/latest.json)
+          fi
+
+          bash scripts/update-latest-json.sh "${LATEST_ARGS[@]}"
+
+      - name: Prepare staging directory
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+
+          # Copy DMG and checksum to versioned path
+          mkdir -p "cdn-staging/desktop/${VERSION}"
+          find artifacts/ -name '*.dmg' -exec cp {} "cdn-staging/desktop/${VERSION}/${DMG_NAME}" \;
+          find artifacts/ -name '*.sha256' -exec cp {} "cdn-staging/desktop/${VERSION}/${DMG_NAME}.sha256" \;
+
+          echo "=== CDN staging ==="
+          find cdn-staging/ -type f | sort
+
+      - name: Upload DMG to B2 (size-only)
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          aws s3 sync \
+            "cdn-staging/desktop/${VERSION}/" \
+            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/${VERSION}/" \
+            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
+            --size-only
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
+
+      - name: Upload appcast and latest.json to B2
+        run: |
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          aws s3 cp \
+            "cdn-staging/desktop/appcast/${CHANNEL}.xml" \
+            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/appcast/${CHANNEL}.xml" \
+            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
+            --content-type "application/xml"
+          aws s3 cp \
+            "cdn-staging/desktop/latest.json" \
+            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/latest.json" \
+            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
+            --content-type "application/json"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
+
+      - name: Verify CDN URLs
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+          sleep 5
+          FAILED=0
+          for URL in \
+            "https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}" \
+            "https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml" \
+            "https://release.arcboxcdn.com/desktop/latest.json"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$URL")
+            echo "CDN check: $URL -> HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "::warning::CDN returned HTTP $HTTP_STATUS for $URL"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::warning::Some CDN URLs did not return HTTP 200"
+          fi
