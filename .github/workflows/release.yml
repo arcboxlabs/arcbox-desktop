@@ -27,7 +27,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
+      channel: ${{ steps.version.outputs.channel }}
       dmg: ${{ steps.dmg.outputs.dmg }}
+      ed_signature: ${{ steps.sparkle_sign.outputs.ed_signature }}
+      dmg_length: ${{ steps.sparkle_sign.outputs.dmg_length }}
 
     steps:
       - name: Checkout arcbox-desktop-swift
@@ -54,6 +57,17 @@ jobs:
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Determine Sparkle update channel
+          if echo "$VERSION" | grep -qE 'alpha'; then
+            echo "channel=alpha" >> "$GITHUB_OUTPUT"
+          elif echo "$VERSION" | grep -qE 'beta'; then
+            echo "channel=beta" >> "$GITHUB_OUTPUT"
+          elif echo "$VERSION" | grep -qE 'rc'; then
+            echo "channel=rc" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
           fi
 
           echo "Building version: $VERSION"
@@ -116,16 +130,24 @@ jobs:
         run: |
           REF="${{ inputs.arcbox_ref || 'master' }}"
 
-          # Only attempt download for version tags
-          if [[ ! "$REF" =~ ^v[0-9] ]]; then
-            echo "Ref '$REF' is not a version tag, skipping download"
-            exit 1
+          # Resolve which release to download:
+          #   - If REF is a version tag (v*), use that exact release
+          #   - Otherwise, use the latest release
+          if [[ "$REF" =~ ^v[0-9] ]]; then
+            RELEASE_TAG="$REF"
+          else
+            RELEASE_TAG=$(gh release list --repo arcboxlabs/arcbox --limit 1 --json tagName -q '.[0].tagName')
+            if [ -z "$RELEASE_TAG" ]; then
+              echo "No arcbox releases found, will build from source"
+              exit 1
+            fi
+            echo "Ref '$REF' is not a version tag, using latest release: $RELEASE_TAG"
           fi
 
-          echo "Checking for pre-built binaries in arcboxlabs/arcbox release $REF..."
+          echo "Downloading arcbox binaries from release $RELEASE_TAG..."
 
           DOWNLOAD_DIR="$(mktemp -d)"
-          gh release download "$REF" \
+          gh release download "$RELEASE_TAG" \
             --repo arcboxlabs/arcbox \
             --dir "$DOWNLOAD_DIR" \
             --skip-existing
@@ -133,14 +155,18 @@ jobs:
           echo "Downloaded assets:"
           ls -la "$DOWNLOAD_DIR"
 
-          # Find CLI and daemon binaries (skip checksums, archives, etc.)
+          # Extract tarballs to find binaries
+          for tarball in "$DOWNLOAD_DIR"/*.tar.gz; do
+            [ -f "$tarball" ] && tar xzf "$tarball" -C "$DOWNLOAD_DIR"
+          done
+
+          echo "Extracted contents:"
+          find "$DOWNLOAD_DIR" -type f | head -20
+
+          # Find CLI and daemon binaries
           mkdir -p arcbox/target/release
-          CLI_BIN=$(find "$DOWNLOAD_DIR" -type f -name "abctl" -o -name "abctl-*" \
-            ! -name "*.sha*" ! -name "*.tar*" \
-            ! -name "*.zip*" ! -name "*.sig" | head -1)
-          DAEMON_BIN=$(find "$DOWNLOAD_DIR" -type f -name "*daemon*" \
-            ! -name "*.sha*" ! -name "*.tar*" ! -name "*.zip*" \
-            ! -name "*.sig" | head -1)
+          CLI_BIN=$(find "$DOWNLOAD_DIR" -type f -name "abctl" | head -1)
+          DAEMON_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-daemon" | head -1)
 
           if [ -z "$CLI_BIN" ] || [ -z "$DAEMON_BIN" ]; then
             echo "Could not find pre-built binaries in release assets"
@@ -149,6 +175,14 @@ jobs:
 
           cp "$CLI_BIN" arcbox/target/release/abctl
           cp "$DAEMON_BIN" arcbox/target/release/arcbox-daemon
+
+          # Copy entitlements if present
+          ENTITLEMENTS=$(find "$DOWNLOAD_DIR" -type f -name "entitlements.plist" | head -1)
+          if [ -n "$ENTITLEMENTS" ]; then
+            mkdir -p arcbox/tests/resources
+            cp "$ENTITLEMENTS" arcbox/tests/resources/entitlements.plist
+          fi
+
           chmod +x arcbox/target/release/abctl arcbox/target/release/arcbox-daemon
           file arcbox/target/release/abctl arcbox/target/release/arcbox-daemon
           echo "found=true" >> "$GITHUB_OUTPUT"
@@ -188,20 +222,34 @@ jobs:
           codesign --force -s - target/release/abctl
           target/release/abctl boot prefetch
 
+      - name: Download Docker CLI tools
+        working-directory: arcbox
+        run: target/release/abctl docker setup
+
+      - name: Download pstramp
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PSTRAMP_VERSION=$(gh release list --repo arcboxlabs/pstramp --limit 1 --json tagName -q '.[0].tagName')
+          echo "Downloading pstramp $PSTRAMP_VERSION"
+          mkdir -p pstramp/target/release
+          gh release download "$PSTRAMP_VERSION" \
+            --repo arcboxlabs/pstramp \
+            --pattern "pstramp-*-aarch64-apple-darwin" \
+            --output pstramp/target/release/pstramp
+          chmod +x pstramp/target/release/pstramp
+          file pstramp/target/release/pstramp
+
       - name: Symlink arcbox repo for Xcode build phase
         run: ln -s "$GITHUB_WORKSPACE/arcbox" ../arcbox
 
       - name: Create Local.xcconfig
-        env:
-          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
         run: |
-          FEED_URL="https://github.com/${{ github.repository }}/releases/latest/download/appcast.xml"
-          cat > Local.xcconfig <<XCEOF
-          INFOPLIST_KEY_SUFeedURL = ${FEED_URL}
-          INFOPLIST_KEY_SUPublicEDKey = ${SPARKLE_PUBLIC_KEY}
-          XCEOF
-          echo "Local.xcconfig:"
-          cat Local.xcconfig
+          CHANNEL="${{ steps.version.outputs.channel }}"
+          cat > Local.xcconfig <<EOF
+          INFOPLIST_KEY_SUFeedURL = https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml
+          INFOPLIST_KEY_SUPublicEDKey = ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          EOF
 
       - name: Trust SwiftPM plugins
         run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
@@ -227,61 +275,42 @@ jobs:
           shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
           cat "${DMG_PATH}.sha256"
 
-      - name: Generate Sparkle appcast
+      - name: Sign DMG with Sparkle EdDSA
+        id: sparkle_sign
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        shell: bash
         run: |
-          set -euo pipefail
+          # Download Sparkle 2.9.0 and extract sign_update
+          SPARKLE_URL="https://github.com/sparkle-project/Sparkle/releases/download/2.9.0/Sparkle-2.9.0.tar.xz"
+          SPARKLE_DIR="$(mktemp -d)"
+          curl -fsSL "$SPARKLE_URL" | tar xJ -C "$SPARKLE_DIR"
+          SIGN_UPDATE="$SPARKLE_DIR/bin/sign_update"
+          chmod +x "$SIGN_UPDATE"
 
-          if [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
-            echo "::error::SPARKLE_PRIVATE_KEY is not set"
-            exit 1
-          fi
-
-          VERSION="${{ steps.version.outputs.version }}"
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
-          DMG_NAME="${{ steps.dmg.outputs.dmg }}"
 
-          # Download Sparkle tools
-          SPARKLE_VER="2.9.0"
-          curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz" \
-            | tar xJ -C "$RUNNER_TEMP" bin/sign_update bin/generate_appcast
+          # Write private key to temp file for sign_update
+          KEY_FILE="$(mktemp)"
+          echo "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+          SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE")
+          rm -f "$KEY_FILE"
+          echo "sign_update output: $SIGN_OUTPUT"
 
-          # Sign DMG with Sparkle EdDSA key
-          SIGN_OUTPUT=$("$RUNNER_TEMP/bin/sign_update" "$DMG_PATH" -f <(echo "$SPARKLE_PRIVATE_KEY"))
-          ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -o 'sparkle:edSignature="[^"]*"' | cut -d'"' -f2)
-          if [ -z "$ED_SIGNATURE" ]; then
-            echo "::error::Failed to extract EdDSA signature from sign_update output"
-            echo "sign_update output was: $SIGN_OUTPUT"
-            exit 1
+          # Parse sparkle:edSignature="..." length="..."
+          ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+          DMG_LENGTH=$(echo "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
+
+          # Fallback: get length from stat if not in output
+          if [ -z "$DMG_LENGTH" ]; then
+            DMG_LENGTH=$(stat -f%z "$DMG_PATH")
           fi
-          DMG_LENGTH=$(stat -f%z "$DMG_PATH")
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/${DMG_NAME}"
 
-          # Build appcast.xml
-          cat > "$(dirname "$DMG_PATH")/appcast.xml" <<APPCAST_EOF
-          <?xml version="1.0" encoding="utf-8"?>
-          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
-            <channel>
-              <title>ArcBox Desktop</title>
-              <item>
-                <title>ArcBox Desktop ${VERSION}</title>
-                <sparkle:version>${VERSION#v}</sparkle:version>
-                <sparkle:shortVersionString>${VERSION#v}</sparkle:shortVersionString>
-                <pubDate>$(date -R)</pubDate>
-                <enclosure
-                  url="${DOWNLOAD_URL}"
-                  length="${DMG_LENGTH}"
-                  type="application/octet-stream"
-                  sparkle:edSignature="${ED_SIGNATURE}" />
-              </item>
-            </channel>
-          </rss>
-          APPCAST_EOF
+          echo "ed_signature=$ED_SIGNATURE" >> "$GITHUB_OUTPUT"
+          echo "dmg_length=$DMG_LENGTH" >> "$GITHUB_OUTPUT"
+          echo "EdDSA signature: ${ED_SIGNATURE:0:20}..."
+          echo "DMG length: $DMG_LENGTH"
 
-          echo "Appcast generated:"
-          cat "$(dirname "$DMG_PATH")/appcast.xml"
+          rm -rf "$SPARKLE_DIR"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
@@ -290,7 +319,6 @@ jobs:
           path: |
             ${{ steps.dmg.outputs.dmg_path }}
             ${{ steps.dmg.outputs.dmg_path }}.sha256
-            arcbox/target/appcast.xml
           retention-days: 30
 
       - name: Cleanup keychain
@@ -317,7 +345,7 @@ jobs:
       - name: Collect release assets
         run: |
           mkdir -p release-assets
-          find artifacts/ -type f \( -name '*.dmg' -o -name '*.sha256' -o -name 'appcast.xml' \) \
+          find artifacts/ -type f \( -name '*.dmg' -o -name '*.sha256' \) \
             -exec cp {} release-assets/ \;
           echo "=== Release assets ==="
           ls -lh release-assets/
@@ -332,7 +360,6 @@ jobs:
           files: |
             release-assets/*.dmg
             release-assets/*.sha256
-            release-assets/appcast.xml
           body: |
             ## Installation
 
@@ -345,3 +372,156 @@ jobs:
             ```bash
             shasum -a 256 -c ${{ needs.build-dmg.outputs.dmg }}.sha256
             ```
+
+  upload-cdn:
+    name: Upload to CDN
+    needs: [build-dmg]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arcbox-desktop-dmg
+          path: artifacts/
+
+      - name: Determine channel
+        id: channel
+        run: |
+          VERSION="${{ needs.build-dmg.outputs.version }}"
+          CHANNEL="${{ needs.build-dmg.outputs.channel }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "Channel: $CHANNEL, Version: $VERSION"
+
+      - name: Download existing appcast from CDN
+        id: existing_appcast
+        continue-on-error: true
+        run: |
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          mkdir -p existing
+          curl -fsSL --max-time 15 \
+            "https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml" \
+            -o existing/appcast.xml
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "Fetched existing appcast for channel $CHANNEL"
+
+      - name: Download existing latest.json from CDN
+        id: existing_latest
+        continue-on-error: true
+        run: |
+          curl -fsSL --max-time 15 \
+            "https://release.arcboxcdn.com/desktop/latest.json" \
+            -o existing/latest.json
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "Fetched existing latest.json"
+
+      - name: Generate appcast
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+          DMG_URL="https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}"
+
+          APPCAST_ARGS=(
+            --version "$VERSION"
+            --dmg-url "$DMG_URL"
+            --dmg-length "${{ needs.build-dmg.outputs.dmg_length }}"
+            --ed-signature "${{ needs.build-dmg.outputs.ed_signature }}"
+            --channel "$CHANNEL"
+            --min-macos "15.0"
+            --output cdn-staging/desktop/appcast/${CHANNEL}.xml
+          )
+
+          if [ "${{ steps.existing_appcast.outputs.found }}" = "true" ]; then
+            APPCAST_ARGS+=(--existing existing/appcast.xml)
+          fi
+
+          mkdir -p cdn-staging/desktop/appcast
+          bash scripts/generate-appcast.sh "${APPCAST_ARGS[@]}"
+
+      - name: Update latest.json
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+
+          LATEST_ARGS=(
+            --version "$VERSION"
+            --channel "$CHANNEL"
+            --output cdn-staging/desktop/latest.json
+          )
+
+          if [ "${{ steps.existing_latest.outputs.found }}" = "true" ]; then
+            LATEST_ARGS+=(--existing existing/latest.json)
+          fi
+
+          bash scripts/update-latest-json.sh "${LATEST_ARGS[@]}"
+
+      - name: Prepare staging directory
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+
+          # Copy DMG and checksum to versioned path
+          mkdir -p "cdn-staging/desktop/${VERSION}"
+          find artifacts/ -name '*.dmg' -exec cp {} "cdn-staging/desktop/${VERSION}/${DMG_NAME}" \;
+          find artifacts/ -name '*.sha256' -exec cp {} "cdn-staging/desktop/${VERSION}/${DMG_NAME}.sha256" \;
+
+          echo "=== CDN staging ==="
+          find cdn-staging/ -type f | sort
+
+      - name: Upload DMG to B2 (size-only)
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          aws s3 sync \
+            "cdn-staging/desktop/${VERSION}/" \
+            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/${VERSION}/" \
+            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
+            --size-only
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
+
+      - name: Upload appcast and latest.json to B2
+        run: |
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          aws s3 cp \
+            "cdn-staging/desktop/appcast/${CHANNEL}.xml" \
+            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/appcast/${CHANNEL}.xml" \
+            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
+            --content-type "application/xml"
+          aws s3 cp \
+            "cdn-staging/desktop/latest.json" \
+            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/latest.json" \
+            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
+            --content-type "application/json"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
+
+      - name: Verify CDN URLs
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+          sleep 5
+          FAILED=0
+          for URL in \
+            "https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}" \
+            "https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml" \
+            "https://release.arcboxcdn.com/desktop/latest.json"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$URL")
+            echo "CDN check: $URL -> HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "::warning::CDN returned HTTP $HTTP_STATUS for $URL"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::warning::Some CDN URLs did not return HTTP 200"
+          fi
