@@ -415,6 +415,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
 				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SUFeedURL = "https://github.com/arcboxlabs/arcbox-desktop-swift/releases/latest/download/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "IoUmltTaVaGaaxRX1q+8u0GHqGgR7sQTf4HjFSUW+CI=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -457,6 +459,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
 				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SUFeedURL = "https://github.com/arcboxlabs/arcbox-desktop-swift/releases/latest/download/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "IoUmltTaVaGaaxRX1q+8u0GHqGgR7sQTf4HjFSUW+CI=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
