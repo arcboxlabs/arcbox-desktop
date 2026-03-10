@@ -33,7 +33,7 @@ public final class DaemonManager {
     /// Path to the Docker-compatible socket used for health checks and DockerClient.
     public nonisolated static let dockerSocketPath: String = {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return "\(home)/.arcbox/docker.sock"
+        return "\(home)/.arcbox/run/docker.sock"
     }()
 
     private nonisolated static let plistName = "io.arcbox.desktop.daemon.plist"

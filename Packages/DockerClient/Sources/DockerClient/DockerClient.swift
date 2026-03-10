@@ -1,11 +1,11 @@
-import Foundation
-import OpenAPIRuntime
-import OpenAPIAsyncHTTPClient
 import AsyncHTTPClient
-import NIOCore
-import NIOPosix
-import NIOHTTP1
+import Foundation
 import HTTPTypes
+import NIOCore
+import NIOHTTP1
+import NIOPosix
+import OpenAPIAsyncHTTPClient
+import OpenAPIRuntime
 
 @available(macOS 15.0, *)
 public struct ContainerInspectMountSnapshot: Sendable {
@@ -104,7 +104,8 @@ struct UnixSocketTransport: ClientTransport {
         let fullPath = basePath + requestPath
 
         // Encode socket path for http+unix:// URL scheme
-        let encodedSocket = socketPath
+        let encodedSocket =
+            socketPath
             .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
         let urlString = "http+unix://\(encodedSocket)\(fullPath)"
 
@@ -183,7 +184,7 @@ public struct DockerClient: Sendable {
     /// Default Unix socket path for the Docker daemon (ArcBox runtime).
     public static let defaultSocketPath: String = {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return "\(home)/.arcbox/docker.sock"
+        return "\(home)/.arcbox/run/docker.sock"
     }()
 
     /// Default server URL matching the OpenAPI spec base path.
@@ -204,7 +205,8 @@ public struct DockerClient: Sendable {
         // Use POSIX sockets (MultiThreadedEventLoopGroup) instead of the default
         // NIOTransportServices (Network.framework) which has issues with Unix
         // domain sockets on macOS, causing ENETDOWN errors.
-        let httpClient = HTTPClient(eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup.singleton))
+        let httpClient = HTTPClient(
+            eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup.singleton))
         let transport = UnixSocketTransport(client: httpClient, socketPath: socketPath)
         self.httpClient = httpClient
         self.socketPath = socketPath
@@ -220,7 +222,8 @@ public struct DockerClient: Sendable {
     /// Docker sometimes returns date fields that fail strict OpenAPI decoding.
     /// This method parses only the fields we need from raw JSON.
     public func inspectContainerSnapshot(id: String) async throws -> ContainerInspectSnapshot {
-        let encodedSocket = socketPath
+        let encodedSocket =
+            socketPath
             .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
         let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
         let path = Self.defaultServerURL.path + "/containers/\(encodedID)/json"
@@ -276,7 +279,8 @@ public struct DockerClient: Sendable {
 
         let graphDriver = json["GraphDriver"] as? [String: Any]
         let graphDriverData = graphDriver?["Data"] as? [String: Any]
-        let rootfsMountPath = Self.normalized(graphDriverData?["MergedDir"] as? String)
+        let rootfsMountPath =
+            Self.normalized(graphDriverData?["MergedDir"] as? String)
             ?? Self.normalized(graphDriverData?["UpperDir"] as? String)
 
         return ContainerInspectSnapshot(
@@ -290,7 +294,8 @@ public struct DockerClient: Sendable {
     /// Raw image inspect fallback that bypasses generated date decoding.
     /// Parses only fields used by UI.
     public func inspectImageSnapshot(id: String) async throws -> ImageInspectSnapshot {
-        let encodedSocket = socketPath
+        let encodedSocket =
+            socketPath
             .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
         let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
         let path = Self.defaultServerURL.path + "/images/\(encodedID)/json"
@@ -318,13 +323,15 @@ public struct DockerClient: Sendable {
 
         let config = json["Config"] as? [String: Any]
         let containerConfig = json["ContainerConfig"] as? [String: Any]
-        let labels = Self.extractStringMap(config?["Labels"])
+        let labels =
+            Self.extractStringMap(config?["Labels"])
             ?? Self.extractStringMap(containerConfig?["Labels"])
             ?? [:]
 
         let graphDriver = json["GraphDriver"] as? [String: Any]
         let graphDriverData = graphDriver?["Data"] as? [String: Any]
-        let rootfsMountPath = Self.normalized(graphDriverData?["MergedDir"] as? String)
+        let rootfsMountPath =
+            Self.normalized(graphDriverData?["MergedDir"] as? String)
             ?? Self.normalized(graphDriverData?["UpperDir"] as? String)
             ?? Self.normalized(graphDriverData?["Dir"] as? String)
 
@@ -338,7 +345,7 @@ public struct DockerClient: Sendable {
 
     /// A single event from the Docker daemon `/events` stream.
     public struct DockerEvent: Sendable {
-        public let type: String    // "container", "image", "network", "volume", …
+        public let type: String  // "container", "image", "network", "volume", …
         public let action: String  // "start", "stop", "die", "create", "destroy", …
         public let actorID: String?
     }
@@ -349,7 +356,8 @@ public struct DockerClient: Sendable {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    let encodedSocket = socketPath
+                    let encodedSocket =
+                        socketPath
                         .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
                     let path = Self.defaultServerURL.path + "/events"
                     let urlString = "http+unix://\(encodedSocket)\(path)"
@@ -373,15 +381,17 @@ public struct DockerClient: Sendable {
                             buffer.removeFirst(newlineIndex - buffer.startIndex + 1)
 
                             guard !lineData.isEmpty,
-                                  let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
-                                  let type = json["Type"] as? String,
-                                  let action = json["Action"] as? String
+                                let json = try? JSONSerialization.jsonObject(with: lineData)
+                                    as? [String: Any],
+                                let type = json["Type"] as? String,
+                                let action = json["Action"] as? String
                             else { continue }
 
                             let actor = json["Actor"] as? [String: Any]
                             let actorID = actor?["ID"] as? String
 
-                            continuation.yield(DockerEvent(type: type, action: action, actorID: actorID))
+                            continuation.yield(
+                                DockerEvent(type: type, action: action, actorID: actorID))
                         }
                     }
                     continuation.finish()
@@ -446,30 +456,38 @@ public struct DockerClient: Sendable {
                             // Parse complete multiplexed frames from buffer
                             while buffer.count >= 8 {
                                 let streamByte = buffer[buffer.startIndex]
-                                let sizeBytes = buffer[buffer.startIndex + 4 ..< buffer.startIndex + 8]
+                                let sizeBytes = buffer[
+                                    buffer.startIndex + 4..<buffer.startIndex + 8]
                                 let payloadSize = Int(
                                     UInt32(sizeBytes[sizeBytes.startIndex]) << 24
-                                    | UInt32(sizeBytes[sizeBytes.startIndex + 1]) << 16
-                                    | UInt32(sizeBytes[sizeBytes.startIndex + 2]) << 8
-                                    | UInt32(sizeBytes[sizeBytes.startIndex + 3])
+                                        | UInt32(sizeBytes[sizeBytes.startIndex + 1]) << 16
+                                        | UInt32(sizeBytes[sizeBytes.startIndex + 2]) << 8
+                                        | UInt32(sizeBytes[sizeBytes.startIndex + 3])
                                 )
 
                                 guard buffer.count >= 8 + payloadSize else { break }
 
-                                let payload = buffer[buffer.startIndex + 8 ..< buffer.startIndex + 8 + payloadSize]
+                                let payload = buffer[
+                                    buffer.startIndex + 8..<buffer.startIndex + 8 + payloadSize]
                                 buffer.removeFirst(8 + payloadSize)
 
-                                let stream: DockerLogLine.Stream = streamByte == 2 ? .stderr : .stdout
+                                let stream: DockerLogLine.Stream =
+                                    streamByte == 2 ? .stderr : .stdout
 
-                                guard let text = String(data: payload, encoding: .utf8) else { continue }
-                                let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+                                guard let text = String(data: payload, encoding: .utf8) else {
+                                    continue
+                                }
+                                let lines = text.split(
+                                    separator: "\n", omittingEmptySubsequences: false)
                                 for line in lines {
                                     let lineStr = String(line)
                                     if lineStr.isEmpty { continue }
-                                    let (ts, msg) = timestamps
+                                    let (ts, msg) =
+                                        timestamps
                                         ? Self.splitTimestamp(lineStr)
                                         : (nil, lineStr)
-                                    continuation.yield(DockerLogLine(stream: stream, message: msg, timestamp: ts))
+                                    continuation.yield(
+                                        DockerLogLine(stream: stream, message: msg, timestamp: ts))
                                 }
                             }
                         } else {
@@ -481,13 +499,17 @@ public struct DockerClient: Sendable {
                                 let remaining = String(text[text.index(after: lastNewline)...])
                                 buffer = remaining.data(using: .utf8) ?? Data()
 
-                                for line in completeText.split(separator: "\n", omittingEmptySubsequences: false) {
+                                for line in completeText.split(
+                                    separator: "\n", omittingEmptySubsequences: false)
+                                {
                                     let lineStr = String(line)
                                     if lineStr.isEmpty { continue }
-                                    let (ts, msg) = timestamps
+                                    let (ts, msg) =
+                                        timestamps
                                         ? Self.splitTimestamp(lineStr)
                                         : (nil, lineStr)
-                                    continuation.yield(DockerLogLine(stream: .stdout, message: msg, timestamp: ts))
+                                    continuation.yield(
+                                        DockerLogLine(stream: .stdout, message: msg, timestamp: ts))
                                 }
                             }
                         }
@@ -495,10 +517,11 @@ public struct DockerClient: Sendable {
 
                     // Flush remaining buffer for raw TTY
                     if isMultiplexed == false, !buffer.isEmpty,
-                       let text = String(data: buffer, encoding: .utf8), !text.isEmpty
+                        let text = String(data: buffer, encoding: .utf8), !text.isEmpty
                     {
                         let (ts, msg) = timestamps ? Self.splitTimestamp(text) : (nil, text)
-                        continuation.yield(DockerLogLine(stream: .stdout, message: msg, timestamp: ts))
+                        continuation.yield(
+                            DockerLogLine(stream: .stdout, message: msg, timestamp: ts))
                     }
 
                     continuation.finish()
@@ -545,10 +568,12 @@ public struct DockerClient: Sendable {
         timestamps: Bool,
         since: Int = 0
     ) async throws -> HTTPClientResponse {
-        let encodedSocket = socketPath
+        let encodedSocket =
+            socketPath
             .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
         let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
-        let path = Self.defaultServerURL.path
+        let path =
+            Self.defaultServerURL.path
             + "/containers/\(encodedID)/logs"
             + "?stdout=true&stderr=true"
             + "&follow=\(follow)"
@@ -576,15 +601,15 @@ public struct DockerClient: Sendable {
         let streamByte = data[data.startIndex]
         guard streamByte <= 2 else { return false }
         guard data[data.startIndex + 1] == 0,
-              data[data.startIndex + 2] == 0,
-              data[data.startIndex + 3] == 0
+            data[data.startIndex + 2] == 0,
+            data[data.startIndex + 3] == 0
         else { return false }
-        let sizeBytes = data[data.startIndex + 4 ..< data.startIndex + 8]
+        let sizeBytes = data[data.startIndex + 4..<data.startIndex + 8]
         let payloadSize = Int(
             UInt32(sizeBytes[sizeBytes.startIndex]) << 24
-            | UInt32(sizeBytes[sizeBytes.startIndex + 1]) << 16
-            | UInt32(sizeBytes[sizeBytes.startIndex + 2]) << 8
-            | UInt32(sizeBytes[sizeBytes.startIndex + 3])
+                | UInt32(sizeBytes[sizeBytes.startIndex + 1]) << 16
+                | UInt32(sizeBytes[sizeBytes.startIndex + 2]) << 8
+                | UInt32(sizeBytes[sizeBytes.startIndex + 3])
         )
         return payloadSize > 0 && payloadSize <= data.count - 8
     }
@@ -607,17 +632,17 @@ public struct DockerClient: Sendable {
 
         while offset + 8 <= data.endIndex {
             let streamByte = data[offset]
-            let sizeBytes = data[offset + 4 ..< offset + 8]
+            let sizeBytes = data[offset + 4..<offset + 8]
             let payloadSize = Int(
                 UInt32(sizeBytes[sizeBytes.startIndex]) << 24
-                | UInt32(sizeBytes[sizeBytes.startIndex + 1]) << 16
-                | UInt32(sizeBytes[sizeBytes.startIndex + 2]) << 8
-                | UInt32(sizeBytes[sizeBytes.startIndex + 3])
+                    | UInt32(sizeBytes[sizeBytes.startIndex + 1]) << 16
+                    | UInt32(sizeBytes[sizeBytes.startIndex + 2]) << 8
+                    | UInt32(sizeBytes[sizeBytes.startIndex + 3])
             )
 
             guard offset + 8 + payloadSize <= data.endIndex else { break }
 
-            let payload = data[offset + 8 ..< offset + 8 + payloadSize]
+            let payload = data[offset + 8..<offset + 8 + payloadSize]
             offset += 8 + payloadSize
 
             let stream: DockerLogLine.Stream = streamByte == 2 ? .stderr : .stdout
@@ -653,11 +678,11 @@ public struct DockerClient: Sendable {
     static func splitTimestamp(_ line: String) -> (timestamp: String?, message: String) {
         // Docker timestamps end with 'Z' and are followed by a space
         guard let spaceIndex = line.firstIndex(of: " "),
-              line[line.startIndex ..< spaceIndex].hasSuffix("Z")
+            line[line.startIndex..<spaceIndex].hasSuffix("Z")
         else {
             return (nil, line)
         }
-        let timestamp = String(line[line.startIndex ..< spaceIndex])
+        let timestamp = String(line[line.startIndex..<spaceIndex])
         let message = String(line[line.index(after: spaceIndex)...])
         return (timestamp, message)
     }
