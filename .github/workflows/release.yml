@@ -299,9 +299,9 @@ jobs:
 
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
 
-          # Write private key to temp file for sign_update
+          # Write private key to temp file (printf to avoid trailing newline)
           KEY_FILE="$(mktemp)"
-          echo "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
           echo "Signing $DMG_PATH..."
           SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE" 2>&1) || {
             echo "::error::sign_update failed"
