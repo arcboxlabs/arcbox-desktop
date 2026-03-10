@@ -253,9 +253,15 @@ fi
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
 
-    # Sign the daemon helper FIRST with its entitlements (virtualization).
     DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/io.arcbox.desktop.daemon"
     DAEMON_ENTITLEMENTS="$DESKTOP_REPO/arcbox-desktop-swift/DaemonEntitlements.entitlements"
+
+    # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
+    codesign --force --deep --options runtime \
+        --sign "$SIGN_IDENTITY" --timestamp \
+        "$APP_BUNDLE"
+
+    # Re-sign the daemon helper WITH its entitlements (--deep strips them).
     if [ -f "$DAEMON_PATH" ]; then
         codesign --force --options runtime --sign "$SIGN_IDENTITY" \
             --timestamp --identifier "io.arcbox.desktop.daemon" \
@@ -263,10 +269,6 @@ if [ -n "$SIGN_IDENTITY" ]; then
         echo "  Signed daemon with virtualization entitlement"
     fi
 
-    # Sign the outer app bundle (without --deep to preserve inner signatures).
-    codesign --force --options runtime \
-        --sign "$SIGN_IDENTITY" --timestamp \
-        "$APP_BUNDLE"
     codesign --verify --deep --strict "$APP_BUNDLE"
     echo "  Signed and verified"
 fi
