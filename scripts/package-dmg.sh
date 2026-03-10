@@ -269,6 +269,11 @@ if [ -n "$SIGN_IDENTITY" ]; then
         echo "  Signed daemon with virtualization entitlement"
     fi
 
+    # Re-sign the outer app (nested code changed, so the seal must be refreshed).
+    codesign --force --options runtime \
+        --sign "$SIGN_IDENTITY" --timestamp \
+        "$APP_BUNDLE"
+
     codesign --verify --deep --strict "$APP_BUNDLE"
     echo "  Signed and verified"
 fi
