@@ -2,19 +2,35 @@ import SwiftUI
 import AppKit
 import ArcBoxClient
 import DockerClient
+import ServiceManagement
 import Sparkle
 
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
+    var helperManager: HelperManager?
     var eventMonitor: DockerEventMonitor?
+    var isUninstalling = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
         guard let daemonManager else { return .terminateNow }
+
         Task { @MainActor in
             daemonManager.stopMonitoring()
+
+            if isUninstalling, let helperManager {
+                // Teardown must complete before daemon is stopped, so that
+                // each helper operation can confirm the current state.
+                try? await helperManager.teardownDockerSocket()
+                try? await helperManager.uninstallCLITools()
+                try? await helperManager.teardownDNSResolver()
+                try? SMAppService.daemon(
+                    plistName: "io.arcbox.desktop.helper.plist"
+                ).unregister()
+            }
+
             await daemonManager.disableDaemon()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
@@ -29,6 +45,7 @@ struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appVM = AppViewModel()
     @State private var daemonManager = DaemonManager()
+    @State private var helperManager = HelperManager()
     @State private var bootAssetManager = BootAssetManager()
     @State private var dockerToolSetupManager = DockerToolSetupManager()
     @State private var arcboxClient: ArcBoxClient?
@@ -58,36 +75,36 @@ struct ArcBoxDesktopApp: App {
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
+                    appDelegate.helperManager = helperManager
                     appDelegate.eventMonitor = eventMonitor
 
                     // 1. Seed boot-assets from bundle → ~/.arcbox/boot/
                     await bootAssetManager.ensureAssets()
 
-                    // 1.5. Register CLI into PATH and install shell completions.
-                    // Runs after boot-assets so the CLI binary is available.
-                    // Failures are non-fatal — users can run `arcbox setup install` manually.
+                    // 2. Register privileged helper (SMAppService.daemon, root-level) and run
+                    //    all three privileged setup operations sequentially (each try? await,
+                    //    one failure does not cancel the others). Non-fatal: core works without helper.
+                    await setupHelper()
+
+                    // 3. Register CLI into PATH and install shell completions.
                     if let cli = try? CLIRunner() {
                         try? await cli.run(arguments: ["setup", "install"])
                     }
 
-                    // 1.6. Install Docker CLI tools and set arcbox as default context.
-                    // Uses NDJSON streaming for progress — UI can observe
-                    // dockerToolSetupManager.state.
+                    // 4. Install Docker CLI tools and set arcbox as default context.
                     await dockerToolSetupManager.installAndEnable()
 
-                    // 2. Start health monitoring; if daemon is already registered
-                    // via LaunchAgent, it will be detected automatically.
+                    // 5. Start health monitoring.
                     daemonManager.startMonitoring()
 
-                    // 3. Register via SMAppService to ensure launchd management.
-                    // register() is idempotent and also polls for reachability.
+                    // 6. Register daemon via SMAppService (LaunchAgent) and wait for reachability.
+                    //    Once the daemon creates ~/.arcbox/run/docker.sock, the /var/run/docker.sock
+                    //    symlink created in step 2 becomes active automatically.
                     await daemonManager.enableDaemon()
 
-                    // 4. Initialize clients when daemon is running
+                    // 7. Initialize gRPC / Docker clients.
                     initClientsIfNeeded()
 
-                    // 5. Background: check for boot-asset updates after a delay.
-                    // Uses child Task (not .detached) so it's cancelled when .task tears down.
                     Task {
                         try? await Task.sleep(for: .seconds(5))
                         await bootAssetManager.checkForUpdates()
@@ -113,6 +130,28 @@ struct ArcBoxDesktopApp: App {
                 CheckForUpdatesView(updater: updaterController.updater)
             }
         }
+    }
+
+    private func setupHelper() async {
+        do {
+            try await helperManager.register()
+        } catch HelperError.requiresApproval {
+            // User previously denied in System Settings.
+            // Show a non-blocking UI banner; core features still work.
+            appVM.showHelperApprovalBanner = true
+            return
+        } catch {
+            return
+        }
+
+        let socketPath = DaemonManager.dockerSocketPath   // ~/.arcbox/run/docker.sock
+        let bundlePath = Bundle.main.bundleURL.path
+
+        // Each operation is independent — await separately so that one failure
+        // (e.g. socket occupied by OrbStack) does not cancel the other two.
+        try? await helperManager.setupDockerSocket(socketPath: socketPath)
+        try? await helperManager.installCLITools(appBundlePath: bundlePath)
+        try? await helperManager.setupDNSResolver()
     }
 
     private func initClientsIfNeeded() {

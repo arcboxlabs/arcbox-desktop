@@ -148,7 +148,7 @@ struct ContainerRowView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .padding(.leading, indented ? 28 : 0)
         .frame(height: 44)
         .background(
@@ -160,7 +160,7 @@ struct ContainerRowView: View {
                 )
         )
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in

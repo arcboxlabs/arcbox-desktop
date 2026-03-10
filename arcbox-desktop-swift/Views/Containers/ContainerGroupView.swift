@@ -83,12 +83,12 @@ struct ContainerGroupView: View {
                 }
             }
             .frame(height: 44)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 12)
             .background(
                 RoundedRectangle(cornerRadius: 6)
                     .fill(isHovered ? AppColors.hover : Color.clear)
             )
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 12)
             .contentShape(Rectangle())
             .onTapGesture(perform: onToggle)
             .onHover { hovering in
