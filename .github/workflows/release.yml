@@ -36,12 +36,26 @@ jobs:
       - name: Checkout arcbox-desktop-swift
         uses: actions/checkout@v4
 
+      - name: Resolve arcbox ref
+        id: arcbox_ref
+        run: |
+          # Priority: workflow input > arcbox.version file > master
+          if [ -n "${{ inputs.arcbox_ref }}" ] && [ "${{ inputs.arcbox_ref }}" != "master" ]; then
+            REF="${{ inputs.arcbox_ref }}"
+          elif [ -f arcbox.version ]; then
+            REF="$(tr -d '[:space:]' < arcbox.version)"
+          else
+            REF="master"
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "Arcbox ref: $REF"
+
       - name: Checkout arcbox
         uses: actions/checkout@v4
         with:
           repository: arcboxlabs/arcbox
           path: arcbox
-          ref: ${{ inputs.arcbox_ref || 'master' }}
+          ref: ${{ steps.arcbox_ref.outputs.ref }}
 
       - name: Determine version
         id: version
@@ -128,7 +142,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          REF="${{ inputs.arcbox_ref || 'master' }}"
+          REF="${{ steps.arcbox_ref.outputs.ref }}"
 
           # Resolve which release to download:
           #   - If REF is a version tag (v*), use that exact release
