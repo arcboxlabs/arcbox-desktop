@@ -269,6 +269,16 @@ if [ -n "$SIGN_IDENTITY" ]; then
         echo "  Signed daemon with virtualization entitlement"
     fi
 
+    # Re-sign ArcBoxHelper (privileged helper for root-level operations).
+    HELPER_PATH="$APP_BUNDLE/Contents/Library/HelperTools/ArcBoxHelper"
+    HELPER_ENTITLEMENTS="$DESKTOP_REPO/ArcBoxHelper/ArcBoxHelper.entitlements"
+    if [ -f "$HELPER_PATH" ]; then
+        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
+            --timestamp --identifier "io.arcbox.desktop.helper" \
+            --entitlements "$HELPER_ENTITLEMENTS" "$HELPER_PATH"
+        echo "  Signed ArcBoxHelper with hardened runtime"
+    fi
+
     # Re-sign the outer app (nested code changed, so the seal must be refreshed).
     codesign --force --options runtime \
         --sign "$SIGN_IDENTITY" --timestamp \
@@ -315,9 +325,23 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$NOTARIZE" = true ] && [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Notarizing DMG ---"
-    xcrun notarytool submit "$DMG_PATH" \
+    SUBMIT_OUT=$(xcrun notarytool submit "$DMG_PATH" \
         --keychain-profile "arcbox-notarize" \
-        --wait --timeout 30m
+        --wait --timeout 30m 2>&1) || true
+    echo "$SUBMIT_OUT"
+
+    # Extract submission ID for log retrieval.
+    SUBMISSION_ID=$(echo "$SUBMIT_OUT" | awk '/^  id:/{print $2; exit}')
+
+    if echo "$SUBMIT_OUT" | grep -q "status: Invalid"; then
+        echo "--- Notarization REJECTED — fetching log ---"
+        if [ -n "$SUBMISSION_ID" ]; then
+            xcrun notarytool log "$SUBMISSION_ID" \
+                --keychain-profile "arcbox-notarize" 2>&1 || true
+        fi
+        exit 1
+    fi
+
     xcrun stapler staple "$DMG_PATH"
     echo "  Notarization complete"
 fi
