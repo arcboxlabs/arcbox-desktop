@@ -272,12 +272,15 @@ jobs:
         run: ln -s "$GITHUB_WORKSPACE/arcbox" ../arcbox
 
       - name: Create Local.xcconfig
+        env:
+          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
         run: |
-          CHANNEL="${{ steps.version.outputs.channel }}"
-          cat > Local.xcconfig <<EOF
-          INFOPLIST_KEY_SUFeedURL = https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml
-          INFOPLIST_KEY_SUPublicEDKey = ${{ secrets.SPARKLE_PUBLIC_KEY }}
-          EOF
+          cat > Local.xcconfig <<XCEOF
+          #include "Version.xcconfig"
+          INFOPLIST_KEY_SUPublicEDKey = ${SPARKLE_PUBLIC_KEY}
+          XCEOF
+          echo "Local.xcconfig:"
+          cat Local.xcconfig
 
       - name: Trust SwiftPM plugins
         run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
@@ -288,6 +291,7 @@ jobs:
           DESKTOP_REPO: ${{ github.workspace }}
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
+          SPARKLE_FEED_URL: "https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml"
         run: |
           scripts/package-dmg.sh \
             --sign "${{ secrets.APPLE_SIGNING_IDENTITY }}" \
@@ -307,6 +311,7 @@ jobs:
         id: sparkle_sign
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        shell: bash
         run: |
           set -euo pipefail
 
@@ -342,16 +347,15 @@ jobs:
 
           # Parse sparkle:edSignature="..." length="..."
           ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
-          DMG_LENGTH=$(echo "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
+          if [ -z "$ED_SIGNATURE" ]; then
+            echo "::error::Failed to extract EdDSA signature from sign_update output"
+            exit 1
+          fi
 
+          DMG_LENGTH=$(echo "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
           # Fallback: get length from stat if not in output
           if [ -z "$DMG_LENGTH" ]; then
             DMG_LENGTH=$(stat -f%z "$DMG_PATH")
-          fi
-
-          if [ -z "$ED_SIGNATURE" ]; then
-            echo "::error::Failed to extract EdDSA signature from: $SIGN_OUTPUT"
-            exit 1
           fi
 
           echo "ed_signature=$ED_SIGNATURE" >> "$GITHUB_OUTPUT"
