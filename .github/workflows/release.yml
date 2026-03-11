@@ -33,7 +33,7 @@ jobs:
       dmg_length: ${{ steps.sparkle_sign.outputs.dmg_length }}
 
     steps:
-      - name: Checkout arcbox-desktop-swift
+      - name: Checkout arcbox-desktop
         uses: actions/checkout@v4
 
       - name: Resolve arcbox ref

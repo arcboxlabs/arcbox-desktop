@@ -5,8 +5,8 @@
 #   scripts/package-dmg.sh [--sign <identity>] [--notarize]
 #
 # Environment variables:
-#   DESKTOP_REPO   - Path to arcbox-desktop-swift checkout (default: script dir/..)
-#   BUNDLE_ID      - App bundle identifier (default: com.arcbox.arcbox-desktop-swift)
+#   DESKTOP_REPO   - Path to arcbox-desktop checkout (default: script dir/..)
+#   BUNDLE_ID      - App bundle identifier (default: io.arcbox.desktop)
 #   TEAM_ID        - Apple Developer Team ID (required for signing)
 #   ARCBOX_DIR     - Path to arcbox checkout (default: DESKTOP_REPO/../arcbox or ./arcbox)
 #   PSTRAMP_DIR    - Path to pstramp checkout (default: ARCBOX_DIR/../pstramp)
@@ -57,14 +57,14 @@ else
     exit 1
 fi
 
-BUNDLE_ID="${BUNDLE_ID:-com.arcbox.arcbox-desktop-swift}"
+BUNDLE_ID="${BUNDLE_ID:-io.arcbox.desktop}"
 BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
 APP_NAME="ArcBox Desktop"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
 # Read version from Xcode project
 VERSION=$(sed -n 's/.*MARKETING_VERSION = \(.*\);/\1/p' \
-    "$DESKTOP_REPO/arcbox-desktop-swift.xcodeproj/project.pbxproj" | head -1 | tr -d ' ')
+    "$DESKTOP_REPO/ArcBox.xcodeproj/project.pbxproj" | head -1 | tr -d ' ')
 VERSION="${VERSION:-1.0}"
 DMG_NAME="ArcBox-Desktop-${VERSION}-arm64"
 DMG_PATH="$ARCBOX_DIR/target/$DMG_NAME.dmg"
@@ -83,8 +83,8 @@ echo "  Notarize     : $NOTARIZE"
 echo "--- Building Swift app ---"
 
 XCODE_FLAGS=(
-    -project "$DESKTOP_REPO/arcbox-desktop-swift.xcodeproj"
-    -scheme "arcbox-desktop-swift"
+    -project "$DESKTOP_REPO/ArcBox.xcodeproj"
+    -scheme "ArcBox"
     -configuration Release
     -derivedDataPath "$BUILD_DIR/DerivedData"
     ARCBOX_DIR="$ARCBOX_DIR"
@@ -254,7 +254,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
 
     DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/io.arcbox.desktop.daemon"
-    DAEMON_ENTITLEMENTS="$DESKTOP_REPO/arcbox-desktop-swift/DaemonEntitlements.entitlements"
+    DAEMON_ENTITLEMENTS="$DESKTOP_REPO/ArcBox/DaemonEntitlements.entitlements"
 
     # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
     codesign --force --deep --options runtime \

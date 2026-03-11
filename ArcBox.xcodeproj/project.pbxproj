@@ -22,7 +22,7 @@
 			containerPortal = 657F65732F3A2ADB00C7005A /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 657F657A2F3A2ADB00C7005A;
-			remoteInfo = "arcbox-desktop-swift";
+			remoteInfo = ArcBox;
 		};
 		AB0E00402F70000000000040 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -62,16 +62,16 @@
 		657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox Desktop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		657F65A02F3A2ADB00C7005A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
-		8AFC409B6C134B0BBFA4D294 /* arcbox-desktop-swiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "arcbox-desktop-swiftTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = io.arcbox.desktop.daemon.plist; sourceTree = "<group>"; };
 		AB0E00012F70000000000001 /* ArcBoxHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ArcBoxHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0E00022F70000000000002 /* io.arcbox.desktop.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = io.arcbox.desktop.helper.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		657F657D2F3A2ADB00C7005A /* arcbox-desktop-swift */ = {
+		657F657D2F3A2ADB00C7005A /* ArcBox */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "arcbox-desktop-swift";
+			path = ArcBox;
 			sourceTree = "<group>";
 		};
 		AB0E00042F70000000000004 /* ArcBoxHelper */ = {
@@ -110,21 +110,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		336ADECAFDFE4B28898C3637 /* arcbox-desktop-swiftTests */ = {
+		336ADECAFDFE4B28898C3637 /* ArcBoxTests */ = {
 			isa = PBXGroup;
 			children = (
 				8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */,
 			);
-			path = "arcbox-desktop-swiftTests";
+			path = ArcBoxTests;
 			sourceTree = "<group>";
 		};
 		657F65722F3A2ADB00C7005A = {
 			isa = PBXGroup;
 			children = (
 				657F65A02F3A2ADB00C7005A /* Local.xcconfig */,
-				657F657D2F3A2ADB00C7005A /* arcbox-desktop-swift */,
+				657F657D2F3A2ADB00C7005A /* ArcBox */,
 				AB0E00042F70000000000004 /* ArcBoxHelper */,
-				336ADECAFDFE4B28898C3637 /* arcbox-desktop-swiftTests */,
+				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
 				AB0D00062F60000000000001 /* LaunchDaemons */,
 				657F657C2F3A2ADB00C7005A /* Products */,
 			);
@@ -133,7 +133,7 @@
 		657F657C2F3A2ADB00C7005A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8AFC409B6C134B0BBFA4D294 /* arcbox-desktop-swiftTests.xctest */,
+				8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */,
 				657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */,
 				AB0E00012F70000000000001 /* ArcBoxHelper */,
 			);
@@ -152,9 +152,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		657F657A2F3A2ADB00C7005A /* arcbox-desktop-swift */ = {
+		657F657A2F3A2ADB00C7005A /* ArcBox */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "arcbox-desktop-swift" */;
+			buildConfigurationList = 657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "ArcBox" */;
 			buildPhases = (
 				AB0D00032F60000000000001 /* Build Rust Daemon */,
 				657F65772F3A2ADB00C7005A /* Sources */,
@@ -171,22 +171,22 @@
 				AB0E00412F70000000000041 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				657F657D2F3A2ADB00C7005A /* arcbox-desktop-swift */,
+				657F657D2F3A2ADB00C7005A /* ArcBox */,
 			);
-			name = "arcbox-desktop-swift";
+			name = ArcBox;
 			packageProductDependencies = (
 				657F65912F3A2ADB00C7005A /* ArcBoxClient */,
 				DC0A11002F4E000000000001 /* DockerClient */,
 				DC0B11002F4E000000000001 /* SwiftTerm */,
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 			);
-			productName = "arcbox-desktop-swift";
+			productName = "ArcBox Desktop";
 			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */;
 			productType = "com.apple.product-type.application";
 		};
-		8DEF0B979A924DB2A2E788C5 /* arcbox-desktop-swiftTests */ = {
+		8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "arcbox-desktop-swiftTests" */;
+			buildConfigurationList = CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "ArcBoxTests" */;
 			buildPhases = (
 				11596CADADF044D08FA0FF86 /* Sources */,
 				0814FB54EA8A4F7EBD5E4CEC /* Frameworks */,
@@ -196,11 +196,11 @@
 			dependencies = (
 				007CD6A408984FAB9380FC71 /* PBXTargetDependency */,
 			);
-			name = "arcbox-desktop-swiftTests";
+			name = ArcBoxTests;
 			packageProductDependencies = (
 			);
-			productName = "arcbox-desktop-swiftTests";
-			productReference = 8AFC409B6C134B0BBFA4D294 /* arcbox-desktop-swiftTests.xctest */;
+			productName = ArcBoxTests;
+			productReference = 8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		AB0E00602F70000000000060 /* ArcBoxHelper */ = {
@@ -242,7 +242,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "arcbox-desktop-swift" */;
+			buildConfigurationList = 657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "ArcBox" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -262,8 +262,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8DEF0B979A924DB2A2E788C5 /* arcbox-desktop-swiftTests */,
-				657F657A2F3A2ADB00C7005A /* arcbox-desktop-swift */,
+				8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */,
+				657F657A2F3A2ADB00C7005A /* ArcBox */,
 				AB0E00602F70000000000060 /* ArcBoxHelper */,
 			);
 		};
@@ -308,7 +308,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/io.arcbox.desktop.daemon\"\nENTITLEMENTS=\"${PROJECT_DIR}/arcbox-desktop-swift/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"io.arcbox.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\nfi\n";
+			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/io.arcbox.desktop.daemon\"\nENTITLEMENTS=\"${PROJECT_DIR}/ArcBox/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"io.arcbox.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\nfi\n";
 		};
 		AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -356,7 +356,7 @@
 /* Begin PBXTargetDependency section */
 		007CD6A408984FAB9380FC71 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 657F657A2F3A2ADB00C7005A /* arcbox-desktop-swift */;
+			target = 657F657A2F3A2ADB00C7005A /* ArcBox */;
 			targetProxy = 3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */;
 		};
 		AB0E00412F70000000000041 /* PBXTargetDependency */ = {
@@ -376,7 +376,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcboxlabs.arcbox-desktop-swiftTests";
+				PRODUCT_BUNDLE_IDENTIFIER = io.arcbox.desktop.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox Desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox Desktop";
@@ -515,7 +515,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 97698DJKXY;
+				DEVELOPMENT_TEAM = 8U3ZJ258K9;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -529,7 +529,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcbox.arcbox-desktop-swift";
+				PRODUCT_BUNDLE_IDENTIFIER = io.arcbox.desktop;
 				PRODUCT_NAME = "ArcBox Desktop";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -557,7 +557,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 97698DJKXY;
+				DEVELOPMENT_TEAM = 8U3ZJ258K9;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -571,7 +571,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcbox.arcbox-desktop-swift";
+				PRODUCT_BUNDLE_IDENTIFIER = io.arcbox.desktop;
 				PRODUCT_NAME = "ArcBox Desktop";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -598,7 +598,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcboxlabs.arcbox-desktop-swiftTests";
+				PRODUCT_BUNDLE_IDENTIFIER = io.arcbox.desktop.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox Desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox Desktop";
@@ -610,7 +610,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ArcBoxHelper/ArcBoxHelper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 97698DJKXY;
+				DEVELOPMENT_TEAM = 8U3ZJ258K9;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -628,7 +628,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ArcBoxHelper/ArcBoxHelper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 97698DJKXY;
+				DEVELOPMENT_TEAM = 8U3ZJ258K9;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -644,7 +644,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "arcbox-desktop-swift" */ = {
+		657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "ArcBox" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				657F65842F3A2ADD00C7005A /* Debug */,
@@ -653,7 +653,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "arcbox-desktop-swift" */ = {
+		657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "ArcBox" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				657F65872F3A2ADD00C7005A /* Debug */,
@@ -671,7 +671,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "arcbox-desktop-swiftTests" */ = {
+		CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "ArcBoxTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				481FF2A2F2214C7695FFA851 /* Debug */,

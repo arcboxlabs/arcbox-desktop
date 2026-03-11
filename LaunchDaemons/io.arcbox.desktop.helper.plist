@@ -12,7 +12,7 @@
 
     <key>AssociatedBundleIdentifiers</key>
     <array>
-        <string>com.arcbox.arcbox-desktop-swift</string>
+        <string>io.arcbox.desktop</string>
     </array>
 
     <!-- XPC Mach service name; must match NSXPCListener in helper -->
@@ -33,7 +33,7 @@
         <key>team-identifier</key>
         <string>__DEVELOPMENT_TEAM__</string>
         <key>signing-identifier</key>
-        <string>com.arcbox.arcbox-desktop-swift</string>
+        <string>io.arcbox.desktop</string>
     </dict>
 
     <!-- On-demand only: launchd starts this daemon when XPC requests arrive -->
