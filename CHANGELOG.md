@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.1.0...v1.1.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* **ci:** resolve SPM package name collision and shallow clone build number ([f03ea69](https://github.com/arcboxlabs/arcbox-desktop/commit/f03ea69a7694baafd1392ee27b617ee092e6f6b2))
+
 ## [1.1.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.0.0...v1.1.0) (2026-03-11)
 
 
