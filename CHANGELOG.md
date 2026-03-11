@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.1.1...v1.1.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* **ci:** rename arcbox checkout path to avoid case-insensitive FS collision ([8d92555](https://github.com/arcboxlabs/arcbox-desktop/commit/8d925554175b25a2ea9ddc7cf78b95084741f4f1))
+
 ## [1.1.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.1.0...v1.1.1) (2026-03-11)
 
 
