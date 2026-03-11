@@ -32,6 +32,10 @@ public final class HelperManager {
         let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
         switch service.status {
         case .enabled:
+            // Force re-register to ensure BundleProgram resolves against the
+            // current app bundle (stale registrations point to old paths).
+            try? await service.unregister()
+            try service.register()
             isInstalled = true
         case .notRegistered, .notFound:
             try service.register()

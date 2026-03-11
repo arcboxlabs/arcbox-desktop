@@ -83,6 +83,11 @@ public final class DaemonManager {
         print("[DaemonManager] Current SMAppService status: \(status)")
 
         do {
+            // Force re-register to ensure BundleProgram resolves against the current
+            // app bundle path. Stal
+            // e registrations from a different location (e.g.
+            // /Applications/) cause launchd to look for the binary in the old path.
+            try? await service.unregister()
             try service.register()
             print("[DaemonManager] Service registered successfully")
         } catch {
