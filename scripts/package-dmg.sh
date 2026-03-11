@@ -101,6 +101,11 @@ if [ -n "$SIGN_IDENTITY" ]; then
     )
 fi
 
+# Pass Sparkle feed URL as command-line build setting (xcconfig can't handle // in URLs)
+if [ -n "${SPARKLE_FEED_URL:-}" ]; then
+    XCODE_FLAGS+=("INFOPLIST_KEY_SUFeedURL=$SPARKLE_FEED_URL")
+fi
+
 xcodebuild build "${XCODE_FLAGS[@]}" | tail -20
 
 # Locate the built .app
