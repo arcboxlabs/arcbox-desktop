@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version tag (e.g. v1.0.0-alpha.1)'
-        required: true
+        description: 'Version tag (e.g. v1.0.0-alpha.1). Defaults to Version.xcconfig if empty.'
+        required: false
         type: string
       arcbox_ref:
         description: 'arcbox repo ref to build Rust from (branch, tag, or SHA)'
@@ -60,12 +60,26 @@ jobs:
       - name: Determine version
         id: version
         run: |
+          # Read canonical version from Version.xcconfig
+          XCCONFIG_VERSION=$(sed -n 's/^MARKETING_VERSION *= *\(.*\)/\1/p' \
+              Version.xcconfig | sed 's/ *\/\/.*//' | tr -d ' ')
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.tag }}"
+            if [ -n "${{ inputs.tag }}" ]; then
+              VERSION="${{ inputs.tag }}"
+            else
+              VERSION="v${XCCONFIG_VERSION}"
+            fi
           else
             VERSION="${GITHUB_REF#refs/tags/}"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # Validate tag version matches Version.xcconfig
+          TAG_VER="${VERSION#v}"
+          if [ "$TAG_VER" != "$XCCONFIG_VERSION" ]; then
+            echo "::warning::Tag version ($TAG_VER) differs from Version.xcconfig ($XCCONFIG_VERSION)"
+          fi
 
           if echo "$VERSION" | grep -qE '(alpha|beta|rc)'; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"

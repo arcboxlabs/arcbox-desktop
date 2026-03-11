@@ -62,10 +62,11 @@ BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
 APP_NAME="ArcBox Desktop"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
-# Read version from Xcode project
-VERSION=$(sed -n 's/.*MARKETING_VERSION = \(.*\);/\1/p' \
-    "$DESKTOP_REPO/ArcBox.xcodeproj/project.pbxproj" | head -1 | tr -d ' ')
-VERSION="${VERSION:-1.0}"
+# Read version from Version.xcconfig (source of truth managed by release-please)
+VERSION=$(sed -n 's/^MARKETING_VERSION *= *\(.*\)/\1/p' \
+    "$DESKTOP_REPO/Version.xcconfig" | sed 's/ *\/\/.*//' | tr -d ' ')
+VERSION="${VERSION:-0.0.0}"
+BUILD_NUMBER=$(git -C "$DESKTOP_REPO" rev-list --count HEAD)
 DMG_NAME="ArcBox-Desktop-${VERSION}-arm64"
 DMG_PATH="$ARCBOX_DIR/target/$DMG_NAME.dmg"
 
@@ -74,6 +75,7 @@ echo "  Desktop repo : $DESKTOP_REPO"
 echo "  Arcbox dir   : $ARCBOX_DIR"
 echo "  Bundle ID    : $BUNDLE_ID"
 echo "  Version      : $VERSION"
+echo "  Build number : $BUILD_NUMBER"
 echo "  Sign identity: ${SIGN_IDENTITY:-"(ad-hoc)"}"
 echo "  Notarize     : $NOTARIZE"
 
@@ -88,6 +90,7 @@ XCODE_FLAGS=(
     -configuration Release
     -derivedDataPath "$BUILD_DIR/DerivedData"
     ARCBOX_DIR="$ARCBOX_DIR"
+    CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
 )
 
 if [ -n "$SIGN_IDENTITY" ]; then

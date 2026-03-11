@@ -66,6 +66,7 @@
 		AB0D00012F60000000000001 /* io.arcbox.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = io.arcbox.desktop.daemon.plist; sourceTree = "<group>"; };
 		AB0E00012F70000000000001 /* ArcBoxHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ArcBoxHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0E00022F70000000000002 /* io.arcbox.desktop.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = io.arcbox.desktop.helper.plist; sourceTree = "<group>"; };
+		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -122,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				657F65A02F3A2ADB00C7005A /* Local.xcconfig */,
+				AB0F00012F80000000000001 /* Version.xcconfig */,
 				657F657D2F3A2ADB00C7005A /* ArcBox */,
 				AB0E00042F70000000000004 /* ArcBoxHelper */,
 				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
@@ -507,6 +509,7 @@
 		};
 		657F65872F3A2ADD00C7005A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AB0F00012F80000000000001 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -514,7 +517,6 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8U3ZJ258K9;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -528,7 +530,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.arcbox.desktop;
 				PRODUCT_NAME = "ArcBox Desktop";
 				REGISTER_APP_GROUPS = YES;
@@ -549,6 +550,7 @@
 		};
 		657F65882F3A2ADD00C7005A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AB0F00012F80000000000001 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -556,7 +558,6 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8U3ZJ258K9;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -570,7 +571,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.arcbox.desktop;
 				PRODUCT_NAME = "ArcBox Desktop";
 				REGISTER_APP_GROUPS = YES;
