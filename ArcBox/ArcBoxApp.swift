@@ -1,9 +1,9 @@
-import SwiftUI
 import AppKit
 import ArcBoxClient
 import DockerClient
 import ServiceManagement
 import Sparkle
+import SwiftUI
 
 // MARK: - App Delegate
 
@@ -79,30 +79,38 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.eventMonitor = eventMonitor
 
                     // 1. Seed boot-assets from bundle → ~/.arcbox/boot/
+                    print("[Startup] Step 1: ensureAssets")
                     await bootAssetManager.ensureAssets()
 
-                    // 2. Register privileged helper (SMAppService.daemon, root-level) and run
-                    //    all three privileged setup operations sequentially (each try? await,
-                    //    one failure does not cancel the others). Non-fatal: core works without helper.
-                    await setupHelper()
+                    // 2. Register privileged helper (background, non-blocking).
+                    //    Helper setup is non-critical and may hang if the helper
+                    //    can't spawn, so we run it in a detached Task to avoid
+                    //    blocking the daemon startup path.
+                    print("[Startup] Step 2: setupHelper (background)")
+                    Task { await setupHelper() }
 
                     // 3. Register CLI into PATH and install shell completions.
+                    print("[Startup] Step 3: CLI setup")
                     if let cli = try? CLIRunner() {
                         try? await cli.run(arguments: ["setup", "install"])
                     }
 
                     // 4. Install Docker CLI tools and set arcbox as default context.
+                    print("[Startup] Step 4: dockerToolSetup")
                     await dockerToolSetupManager.installAndEnable()
 
                     // 5. Start health monitoring.
+                    print("[Startup] Step 5: startMonitoring")
                     daemonManager.startMonitoring()
 
                     // 6. Register daemon via SMAppService (LaunchAgent) and wait for reachability.
                     //    Once the daemon creates ~/.arcbox/run/docker.sock, the /var/run/docker.sock
                     //    symlink created in step 2 becomes active automatically.
+                    print("[Startup] Step 6: enableDaemon")
                     await daemonManager.enableDaemon()
 
                     // 7. Initialize gRPC / Docker clients.
+                    print("[Startup] Step 7: initClients")
                     initClientsIfNeeded()
 
                     Task {
@@ -138,13 +146,15 @@ struct ArcBoxDesktopApp: App {
         } catch HelperError.requiresApproval {
             // User previously denied in System Settings.
             // Show a non-blocking UI banner; core features still work.
+            print("[Startup] Helper requires approval in System Settings")
             appVM.showHelperApprovalBanner = true
             return
         } catch {
+            print("[Startup] Helper registration failed: \(error)")
             return
         }
 
-        let socketPath = DaemonManager.dockerSocketPath   // ~/.arcbox/run/docker.sock
+        let socketPath = DaemonManager.dockerSocketPath  // ~/.arcbox/run/docker.sock
         let bundlePath = Bundle.main.bundleURL.path
 
         // Each operation is independent — await separately so that one failure
