@@ -84,11 +84,16 @@ echo "  Notarize     : $NOTARIZE"
 # ---------------------------------------------------------------------------
 echo "--- Building Swift app ---"
 
+DERIVED_DATA="$DESKTOP_REPO/.build/DerivedData"
+SPM_CLONES="/tmp/arcbox-spm-packages"
+
 XCODE_FLAGS=(
     -project "$DESKTOP_REPO/ArcBox.xcodeproj"
     -scheme "ArcBox"
     -configuration Release
-    -derivedDataPath "$BUILD_DIR/DerivedData"
+    -derivedDataPath "$DERIVED_DATA"
+    -clonedSourcePackagesDirPath "$SPM_CLONES"
+    -skipPackagePluginValidation
     ARCBOX_DIR="$ARCBOX_DIR"
     CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
 )
@@ -109,7 +114,7 @@ fi
 xcodebuild build "${XCODE_FLAGS[@]}" | tail -20
 
 # Locate the built .app
-BUILT_APP=$(find "$BUILD_DIR/DerivedData/Build/Products/Release" \
+BUILT_APP=$(find "$DERIVED_DATA/Build/Products/Release" \
     -name "*.app" -maxdepth 1 | head -1)
 
 if [ ! -d "$BUILT_APP" ]; then
