@@ -47,12 +47,17 @@ public final class HelperManager {
             break
         }
 
+        #if DEBUG
         // Skip version check when already enabled — during development,
         // rebuilds change the CDHash but launchd caches the old LWCR.
         // Use `sudo sfltool resetbtm` in Terminal to clear stale state.
-        guard service.status != .enabled else { return }
+        if service.status == .enabled { return }
+        #endif
 
         let version = await getVersion()
+        if version == 0 {
+            throw HelperError.connectionFailed
+        }
         if version < kArcBoxHelperProtocolVersion {
             throw HelperError.versionMismatch(version)
         }

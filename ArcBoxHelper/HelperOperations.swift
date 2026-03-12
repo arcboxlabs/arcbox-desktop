@@ -26,22 +26,32 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
                 return
             }
 
-            guard let existing = try? FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath) else {
+            guard
+                let existing = try? FileManager.default.destinationOfSymbolicLink(
+                    atPath: symlinkPath)
+            else {
                 reply(makeError("Cannot read symlink target at \(symlinkPath)"))
                 return
             }
 
             if existing == socketPath {
                 // Already pointing to the correct target — idempotent.
-                reply(nil); return
+                reply(nil)
+                return
             }
 
             // Replace any existing symlink — ArcBox takes ownership of docker.sock.
-            try? FileManager.default.removeItem(atPath: symlinkPath)
+            do {
+                try FileManager.default.removeItem(atPath: symlinkPath)
+            } catch {
+                reply(error as NSError)
+                return
+            }
         }
         // Path did not exist, or was just removed — create the symlink.
         do {
-            try FileManager.default.createSymbolicLink(atPath: symlinkPath, withDestinationPath: socketPath)
+            try FileManager.default.createSymbolicLink(
+                atPath: symlinkPath, withDestinationPath: socketPath)
             reply(nil)
         } catch {
             reply(error as NSError)
@@ -51,7 +61,8 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     func teardownDockerSocket(reply: @escaping (NSError?) -> Void) {
         let symlinkPath = "/var/run/docker.sock"
         if let existing = try? FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath),
-           isValidArcBoxSocketPath(existing) {
+            isValidArcBoxSocketPath(existing)
+        {
             try? FileManager.default.removeItem(atPath: symlinkPath)
         }
         // If symlink points elsewhere, leave it untouched.
@@ -61,17 +72,20 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     // MARK: - Operation 2: CLI Tools
 
     func installCLITools(appBundlePath: String, reply: @escaping (NSError?) -> Void) {
-        // appBundlePath must be a signed .app bundle under a trusted location.
+        // appBundlePath must be an .app bundle under a trusted location.
         let allowedPrefixes = ["/Applications/", "/Users/"]
         guard appBundlePath.hasSuffix(".app"),
-              allowedPrefixes.contains(where: { appBundlePath.hasPrefix($0) }) else {
-            reply(makeError("appBundlePath must be under /Applications/ or /Users/ and end with .app"))
+            allowedPrefixes.contains(where: { appBundlePath.hasPrefix($0) })
+        else {
+            reply(
+                makeError("appBundlePath must be under /Applications/ or /Users/ and end with .app")
+            )
             return
         }
 
         // Actual binary path as per CLIRunner.swift:23.
         let tools: [(src: String, link: String)] = [
-            ("\(appBundlePath)/Contents/MacOS/bin/abctl", "/usr/local/bin/abctl"),
+            ("\(appBundlePath)/Contents/MacOS/bin/abctl", "/usr/local/bin/abctl")
         ]
 
         for t in tools {
@@ -88,10 +102,13 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             if let existing = try? FileManager.default.destinationOfSymbolicLink(atPath: t.link) {
                 if existing == t.src { continue }  // Already correct — idempotent.
 
-                guard existing.contains("ArcBox") else {
+                guard isArcBoxOwnedSymlink(existing) else {
                     // Link is owned by something else (e.g. Homebrew abctl).
                     // Return error so the App can surface this, not silently skip.
-                    reply(makeError("/usr/local/bin/\(URL(fileURLWithPath: t.link).lastPathComponent) is owned by another tool: \(existing)"))
+                    reply(
+                        makeError(
+                            "/usr/local/bin/\(URL(fileURLWithPath: t.link).lastPathComponent) is owned by another tool: \(existing)"
+                        ))
                     return
                 }
                 // Owned by a different ArcBox bundle (e.g. old install path) — replace.
@@ -99,9 +116,11 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             }
 
             do {
-                try FileManager.default.createSymbolicLink(atPath: t.link, withDestinationPath: t.src)
+                try FileManager.default.createSymbolicLink(
+                    atPath: t.link, withDestinationPath: t.src)
             } catch {
-                reply(error as NSError); return
+                reply(error as NSError)
+                return
             }
         }
         reply(nil)
@@ -110,7 +129,8 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     func uninstallCLITools(reply: @escaping (NSError?) -> Void) {
         for link in ["/usr/local/bin/abctl"] {
             if let target = try? FileManager.default.destinationOfSymbolicLink(atPath: link),
-               target.contains("ArcBox") {
+                isArcBoxOwnedSymlink(target)
+            {
                 try? FileManager.default.removeItem(atPath: link)
             }
         }
@@ -139,7 +159,8 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
 
     func teardownDNSResolver(domain: String, reply: @escaping (NSError?) -> Void) {
         guard isAllowedDomain(domain) else {
-            reply(makeError("Invalid domain")); return
+            reply(makeError("Invalid domain"))
+            return
         }
         try? FileManager.default.removeItem(atPath: "/etc/resolver/\(domain)")
         reply(nil)
@@ -162,12 +183,20 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         return path.range(of: pattern, options: .regularExpression) != nil
     }
 
+    /// Checks whether a symlink target points inside an ArcBox .app bundle.
+    /// Matches "ArcBox.app/", "ArcBox Desktop.app/", etc. but not unrelated paths
+    /// that merely contain the substring "ArcBox".
+    private func isArcBoxOwnedSymlink(_ target: String) -> Bool {
+        target.range(of: #"ArcBox[^/]*\.app/"#, options: .regularExpression) != nil
+    }
+
     private func isAllowedDomain(_ domain: String) -> Bool {
         ["arcbox.local", "arcbox.internal"].contains(domain)
     }
 
     private func makeError(_ msg: String) -> NSError {
-        NSError(domain: "io.arcbox.desktop.helper", code: -1,
-                userInfo: [NSLocalizedDescriptionKey: msg])
+        NSError(
+            domain: "io.arcbox.desktop.helper", code: -1,
+            userInfo: [NSLocalizedDescriptionKey: msg])
     }
 }
