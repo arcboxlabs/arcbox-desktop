@@ -36,16 +36,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
                 reply(nil); return
             }
 
-            // Replacement policy: only replace when the existing symlink's TARGET
-            // is itself an ArcBox path — regardless of whether that target is alive.
-            // Any non-ArcBox symlink (live OR dead) is rejected to avoid stealing
-            // sockets from Docker Desktop, OrbStack, or other runtimes.
-            guard isValidArcBoxSocketPath(existing) else {
-                reply(makeError("Socket owned by another runtime: \(existing)"))
-                return
-            }
-
-            // Existing symlink points to a different ArcBox path — safe to replace.
+            // Replace any existing symlink — ArcBox takes ownership of docker.sock.
             try? FileManager.default.removeItem(atPath: symlinkPath)
         }
         // Path did not exist, or was just removed — create the symlink.
@@ -70,9 +61,11 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     // MARK: - Operation 2: CLI Tools
 
     func installCLITools(appBundlePath: String, reply: @escaping (NSError?) -> Void) {
-        // appBundlePath must be a real app bundle under /Applications/.
-        guard appBundlePath.hasPrefix("/Applications/"), appBundlePath.hasSuffix(".app") else {
-            reply(makeError("appBundlePath must be under /Applications/ and end with .app"))
+        // appBundlePath must be a signed .app bundle under a trusted location.
+        let allowedPrefixes = ["/Applications/", "/Users/"]
+        guard appBundlePath.hasSuffix(".app"),
+              allowedPrefixes.contains(where: { appBundlePath.hasPrefix($0) }) else {
+            reply(makeError("appBundlePath must be under /Applications/ or /Users/ and end with .app"))
             return
         }
 
@@ -95,7 +88,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             if let existing = try? FileManager.default.destinationOfSymbolicLink(atPath: t.link) {
                 if existing == t.src { continue }  // Already correct — idempotent.
 
-                guard existing.contains("ArcBox.app") || existing.contains("/Applications/ArcBox") else {
+                guard existing.contains("ArcBox") else {
                     // Link is owned by something else (e.g. Homebrew abctl).
                     // Return error so the App can surface this, not silently skip.
                     reply(makeError("/usr/local/bin/\(URL(fileURLWithPath: t.link).lastPathComponent) is owned by another tool: \(existing)"))
@@ -117,7 +110,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     func uninstallCLITools(reply: @escaping (NSError?) -> Void) {
         for link in ["/usr/local/bin/abctl"] {
             if let target = try? FileManager.default.destinationOfSymbolicLink(atPath: link),
-               target.contains("ArcBox.app") || target.contains("/Applications/ArcBox") {
+               target.contains("ArcBox") {
                 try? FileManager.default.removeItem(atPath: link)
             }
         }
