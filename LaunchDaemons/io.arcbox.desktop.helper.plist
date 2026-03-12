@@ -24,8 +24,8 @@
 
     <!--
         SpawnConstraint (macOS 13.3+, enforced on Sonoma+):
-        Only the main ArcBox app (same Team ID + signing identifier) can trigger launch.
-        Prevents arbitrary processes from invoking the root daemon.
+        Constrains the daemon binary itself — must match helper's own signing identity.
+        Caller validation is handled by the XPC listener in main.swift.
         __DEVELOPMENT_TEAM__ is substituted by the Run Script build phase.
     -->
     <key>SpawnConstraint</key>
@@ -33,7 +33,7 @@
         <key>team-identifier</key>
         <string>__DEVELOPMENT_TEAM__</string>
         <key>signing-identifier</key>
-        <string>io.arcbox.desktop</string>
+        <string>io.arcbox.desktop.helper</string>
     </dict>
 
     <!-- On-demand only: launchd starts this daemon when XPC requests arrive -->

@@ -158,14 +158,14 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "ArcBox" */;
 			buildPhases = (
-				AB0D00032F60000000000001 /* Build Rust Daemon */,
+				AB0D00032F60000000000001 /* Build Rust Binaries */,
 				657F65772F3A2ADB00C7005A /* Sources */,
 				657F65782F3A2ADB00C7005A /* Frameworks */,
 				657F65792F3A2ADB00C7005A /* Resources */,
 				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
 				AB0E00322F70000000000032 /* Copy Helper Tool */,
 				AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */,
-				AB0D00052F60000000000001 /* Sign Rust Daemon */,
+				AB0D00052F60000000000001 /* Sign Rust Binaries */,
 			);
 			buildRules = (
 			);
@@ -282,7 +282,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		AB0D00032F60000000000001 /* Build Rust Daemon */ = {
+		AB0D00032F60000000000001 /* Build Rust Binaries */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -295,9 +295,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "#!/bin/bash\nset -euo pipefail\n\nRUST_DIR=\"${PROJECT_DIR}/../arcbox\"\nDAEMON_NAME=\"io.arcbox.desktop.daemon\"\n\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    CARGO_FLAGS=\"--release\"; RUST_PROFILE=\"release\"\nelse\n    CARGO_FLAGS=\"\"; RUST_PROFILE=\"debug\"\nfi\n\n# Skip cargo build if pre-built binaries already exist (e.g. downloaded from release)\nif [ -f \"${RUST_DIR}/target/${RUST_PROFILE}/arcbox-daemon\" ] && [ -f \"${RUST_DIR}/target/${RUST_PROFILE}/abctl\" ]; then\n    echo \"note: Using existing binaries, skipping cargo build\"\nelse\n    export PATH=\"$HOME/.cargo/bin:$PATH\"\n    cd \"${RUST_DIR}\"\n    cargo build ${CARGO_FLAGS} -p arcbox-daemon -p arcbox-cli\nfi\n\n# Copy daemon -> Contents/Helpers/\nHELPERS_DIR=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers\"\nmkdir -p \"${HELPERS_DIR}\"\ncp -f \"${RUST_DIR}/target/${RUST_PROFILE}/arcbox-daemon\" \"${HELPERS_DIR}/${DAEMON_NAME}\"\n\n# Copy abctl CLI -> Contents/MacOS/bin/\nCLI_DIR=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin\"\nmkdir -p \"${CLI_DIR}\"\ncp -f \"${RUST_DIR}/target/${RUST_PROFILE}/abctl\" \"${CLI_DIR}/abctl\"\n";
+			shellScript = "exec \"${PROJECT_DIR}/scripts/fetch-arcbox-binaries.sh\"\n";
 		};
-		AB0D00052F60000000000001 /* Sign Rust Daemon */ = {
+		AB0D00052F60000000000001 /* Sign Rust Binaries */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -610,6 +610,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ArcBoxHelper/ArcBoxHelper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
 				DEVELOPMENT_TEAM = 97698DJKXY;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -628,6 +629,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ArcBoxHelper/ArcBoxHelper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
 				DEVELOPMENT_TEAM = 97698DJKXY;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;

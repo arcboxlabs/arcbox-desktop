@@ -141,27 +141,42 @@ struct ArcBoxDesktopApp: App {
     }
 
     private func setupHelper() async {
+        print("[Helper] registerWithRetry starting")
         do {
-            try await helperManager.register()
-        } catch HelperError.requiresApproval {
-            // User previously denied in System Settings.
-            // Show a non-blocking UI banner; core features still work.
-            print("[Startup] Helper requires approval in System Settings")
-            appVM.showHelperApprovalBanner = true
-            return
+            try await helperManager.registerWithRetry()
         } catch {
-            print("[Startup] Helper registration failed: \(error)")
+            print("[Helper] registration failed: \(error)")
             return
         }
+        print("[Helper] registered, running operations")
 
         let socketPath = DaemonManager.dockerSocketPath  // ~/.arcbox/run/docker.sock
         let bundlePath = Bundle.main.bundleURL.path
 
-        // Each operation is independent — await separately so that one failure
-        // (e.g. socket occupied by OrbStack) does not cancel the other two.
-        try? await helperManager.setupDockerSocket(socketPath: socketPath)
-        try? await helperManager.installCLITools(appBundlePath: bundlePath)
-        try? await helperManager.setupDNSResolver()
+        // Each operation is independent — run separately so one failure
+        // does not cancel the others.
+        print("[Helper] setupDockerSocket(\(socketPath))")
+        do {
+            try await helperManager.setupDockerSocket(socketPath: socketPath)
+            print("[Helper] setupDockerSocket OK")
+        } catch {
+            print("[Helper] setupDockerSocket failed: \(error)")
+        }
+        print("[Helper] installCLITools(\(bundlePath))")
+        do {
+            try await helperManager.installCLITools(appBundlePath: bundlePath)
+            print("[Helper] installCLITools OK")
+        } catch {
+            print("[Helper] installCLITools failed: \(error)")
+        }
+        print("[Helper] setupDNSResolver")
+        do {
+            try await helperManager.setupDNSResolver()
+            print("[Helper] setupDNSResolver OK")
+        } catch {
+            print("[Helper] setupDNSResolver failed: \(error)")
+        }
+        print("[Helper] all operations done")
     }
 
     private func initClientsIfNeeded() {
