@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.1.2...v1.2.0) (2026-03-12)
+
+
+### Features
+
+* add abctl CLI to build/sign pipeline and update dev team ([8b108c6](https://github.com/arcboxlabs/arcbox-desktop/commit/8b108c6c58a37271457af29b99553af1b166cc4a))
+
+
+### Bug Fixes
+
+* force SMAppService re-registration to resolve stale bundle paths ([f96f9c2](https://github.com/arcboxlabs/arcbox-desktop/commit/f96f9c2a63b11edb4d68cd8a516874c12e0e4ec2))
+* make helper setup non-blocking to prevent startup hang ([f9b6023](https://github.com/arcboxlabs/arcbox-desktop/commit/f9b6023d03a98c4cf453fe69ef431386f581ce10))
+* resolve ArcBoxHelper XPC daemon launch failures ([#12](https://github.com/arcboxlabs/arcbox-desktop/issues/12)) ([4623cdd](https://github.com/arcboxlabs/arcbox-desktop/commit/4623cdd9b10b8fbcba6474a4264d73964d71e6f7))
+
 ## [1.1.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.1.1...v1.1.2) (2026-03-11)
 
 
