@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.4.1...v1.4.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* **ci:** extract arcbox-agent from release assets in DMG workflow ([5f15268](https://github.com/arcboxlabs/arcbox-desktop/commit/5f15268afdec55b43500b5e278ffc88cd39ead62))
+
 ## [1.4.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.4.0...v1.4.1) (2026-03-13)
 
 
