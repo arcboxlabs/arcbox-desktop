@@ -29,6 +29,8 @@
 #   ├── Resources/
 #   │   ├── assets.lock
 #   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
+#   │   ├── bin/
+#   │   │   └── arcbox-agent        # Guest agent (Linux musl binary)
 #   │   ├── runtime/                # Runtime binaries (mirrors ~/.arcbox/runtime/)
 #   │   └── completions/{bash,zsh,fish}/
 
@@ -186,6 +188,21 @@ if [ -f "$CLI_BIN" ]; then
             --timestamp "$BIN_DIR/abctl"
     fi
     echo "  Copied abctl → MacOS/bin/abctl"
+fi
+
+# ---------------------------------------------------------------------------
+# 3.5. Embed arcbox-agent → Contents/Resources/bin/arcbox-agent
+# ---------------------------------------------------------------------------
+AGENT_BIN="$ARCBOX_DIR/target/aarch64-unknown-linux-musl/release/arcbox-agent"
+if [ -f "$AGENT_BIN" ]; then
+    echo "--- Embedding arcbox-agent ---"
+    AGENT_DIR="$APP_BUNDLE/Contents/Resources/bin"
+    mkdir -p "$AGENT_DIR"
+    cp -f "$AGENT_BIN" "$AGENT_DIR/arcbox-agent"
+    echo "  Copied arcbox-agent → Resources/bin/arcbox-agent"
+else
+    echo "  Warning: arcbox-agent not found at $AGENT_BIN"
+    echo "  Build with: cargo build -p arcbox-agent --target aarch64-unknown-linux-musl --release"
 fi
 
 # ---------------------------------------------------------------------------

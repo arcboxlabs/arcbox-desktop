@@ -103,6 +103,10 @@ struct ArcBoxDesktopApp: App {
                     print("[Startup] Step 4.5: seedRuntimeBinaries")
                     await bootAssetManager.seedRuntimeBinaries()
 
+                    // 4.6. Seed arcbox-agent → ~/.arcbox/bin/arcbox-agent
+                    print("[Startup] Step 4.6: seedAgentBinary")
+                    await bootAssetManager.seedAgentBinary()
+
                     // 5. Start health monitoring.
                     print("[Startup] Step 5: startMonitoring")
                     daemonManager.startMonitoring()
