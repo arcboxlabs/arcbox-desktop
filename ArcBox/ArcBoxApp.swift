@@ -85,7 +85,7 @@ struct ArcBoxDesktopApp: App {
                         helperManager: helperManager,
                         daemonManager: daemonManager,
                         dockerToolSetupManager: dockerToolSetupManager,
-                        onClientsNeeded: { initClientsIfNeeded() }
+                        onClientsNeeded: { try initClientsIfNeeded() }
                     )
                     startupOrchestrator = orchestrator
                     await orchestrator.start()
@@ -100,7 +100,7 @@ struct ArcBoxDesktopApp: App {
                 // the initial .task check has already passed).
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
-                        initClientsIfNeeded()
+                        try? initClientsIfNeeded()
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
                         }
@@ -117,7 +117,7 @@ struct ArcBoxDesktopApp: App {
         }
     }
 
-    private func initClientsIfNeeded() {
+    private func initClientsIfNeeded() throws {
         guard daemonManager.state.isRunning else { return }
 
         if dockerClient == nil {
@@ -125,11 +125,9 @@ struct ArcBoxDesktopApp: App {
         }
 
         if arcboxClient == nil {
-            do {
-                let client = try ArcBoxClient()
-                Task { try await client.runConnections() }
-                arcboxClient = client
-            } catch {}
+            let client = try ArcBoxClient()
+            Task { try await client.runConnections() }
+            arcboxClient = client
         }
     }
 }

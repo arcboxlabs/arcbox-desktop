@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import ServiceManagement
 
 // MARK: - Startup Constants
 
@@ -98,8 +97,9 @@ private enum StartupError: LocalizedError {
 ///
 /// Steps are organized into phases:
 /// - Phase 1: `ensureAssets` (critical, blocks everything)
-/// - Phase 2: Non-critical steps (helper, CLI, Docker, runtime) run in parallel
-///   with the critical daemon path (enableDaemon -> initClients).
+/// - Phase 2: Non-critical steps (helper, CLI, Docker, runtime) run as
+///   fire-and-forget background tasks. The critical daemon path
+///   (enableDaemon -> initClients) blocks readiness.
 @Observable
 @MainActor
 public final class StartupOrchestrator {
@@ -125,7 +125,7 @@ public final class StartupOrchestrator {
     /// Whether all critical steps have completed successfully.
     public var isReady: Bool { phase == .completed }
 
-    /// Whether a retry is possible (i.e., startup has failed).
+    /// Whether a retry is possible (i.e., startup has failed and not currently running).
     public var canRetry: Bool {
         if case .failed = phase { return true }
         return false
@@ -136,14 +136,20 @@ public final class StartupOrchestrator {
     private let helperManager: HelperManager
     private let daemonManager: DaemonManager
     private let dockerToolSetupManager: DockerToolSetupManager
-    private let onClientsNeeded: @MainActor () -> Void
+    private let onClientsNeeded: @MainActor () throws -> Void
+
+    /// Prevents concurrent startup runs from interleaving.
+    private var isStarting = false
+
+    /// Handles for non-critical background tasks, cancelled on critical failure.
+    private var nonCriticalTasks: [Task<Void, Never>] = []
 
     public init(
         bootAssetManager: BootAssetManager,
         helperManager: HelperManager,
         daemonManager: DaemonManager,
         dockerToolSetupManager: DockerToolSetupManager,
-        onClientsNeeded: @escaping @MainActor () -> Void
+        onClientsNeeded: @escaping @MainActor () throws -> Void
     ) {
         self.bootAssetManager = bootAssetManager
         self.helperManager = helperManager
@@ -164,7 +170,16 @@ public final class StartupOrchestrator {
     ///
     /// Safe to call multiple times — resets state on each invocation.
     /// Already-cached steps (e.g., boot assets) will complete instantly.
+    /// Guarded against concurrent execution: if already running, subsequent
+    /// calls are no-ops.
     public func start() async {
+        guard !isStarting else { return }
+        isStarting = true
+        defer { isStarting = false }
+
+        // Cancel leftover non-critical tasks from a previous run.
+        cancelNonCriticalTasks()
+
         // Reset all step statuses.
         for step in StartupStep.allCases {
             stepStatuses[step] = .pending
@@ -185,16 +200,19 @@ public final class StartupOrchestrator {
             return
         }
 
-        // Phase 2: Run non-critical steps and critical daemon path in parallel.
-        // Task.init inherits @MainActor from the enclosing context, avoiding
-        // the `sending` parameter conflict that withTaskGroup would trigger.
-        let groupA = Task { await self.runNonCriticalSteps() }
-        let groupB = Task { await self.runDaemonPath() }
-        await groupA.value
-        await groupB.value
+        // Phase 2: Start non-critical steps as fire-and-forget background tasks.
+        // They don't block readiness — only the critical path gates .completed.
+        launchNonCriticalSteps()
 
-        // Only mark completed if no critical step failed.
-        if case .failed = phase { return }
+        // Phase 2: Critical daemon path (sequential, blocks readiness).
+        await runDaemonPath()
+
+        // Mark completed as soon as critical path finishes.
+        // Non-critical tasks continue in the background.
+        if case .failed = phase {
+            cancelNonCriticalTasks()
+            return
+        }
         phase = .completed
     }
 
@@ -208,36 +226,42 @@ public final class StartupOrchestrator {
 
     // MARK: - Step Groups
 
-    /// Non-critical steps that run in parallel. Failures are recorded but
-    /// do not abort the startup sequence.
-    private func runNonCriticalSteps() async {
-        let t1 = Task {
-            await self.runStep(.setupHelper) {
-                await self.performSetupHelper()
-            }
-        }
-        let t2 = Task {
-            await self.runStep(.cliSetup) {
-                if let cli = try? CLIRunner() {
-                    try? await cli.run(arguments: ["setup", "install"])
+    /// Launch non-critical steps as fire-and-forget background tasks.
+    /// Failures are recorded in stepStatuses but do not block readiness
+    /// or abort the startup sequence.
+    private func launchNonCriticalSteps() {
+        nonCriticalTasks = [
+            Task {
+                await self.runStep(.setupHelper) {
+                    try await self.performSetupHelper()
                 }
-            }
+            },
+            Task {
+                await self.runStep(.cliSetup) {
+                    let cli = try CLIRunner()
+                    try await cli.run(arguments: ["setup", "install"])
+                }
+            },
+            Task {
+                await self.runStep(.dockerToolSetup) {
+                    await self.dockerToolSetupManager.installAndEnable()
+                }
+            },
+            Task {
+                await self.runStep(.seedRuntime) {
+                    await self.bootAssetManager.seedRuntimeBinaries()
+                    await self.bootAssetManager.seedAgentBinary()
+                }
+            },
+        ]
+    }
+
+    /// Cancel all non-critical background tasks (e.g., on critical failure).
+    private func cancelNonCriticalTasks() {
+        for task in nonCriticalTasks {
+            task.cancel()
         }
-        let t3 = Task {
-            await self.runStep(.dockerToolSetup) {
-                await self.dockerToolSetupManager.installAndEnable()
-            }
-        }
-        let t4 = Task {
-            await self.runStep(.seedRuntime) {
-                await self.bootAssetManager.seedRuntimeBinaries()
-                await self.bootAssetManager.seedAgentBinary()
-            }
-        }
-        await t1.value
-        await t2.value
-        await t3.value
-        await t4.value
+        nonCriticalTasks = []
     }
 
     /// Critical daemon startup: monitoring -> enable -> init clients.
@@ -257,7 +281,7 @@ public final class StartupOrchestrator {
         }
 
         await runStep(.initClients) {
-            self.onClientsNeeded()
+            try self.onClientsNeeded()
         }
     }
 
@@ -265,12 +289,13 @@ public final class StartupOrchestrator {
 
     /// Migrated from ArcBoxApp.setupHelper() — registers the privileged helper
     /// and performs Docker socket, CLI tools, and DNS resolver setup.
-    private func performSetupHelper() async {
+    /// Throws on registration failure so runStep can mark .failed.
+    private func performSetupHelper() async throws {
         do {
             try await helperManager.registerWithRetry()
         } catch {
-            print("[Helper] registration failed: \(error)")
-            return
+            throw StartupError.stepFailed(
+                "Helper registration failed: \(error.localizedDescription)")
         }
 
         let socketPath = DaemonManager.dockerSocketPath

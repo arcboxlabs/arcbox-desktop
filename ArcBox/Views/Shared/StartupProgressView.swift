@@ -30,6 +30,7 @@ struct StartupProgressView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+                    .disabled(!orchestrator.canRetry)
                 }
                 .padding(.top, 4)
             }
