@@ -6,6 +6,7 @@ import DockerClient
 struct ContainersListView: View {
     @Environment(ContainersViewModel.self) private var vm
     @Environment(DaemonManager.self) private var daemonManager
+    @Environment(\.startupOrchestrator) private var orchestrator
     @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
@@ -33,7 +34,9 @@ struct ContainersListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !daemonManager.state.isRunning {
+            if let orchestrator, !orchestrator.isReady {
+                StartupProgressView(orchestrator: orchestrator)
+            } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
             } else if vm.containers.isEmpty {
                 ContainerEmptyState()

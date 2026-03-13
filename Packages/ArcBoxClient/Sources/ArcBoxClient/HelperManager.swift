@@ -76,8 +76,8 @@ public final class HelperManager {
 
         // Poll for approval (every 2s, up to 60 attempts = 2 min).
         let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
-        for _ in 0..<60 {
-            try await Task.sleep(for: .seconds(2))
+        for _ in 0..<StartupConstants.helperApprovalMaxAttempts {
+            try await Task.sleep(for: StartupConstants.helperApprovalPollInterval)
             if service.status != .requiresApproval {
                 try await register()
                 return
@@ -157,7 +157,7 @@ public final class HelperManager {
 
     /// XPC timeout in seconds. Prevents infinite hangs when the helper can't spawn
     /// (e.g. stale LWCR after rebuild causes xpcproxy EX_CONFIG).
-    private nonisolated static let xpcTimeout: TimeInterval = 10
+    private nonisolated static let xpcTimeout: TimeInterval = StartupConstants.xpcTimeout
 
     /// Thread-safe one-shot gate for continuation resume.
     private final class ResumeGate: @unchecked Sendable {
