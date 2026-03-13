@@ -98,8 +98,8 @@ public final class DaemonManager {
         }
 
         // Poll for reachability (up to 10 seconds)
-        for i in 0..<20 {
-            try? await Task.sleep(for: .milliseconds(500))
+        for i in 0..<StartupConstants.daemonPollMaxAttempts {
+            try? await Task.sleep(for: StartupConstants.daemonPollInterval)
             await checkReachability()
             if isReachable {
                 print("[DaemonManager] Daemon reachable after \(i + 1) checks")
@@ -128,8 +128,8 @@ public final class DaemonManager {
         }
 
         // Wait up to 5 seconds for daemon to stop
-        for _ in 0..<10 {
-            try? await Task.sleep(for: .milliseconds(500))
+        for _ in 0..<StartupConstants.daemonStopMaxAttempts {
+            try? await Task.sleep(for: StartupConstants.daemonStopPollInterval)
             await checkReachability()
             if !isReachable { break }
         }
@@ -148,7 +148,7 @@ public final class DaemonManager {
             while !Task.isCancelled {
                 await self?.checkReachability()
                 self?.refresh()
-                try? await Task.sleep(for: .seconds(3))
+                try? await Task.sleep(for: StartupConstants.healthMonitorInterval)
             }
         }
     }

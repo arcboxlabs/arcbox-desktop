@@ -6,6 +6,7 @@ import DockerClient
 struct ImagesListView: View {
     @Environment(ImagesViewModel.self) private var vm
     @Environment(DaemonManager.self) private var daemonManager
+    @Environment(\.startupOrchestrator) private var orchestrator
     @Environment(\.dockerClient) private var docker
 
     var body: some View {
@@ -20,7 +21,9 @@ struct ImagesListView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
 
-            if !daemonManager.state.isRunning {
+            if let orchestrator, !orchestrator.isReady {
+                StartupProgressView(orchestrator: orchestrator)
+            } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
             } else if vm.images.isEmpty {
                 ImageEmptyState()

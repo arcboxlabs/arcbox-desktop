@@ -51,6 +51,7 @@ struct ArcBoxDesktopApp: App {
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
+    @State private var startupOrchestrator: StartupOrchestrator?
 
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
@@ -72,57 +73,25 @@ struct ArcBoxDesktopApp: App {
                 .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.startupOrchestrator, startupOrchestrator)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
                     appDelegate.helperManager = helperManager
                     appDelegate.eventMonitor = eventMonitor
 
-                    // 1. Seed boot-assets from bundle → ~/.arcbox/boot/
-                    print("[Startup] Step 1: ensureAssets")
-                    await bootAssetManager.ensureAssets()
-
-                    // 2. Register privileged helper (background, non-blocking).
-                    //    Helper setup is non-critical and may hang if the helper
-                    //    can't spawn, so we run it in a detached Task to avoid
-                    //    blocking the daemon startup path.
-                    print("[Startup] Step 2: setupHelper (background)")
-                    Task { await setupHelper() }
-
-                    // 3. Register CLI into PATH and install shell completions.
-                    print("[Startup] Step 3: CLI setup")
-                    if let cli = try? CLIRunner() {
-                        try? await cli.run(arguments: ["setup", "install"])
-                    }
-
-                    // 4. Install Docker CLI tools and set arcbox as default context.
-                    print("[Startup] Step 4: dockerToolSetup")
-                    await dockerToolSetupManager.installAndEnable()
-
-                    // 4.5. Seed bundled runtime binaries → ~/.arcbox/runtime/bin/
-                    print("[Startup] Step 4.5: seedRuntimeBinaries")
-                    await bootAssetManager.seedRuntimeBinaries()
-
-                    // 4.6. Seed arcbox-agent → ~/.arcbox/bin/arcbox-agent
-                    print("[Startup] Step 4.6: seedAgentBinary")
-                    await bootAssetManager.seedAgentBinary()
-
-                    // 5. Start health monitoring.
-                    print("[Startup] Step 5: startMonitoring")
-                    daemonManager.startMonitoring()
-
-                    // 6. Register daemon via SMAppService (LaunchAgent) and wait for reachability.
-                    //    Once the daemon creates ~/.arcbox/run/docker.sock, the /var/run/docker.sock
-                    //    symlink created in step 2 becomes active automatically.
-                    print("[Startup] Step 6: enableDaemon")
-                    await daemonManager.enableDaemon()
-
-                    // 7. Initialize gRPC / Docker clients.
-                    print("[Startup] Step 7: initClients")
-                    initClientsIfNeeded()
+                    let orchestrator = StartupOrchestrator(
+                        bootAssetManager: bootAssetManager,
+                        helperManager: helperManager,
+                        daemonManager: daemonManager,
+                        dockerToolSetupManager: dockerToolSetupManager,
+                        onClientsNeeded: { initClientsIfNeeded() }
+                    )
+                    startupOrchestrator = orchestrator
+                    await orchestrator.start()
 
                     Task {
-                        try? await Task.sleep(for: .seconds(5))
+                        try? await Task.sleep(for: StartupConstants.updateCheckDelay)
                         await bootAssetManager.checkForUpdates()
                     }
                 }
@@ -146,45 +115,6 @@ struct ArcBoxDesktopApp: App {
                 CheckForUpdatesView(updater: updaterController.updater)
             }
         }
-    }
-
-    private func setupHelper() async {
-        print("[Helper] registerWithRetry starting")
-        do {
-            try await helperManager.registerWithRetry()
-        } catch {
-            print("[Helper] registration failed: \(error)")
-            return
-        }
-        print("[Helper] registered, running operations")
-
-        let socketPath = DaemonManager.dockerSocketPath  // ~/.arcbox/run/docker.sock
-        let bundlePath = Bundle.main.bundleURL.path
-
-        // Each operation is independent — run separately so one failure
-        // does not cancel the others.
-        print("[Helper] setupDockerSocket(\(socketPath))")
-        do {
-            try await helperManager.setupDockerSocket(socketPath: socketPath)
-            print("[Helper] setupDockerSocket OK")
-        } catch {
-            print("[Helper] setupDockerSocket failed: \(error)")
-        }
-        print("[Helper] installCLITools(\(bundlePath))")
-        do {
-            try await helperManager.installCLITools(appBundlePath: bundlePath)
-            print("[Helper] installCLITools OK")
-        } catch {
-            print("[Helper] installCLITools failed: \(error)")
-        }
-        print("[Helper] setupDNSResolver")
-        do {
-            try await helperManager.setupDNSResolver()
-            print("[Helper] setupDNSResolver OK")
-        } catch {
-            print("[Helper] setupDNSResolver failed: \(error)")
-        }
-        print("[Helper] all operations done")
     }
 
     private func initClientsIfNeeded() {
@@ -214,6 +144,10 @@ private struct DockerClientKey: EnvironmentKey {
     static let defaultValue: DockerClient? = nil
 }
 
+private struct StartupOrchestratorKey: EnvironmentKey {
+    static let defaultValue: StartupOrchestrator? = nil
+}
+
 extension EnvironmentValues {
     var arcboxClient: ArcBoxClient? {
         get { self[ArcBoxClientKey.self] }
@@ -223,5 +157,10 @@ extension EnvironmentValues {
     var dockerClient: DockerClient? {
         get { self[DockerClientKey.self] }
         set { self[DockerClientKey.self] = newValue }
+    }
+
+    var startupOrchestrator: StartupOrchestrator? {
+        get { self[StartupOrchestratorKey.self] }
+        set { self[StartupOrchestratorKey.self] = newValue }
     }
 }
