@@ -15,6 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
+        helperManager?.stopMonitoring()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -68,6 +69,7 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
+                .environment(helperManager)
                 .environment(bootAssetManager)
                 .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
@@ -88,6 +90,10 @@ struct ArcBoxDesktopApp: App {
                     //    blocking the daemon startup path.
                     print("[Startup] Step 2: setupHelper (background)")
                     Task { await setupHelper() }
+
+                    // Start monitoring login item approval status so we detect
+                    // if the user revokes it while the app is running.
+                    helperManager.startMonitoring()
 
                     // 3. Register CLI into PATH and install shell completions.
                     print("[Startup] Step 3: CLI setup")
@@ -129,6 +135,18 @@ struct ArcBoxDesktopApp: App {
                 // Re-create clients whenever daemon transitions to running
                 // (covers the case where monitoring detects the daemon after
                 // the initial .task check has already passed).
+                // When login item approval is revoked and then re-granted,
+                // re-run helper setup and restart the daemon.
+                .onChange(of: helperManager.requiresApproval) { oldValue, newValue in
+                    if oldValue == true, newValue == false {
+                        print("[Startup] Login item re-approved — restarting helper & daemon")
+                        Task {
+                            await setupHelper()
+                            await daemonManager.enableDaemon()
+                            initClientsIfNeeded()
+                        }
+                    }
+                }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         initClientsIfNeeded()
@@ -149,9 +167,13 @@ struct ArcBoxDesktopApp: App {
     }
 
     private func setupHelper() async {
-        print("[Helper] registerWithRetry starting")
+        print("[Helper] register starting")
         do {
-            try await helperManager.registerWithRetry()
+            try await helperManager.register()
+        } catch HelperError.requiresApproval {
+            // Sheet UI will handle approval flow; wait until approved.
+            print("[Helper] requires approval — waiting for user")
+            await waitForApproval()
         } catch {
             print("[Helper] registration failed: \(error)")
             return
@@ -185,6 +207,18 @@ struct ArcBoxDesktopApp: App {
             print("[Helper] setupDNSResolver failed: \(error)")
         }
         print("[Helper] all operations done")
+    }
+
+    /// Waits until the helper is no longer pending approval, then registers.
+    private func waitForApproval() async {
+        let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
+        for _ in 0..<60 {
+            try? await Task.sleep(for: .seconds(2))
+            if service.status != .requiresApproval {
+                try? await helperManager.register()
+                return
+            }
+        }
     }
 
     private func initClientsIfNeeded() {
