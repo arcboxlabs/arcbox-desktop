@@ -29,6 +29,7 @@
 #   ├── Resources/
 #   │   ├── assets.lock
 #   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
+#   │   ├── runtime-bin/            # Runtime binaries (dockerd, containerd, etc.)
 #   │   └── completions/{bash,zsh,fish}/
 
 set -euo pipefail
@@ -217,7 +218,35 @@ if [ "$DOCKER_EMBEDDED" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Embed Docker shell completions → Contents/Resources/completions/
+# 5. Embed runtime binaries → Contents/Resources/runtime-bin/
+# ---------------------------------------------------------------------------
+echo "--- Embedding runtime binaries ---"
+
+RUNTIME_BINS=(dockerd containerd containerd-shim-runc-v2 runc)
+RUNTIME_DEST="$APP_BUNDLE/Contents/Resources/runtime-bin"
+RUNTIME_EMBEDDED=0
+
+mkdir -p "$RUNTIME_DEST"
+for bin in "${RUNTIME_BINS[@]}"; do
+    if [ -f "$DOCKER_TOOLS_SRC/$bin" ]; then
+        cp -f "$DOCKER_TOOLS_SRC/$bin" "$RUNTIME_DEST/$bin"
+        if [ -n "$SIGN_IDENTITY" ]; then
+            codesign --force --options runtime --sign "$SIGN_IDENTITY" \
+                --timestamp "$RUNTIME_DEST/$bin"
+        fi
+        echo "  Embedded $bin → Resources/runtime-bin/$bin"
+        RUNTIME_EMBEDDED=$((RUNTIME_EMBEDDED + 1))
+    fi
+done
+
+if [ "$RUNTIME_EMBEDDED" -eq 0 ]; then
+    echo "  Warning: no runtime binaries found at $DOCKER_TOOLS_SRC"
+    echo "  Run 'abctl boot prefetch' to download them first."
+    rmdir "$RUNTIME_DEST" 2>/dev/null || true
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Embed Docker shell completions → Contents/Resources/completions/
 # ---------------------------------------------------------------------------
 echo "--- Embedding Docker completions ---"
 
@@ -234,7 +263,7 @@ for shell_dir in zsh bash fish; do
 done
 
 # ---------------------------------------------------------------------------
-# 6. Embed pstramp → Contents/MacOS/pstramp
+# 7. Embed pstramp → Contents/MacOS/pstramp
 # ---------------------------------------------------------------------------
 echo "--- Embedding pstramp ---"
 
@@ -261,7 +290,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Re-sign the entire app bundle
+# 8. Re-sign the entire app bundle
 # ---------------------------------------------------------------------------
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
@@ -302,7 +331,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Create DMG
+# 9. Create DMG
 # ---------------------------------------------------------------------------
 echo "--- Creating DMG ---"
 rm -f "$DMG_PATH"
@@ -326,7 +355,7 @@ if [ ! -f "$DMG_PATH" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Sign DMG
+# 10. Sign DMG
 # ---------------------------------------------------------------------------
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing DMG ---"
@@ -334,7 +363,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 10. Notarize
+# 11. Notarize
 # ---------------------------------------------------------------------------
 if [ "$NOTARIZE" = true ] && [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Notarizing DMG ---"

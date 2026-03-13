@@ -99,6 +99,10 @@ struct ArcBoxDesktopApp: App {
                     print("[Startup] Step 4: dockerToolSetup")
                     await dockerToolSetupManager.installAndEnable()
 
+                    // 4.5. Seed bundled runtime binaries → ~/.arcbox/runtime/bin/
+                    print("[Startup] Step 4.5: seedRuntimeBinaries")
+                    await bootAssetManager.seedRuntimeBinaries()
+
                     // 5. Start health monitoring.
                     print("[Startup] Step 5: startMonitoring")
                     daemonManager.startMonitoring()
