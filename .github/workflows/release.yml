@@ -1,6 +1,8 @@
 name: Release DMG
 
 on:
+  release:
+    types: [created]
   push:
     tags:
       - 'v*'
@@ -36,6 +38,7 @@ jobs:
       - name: Checkout arcbox-desktop
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
           fetch-depth: 0
 
       - name: Resolve arcbox ref
@@ -72,6 +75,8 @@ jobs:
             else
               VERSION="v${XCCONFIG_VERSION}"
             fi
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
           else
             VERSION="${GITHUB_REF#refs/tags/}"
           fi
@@ -430,8 +435,11 @@ jobs:
 
   upload-cdn:
     name: Upload to CDN
-    needs: [build-dmg]
+    needs: [build-dmg, create-release]
     runs-on: ubuntu-latest
+    concurrency:
+      group: upload-cdn
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code
