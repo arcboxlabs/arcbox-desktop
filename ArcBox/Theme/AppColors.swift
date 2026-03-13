@@ -13,7 +13,7 @@ enum AppColors {
     static let background = Color(nsColor: .textBackgroundColor)
     static let sidebar = Color(nsColor: .windowBackgroundColor)
     static let surface = Color(nsColor: .textBackgroundColor)
-    static let surfaceElevated = Color(nsColor: .controlBackgroundColor)
+    static let surfaceElevated = Color(nsColor: .quaternarySystemFill)
     static let border = Color(nsColor: .separatorColor)
     static let borderSubtle = Color(nsColor: .separatorColor).opacity(0.5)
     static let borderFocused = Color.accentColor
