@@ -193,10 +193,12 @@ jobs:
           echo "Extracted contents:"
           find "$DOWNLOAD_DIR" -type f | head -20
 
-          # Find CLI and daemon binaries
+          # Find CLI, daemon, and agent binaries
           mkdir -p arcbox-core/target/release
+          mkdir -p arcbox-core/target/aarch64-unknown-linux-musl/release
           CLI_BIN=$(find "$DOWNLOAD_DIR" -type f -name "abctl" | head -1)
           DAEMON_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-daemon" | head -1)
+          AGENT_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-agent" | head -1)
 
           if [ -z "$CLI_BIN" ] || [ -z "$DAEMON_BIN" ]; then
             echo "Could not find pre-built binaries in release assets"
@@ -205,6 +207,14 @@ jobs:
 
           cp "$CLI_BIN" arcbox-core/target/release/abctl
           cp "$DAEMON_BIN" arcbox-core/target/release/arcbox-daemon
+
+          if [ -n "$AGENT_BIN" ]; then
+            cp "$AGENT_BIN" arcbox-core/target/aarch64-unknown-linux-musl/release/arcbox-agent
+            chmod +x arcbox-core/target/aarch64-unknown-linux-musl/release/arcbox-agent
+            echo "Found arcbox-agent in release assets"
+          else
+            echo "::warning::arcbox-agent not found in release assets"
+          fi
 
           # Copy entitlements if present
           ENTITLEMENTS=$(find "$DOWNLOAD_DIR" -type f -name "entitlements.plist" | head -1)
