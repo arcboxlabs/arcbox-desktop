@@ -16,7 +16,7 @@ public final class ArcBoxClient: Sendable {
     /// Default Unix socket path for the arcbox daemon.
     public static let defaultSocketPath: String = {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return "\(home)/.arcbox/arcbox.sock"
+        return "\(home)/.arcbox/run/arcbox.sock"
     }()
 
     private let grpcClient: GRPCClient<HTTP2ClientTransport.Posix>

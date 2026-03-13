@@ -5,8 +5,8 @@
 #   scripts/package-dmg.sh [--sign <identity>] [--notarize]
 #
 # Environment variables:
-#   DESKTOP_REPO   - Path to arcbox-desktop-swift checkout (default: script dir/..)
-#   BUNDLE_ID      - App bundle identifier (default: com.arcbox.arcbox-desktop-swift)
+#   DESKTOP_REPO   - Path to arcbox-desktop checkout (default: script dir/..)
+#   BUNDLE_ID      - App bundle identifier (default: io.arcbox.desktop)
 #   TEAM_ID        - Apple Developer Team ID (required for signing)
 #   ARCBOX_DIR     - Path to arcbox checkout (default: DESKTOP_REPO/../arcbox or ./arcbox)
 #   PSTRAMP_DIR    - Path to pstramp checkout (default: ARCBOX_DIR/../pstramp)
@@ -29,6 +29,7 @@
 #   ├── Resources/
 #   │   ├── assets.lock
 #   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
+#   │   ├── runtime-bin/            # Runtime binaries (dockerd, containerd, etc.)
 #   │   └── completions/{bash,zsh,fish}/
 
 set -euo pipefail
@@ -57,15 +58,16 @@ else
     exit 1
 fi
 
-BUNDLE_ID="${BUNDLE_ID:-com.arcbox.arcbox-desktop-swift}"
+BUNDLE_ID="${BUNDLE_ID:-io.arcbox.desktop}"
 BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
 APP_NAME="ArcBox Desktop"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
-# Read version from Xcode project
-VERSION=$(sed -n 's/.*MARKETING_VERSION = \(.*\);/\1/p' \
-    "$DESKTOP_REPO/arcbox-desktop-swift.xcodeproj/project.pbxproj" | head -1 | tr -d ' ')
-VERSION="${VERSION:-1.0}"
+# Read version from Version.xcconfig (source of truth managed by release-please)
+VERSION=$(sed -n 's/^MARKETING_VERSION *= *\(.*\)/\1/p' \
+    "$DESKTOP_REPO/Version.xcconfig" | sed 's/ *\/\/.*//' | tr -d ' ')
+VERSION="${VERSION:-0.0.0}"
+BUILD_NUMBER=$(git -C "$DESKTOP_REPO" rev-list --count HEAD)
 DMG_NAME="ArcBox-Desktop-${VERSION}-arm64"
 DMG_PATH="$ARCBOX_DIR/target/$DMG_NAME.dmg"
 
@@ -74,6 +76,7 @@ echo "  Desktop repo : $DESKTOP_REPO"
 echo "  Arcbox dir   : $ARCBOX_DIR"
 echo "  Bundle ID    : $BUNDLE_ID"
 echo "  Version      : $VERSION"
+echo "  Build number : $BUILD_NUMBER"
 echo "  Sign identity: ${SIGN_IDENTITY:-"(ad-hoc)"}"
 echo "  Notarize     : $NOTARIZE"
 
@@ -82,12 +85,18 @@ echo "  Notarize     : $NOTARIZE"
 # ---------------------------------------------------------------------------
 echo "--- Building Swift app ---"
 
+DERIVED_DATA="$DESKTOP_REPO/.build/DerivedData"
+SPM_CLONES="/tmp/arcbox-spm-packages"
+
 XCODE_FLAGS=(
-    -project "$DESKTOP_REPO/arcbox-desktop-swift.xcodeproj"
-    -scheme "arcbox-desktop-swift"
+    -project "$DESKTOP_REPO/ArcBox.xcodeproj"
+    -scheme "ArcBox"
     -configuration Release
-    -derivedDataPath "$BUILD_DIR/DerivedData"
+    -derivedDataPath "$DERIVED_DATA"
+    -clonedSourcePackagesDirPath "$SPM_CLONES"
+    -skipPackagePluginValidation
     ARCBOX_DIR="$ARCBOX_DIR"
+    CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
 )
 
 if [ -n "$SIGN_IDENTITY" ]; then
@@ -98,10 +107,15 @@ if [ -n "$SIGN_IDENTITY" ]; then
     )
 fi
 
+# Pass Sparkle feed URL as command-line build setting (xcconfig can't handle // in URLs)
+if [ -n "${SPARKLE_FEED_URL:-}" ]; then
+    XCODE_FLAGS+=("INFOPLIST_KEY_SUFeedURL=$SPARKLE_FEED_URL")
+fi
+
 xcodebuild build "${XCODE_FLAGS[@]}" | tail -20
 
 # Locate the built .app
-BUILT_APP=$(find "$BUILD_DIR/DerivedData/Build/Products/Release" \
+BUILT_APP=$(find "$DERIVED_DATA/Build/Products/Release" \
     -name "*.app" -maxdepth 1 | head -1)
 
 if [ ! -d "$BUILT_APP" ]; then
@@ -204,7 +218,35 @@ if [ "$DOCKER_EMBEDDED" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Embed Docker shell completions → Contents/Resources/completions/
+# 5. Embed runtime binaries → Contents/Resources/runtime-bin/
+# ---------------------------------------------------------------------------
+echo "--- Embedding runtime binaries ---"
+
+RUNTIME_BINS=(dockerd containerd containerd-shim-runc-v2 runc)
+RUNTIME_DEST="$APP_BUNDLE/Contents/Resources/runtime-bin"
+RUNTIME_EMBEDDED=0
+
+mkdir -p "$RUNTIME_DEST"
+for bin in "${RUNTIME_BINS[@]}"; do
+    if [ -f "$DOCKER_TOOLS_SRC/$bin" ]; then
+        cp -f "$DOCKER_TOOLS_SRC/$bin" "$RUNTIME_DEST/$bin"
+        if [ -n "$SIGN_IDENTITY" ]; then
+            codesign --force --options runtime --sign "$SIGN_IDENTITY" \
+                --timestamp "$RUNTIME_DEST/$bin"
+        fi
+        echo "  Embedded $bin → Resources/runtime-bin/$bin"
+        RUNTIME_EMBEDDED=$((RUNTIME_EMBEDDED + 1))
+    fi
+done
+
+if [ "$RUNTIME_EMBEDDED" -eq 0 ]; then
+    echo "  Warning: no runtime binaries found at $DOCKER_TOOLS_SRC"
+    echo "  Run 'abctl boot prefetch' to download them first."
+    rmdir "$RUNTIME_DEST" 2>/dev/null || true
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Embed Docker shell completions → Contents/Resources/completions/
 # ---------------------------------------------------------------------------
 echo "--- Embedding Docker completions ---"
 
@@ -221,7 +263,7 @@ for shell_dir in zsh bash fish; do
 done
 
 # ---------------------------------------------------------------------------
-# 6. Embed pstramp → Contents/MacOS/pstramp
+# 7. Embed pstramp → Contents/MacOS/pstramp
 # ---------------------------------------------------------------------------
 echo "--- Embedding pstramp ---"
 
@@ -248,19 +290,48 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Re-sign the entire app bundle
+# 8. Re-sign the entire app bundle
 # ---------------------------------------------------------------------------
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
+
+    DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/io.arcbox.desktop.daemon"
+    DAEMON_ENTITLEMENTS="$DESKTOP_REPO/ArcBox/DaemonEntitlements.entitlements"
+
+    # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
     codesign --force --deep --options runtime \
         --sign "$SIGN_IDENTITY" --timestamp \
         "$APP_BUNDLE"
+
+    # Re-sign the daemon helper WITH its entitlements (--deep strips them).
+    if [ -f "$DAEMON_PATH" ]; then
+        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
+            --timestamp --identifier "io.arcbox.desktop.daemon" \
+            --entitlements "$DAEMON_ENTITLEMENTS" "$DAEMON_PATH"
+        echo "  Signed daemon with virtualization entitlement"
+    fi
+
+    # Re-sign ArcBoxHelper (privileged helper for root-level operations).
+    HELPER_PATH="$APP_BUNDLE/Contents/Library/HelperTools/ArcBoxHelper"
+    HELPER_ENTITLEMENTS="$DESKTOP_REPO/ArcBoxHelper/ArcBoxHelper.entitlements"
+    if [ -f "$HELPER_PATH" ]; then
+        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
+            --timestamp --identifier "io.arcbox.desktop.helper" \
+            --entitlements "$HELPER_ENTITLEMENTS" "$HELPER_PATH"
+        echo "  Signed ArcBoxHelper with hardened runtime"
+    fi
+
+    # Re-sign the outer app (nested code changed, so the seal must be refreshed).
+    codesign --force --options runtime \
+        --sign "$SIGN_IDENTITY" --timestamp \
+        "$APP_BUNDLE"
+
     codesign --verify --deep --strict "$APP_BUNDLE"
     echo "  Signed and verified"
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Create DMG
+# 9. Create DMG
 # ---------------------------------------------------------------------------
 echo "--- Creating DMG ---"
 rm -f "$DMG_PATH"
@@ -284,7 +355,7 @@ if [ ! -f "$DMG_PATH" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Sign DMG
+# 10. Sign DMG
 # ---------------------------------------------------------------------------
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing DMG ---"
@@ -292,13 +363,27 @@ if [ -n "$SIGN_IDENTITY" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 10. Notarize
+# 11. Notarize
 # ---------------------------------------------------------------------------
 if [ "$NOTARIZE" = true ] && [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Notarizing DMG ---"
-    xcrun notarytool submit "$DMG_PATH" \
+    SUBMIT_OUT=$(xcrun notarytool submit "$DMG_PATH" \
         --keychain-profile "arcbox-notarize" \
-        --wait --timeout 30m
+        --wait --timeout 30m 2>&1) || true
+    echo "$SUBMIT_OUT"
+
+    # Extract submission ID for log retrieval.
+    SUBMISSION_ID=$(echo "$SUBMIT_OUT" | awk '/^  id:/{print $2; exit}')
+
+    if echo "$SUBMIT_OUT" | grep -q "status: Invalid"; then
+        echo "--- Notarization REJECTED — fetching log ---"
+        if [ -n "$SUBMISSION_ID" ]; then
+            xcrun notarytool log "$SUBMISSION_ID" \
+                --keychain-profile "arcbox-notarize" 2>&1 || true
+        fi
+        exit 1
+    fi
+
     xcrun stapler staple "$DMG_PATH"
     echo "  Notarization complete"
 fi

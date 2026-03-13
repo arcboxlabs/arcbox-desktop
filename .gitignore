@@ -21,5 +21,8 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# Xcode build output
+build/
+
 # Local developer settings
 Local.xcconfig

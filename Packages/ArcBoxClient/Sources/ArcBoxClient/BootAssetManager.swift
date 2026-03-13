@@ -276,6 +276,53 @@ public final class BootAssetManager {
         }
     }
 
+    // MARK: - Runtime Binary Seeding
+
+    private nonisolated static let runtimeBinDir: String = {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/.arcbox/runtime/bin"
+    }()
+
+    public func seedRuntimeBinaries() async {
+        let bundleDir = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Resources/runtime-bin")
+
+        let destDir = Self.runtimeBinDir
+
+        await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            guard fm.fileExists(atPath: bundleDir.path) else {
+                print("[Startup] No bundled runtime-bin directory, skipping seed")
+                return
+            }
+
+            do {
+                try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+            } catch {
+                print("[Startup] Failed to create runtime bin directory: \(error)")
+                return
+            }
+
+            guard let items = try? fm.contentsOfDirectory(atPath: bundleDir.path) else {
+                return
+            }
+
+            for item in items {
+                let src = bundleDir.appendingPathComponent(item).path
+                let dst = "\(destDir)/\(item)"
+                if fm.fileExists(atPath: dst) {
+                    continue
+                }
+                print("[Startup] Seeding runtime binary: \(item)")
+                do {
+                    try fm.copyItem(atPath: src, toPath: dst)
+                } catch {
+                    print("[Startup] Failed to seed \(item): \(error)")
+                }
+            }
+        }.value
+    }
+
     // MARK: - Helpers
 
     /// Path to bundled boot-assets for a given version.
