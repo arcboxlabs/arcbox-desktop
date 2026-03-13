@@ -15,6 +15,7 @@ struct MachineInfoTab: View {
                         InfoRow(label: "IP", value: ip)
                     }
                 }
+                .infoSectionStyle()
 
                 // Image section
                 VStack(alignment: .leading, spacing: 8) {
@@ -26,6 +27,7 @@ struct MachineInfoTab: View {
                         InfoRow(label: "Version", value: machine.distro.version)
                         InfoRow(label: "Architecture", value: "arm64")
                     }
+                    .infoSectionStyle()
                 }
 
                 // Resources section
@@ -38,6 +40,7 @@ struct MachineInfoTab: View {
                         InfoRow(label: "Memory", value: "\(machine.memoryGB) GB")
                         InfoRow(label: "Disk", value: "\(machine.diskGB) GB")
                     }
+                    .infoSectionStyle()
                 }
             }
             .padding(16)

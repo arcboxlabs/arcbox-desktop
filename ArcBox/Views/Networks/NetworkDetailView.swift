@@ -21,6 +21,7 @@ struct NetworkDetailView: View {
                         InfoRow(label: "Attachable", value: network.attachable ? "Yes" : "No")
                         InfoRow(label: "Containers", value: network.usageDisplay)
                     }
+                    .infoSectionStyle()
                     .padding(16)
 
                     // Connected containers section

@@ -19,6 +19,7 @@ struct ContainerInfoTab: View {
                             : "Stopped"
                     )
                 }
+                .infoSectionStyle()
 
                 // Domain & IP section
                 if !container.hostPorts.isEmpty || container.domain != nil
@@ -38,6 +39,7 @@ struct ContainerInfoTab: View {
                             InfoRow(label: "IP", value: ip)
                         }
                     }
+                    .infoSectionStyle()
                 }
 
                 // Port Forwards section

@@ -21,6 +21,7 @@ struct ServiceDetailView: View {
                             InfoRow(label: "Ports", value: service.portsDisplay.isEmpty ? "None" : service.portsDisplay)
                             InfoRow(label: "Created", value: service.createdAgo)
                         }
+                        .infoSectionStyle()
                         .padding(16)
                     }
                 }
