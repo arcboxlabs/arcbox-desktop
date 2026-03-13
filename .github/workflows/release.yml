@@ -404,11 +404,12 @@ jobs:
           echo "=== Release assets ==="
           ls -lh release-assets/
 
-      - name: Create GitHub Release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build-dmg.outputs.version || github.ref_name }}
           name: ArcBox Desktop ${{ needs.build-dmg.outputs.version || github.ref_name }}
+          draft: false
           prerelease: ${{ needs.build-dmg.outputs.prerelease == 'true' }}
           generate_release_notes: true
           files: |
