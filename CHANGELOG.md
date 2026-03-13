@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.4.2...v1.4.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* add refactor/perf to release-please changelog sections ([702ea8c](https://github.com/arcboxlabs/arcbox-desktop/commit/702ea8c6c1edddcfa59052545430a4f456bd1a0e))
+
+
+### Refactoring
+
+* introduce StartupOrchestrator for structured startup ([#21](https://github.com/arcboxlabs/arcbox-desktop/issues/21)) ([08e5afa](https://github.com/arcboxlabs/arcbox-desktop/commit/08e5afaf206ed57fec893627de1a6bfe9a0aed10))
+
 ## [1.4.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.4.1...v1.4.2) (2026-03-13)
 
 
