@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.2.0...v1.2.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* **icon:** add standard macOS drop shadow to app icon ([264e052](https://github.com/arcboxlabs/arcbox-desktop/commit/264e052af8998ef40f1ff8f1e99a4ba635969f2e))
+
 ## [1.2.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.1.2...v1.2.0) (2026-03-12)
 
 
