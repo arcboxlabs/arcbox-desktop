@@ -27,6 +27,10 @@ struct ContainersListView: View {
         vm.standaloneContainers.filter { !$0.isRunning }
     }
 
+    private var hasRunningContent: Bool {
+        !activeComposeGroups.isEmpty || !runningStandaloneContainers.isEmpty
+    }
+
     private var hasStoppedContent: Bool {
         !stoppedComposeGroups.isEmpty || !stoppedStandaloneContainers.isEmpty
     }
@@ -53,6 +57,7 @@ struct ContainersListView: View {
                             standaloneRows(for: stoppedStandaloneContainers)
                         }
                     }
+                    .padding(.top, hasRunningContent ? 6 : 0)
                 }
             }
         }
