@@ -278,47 +278,86 @@ public final class BootAssetManager {
 
     // MARK: - Runtime Binary Seeding
 
-    private nonisolated static let runtimeBinDir: String = {
+    private nonisolated static let runtimeDir: String = {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return "\(home)/.arcbox/runtime/bin"
+        return "\(home)/.arcbox/runtime"
     }()
 
+    /// Seed bundled runtime binaries (dockerd, containerd, k3s, etc.) from
+    /// `Contents/Resources/runtime/` to `~/.arcbox/runtime/`, preserving the
+    /// subdirectory structure (bin/, kernel/, etc.).
     public func seedRuntimeBinaries() async {
         let bundleDir = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Resources/runtime-bin")
+            .appendingPathComponent("Contents/Resources/runtime")
 
-        let destDir = Self.runtimeBinDir
+        let destBase = Self.runtimeDir
 
         await Task.detached(priority: .utility) {
             let fm = FileManager.default
             guard fm.fileExists(atPath: bundleDir.path) else {
-                print("[Startup] No bundled runtime-bin directory, skipping seed")
+                print("[Startup] No bundled runtime directory, skipping seed")
+                return
+            }
+
+            guard let enumerator = fm.enumerator(atPath: bundleDir.path) else {
+                return
+            }
+
+            while let relativePath = enumerator.nextObject() as? String {
+                let src = bundleDir.appendingPathComponent(relativePath).path
+                let dst = "\(destBase)/\(relativePath)"
+
+                var isDir: ObjCBool = false
+                fm.fileExists(atPath: src, isDirectory: &isDir)
+                if isDir.boolValue {
+                    try? fm.createDirectory(atPath: dst, withIntermediateDirectories: true)
+                    continue
+                }
+
+                if fm.fileExists(atPath: dst) {
+                    continue
+                }
+
+                print("[Startup] Seeding runtime binary: \(relativePath)")
+                do {
+                    try fm.createDirectory(
+                        atPath: (dst as NSString).deletingLastPathComponent,
+                        withIntermediateDirectories: true)
+                    try fm.copyItem(atPath: src, toPath: dst)
+                } catch {
+                    print("[Startup] Failed to seed \(relativePath): \(error)")
+                }
+            }
+        }.value
+    }
+
+    /// Seed bundled arcbox-agent from `Contents/Resources/bin/` to `~/.arcbox/bin/`.
+    /// The daemon expects the agent at `~/.arcbox/bin/arcbox-agent` for guest VMs.
+    public func seedAgentBinary() async {
+        let bundleBin = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Resources/bin/arcbox-agent")
+
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let destDir = "\(home)/.arcbox/bin"
+        let destPath = "\(destDir)/arcbox-agent"
+
+        await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            guard fm.fileExists(atPath: bundleBin.path) else {
+                print("[Startup] No bundled arcbox-agent, skipping seed")
+                return
+            }
+
+            if fm.fileExists(atPath: destPath) {
                 return
             }
 
             do {
                 try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+                try fm.copyItem(atPath: bundleBin.path, toPath: destPath)
+                print("[Startup] Seeded arcbox-agent → \(destPath)")
             } catch {
-                print("[Startup] Failed to create runtime bin directory: \(error)")
-                return
-            }
-
-            guard let items = try? fm.contentsOfDirectory(atPath: bundleDir.path) else {
-                return
-            }
-
-            for item in items {
-                let src = bundleDir.appendingPathComponent(item).path
-                let dst = "\(destDir)/\(item)"
-                if fm.fileExists(atPath: dst) {
-                    continue
-                }
-                print("[Startup] Seeding runtime binary: \(item)")
-                do {
-                    try fm.copyItem(atPath: src, toPath: dst)
-                } catch {
-                    print("[Startup] Failed to seed \(item): \(error)")
-                }
+                print("[Startup] Failed to seed arcbox-agent: \(error)")
             }
         }.value
     }

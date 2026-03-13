@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.2.1...v1.2.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* bundle all runtime binaries in DMG via abctl boot prefetch ([8754160](https://github.com/arcboxlabs/arcbox-desktop/commit/8754160efb6081f9bafb979eca92f7b4b895f8ba))
+* **ci:** create release as draft until DMG is attached ([81e6077](https://github.com/arcboxlabs/arcbox-desktop/commit/81e607756fd8f90a426150a1d9ee27af3cf50afe))
+
 ## [1.2.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.2.0...v1.2.1) (2026-03-13)
 
 

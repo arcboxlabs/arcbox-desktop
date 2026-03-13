@@ -29,7 +29,9 @@
 #   ├── Resources/
 #   │   ├── assets.lock
 #   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
-#   │   ├── runtime-bin/            # Runtime binaries (dockerd, containerd, etc.)
+#   │   ├── bin/
+#   │   │   └── arcbox-agent        # Guest agent (Linux musl binary)
+#   │   ├── runtime/                # Runtime binaries (mirrors ~/.arcbox/runtime/)
 #   │   └── completions/{bash,zsh,fish}/
 
 set -euo pipefail
@@ -189,6 +191,21 @@ if [ -f "$CLI_BIN" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 3.5. Embed arcbox-agent → Contents/Resources/bin/arcbox-agent
+# ---------------------------------------------------------------------------
+AGENT_BIN="$ARCBOX_DIR/target/aarch64-unknown-linux-musl/release/arcbox-agent"
+if [ -f "$AGENT_BIN" ]; then
+    echo "--- Embedding arcbox-agent ---"
+    AGENT_DIR="$APP_BUNDLE/Contents/Resources/bin"
+    mkdir -p "$AGENT_DIR"
+    cp -f "$AGENT_BIN" "$AGENT_DIR/arcbox-agent"
+    echo "  Copied arcbox-agent → Resources/bin/arcbox-agent"
+else
+    echo "  Warning: arcbox-agent not found at $AGENT_BIN"
+    echo "  Build with: cargo build -p arcbox-agent --target aarch64-unknown-linux-musl --release"
+fi
+
+# ---------------------------------------------------------------------------
 # 4. Embed Docker CLI tools → Contents/MacOS/xbin/
 # ---------------------------------------------------------------------------
 echo "--- Embedding Docker CLI tools ---"
@@ -220,29 +237,50 @@ fi
 # ---------------------------------------------------------------------------
 # 5. Embed runtime binaries → Contents/Resources/runtime-bin/
 # ---------------------------------------------------------------------------
-echo "--- Embedding runtime binaries ---"
+echo "--- Preparing and embedding runtime binaries ---"
 
-RUNTIME_BINS=(dockerd containerd containerd-shim-runc-v2 runc)
-RUNTIME_DEST="$APP_BUNDLE/Contents/Resources/runtime-bin"
+# Use abctl to ensure all runtime binaries (dockerd, containerd, runc, k3s,
+# firecracker, etc.) are downloaded and cached at ~/.arcbox/runtime/.
+# This is the same command users run manually; it reads the manifest from the
+# boot-asset cache and downloads any missing binaries from the CDN.
+if [ -f "$CLI_BIN" ]; then
+    echo "  Running abctl boot prefetch..."
+    "$CLI_BIN" boot prefetch || {
+        echo "error: abctl boot prefetch failed" >&2
+        exit 1
+    }
+else
+    echo "  Warning: abctl not found at $CLI_BIN, skipping prefetch"
+fi
+
+# Copy the entire runtime directory tree into the bundle.
+# The directory mirrors what prepare_binaries() expects:
+#   runtime/bin/   — dockerd, containerd, runc, k3s, ...
+#   runtime/kernel/ — vmlinux (install_dir=kernel)
+RUNTIME_SRC="$HOME/.arcbox/runtime"
+RUNTIME_DEST="$APP_BUNDLE/Contents/Resources/runtime"
 RUNTIME_EMBEDDED=0
 
-mkdir -p "$RUNTIME_DEST"
-for bin in "${RUNTIME_BINS[@]}"; do
-    if [ -f "$DOCKER_TOOLS_SRC/$bin" ]; then
-        cp -f "$DOCKER_TOOLS_SRC/$bin" "$RUNTIME_DEST/$bin"
+if [ -d "$RUNTIME_SRC" ]; then
+    # Copy directory structure, only executable files (skip .sha256, .tmp, etc.)
+    find "$RUNTIME_SRC" -type f -perm +111 | while read -r src_file; do
+        rel="${src_file#"$RUNTIME_SRC/"}"
+        dest_file="$RUNTIME_DEST/$rel"
+        mkdir -p "$(dirname "$dest_file")"
+        cp -f "$src_file" "$dest_file"
         if [ -n "$SIGN_IDENTITY" ]; then
             codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-                --timestamp "$RUNTIME_DEST/$bin"
+                --timestamp "$dest_file"
         fi
-        echo "  Embedded $bin → Resources/runtime-bin/$bin"
-        RUNTIME_EMBEDDED=$((RUNTIME_EMBEDDED + 1))
-    fi
-done
+        echo "  Embedded $rel"
+    done
+    RUNTIME_EMBEDDED=$(find "$RUNTIME_DEST" -type f 2>/dev/null | wc -l | tr -d ' ')
+fi
 
 if [ "$RUNTIME_EMBEDDED" -eq 0 ]; then
-    echo "  Warning: no runtime binaries found at $DOCKER_TOOLS_SRC"
+    echo "  Warning: no runtime binaries found at $RUNTIME_SRC"
     echo "  Run 'abctl boot prefetch' to download them first."
-    rmdir "$RUNTIME_DEST" 2>/dev/null || true
+    rm -rf "$RUNTIME_DEST" 2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------
