@@ -51,6 +51,7 @@ struct ContentView: View {
             if isSandboxSection {
                 Color.clear
                     .navigationSplitViewColumnWidth(0)
+                    .navigationTitle(appVM.currentNav == .templates ? "Templates" : "Sandboxes")
             } else {
                 contentColumn
                     .navigationSplitViewColumnWidth(min: 150, ideal: 280, max: 600)
