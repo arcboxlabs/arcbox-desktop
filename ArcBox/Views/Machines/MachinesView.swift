@@ -16,9 +16,11 @@ struct MachinesView: View {
         VStack(spacing: 0) {
             if vm.machines.isEmpty {
                 MachineEmptyState()
+            } else if vm.filteredMachines.isEmpty {
+                ContentUnavailableView.search(text: vm.searchText)
             } else {
                 ScrollView {
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0) {
                         // Running machines
                         ForEach(runningMachines) { machine in
                             MachineRowView(
