@@ -331,6 +331,37 @@ public final class BootAssetManager {
         }.value
     }
 
+    /// Seed bundled arcbox-agent from `Contents/Resources/bin/` to `~/.arcbox/bin/`.
+    /// The daemon expects the agent at `~/.arcbox/bin/arcbox-agent` for guest VMs.
+    public func seedAgentBinary() async {
+        let bundleBin = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Resources/bin/arcbox-agent")
+
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let destDir = "\(home)/.arcbox/bin"
+        let destPath = "\(destDir)/arcbox-agent"
+
+        await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            guard fm.fileExists(atPath: bundleBin.path) else {
+                print("[Startup] No bundled arcbox-agent, skipping seed")
+                return
+            }
+
+            if fm.fileExists(atPath: destPath) {
+                return
+            }
+
+            do {
+                try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+                try fm.copyItem(atPath: bundleBin.path, toPath: destPath)
+                print("[Startup] Seeded arcbox-agent → \(destPath)")
+            } catch {
+                print("[Startup] Failed to seed arcbox-agent: \(error)")
+            }
+        }.value
+    }
+
     // MARK: - Helpers
 
     /// Path to bundled boot-assets for a given version.
