@@ -30,14 +30,14 @@ enum NavItem: String, CaseIterable, Identifiable {
 
     var sfSymbol: String {
         switch self {
-        case .containers: "arrow.triangle.2.circlepath"
+        case .containers: "cube"
         case .volumes: "internaldrive"
-        case .images: "circle.dotted.circle"
-        case .networks: "network"
-        case .pods: "cube"
-        case .services: "globe"
+        case .images: "circle.circle"
+        case .networks: "point.3.filled.connected.trianglepath.dotted"
+        case .pods: "helm"
+        case .services: "gearshape.2"
         case .machines: "desktopcomputer"
-        case .sandboxes: "square.stack.3d.up"
+        case .sandboxes: "server.rack"
         case .templates: "doc.on.doc"
         }
     }
