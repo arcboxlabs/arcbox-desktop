@@ -22,7 +22,7 @@ struct MachineEmptyState: View {
                 .font(.system(size: 11))
                 .foregroundStyle(AppColors.textSecondary)
 
-                Text("Click \"+ New Machine\" to get started")
+                Text("Click \"+\" in the toolbar to get started")
                     .font(.system(size: 11))
                     .foregroundStyle(AppColors.textSecondary)
                     .padding(.top, 8)

@@ -25,7 +25,7 @@ struct MachineInfoTab: View {
                     VStack(spacing: 0) {
                         InfoRow(label: "Distro", value: machine.distro.displayName)
                         InfoRow(label: "Version", value: machine.distro.version)
-                        InfoRow(label: "Architecture", value: "arm64")
+                        InfoRow(label: "Architecture", value: machine.architecture)
                     }
                     .infoSectionStyle()
                 }

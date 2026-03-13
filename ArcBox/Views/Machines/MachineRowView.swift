@@ -21,7 +21,7 @@ struct MachineRowView: View {
         let hash = machine.distro.name.utf8.reduce(0) { acc, byte in
             acc &* 31 &+ Int(byte)
         }
-        return colors[Int(hash.magnitude) % colors.count]
+        return colors[Int(hash.magnitude % UInt(colors.count))]
     }
 
     var body: some View {
