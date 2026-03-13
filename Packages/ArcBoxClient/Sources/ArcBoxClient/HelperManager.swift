@@ -42,6 +42,10 @@ public final class HelperManager {
                     self.requiresApproval = true
                     self.isInstalled = false
                     print("[HelperManager] Login item approval revoked")
+                } else if status == .enabled, self.requiresApproval {
+                    self.requiresApproval = false
+                    self.isInstalled = true
+                    print("[HelperManager] Login item approval restored")
                 }
             }
         }
@@ -65,11 +69,9 @@ public final class HelperManager {
         case .enabled:
             // Best-effort re-register to update helper binary path.
             try? service.register()
-            isInstalled = true
             requiresApproval = false
         case .notRegistered, .notFound:
             try service.register()
-            isInstalled = true
             requiresApproval = false
         case .requiresApproval:
             requiresApproval = true
@@ -82,16 +84,22 @@ public final class HelperManager {
         // Skip version check when already enabled — during development,
         // rebuilds change the CDHash but launchd caches the old LWCR.
         // Use `sudo sfltool resetbtm` in Terminal to clear stale state.
-        if service.status == .enabled { return }
+        if service.status == .enabled {
+            isInstalled = true
+            return
+        }
         #endif
 
         let version = await getVersion()
         if version == 0 {
+            isInstalled = false
             throw HelperError.connectionFailed
         }
         if version < kArcBoxHelperProtocolVersion {
+            isInstalled = false
             throw HelperError.versionMismatch(version)
         }
+        isInstalled = true
     }
 
     /// Registers the helper, automatically retrying if approval is needed.

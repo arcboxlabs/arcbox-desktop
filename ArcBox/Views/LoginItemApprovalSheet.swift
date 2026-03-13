@@ -9,7 +9,7 @@ struct LoginItemApprovalSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var approved = false
-    @State private var polling = false
+    @State private var pollingTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -80,26 +80,31 @@ struct LoginItemApprovalSheet: View {
         .task {
             startPolling()
         }
+        .onDisappear {
+            pollingTask?.cancel()
+        }
     }
 
     private func startPolling() {
-        guard !polling, !approved else { return }
-        polling = true
-        Task {
+        guard pollingTask == nil, !approved else { return }
+        pollingTask = Task {
             let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
             // Poll every 2s for up to 2 minutes
             for _ in 0..<60 {
                 try? await Task.sleep(for: .seconds(2))
+                if Task.isCancelled { return }
                 if service.status != .requiresApproval {
-                    withAnimation {
-                        approved = true
+                    // Complete registration before showing success
+                    do {
+                        try await helperManager.register()
+                        withAnimation { approved = true }
+                    } catch {
+                        print("[ApprovalSheet] register failed after approval: \(error)")
                     }
-                    // Complete registration now that approval is granted
-                    try? await helperManager.register()
                     break
                 }
             }
-            polling = false
+            pollingTask = nil
         }
     }
 }

@@ -67,9 +67,7 @@ struct ContentView: View {
             LoginItemApprovalSheet()
         }
         .onChange(of: helperManager.requiresApproval, initial: true) { _, needsApproval in
-            if needsApproval {
-                showApprovalSheet = true
-            }
+            showApprovalSheet = needsApproval
         }
     }
 

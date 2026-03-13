@@ -173,7 +173,10 @@ struct ArcBoxDesktopApp: App {
         } catch HelperError.requiresApproval {
             // Sheet UI will handle approval flow; wait until approved.
             print("[Helper] requires approval — waiting for user")
-            await waitForApproval()
+            guard await waitForApproval() else {
+                print("[Helper] approval timed out or registration failed")
+                return
+            }
         } catch {
             print("[Helper] registration failed: \(error)")
             return
@@ -210,15 +213,22 @@ struct ArcBoxDesktopApp: App {
     }
 
     /// Waits until the helper is no longer pending approval, then registers.
-    private func waitForApproval() async {
+    /// Returns `true` if registration succeeded, `false` on timeout or failure.
+    private func waitForApproval() async -> Bool {
         let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
         for _ in 0..<60 {
             try? await Task.sleep(for: .seconds(2))
             if service.status != .requiresApproval {
-                try? await helperManager.register()
-                return
+                do {
+                    try await helperManager.register()
+                    return true
+                } catch {
+                    print("[Helper] register failed after approval: \(error)")
+                    return false
+                }
             }
         }
+        return false
     }
 
     private func initClientsIfNeeded() {
