@@ -4,7 +4,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>io.arcbox.desktop.helper</string>
+    <string>com.arcboxlabs.desktop.helper</string>
 
     <!-- Path relative to the .app bundle root -->
     <key>BundleProgram</key>
@@ -12,13 +12,13 @@
 
     <key>AssociatedBundleIdentifiers</key>
     <array>
-        <string>io.arcbox.desktop</string>
+        <string>com.arcboxlabs.desktop</string>
     </array>
 
     <!-- XPC Mach service name; must match NSXPCListener in helper -->
     <key>MachServices</key>
     <dict>
-        <key>io.arcbox.desktop.helper</key>
+        <key>com.arcboxlabs.desktop.helper</key>
         <true/>
     </dict>
 
@@ -33,7 +33,7 @@
         <key>team-identifier</key>
         <string>__DEVELOPMENT_TEAM__</string>
         <key>signing-identifier</key>
-        <string>io.arcbox.desktop.helper</string>
+        <string>com.arcboxlabs.desktop.helper</string>
     </dict>
 
     <!-- On-demand only: launchd starts this daemon when XPC requests arrive -->

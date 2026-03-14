@@ -4,7 +4,7 @@ set -euo pipefail
 # Fetch arcbox binaries (abctl + arcbox-daemon + arcbox-agent) for the Xcode build phase.
 # Priority: CI pre-downloaded → local cache → download from GitHub releases.
 
-DAEMON_NAME="io.arcbox.desktop.daemon"
+DAEMON_NAME="com.arcboxlabs.desktop.daemon"
 ARCBOX_VERSION=$(tr -d '[:space:]' < "${PROJECT_DIR}/arcbox.version")
 CACHE_DIR="${PROJECT_DIR}/.build/arcbox-binaries/${ARCBOX_VERSION}"
 

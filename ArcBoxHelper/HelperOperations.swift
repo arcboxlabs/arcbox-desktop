@@ -196,7 +196,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
 
     private func makeError(_ msg: String) -> NSError {
         NSError(
-            domain: "io.arcbox.desktop.helper", code: -1,
+            domain: "com.arcboxlabs.desktop.helper", code: -1,
             userInfo: [NSLocalizedDescriptionKey: msg])
     }
 }

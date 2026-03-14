@@ -3,7 +3,7 @@ import ServiceManagement
 
 final class HelperDelegate: NSObject, NSXPCListenerDelegate {
     /// Bundle ID of the main app. Hardcoded — matches PRODUCT_BUNDLE_IDENTIFIER in pbxproj.
-    private static let appBundleID = "io.arcbox.desktop"
+    private static let appBundleID = "com.arcboxlabs.desktop"
 
     func listener(
         _ listener: NSXPCListener,
@@ -34,7 +34,7 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
 }
 
 let delegate = HelperDelegate()
-let listener = NSXPCListener(machServiceName: "io.arcbox.desktop.helper")
+let listener = NSXPCListener(machServiceName: "com.arcboxlabs.desktop.helper")
 listener.delegate = delegate
 listener.resume()
 RunLoop.main.run()
