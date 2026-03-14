@@ -30,7 +30,7 @@ public final class HelperManager {
     /// First call shows a one-time system approval dialog.
     /// Subsequent calls are idempotent and return immediately.
     public func register() async throws {
-        let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
+        let service = SMAppService.daemon(plistName: "com.arcboxlabs.desktop.helper.plist")
 
         switch service.status {
         case .enabled:
@@ -75,7 +75,7 @@ public final class HelperManager {
         }
 
         // Poll for approval (every 2s, up to 60 attempts = 2 min).
-        let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
+        let service = SMAppService.daemon(plistName: "com.arcboxlabs.desktop.helper.plist")
         for _ in 0..<StartupConstants.helperApprovalMaxAttempts {
             try await Task.sleep(for: StartupConstants.helperApprovalPollInterval)
             if service.status != .requiresApproval {
@@ -259,7 +259,7 @@ public final class HelperManager {
 
     private nonisolated func makeConnection() -> NSXPCConnection {
         let conn = NSXPCConnection(
-            machServiceName: "io.arcbox.desktop.helper", options: .privileged)
+            machServiceName: "com.arcboxlabs.desktop.helper", options: .privileged)
         conn.remoteObjectInterface = NSXPCInterface(with: ArcBoxHelperProtocol.self)
         conn.resume()
         return conn

@@ -16,7 +16,7 @@ public enum DaemonState: Sendable, Equatable {
 
 /// Manages the arcbox daemon lifecycle via SMAppService (LaunchAgent).
 ///
-/// The daemon binary is bundled in the app at `Contents/Helpers/io.arcbox.desktop.daemon`
+/// The daemon binary is bundled in the app at `Contents/Helpers/com.arcboxlabs.desktop.daemon`
 /// and managed by launchd. `KeepAlive` in the plist ensures automatic restart on crash.
 @Observable
 @MainActor
@@ -36,7 +36,7 @@ public final class DaemonManager {
         return "\(home)/.arcbox/run/docker.sock"
     }()
 
-    private nonisolated static let plistName = "io.arcbox.desktop.daemon.plist"
+    private nonisolated static let plistName = "com.arcboxlabs.desktop.daemon.plist"
 
     private nonisolated var service: SMAppService {
         SMAppService.agent(plistName: Self.plistName)

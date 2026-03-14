@@ -27,7 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 try? await helperManager.uninstallCLITools()
                 try? await helperManager.teardownDNSResolver()
                 try? await SMAppService.daemon(
-                    plistName: "io.arcbox.desktop.helper.plist"
+                    plistName: "com.arcboxlabs.desktop.helper.plist"
                 ).unregister()
             }
 

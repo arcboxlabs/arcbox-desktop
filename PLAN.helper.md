@@ -42,7 +42,7 @@ ArcBox.app/
     │       └── abctl                           # CLI binary（已有）
     ├── Library/
     │   ├── LaunchDaemons/
-    │   │   └── io.arcbox.desktop.helper.plist  # launchd 配置（新增）
+    │   │   └── com.arcboxlabs.desktop.helper.plist  # launchd 配置（新增）
     │   └── HelperTools/
     │       └── ArcBoxHelper                    # 特权 daemon 二进制（新增）
     └── Info.plist
@@ -80,7 +80,7 @@ ArcBox.app/
 
 **Build Phases（主 App target）**：
 - 新增 Copy Files phase：将 `ArcBoxHelper` 复制到 `Contents/Library/HelperTools/`
-- 新增 Run Script phase（**替代** Copy Files）：将 `io.arcbox.desktop.helper.plist` 中的
+- 新增 Run Script phase（**替代** Copy Files）：将 `com.arcboxlabs.desktop.helper.plist` 中的
   `__DEVELOPMENT_TEAM__` 占位符替换为实际 build setting 值后输出到
   `Contents/Library/LaunchDaemons/`（Apple 不对 Copy Files 阶段的非 Info.plist 做变量展开）
 
@@ -92,7 +92,7 @@ ArcBox.app/
 
 ### Phase 2: LaunchDaemon Plist
 
-**源文件**: `LaunchDaemons/io.arcbox.desktop.helper.plist`（新增，模板文件）
+**源文件**: `LaunchDaemons/com.arcboxlabs.desktop.helper.plist`（新增，模板文件）
 
 Bundle ID 直接写死；`DEVELOPMENT_TEAM` 使用 `__DEVELOPMENT_TEAM__` 占位符，
 由 Run Script phase 在构建时替换（Apple 仅对 target 自身的 Info.plist 做 `$(VAR)` 展开，
@@ -105,7 +105,7 @@ Copy Files phase 复制的其他 plist **不会被处理**）。
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>io.arcbox.desktop.helper</string>
+    <string>com.arcboxlabs.desktop.helper</string>
 
     <!-- Path relative to the .app bundle root -->
     <key>BundleProgram</key>
@@ -119,7 +119,7 @@ Copy Files phase 复制的其他 plist **不会被处理**）。
     <!-- XPC Mach service name; must match NSXPCListener in helper -->
     <key>MachServices</key>
     <dict>
-        <key>io.arcbox.desktop.helper</key>
+        <key>com.arcboxlabs.desktop.helper</key>
         <true/>
     </dict>
 
@@ -148,15 +148,15 @@ Copy Files phase 复制的其他 plist **不会被处理**）。
 ```bash
 # Generate LaunchDaemon plist with DEVELOPMENT_TEAM substituted.
 # Apple does NOT expand $(VAR) in non-Info.plist files copied via Copy Files phase.
-INPUT="${SRCROOT}/LaunchDaemons/io.arcbox.desktop.helper.plist"
-OUTPUT="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchDaemons/io.arcbox.desktop.helper.plist"
+INPUT="${SRCROOT}/LaunchDaemons/com.arcboxlabs.desktop.helper.plist"
+OUTPUT="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchDaemons/com.arcboxlabs.desktop.helper.plist"
 
 mkdir -p "$(dirname "$OUTPUT")"
 sed "s/__DEVELOPMENT_TEAM__/${DEVELOPMENT_TEAM}/g" "$INPUT" > "$OUTPUT"
 ```
 
-Input Files: `$(SRCROOT)/LaunchDaemons/io.arcbox.desktop.helper.plist`
-Output Files: `$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons/io.arcbox.desktop.helper.plist`
+Input Files: `$(SRCROOT)/LaunchDaemons/com.arcboxlabs.desktop.helper.plist`
+Output Files: `$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons/com.arcboxlabs.desktop.helper.plist`
 
 ---
 
@@ -259,7 +259,7 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
 }
 
 let delegate = HelperDelegate()
-let listener = NSXPCListener(machServiceName: "io.arcbox.desktop.helper")
+let listener = NSXPCListener(machServiceName: "com.arcboxlabs.desktop.helper")
 listener.delegate = delegate
 listener.resume()
 RunLoop.main.run()
@@ -444,7 +444,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     }
 
     private func makeError(_ msg: String) -> NSError {
-        NSError(domain: "io.arcbox.desktop.helper", code: -1,
+        NSError(domain: "com.arcboxlabs.desktop.helper", code: -1,
                 userInfo: [NSLocalizedDescriptionKey: msg])
     }
 }
@@ -488,7 +488,7 @@ public final class HelperManager {
     /// First call shows a one-time system approval dialog.
     /// Subsequent calls are idempotent and return immediately.
     public func register() async throws {
-        let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
+        let service = SMAppService.daemon(plistName: "com.arcboxlabs.desktop.helper.plist")
         switch service.status {
         case .enabled:
             isInstalled = true
@@ -616,7 +616,7 @@ public final class HelperManager {
     }
 
     private func makeConnection() -> NSXPCConnection {
-        let conn = NSXPCConnection(machServiceName: "io.arcbox.desktop.helper")
+        let conn = NSXPCConnection(machServiceName: "com.arcboxlabs.desktop.helper")
         conn.remoteObjectInterface = NSXPCInterface(with: ArcBoxHelperProtocol.self)
         conn.resume()
         return conn
@@ -768,7 +768,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 try? await helperManager.uninstallCLITools()
                 try? await helperManager.teardownDNSResolver()
                 try? SMAppService.daemon(
-                    plistName: "io.arcbox.desktop.helper.plist"
+                    plistName: "com.arcboxlabs.desktop.helper.plist"
                 ).unregister()
             }
 
@@ -806,7 +806,7 @@ Button("Uninstall ArcBox...") {
 | `ArcBoxHelper/HelperOperations.swift` | **新增** — 3 个特权操作实现，含 lstat 安全检查和 regex 路径校验 |
 | `ArcBoxHelper/ArcBoxHelper.entitlements` | **新增** — 空 entitlements（root daemon 无需特殊 entitlement） |
 | `ArcBoxHelper/ArcBoxHelperInfo.plist` | **新增** — Helper target 的 Info.plist，含 `ArcBoxTeamID = $(DEVELOPMENT_TEAM)`（Xcode 展开） |
-| `LaunchDaemons/io.arcbox.desktop.helper.plist` | **新增** — launchd 配置模板，`__DEVELOPMENT_TEAM__` 占位符由 Run Script 替换 |
+| `LaunchDaemons/com.arcboxlabs.desktop.helper.plist` | **新增** — launchd 配置模板，`__DEVELOPMENT_TEAM__` 占位符由 Run Script 替换 |
 | `Packages/ArcBoxClient/Sources/ArcBoxClient/HelperProtocol.swift` | **新增** — XPC 协议定义（App 和 Helper 共享） |
 | `Packages/ArcBoxClient/Sources/ArcBoxClient/HelperManager.swift` | **新增** — App 侧 SMAppService 注册 + XPC 调用封装（连接生命周期正确管理） |
 | `arcbox_desktop_swiftApp.swift` | **修改** — 初始化 helperManager，`setupHelper()` 函数 |

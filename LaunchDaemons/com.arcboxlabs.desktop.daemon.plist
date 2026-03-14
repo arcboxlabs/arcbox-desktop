@@ -4,14 +4,14 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>io.arcbox.desktop.daemon</string>
+    <string>com.arcboxlabs.desktop.daemon</string>
 
     <key>BundleProgram</key>
-    <string>Contents/Helpers/io.arcbox.desktop.daemon</string>
+    <string>Contents/Helpers/com.arcboxlabs.desktop.daemon</string>
 
     <key>ProgramArguments</key>
     <array>
-        <string>io.arcbox.desktop.daemon</string>
+        <string>com.arcboxlabs.desktop.daemon</string>
         <string>--docker-integration</string>
     </array>
 

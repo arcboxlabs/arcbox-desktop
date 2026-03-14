@@ -6,7 +6,7 @@
 #
 # Environment variables:
 #   DESKTOP_REPO   - Path to arcbox-desktop checkout (default: script dir/..)
-#   BUNDLE_ID      - App bundle identifier (default: io.arcbox.desktop)
+#   BUNDLE_ID      - App bundle identifier (default: com.arcboxlabs.desktop)
 #   TEAM_ID        - Apple Developer Team ID (required for signing)
 #   ARCBOX_DIR     - Path to arcbox checkout (default: DESKTOP_REPO/../arcbox or ./arcbox)
 #   PSTRAMP_DIR    - Path to pstramp checkout (default: ARCBOX_DIR/../pstramp)
@@ -25,7 +25,7 @@
 #   │       ├── docker-compose
 #   │       └── docker-credential-osxkeychain
 #   ├── Helpers/
-#   │   └── io.arcbox.desktop.daemon
+#   │   └── com.arcboxlabs.desktop.daemon
 #   ├── Resources/
 #   │   ├── assets.lock
 #   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
@@ -60,7 +60,7 @@ else
     exit 1
 fi
 
-BUNDLE_ID="${BUNDLE_ID:-io.arcbox.desktop}"
+BUNDLE_ID="${BUNDLE_ID:-com.arcboxlabs.desktop}"
 BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
 APP_NAME="ArcBox Desktop"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
@@ -333,7 +333,7 @@ fi
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
 
-    DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/io.arcbox.desktop.daemon"
+    DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
     DAEMON_ENTITLEMENTS="$DESKTOP_REPO/ArcBox/DaemonEntitlements.entitlements"
 
     # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
@@ -344,7 +344,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
     # Re-sign the daemon helper WITH its entitlements (--deep strips them).
     if [ -f "$DAEMON_PATH" ]; then
         codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp --identifier "io.arcbox.desktop.daemon" \
+            --timestamp --identifier "com.arcboxlabs.desktop.daemon" \
             --entitlements "$DAEMON_ENTITLEMENTS" "$DAEMON_PATH"
         echo "  Signed daemon with virtualization entitlement"
     fi
@@ -354,7 +354,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
     HELPER_ENTITLEMENTS="$DESKTOP_REPO/ArcBoxHelper/ArcBoxHelper.entitlements"
     if [ -f "$HELPER_PATH" ]; then
         codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp --identifier "io.arcbox.desktop.helper" \
+            --timestamp --identifier "com.arcboxlabs.desktop.helper" \
             --entitlements "$HELPER_ENTITLEMENTS" "$HELPER_PATH"
         echo "  Signed ArcBoxHelper with hardened runtime"
     fi

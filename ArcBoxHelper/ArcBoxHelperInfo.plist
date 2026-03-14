@@ -4,7 +4,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>io.arcbox.desktop.helper</string>
+    <string>com.arcboxlabs.desktop.helper</string>
     <key>CFBundleName</key>
     <string>ArcBoxHelper</string>
     <key>CFBundleVersion</key>
