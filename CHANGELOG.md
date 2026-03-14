@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.5.0...v1.5.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* trigger release for bundle ID migration ([506e3e7](https://github.com/arcboxlabs/arcbox-desktop/commit/506e3e7b5d95ce5e425ae04942b5911244e424fb))
+
 ## [1.5.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.4.3...v1.5.0) (2026-03-13)
 
 
