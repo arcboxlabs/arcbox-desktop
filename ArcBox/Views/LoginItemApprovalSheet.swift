@@ -67,15 +67,17 @@ struct LoginItemApprovalSheet: View {
         .padding(32)
         .frame(width: 400, height: 400)
         .overlay(alignment: .topTrailing) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.tertiary)
+            if approved {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .padding(12)
             }
-            .buttonStyle(.plain)
-            .padding(12)
         }
         .task {
             startPolling()

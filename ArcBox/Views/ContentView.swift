@@ -65,9 +65,12 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showApprovalSheet) {
             LoginItemApprovalSheet()
+                .interactiveDismissDisabled(helperManager.requiresApproval)
         }
         .onChange(of: helperManager.requiresApproval, initial: true) { _, needsApproval in
-            showApprovalSheet = needsApproval
+            if needsApproval {
+                showApprovalSheet = true
+            }
         }
     }
 
