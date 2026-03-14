@@ -407,7 +407,7 @@ if [ "$NOTARIZE" = true ] && [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Notarizing DMG ---"
     SUBMIT_OUT=$(xcrun notarytool submit "$DMG_PATH" \
         --keychain-profile "arcbox-notarize" \
-        --wait --timeout 30m 2>&1) || true
+        --wait --timeout 90m 2>&1) || true
     echo "$SUBMIT_OUT"
 
     # Extract submission ID for log retrieval.

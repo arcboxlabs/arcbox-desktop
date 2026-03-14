@@ -23,7 +23,7 @@ jobs:
   build-dmg:
     name: Build DMG (macOS ARM64)
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 120
     outputs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
