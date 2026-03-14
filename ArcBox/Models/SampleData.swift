@@ -13,6 +13,7 @@ enum SampleData {
             cpuCores: 4,
             memoryGB: 8,
             diskGB: 64,
+            architecture: "arm64",
             ipAddress: "192.168.64.2",
             createdAt: Date().addingTimeInterval(-86400 * 14)
         ),
@@ -24,6 +25,7 @@ enum SampleData {
             cpuCores: 2,
             memoryGB: 4,
             diskGB: 32,
+            architecture: "arm64",
             ipAddress: nil,
             createdAt: Date().addingTimeInterval(-86400 * 7)
         ),

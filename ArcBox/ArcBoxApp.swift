@@ -15,6 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
+        helperManager?.stopMonitoring()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -69,6 +70,7 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
+                .environment(helperManager)
                 .environment(bootAssetManager)
                 .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
@@ -88,6 +90,7 @@ struct ArcBoxDesktopApp: App {
                         onClientsNeeded: { try initClientsIfNeeded() }
                     )
                     startupOrchestrator = orchestrator
+                    helperManager.startMonitoring()
                     await orchestrator.start()
 
                     Task {
@@ -98,6 +101,16 @@ struct ArcBoxDesktopApp: App {
                 // Re-create clients whenever daemon transitions to running
                 // (covers the case where monitoring detects the daemon after
                 // the initial .task check has already passed).
+                // When login item approval is revoked and then re-granted,
+                // re-run helper setup and restart the daemon.
+                .onChange(of: helperManager.requiresApproval) { oldValue, newValue in
+                    if oldValue == true, newValue == false {
+                        print("[Startup] Login item re-approved — retrying startup")
+                        Task {
+                            await startupOrchestrator?.retry()
+                        }
+                    }
+                }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         try? initClientsIfNeeded()

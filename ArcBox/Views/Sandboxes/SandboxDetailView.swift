@@ -31,6 +31,7 @@ struct SandboxDetailView: View {
                             InfoRow(label: "Started", value: sandbox.startedAgo)
                             InfoRow(label: "Time Left", value: sandbox.timeRemaining)
                         }
+                        .infoSectionStyle()
                         .padding(16)
                     }
                 case .logs:

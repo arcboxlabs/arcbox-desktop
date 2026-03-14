@@ -19,6 +19,7 @@ struct VolumeDetailView: View {
                             InfoRow(label: "Size", value: volume.sizeDisplay)
                             InfoRow(label: "Created", value: volume.createdAgo)
                         }
+                        .infoSectionStyle()
                         .padding(16)
                     }
                 case .files:

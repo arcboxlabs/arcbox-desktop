@@ -9,9 +9,8 @@ struct InfoRow: View {
     var body: some View {
         HStack(alignment: .top) {
             Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
-                .frame(width: 100, alignment: .leading)
+                .font(.system(size: 13, weight: .medium))
+            Spacer()
             if let link {
                 Button {
                     NSWorkspace.shared.open(link)
@@ -21,17 +20,31 @@ struct InfoRow: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text(value)
                     .font(.system(size: 13))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .multilineTextAlignment(.trailing)
                     .textSelection(.enabled)
             }
         }
         .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .overlay(alignment: .bottom) {
             Divider().opacity(0.3)
         }
+    }
+}
+
+// MARK: - Info Section Style
+
+extension View {
+    /// Wraps content in a rounded-border card for InfoRow groups
+    func infoSectionStyle() -> some View {
+        self
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(AppColors.border, lineWidth: 0.5)
+            )
     }
 }

@@ -38,6 +38,7 @@ struct MachineViewModel: Identifiable, Hashable {
     let cpuCores: UInt32
     let memoryGB: UInt32
     let diskGB: UInt32
+    let architecture: String
     let ipAddress: String?
     let createdAt: Date
 

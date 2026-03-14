@@ -22,7 +22,40 @@ public final class HelperManager {
     public private(set) var isInstalled = false
     public private(set) var requiresApproval = false
 
+    private var monitorTask: Task<Void, Never>?
+
     public init() {}
+
+    // MARK: - Monitoring
+
+    /// Periodically checks if login item approval has been revoked.
+    /// Sets `requiresApproval = true` when the user disables the login item.
+    public func startMonitoring() {
+        monitorTask?.cancel()
+        monitorTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard let self else { return }
+                let service = SMAppService.daemon(plistName: "com.arcboxlabs.desktop.helper.plist")
+                let status = service.status
+                if status == .requiresApproval, !self.requiresApproval {
+                    self.requiresApproval = true
+                    self.isInstalled = false
+                    print("[HelperManager] Login item approval revoked")
+                } else if status == .enabled, self.requiresApproval {
+                    self.requiresApproval = false
+                    self.isInstalled = true
+                    print("[HelperManager] Login item approval restored")
+                }
+            }
+        }
+    }
+
+    /// Stop periodic monitoring.
+    public func stopMonitoring() {
+        monitorTask?.cancel()
+        monitorTask = nil
+    }
 
     // MARK: - Registration
 
@@ -36,10 +69,10 @@ public final class HelperManager {
         case .enabled:
             // Best-effort re-register to update helper binary path.
             try? service.register()
-            isInstalled = true
+            requiresApproval = false
         case .notRegistered, .notFound:
             try service.register()
-            isInstalled = true
+            requiresApproval = false
         case .requiresApproval:
             requiresApproval = true
             throw HelperError.requiresApproval
@@ -51,16 +84,22 @@ public final class HelperManager {
         // Skip version check when already enabled — during development,
         // rebuilds change the CDHash but launchd caches the old LWCR.
         // Use `sudo sfltool resetbtm` in Terminal to clear stale state.
-        if service.status == .enabled { return }
+        if service.status == .enabled {
+            isInstalled = true
+            return
+        }
         #endif
 
         let version = await getVersion()
         if version == 0 {
+            isInstalled = false
             throw HelperError.connectionFailed
         }
         if version < kArcBoxHelperProtocolVersion {
+            isInstalled = false
             throw HelperError.versionMismatch(version)
         }
+        isInstalled = true
     }
 
     /// Registers the helper, automatically retrying if approval is needed.

@@ -22,6 +22,7 @@ struct TemplateDetailView: View {
                             InfoRow(label: "Updated", value: template.updatedAgo)
                             InfoRow(label: "Sandboxes", value: template.sandboxCountDisplay)
                         }
+                        .infoSectionStyle()
                         .padding(16)
                     }
                 case .sandboxes:

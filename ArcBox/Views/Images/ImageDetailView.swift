@@ -23,6 +23,7 @@ struct ImageDetailView: View {
                                     InfoRow(label: "Size", value: image.sizeDisplay)
                                     InfoRow(label: "Platform", value: "\(image.os)/\(image.architecture)")
                                 }
+                                .infoSectionStyle()
 
                                 // Export button
                                 HStack(spacing: 12) {

@@ -21,6 +21,7 @@ struct PodDetailView: View {
                             InfoRow(label: "Restarts", value: "\(pod.restartCount)")
                             InfoRow(label: "Created", value: pod.createdAgo)
                         }
+                        .infoSectionStyle()
                         .padding(16)
                     }
                 case .logs:

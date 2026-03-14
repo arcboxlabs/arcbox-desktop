@@ -11055,7 +11055,7 @@ components:
           example:
             com.example.some-label: some-value
             com.example.some-other-label: some-other-value
-          nullable: false
+          nullable: true
         Scope:
           type: string
           description: >
