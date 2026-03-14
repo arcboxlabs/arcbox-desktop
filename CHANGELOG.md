@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.5.1...v1.6.0) (2026-03-14)
+
+
+### Features
+
+* Linux Machines module UI ([#18](https://github.com/arcboxlabs/arcbox-desktop/issues/18)) ([1676009](https://github.com/arcboxlabs/arcbox-desktop/commit/1676009d0ba23e4f9f1c67933897bb1dcdb322e1))
+
 ## [1.5.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.5.0...v1.5.1) (2026-03-14)
 
 
