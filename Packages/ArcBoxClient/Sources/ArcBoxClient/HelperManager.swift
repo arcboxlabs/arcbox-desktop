@@ -36,7 +36,7 @@ public final class HelperManager {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
                 guard let self else { return }
-                let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
+                let service = SMAppService.daemon(plistName: "com.arcboxlabs.desktop.helper.plist")
                 let status = service.status
                 if status == .requiresApproval, !self.requiresApproval {
                     self.requiresApproval = true

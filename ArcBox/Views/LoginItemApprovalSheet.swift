@@ -6,6 +6,7 @@ import SwiftUI
 /// Polls for approval status and shows a success indicator once approved.
 struct LoginItemApprovalSheet: View {
     @Environment(HelperManager.self) private var helperManager
+    @Environment(\.startupOrchestrator) private var startupOrchestrator
     @Environment(\.dismiss) private var dismiss
 
     @State private var approved = false
@@ -55,6 +56,7 @@ struct LoginItemApprovalSheet: View {
             // Action button
             Button(approved ? "Done" : "Open System Settings") {
                 if approved {
+                    Task { await startupOrchestrator?.retry() }
                     dismiss()
                 } else {
                     helperManager.openSystemSettings()
@@ -69,6 +71,7 @@ struct LoginItemApprovalSheet: View {
         .overlay(alignment: .topTrailing) {
             if approved {
                 Button {
+                    Task { await startupOrchestrator?.retry() }
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -90,7 +93,7 @@ struct LoginItemApprovalSheet: View {
     private func startPolling() {
         guard pollingTask == nil, !approved else { return }
         pollingTask = Task {
-            let service = SMAppService.daemon(plistName: "io.arcbox.desktop.helper.plist")
+            let service = SMAppService.daemon(plistName: "com.arcboxlabs.desktop.helper.plist")
             // Poll every 2s for up to 2 minutes
             for _ in 0..<60 {
                 try? await Task.sleep(for: .seconds(2))
