@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.6.0...v1.6.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* correct DEVELOPMENT_TEAM to 422ACSY6Y5 for all targets ([85e57c5](https://github.com/arcboxlabs/arcbox-desktop/commit/85e57c572b2df4fc43b1ac9b0b83b860adc23e84))
+
 ## [1.6.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.5.1...v1.6.0) (2026-03-14)
 
 
