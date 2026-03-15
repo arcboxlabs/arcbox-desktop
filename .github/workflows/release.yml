@@ -356,7 +356,7 @@ jobs:
           echo "DMG length: $DMG_LENGTH"
 
       - name: Upload dSYMs to Sentry
-        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        if: ${{ vars.SENTRY_ORG != '' }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
