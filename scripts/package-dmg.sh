@@ -60,15 +60,29 @@ else
     exit 1
 fi
 
+# Sign a binary with hardened runtime. No-op when SIGN_IDENTITY is empty.
+sign_binary() {
+    local target="$1"
+    shift
+    if [ -n "$SIGN_IDENTITY" ]; then
+        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
+            --timestamp "$@" "$target"
+    fi
+}
+
 BUNDLE_ID="${BUNDLE_ID:-com.arcboxlabs.desktop}"
 BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
 APP_NAME="ArcBox Desktop"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
-# Read version from Version.xcconfig (source of truth managed by release-please)
-VERSION=$(sed -n 's/^MARKETING_VERSION *= *\(.*\)/\1/p' \
-    "$DESKTOP_REPO/Version.xcconfig" | sed 's/ *\/\/.*//' | tr -d ' ')
-VERSION="${VERSION:-0.0.0}"
+# Version can be passed via VERSION env var; otherwise read from Version.xcconfig.
+if [ -z "${VERSION:-}" ]; then
+    VERSION=$(sed -n 's/^MARKETING_VERSION *= *\(.*\)/\1/p' \
+        "$DESKTOP_REPO/Version.xcconfig" | sed 's/ *\/\/.*//' | tr -d ' ')
+    VERSION="${VERSION:-0.0.0}"
+fi
+# Strip leading "v" prefix if present (workflow passes v1.2.3, we need 1.2.3).
+VERSION="${VERSION#v}"
 BUILD_NUMBER=$(git -C "$DESKTOP_REPO" rev-list --count HEAD)
 DMG_NAME="ArcBox-Desktop-${VERSION}-arm64"
 DMG_PATH="$ARCBOX_DIR/target/$DMG_NAME.dmg"
@@ -183,10 +197,7 @@ if [ -f "$CLI_BIN" ]; then
     BIN_DIR="$APP_BUNDLE/Contents/MacOS/bin"
     mkdir -p "$BIN_DIR"
     cp -f "$CLI_BIN" "$BIN_DIR/abctl"
-    if [ -n "$SIGN_IDENTITY" ]; then
-        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp "$BIN_DIR/abctl"
-    fi
+    sign_binary "$BIN_DIR/abctl"
     echo "  Copied abctl → MacOS/bin/abctl"
 fi
 
@@ -219,10 +230,7 @@ mkdir -p "$DOCKER_DEST"
 for tool in "${DOCKER_TOOLS[@]}"; do
     if [ -f "$DOCKER_TOOLS_SRC/$tool" ]; then
         cp -f "$DOCKER_TOOLS_SRC/$tool" "$DOCKER_DEST/$tool"
-        if [ -n "$SIGN_IDENTITY" ]; then
-            codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-                --timestamp "$DOCKER_DEST/$tool"
-        fi
+        sign_binary "$DOCKER_DEST/$tool"
         echo "  Embedded $tool → MacOS/xbin/$tool"
         DOCKER_EMBEDDED=$((DOCKER_EMBEDDED + 1))
     fi
@@ -268,10 +276,7 @@ if [ -d "$RUNTIME_SRC" ]; then
         dest_file="$RUNTIME_DEST/$rel"
         mkdir -p "$(dirname "$dest_file")"
         cp -f "$src_file" "$dest_file"
-        if [ -n "$SIGN_IDENTITY" ]; then
-            codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-                --timestamp "$dest_file"
-        fi
+        sign_binary "$dest_file"
         echo "  Embedded $rel"
     done
     RUNTIME_EMBEDDED=$(find "$RUNTIME_DEST" -type f 2>/dev/null | wc -l | tr -d ' ')
@@ -318,10 +323,7 @@ done
 
 if [ -n "$PSTRAMP_SRC" ]; then
     cp -f "$PSTRAMP_SRC" "$APP_BUNDLE/Contents/MacOS/pstramp"
-    if [ -n "$SIGN_IDENTITY" ]; then
-        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp "$APP_BUNDLE/Contents/MacOS/pstramp"
-    fi
+    sign_binary "$APP_BUNDLE/Contents/MacOS/pstramp"
     echo "  Embedded pstramp from $PSTRAMP_SRC"
 else
     echo "  Warning: pstramp not found. Build it with: cargo build --release -p pstramp"
@@ -343,9 +345,9 @@ if [ -n "$SIGN_IDENTITY" ]; then
 
     # Re-sign the daemon helper WITH its entitlements (--deep strips them).
     if [ -f "$DAEMON_PATH" ]; then
-        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp --identifier "com.arcboxlabs.desktop.daemon" \
-            --entitlements "$DAEMON_ENTITLEMENTS" "$DAEMON_PATH"
+        sign_binary "$DAEMON_PATH" \
+            --identifier "com.arcboxlabs.desktop.daemon" \
+            --entitlements "$DAEMON_ENTITLEMENTS"
         echo "  Signed daemon with virtualization entitlement"
     fi
 
@@ -353,16 +355,14 @@ if [ -n "$SIGN_IDENTITY" ]; then
     HELPER_PATH="$APP_BUNDLE/Contents/Library/HelperTools/ArcBoxHelper"
     HELPER_ENTITLEMENTS="$DESKTOP_REPO/ArcBoxHelper/ArcBoxHelper.entitlements"
     if [ -f "$HELPER_PATH" ]; then
-        codesign --force --options runtime --sign "$SIGN_IDENTITY" \
-            --timestamp --identifier "com.arcboxlabs.desktop.helper" \
-            --entitlements "$HELPER_ENTITLEMENTS" "$HELPER_PATH"
+        sign_binary "$HELPER_PATH" \
+            --identifier "com.arcboxlabs.desktop.helper" \
+            --entitlements "$HELPER_ENTITLEMENTS"
         echo "  Signed ArcBoxHelper with hardened runtime"
     fi
 
     # Re-sign the outer app (nested code changed, so the seal must be refreshed).
-    codesign --force --options runtime \
-        --sign "$SIGN_IDENTITY" --timestamp \
-        "$APP_BUNDLE"
+    sign_binary "$APP_BUNDLE"
 
     codesign --verify --deep --strict "$APP_BUNDLE"
     echo "  Signed and verified"
@@ -413,17 +413,23 @@ if [ "$NOTARIZE" = true ] && [ -n "$SIGN_IDENTITY" ]; then
     # Extract submission ID for log retrieval.
     SUBMISSION_ID=$(echo "$SUBMIT_OUT" | awk '/^  id:/{print $2; exit}')
 
-    if echo "$SUBMIT_OUT" | grep -q "status: Invalid"; then
-        echo "--- Notarization REJECTED — fetching log ---"
+    if echo "$SUBMIT_OUT" | grep -q "status: Accepted"; then
+        xcrun stapler staple "$DMG_PATH"
+        echo "  Notarization complete"
+    else
+        echo "--- Notarization FAILED ---"
+        if echo "$SUBMIT_OUT" | grep -q "status: Invalid"; then
+            echo "  Status: REJECTED by Apple"
+        else
+            echo "  Status: did not reach 'Accepted' (timed out or unknown error)"
+        fi
         if [ -n "$SUBMISSION_ID" ]; then
+            echo "--- Fetching notarization log ---"
             xcrun notarytool log "$SUBMISSION_ID" \
                 --keychain-profile "arcbox-notarize" 2>&1 || true
         fi
         exit 1
     fi
-
-    xcrun stapler staple "$DMG_PATH"
-    echo "  Notarization complete"
 fi
 
 echo "=== Done ==="

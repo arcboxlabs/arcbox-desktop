@@ -107,36 +107,10 @@ jobs:
         run: brew install protobuf create-dmg
 
       - name: Import signing certificate
-        env:
-          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
-          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
-
-          # Create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # Import certificate
-          echo "$APPLE_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security import "$RUNNER_TEMP/cert.p12" \
-            -k "$KEYCHAIN_PATH" \
-            -P "$APPLE_CERTIFICATE_PASSWORD" \
-            -T /usr/bin/codesign \
-            -T /usr/bin/security
-          rm "$RUNNER_TEMP/cert.p12"
-
-          # Allow codesign to access the keychain without prompt
-          security set-key-partition-list -S apple-tool:,apple: \
-            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # Add to search list
-          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
-
-          # Verify
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+        uses: apple-actions/import-codesign-certs@v6
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
       - name: Store notarization credentials
         env:
@@ -304,6 +278,7 @@ jobs:
           ARCBOX_DIR: ${{ github.workspace }}/arcbox-core
           BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
           SPARKLE_FEED_URL: "https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml"
         run: |
           scripts/package-dmg.sh \
@@ -320,6 +295,24 @@ jobs:
           shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
           cat "${DMG_PATH}.sha256"
 
+      - name: Cache Sparkle sign_update
+        id: sparkle_cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/sparkle-bin
+          key: sparkle-sign-update-2.9.0
+
+      - name: Download Sparkle sign_update
+        if: steps.sparkle_cache.outputs.cache-hit != 'true'
+        run: |
+          SPARKLE_VER="2.9.0"
+          curl -fSL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz" \
+            -o "$RUNNER_TEMP/Sparkle.tar.xz"
+          tar xJf "$RUNNER_TEMP/Sparkle.tar.xz" -C "$RUNNER_TEMP"
+          mkdir -p /tmp/sparkle-bin
+          cp "$RUNNER_TEMP/bin/sign_update" /tmp/sparkle-bin/sign_update
+          chmod +x /tmp/sparkle-bin/sign_update
+
       - name: Sign DMG with Sparkle EdDSA
         id: sparkle_sign
         env:
@@ -333,22 +326,11 @@ jobs:
             exit 1
           fi
 
-          # Download Sparkle 2.9.0 and extract sign_update
-          SPARKLE_VER="2.9.0"
-          SPARKLE_URL="https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
-          echo "Downloading Sparkle ${SPARKLE_VER}..."
-          curl -fSL "$SPARKLE_URL" -o "$RUNNER_TEMP/Sparkle.tar.xz"
-          tar xJf "$RUNNER_TEMP/Sparkle.tar.xz" -C "$RUNNER_TEMP"
-          SIGN_UPDATE="$RUNNER_TEMP/bin/sign_update"
-          chmod +x "$SIGN_UPDATE"
-          echo "sign_update ready: $($SIGN_UPDATE --help 2>&1 | head -1)"
-
+          SIGN_UPDATE="/tmp/sparkle-bin/sign_update"
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
 
-          # Write private key to temp file (printf to avoid trailing newline)
           KEY_FILE="$(mktemp)"
           printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
-          echo "Signing $DMG_PATH..."
           SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE" 2>&1) || {
             echo "::error::sign_update failed"
             echo "$SIGN_OUTPUT"
@@ -356,9 +338,7 @@ jobs:
             exit 1
           }
           rm -f "$KEY_FILE"
-          echo "sign_update output: $SIGN_OUTPUT"
 
-          # Parse sparkle:edSignature="..." length="..."
           ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
           if [ -z "$ED_SIGNATURE" ]; then
             echo "::error::Failed to extract EdDSA signature from sign_update output"
@@ -366,7 +346,6 @@ jobs:
           fi
 
           DMG_LENGTH=$(echo "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
-          # Fallback: get length from stat if not in output
           if [ -z "$DMG_LENGTH" ]; then
             DMG_LENGTH=$(stat -f%z "$DMG_PATH")
           fi
@@ -385,13 +364,7 @@ jobs:
             ${{ steps.dmg.outputs.dmg_path }}.sha256
           retention-days: 30
 
-      - name: Cleanup keychain
-        if: always()
-        run: |
-          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
-          if [ -f "$KEYCHAIN_PATH" ]; then
-            security delete-keychain "$KEYCHAIN_PATH"
-          fi
+      # Keychain cleanup is handled automatically by apple-actions/import-codesign-certs
 
   create-release:
     name: Create Release
