@@ -12,8 +12,6 @@
 		65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 65D867EC2F5C228600DAAEE6 /* Sparkle */; };
 		AB0D00022F60000000000001 /* com.arcboxlabs.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */; };
 		AB0E00132F70000000000013 /* ArcBoxHelper in Copy Helper Tool */ = {isa = PBXBuildFile; fileRef = AB0E00012F70000000000001 /* ArcBoxHelper */; };
-		BA8AF7412F66F38100CDDA35 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA8AF7402F66F38100CDDA35 /* NetworkExtension.framework */; };
-		BA8AF7492F66F38100CDDA35 /* ArcBoxNetworkExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA8AF73E2F66F38100CDDA35 /* ArcBoxNetworkExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
 		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
@@ -34,13 +32,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = AB0E00602F70000000000060;
 			remoteInfo = ArcBoxHelper;
-		};
-		BA8AF7472F66F38100CDDA35 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 657F65732F3A2ADB00C7005A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = BA8AF73D2F66F38100CDDA35;
-			remoteInfo = ArcBoxNetworkExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -67,17 +58,6 @@
 			name = "Copy Helper Tool";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BA8AF74A2F66F38100CDDA35 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				BA8AF7492F66F38100CDDA35 /* ArcBoxNetworkExtension.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -89,8 +69,6 @@
 		AB0E00012F70000000000001 /* ArcBoxHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ArcBoxHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0E00022F70000000000002 /* com.arcboxlabs.desktop.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.helper.plist; sourceTree = "<group>"; };
 		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
-		BA8AF73E2F66F38100CDDA35 /* ArcBoxNetworkExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArcBoxNetworkExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		BA8AF7402F66F38100CDDA35 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -102,11 +80,6 @@
 		AB0E00042F70000000000004 /* ArcBoxHelper */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ArcBoxHelper;
-			sourceTree = "<group>";
-		};
-		BA8AF7422F66F38100CDDA35 /* ArcBoxNetworkExtension */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ArcBoxNetworkExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -139,14 +112,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BA8AF73B2F66F38100CDDA35 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BA8AF7412F66F38100CDDA35 /* NetworkExtension.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -167,7 +132,6 @@
 				AB0E00042F70000000000004 /* ArcBoxHelper */,
 				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
 				AB0D00062F60000000000001 /* LaunchDaemons */,
-				BA8AF7422F66F38100CDDA35 /* ArcBoxNetworkExtension */,
 				BA8AF73F2F66F38100CDDA35 /* Frameworks */,
 				657F657C2F3A2ADB00C7005A /* Products */,
 			);
@@ -179,7 +143,6 @@
 				8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */,
 				657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */,
 				AB0E00012F70000000000001 /* ArcBoxHelper */,
-				BA8AF73E2F66F38100CDDA35 /* ArcBoxNetworkExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -196,7 +159,6 @@
 		BA8AF73F2F66F38100CDDA35 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				BA8AF7402F66F38100CDDA35 /* NetworkExtension.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -216,13 +178,11 @@
 				AB0E00322F70000000000032 /* Copy Helper Tool */,
 				AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */,
 				AB0D00052F60000000000001 /* Sign Rust Binaries */,
-				BA8AF74A2F66F38100CDDA35 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				AB0E00412F70000000000041 /* PBXTargetDependency */,
-				BA8AF7482F66F38100CDDA35 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				657F657D2F3A2ADB00C7005A /* ArcBox */,
@@ -280,28 +240,6 @@
 			productReference = AB0E00012F70000000000001 /* ArcBoxHelper */;
 			productType = "com.apple.product-type.tool";
 		};
-		BA8AF73D2F66F38100CDDA35 /* ArcBoxNetworkExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = BA8AF74E2F66F38100CDDA35 /* Build configuration list for PBXNativeTarget "ArcBoxNetworkExtension" */;
-			buildPhases = (
-				BA8AF73A2F66F38100CDDA35 /* Sources */,
-				BA8AF73B2F66F38100CDDA35 /* Frameworks */,
-				BA8AF73C2F66F38100CDDA35 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				BA8AF7422F66F38100CDDA35 /* ArcBoxNetworkExtension */,
-			);
-			name = ArcBoxNetworkExtension;
-			packageProductDependencies = (
-			);
-			productName = ArcBoxNetworkExtension;
-			productReference = BA8AF73E2F66F38100CDDA35 /* ArcBoxNetworkExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -317,9 +255,6 @@
 					};
 					AB0E00602F70000000000060 = {
 						CreatedOnToolsVersion = 26.2;
-					};
-					BA8AF73D2F66F38100CDDA35 = {
-						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -347,20 +282,12 @@
 				8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */,
 				657F657A2F3A2ADB00C7005A /* ArcBox */,
 				AB0E00602F70000000000060 /* ArcBoxHelper */,
-				BA8AF73D2F66F38100CDDA35 /* ArcBoxNetworkExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		657F65792F3A2ADB00C7005A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA8AF73C2F66F38100CDDA35 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -441,13 +368,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BA8AF73A2F66F38100CDDA35 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -460,11 +380,6 @@
 			isa = PBXTargetDependency;
 			target = AB0E00602F70000000000060 /* ArcBoxHelper */;
 			targetProxy = AB0E00402F70000000000040 /* PBXContainerItemProxy */;
-		};
-		BA8AF7482F66F38100CDDA35 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = BA8AF73D2F66F38100CDDA35 /* ArcBoxNetworkExtension */;
-			targetProxy = BA8AF7472F66F38100CDDA35 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -747,70 +662,6 @@
 			};
 			name = Release;
 		};
-		BA8AF74B2F66F38100CDDA35 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = ArcBoxNetworkExtension/ArcBoxNetworkExtension.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 422ACSY6Y5;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ArcBoxNetworkExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ArcBoxNetworkExtension;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 15.7;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcboxlabs.desktop.network-extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		BA8AF74C2F66F38100CDDA35 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = ArcBoxNetworkExtension/ArcBoxNetworkExtension.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 422ACSY6Y5;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ArcBoxNetworkExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ArcBoxNetworkExtension;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 15.7;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arcboxlabs.desktop.network-extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -837,15 +688,6 @@
 			buildConfigurations = (
 				AB0E00502F70000000000050 /* Debug */,
 				AB0E00512F70000000000051 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		BA8AF74E2F66F38100CDDA35 /* Build configuration list for PBXNativeTarget "ArcBoxNetworkExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				BA8AF74B2F66F38100CDDA35 /* Debug */,
-				BA8AF74C2F66F38100CDDA35 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
