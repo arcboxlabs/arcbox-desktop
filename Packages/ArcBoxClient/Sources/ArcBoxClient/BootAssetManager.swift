@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 
 /// Boot-asset lifecycle state.
 public enum BootAssetState: Sendable, Equatable {
@@ -295,7 +296,7 @@ public final class BootAssetManager {
         await Task.detached(priority: .utility) {
             let fm = FileManager.default
             guard fm.fileExists(atPath: bundleDir.path) else {
-                print("[Startup] No bundled runtime directory, skipping seed")
+                ClientLog.startup.info("No bundled runtime directory, skipping seed")
                 return
             }
 
@@ -318,14 +319,14 @@ public final class BootAssetManager {
                     continue
                 }
 
-                print("[Startup] Seeding runtime binary: \(relativePath)")
+                ClientLog.startup.info("Seeding runtime binary: \(relativePath, privacy: .public)")
                 do {
                     try fm.createDirectory(
                         atPath: (dst as NSString).deletingLastPathComponent,
                         withIntermediateDirectories: true)
                     try fm.copyItem(atPath: src, toPath: dst)
                 } catch {
-                    print("[Startup] Failed to seed \(relativePath): \(error)")
+                    ClientLog.startup.error("Failed to seed \(relativePath, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 }
             }
         }.value
@@ -344,7 +345,7 @@ public final class BootAssetManager {
         await Task.detached(priority: .utility) {
             let fm = FileManager.default
             guard fm.fileExists(atPath: bundleBin.path) else {
-                print("[Startup] No bundled arcbox-agent, skipping seed")
+                ClientLog.startup.info("No bundled arcbox-agent, skipping seed")
                 return
             }
 
@@ -355,9 +356,9 @@ public final class BootAssetManager {
             do {
                 try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
                 try fm.copyItem(atPath: bundleBin.path, toPath: destPath)
-                print("[Startup] Seeded arcbox-agent → \(destPath)")
+                ClientLog.startup.info("Seeded arcbox-agent → \(destPath, privacy: .public)")
             } catch {
-                print("[Startup] Failed to seed arcbox-agent: \(error)")
+                ClientLog.startup.error("Failed to seed arcbox-agent: \(error.localizedDescription, privacy: .public)")
             }
         }.value
     }

@@ -1,5 +1,6 @@
 import SwiftUI
 import DockerClient
+import OSLog
 
 /// Detail tab for volumes
 enum VolumeDetailTab: String, CaseIterable, Identifiable {
@@ -79,7 +80,7 @@ class VolumesViewModel {
     /// to include volume size information.
     func loadVolumes(docker: DockerClient?) async {
         guard let docker else {
-            print("[VolumesVM] No docker client available")
+            Log.volume.debug("No docker client available")
             return
         }
 
@@ -87,9 +88,9 @@ class VolumesViewModel {
             let response = try await docker.api.SystemDataUsage(query: .init(_type: [.volume]))
             let dfResponse = try response.ok.body.json
             volumes = (dfResponse.Volumes ?? []).map { VolumeViewModel(fromDocker: $0) }
-            print("[VolumesVM] Loaded \(volumes.count) volumes")
+            Log.volume.info("Loaded \(volumes.count, privacy: .public) volumes")
         } catch {
-            print("[VolumesVM] Error loading volumes: \(error)")
+            Log.volume.error("Error loading volumes: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -99,9 +100,9 @@ class VolumesViewModel {
         do {
             let response = try await docker.api.VolumeDelete(path: .init(name: name), query: .init(force: true))
             _ = try response.noContent
-            print("[VolumesVM] Successfully removed volume \(name)")
+            Log.volume.info("Removed volume \(name, privacy: .public)")
         } catch {
-            print("[VolumesVM] Error removing volume \(name): \(error)")
+            Log.volume.error("Error removing volume \(name, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         await loadVolumes(docker: docker)
     }

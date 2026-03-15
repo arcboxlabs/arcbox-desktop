@@ -30,6 +30,12 @@
     <key>ProcessType</key>
     <string>Background</string>
 
+    <key>StandardOutPath</key>
+    <string>/tmp/arcbox-daemon.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/arcbox-daemon.stderr.log</string>
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>

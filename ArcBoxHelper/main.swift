@@ -1,4 +1,6 @@
 import Foundation
+import OSLog
+@preconcurrency import Sentry
 import ServiceManagement
 
 final class HelperDelegate: NSObject, NSXPCListenerDelegate {
@@ -14,7 +16,10 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
         // where $(DEVELOPMENT_TEAM) is expanded by Xcode at build time.
         guard let teamID = Bundle.main.object(forInfoDictionaryKey: "ArcBoxTeamID") as? String,
               !teamID.isEmpty
-        else { return false }
+        else {
+            HelperLog.xpc.error("Missing ArcBoxTeamID in Info.plist")
+            return false
+        }
 
         do {
             try connection.setCodeSigningRequirement(
@@ -23,14 +28,42 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
                 "identifier \"\(Self.appBundleID)\""
             )
         } catch {
+            HelperLog.xpc.error("Code signing requirement failed: \(error.localizedDescription, privacy: .public)")
             return false
         }
 
         connection.exportedInterface = NSXPCInterface(with: ArcBoxHelperProtocol.self)
         connection.exportedObject = HelperOperations()
         connection.resume()
+        HelperLog.xpc.info("Accepted XPC connection")
         return true
     }
+}
+
+HelperLog.xpc.info("ArcBoxHelper starting (protocol v\(kArcBoxHelperProtocolVersion, privacy: .public))")
+
+// Initialize Sentry for the helper process (no UI features).
+if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String,
+   !dsn.isEmpty, dsn != "YOUR_SENTRY_DSN_HERE", dsn != "$(SENTRY_DSN)"
+{
+    SentrySDK.start { options in
+        options.dsn = dsn
+        options.enableCrashHandler = true
+        options.enableAutoSessionTracking = false
+        options.enableAutoPerformanceTracing = false
+        options.attachScreenshot = false
+        options.tracesSampleRate = 0
+        #if DEBUG
+        options.debug = true
+        options.environment = "development"
+        #else
+        options.environment = "production"
+        #endif
+    }
+    SentrySDK.configureScope { scope in
+        scope.setTag(value: "helper", key: "process_type")
+    }
+    HelperLog.xpc.info("Sentry initialized for helper")
 }
 
 let delegate = HelperDelegate()

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import ServiceManagement
 
 public enum HelperError: LocalizedError {
@@ -41,11 +42,11 @@ public final class HelperManager {
                 if status == .requiresApproval, !self.requiresApproval {
                     self.requiresApproval = true
                     self.isInstalled = false
-                    print("[HelperManager] Login item approval revoked")
+                    ClientLog.helper.warning("Login item approval revoked")
                 } else if status == .enabled, self.requiresApproval {
                     self.requiresApproval = false
                     self.isInstalled = true
-                    print("[HelperManager] Login item approval restored")
+                    ClientLog.helper.info("Login item approval restored")
                 }
             }
         }
@@ -109,7 +110,7 @@ public final class HelperManager {
             try await register()
             return
         } catch HelperError.requiresApproval {
-            print("[Helper] Requires approval — opening System Settings")
+            ClientLog.helper.notice("Requires approval — opening System Settings")
             openSystemSettings()
         }
 
@@ -156,6 +157,18 @@ public final class HelperManager {
         try await call(.teardownDNSResolver(domain: domain))
     }
 
+    public func addRouteGateway(subnet: String, gateway: String) async throws {
+        try await call(.addRouteGateway(subnet: subnet, gateway: gateway))
+    }
+
+    public func addRouteInterface(subnet: String, iface: String) async throws {
+        try await call(.addRouteInterface(subnet: subnet, iface: iface))
+    }
+
+    public func removeRouteGateway(subnet: String, gateway: String) async throws {
+        try await call(.removeRouteGateway(subnet: subnet, gateway: gateway))
+    }
+
     // MARK: - Private: XPC
 
     private enum HelperOperation: Sendable {
@@ -165,6 +178,9 @@ public final class HelperManager {
         case uninstallCLITools
         case setupDNSResolver(domain: String, port: Int)
         case teardownDNSResolver(domain: String)
+        case addRouteGateway(subnet: String, gateway: String)
+        case addRouteInterface(subnet: String, iface: String)
+        case removeRouteGateway(subnet: String, gateway: String)
     }
 
     private nonisolated func getVersion() async -> Int {
@@ -190,6 +206,12 @@ public final class HelperManager {
                 p.setupDNSResolver(domain: domain, port: port, reply: finish)
             case .teardownDNSResolver(let domain):
                 p.teardownDNSResolver(domain: domain, reply: finish)
+            case .addRouteGateway(let subnet, let gateway):
+                p.addRouteGateway(subnet: subnet, gateway: gateway, reply: finish)
+            case .addRouteInterface(let subnet, let iface):
+                p.addRouteInterface(subnet: subnet, iface: iface, reply: finish)
+            case .removeRouteGateway(let subnet, let gateway):
+                p.removeRouteGateway(subnet: subnet, gateway: gateway, reply: finish)
             }
         }
     }

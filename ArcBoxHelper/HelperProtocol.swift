@@ -42,6 +42,18 @@ let kArcBoxHelperProtocolVersion = 1
     /// Removes /etc/resolver/<domain>.
     func teardownDNSResolver(domain: String, reply: @escaping (NSError?) -> Void)
 
+    // MARK: - Operation 4: Network routes
+
+    /// Installs a host route via gateway: /sbin/route -n add -net <subnet> <gateway>.
+    func addRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void)
+
+    /// Installs a host route via interface: /sbin/route -n add -net <subnet> -interface <iface>.
+    /// Used for L3 direct routing with proxy ARP.
+    func addRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void)
+
+    /// Removes a host route.
+    func removeRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void)
+
     // MARK: - Lifecycle
 
     /// Returns the helper protocol version for compatibility checking.

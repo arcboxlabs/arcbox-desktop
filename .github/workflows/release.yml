@@ -260,10 +260,12 @@ jobs:
       - name: Create Local.xcconfig
         env:
           SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           cat > Local.xcconfig <<XCEOF
           #include "Version.xcconfig"
           INFOPLIST_KEY_SUPublicEDKey = ${SPARKLE_PUBLIC_KEY}
+          SENTRY_DSN = ${SENTRY_DSN}
           XCEOF
           echo "Local.xcconfig:"
           cat Local.xcconfig
@@ -276,8 +278,6 @@ jobs:
         env:
           DESKTOP_REPO: ${{ github.workspace }}
           ARCBOX_DIR: ${{ github.workspace }}/arcbox-core
-          BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
-          TEAM_ID: ${{ secrets.TEAM_ID }}
           VERSION: ${{ steps.version.outputs.version }}
           SPARKLE_FEED_URL: "https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml"
         run: |
@@ -354,6 +354,31 @@ jobs:
           echo "dmg_length=$DMG_LENGTH" >> "$GITHUB_OUTPUT"
           echo "EdDSA signature: ${ED_SIGNATURE:0:20}..."
           echo "DMG length: $DMG_LENGTH"
+
+      - name: Upload dSYMs to Sentry
+        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Install sentry-cli
+          brew install getsentry/tools/sentry-cli
+
+          # Upload dSYMs from build output
+          DSYM_DIR="${{ steps.dmg.outputs.dmg_path }}"
+          DSYM_DIR="${DSYM_DIR%/*}"
+          find "${DSYM_DIR}" "$HOME/Library/Developer/Xcode/DerivedData" \
+            -name "*.dSYM" -type d 2>/dev/null | head -20 | while read -r dsym; do
+            echo "Uploading dSYM: $dsym"
+            sentry-cli debug-files upload --include-sources "$dsym" || true
+          done
+
+          # Create Sentry release
+          sentry-cli releases new "$VERSION"
+          sentry-cli releases set-commits "$VERSION" --auto
+          sentry-cli releases finalize "$VERSION"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v6

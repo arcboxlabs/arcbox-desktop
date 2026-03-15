@@ -15,5 +15,7 @@
     <string>BNDL</string>
     <key>ArcBoxTeamID</key>
     <string>$(DEVELOPMENT_TEAM)</string>
+    <key>SentryDSN</key>
+    <string>$(SENTRY_DSN)</string>
 </dict>
 </plist>

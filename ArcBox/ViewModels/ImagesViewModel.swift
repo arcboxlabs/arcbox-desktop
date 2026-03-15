@@ -1,5 +1,6 @@
 import SwiftUI
 import DockerClient
+import OSLog
 
 /// Detail tab for images
 enum ImageDetailTab: String, CaseIterable, Identifiable {
@@ -79,7 +80,7 @@ class ImagesViewModel {
     /// Load images from Docker Engine API.
     func loadImages(docker: DockerClient?) async {
         guard let docker else {
-            print("[ImagesVM] No docker client available")
+            Log.image.debug("No docker client available")
             return
         }
 
@@ -87,9 +88,9 @@ class ImagesViewModel {
             let response = try await docker.api.ImageList(.init())
             let imageList = try response.ok.body.json
             images = imageList.flatMap { ImageViewModel.fromDocker($0) }
-            print("[ImagesVM] Loaded \(images.count) images")
+            Log.image.info("Loaded \(images.count, privacy: .public) images")
         } catch {
-            print("[ImagesVM] Error loading images: \(error)")
+            Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -99,9 +100,9 @@ class ImagesViewModel {
         do {
             let response = try await docker.api.ImageDelete(path: .init(name: id), query: .init(force: true))
             _ = try response.ok
-            print("[ImagesVM] Successfully removed image \(id)")
+            Log.image.info("Removed image \(id, privacy: .public)")
         } catch {
-            print("[ImagesVM] Error removing image \(id): \(error)")
+            Log.image.error("Error removing image \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         await loadImages(docker: docker)
     }

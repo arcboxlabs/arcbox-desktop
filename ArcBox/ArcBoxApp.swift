@@ -1,6 +1,8 @@
 import AppKit
 import ArcBoxClient
 import DockerClient
+import OSLog
+@preconcurrency import Sentry
 import ServiceManagement
 import Sparkle
 import SwiftUI
@@ -58,11 +60,62 @@ struct ArcBoxDesktopApp: App {
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        Self.initSentry()
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: updaterDelegate,
             userDriverDelegate: nil
         )
+    }
+
+    /// Initialize Sentry crash reporting if a DSN is configured.
+    /// DSN is read from Info.plist (injected via SENTRY_DSN build setting).
+    /// No-ops gracefully when DSN is empty or placeholder.
+    private static func initSentry() {
+        guard let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String,
+              !dsn.isEmpty, dsn != "YOUR_SENTRY_DSN_HERE", dsn != "$(SENTRY_DSN)"
+        else {
+            Log.startup.info("Sentry DSN not configured, crash reporting disabled")
+            return
+        }
+
+        SentrySDK.start { options in
+            options.dsn = dsn
+            options.enableAutoSessionTracking = true
+            options.enableCrashHandler = true
+            options.enableAutoPerformanceTracing = true
+            options.tracesSampleRate = 0.2
+            options.attachScreenshot = false
+            options.beforeSend = { event in
+                // Scrub PII: remove user paths from breadcrumbs and exceptions.
+                Self.scrubPII(event)
+                return event
+            }
+            #if DEBUG
+            options.debug = true
+            options.environment = "development"
+            #else
+            options.environment = "production"
+            #endif
+        }
+
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+        SentrySDK.configureScope { scope in
+            scope.setTag(value: "app", key: "process_type")
+            scope.setTag(value: version, key: "app_version")
+        }
+        Log.startup.info("Sentry initialized")
+    }
+
+    /// Strip home directory paths from Sentry events to avoid leaking usernames.
+    private static func scrubPII(_ event: Event) {
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        guard !homeDir.isEmpty else { return }
+        for breadcrumb in event.breadcrumbs ?? [] {
+            if let msg = breadcrumb.message {
+                breadcrumb.message = msg.replacingOccurrences(of: homeDir, with: "~")
+            }
+        }
     }
 
     var body: some Scene {
@@ -105,7 +158,7 @@ struct ArcBoxDesktopApp: App {
                 // re-run helper setup and restart the daemon.
                 .onChange(of: helperManager.requiresApproval) { oldValue, newValue in
                     if oldValue == true, newValue == false {
-                        print("[Startup] Login item re-approved — retrying startup")
+                        Log.startup.info("Login item re-approved — retrying startup")
                         Task {
                             await startupOrchestrator?.retry()
                         }

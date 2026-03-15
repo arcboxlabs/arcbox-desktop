@@ -1,6 +1,8 @@
 import SwiftUI
 import ArcBoxClient
 import DockerClient
+import OSLog
+@preconcurrency import Sentry
 
 extension Notification.Name {
     /// Posted when Docker resources change (e.g. container deleted) so other sections can refresh.
@@ -238,7 +240,7 @@ class ContainersViewModel {
     /// Load containers from daemon via gRPC.
     func loadContainers(client: ArcBoxClient?) async {
         guard let client else {
-            print("[ContainersVM] No gRPC client available")
+            Log.container.debug("No gRPC client available")
             return
         }
 
@@ -261,7 +263,10 @@ class ContainersViewModel {
                 await loadContainerDetails(selectedID, client: client)
             }
         } catch {
-            print("[ContainersVM] Error loading containers via gRPC: \(error)")
+            Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .public)")
+            SentrySDK.capture(error: error) { scope in
+                scope.setTag(value: "list_grpc", key: "container_op")
+            }
         }
     }
 
@@ -274,7 +279,7 @@ class ContainersViewModel {
             _ = try await client.containers.start(request)
             setContainerRunningState(id, isRunning: true)
         } catch {
-            print("[ContainersVM] Error starting container \(id): \(error)")
+            Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
@@ -289,7 +294,7 @@ class ContainersViewModel {
             _ = try await client.containers.stop(request)
             setContainerRunningState(id, isRunning: false)
         } catch {
-            print("[ContainersVM] Error stopping container \(id): \(error)")
+            Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
@@ -304,7 +309,7 @@ class ContainersViewModel {
             _ = try await client.containers.remove(request)
             removeContainerLocally(id)
         } catch {
-            print("[ContainersVM] Error removing container \(id): \(error)")
+            Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         await loadContainers(client: client)
     }
@@ -331,7 +336,7 @@ class ContainersViewModel {
                 }
             )
         } catch {
-            print("[ContainersVM] Error inspecting container \(id): \(error)")
+            Log.container.error("Error inspecting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -340,7 +345,7 @@ class ContainersViewModel {
     /// Load containers from Docker Engine API.
     func loadContainersFromDocker(docker: DockerClient?) async {
         guard let docker else {
-            print("[ContainersVM] No docker client available")
+            Log.container.debug("No docker client available")
             return
         }
 
@@ -356,13 +361,16 @@ class ContainersViewModel {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
-            print("[ContainersVM] Loaded \(containers.count) containers")
+            Log.container.info("Loaded \(containers.count, privacy: .public) containers")
             applyExpandedGroups(from: containers)
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }
         } catch {
-            print("[ContainersVM] Error loading containers: \(error)")
+            Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .public)")
+            SentrySDK.capture(error: error) { scope in
+                scope.setTag(value: "list_docker", key: "container_op")
+            }
         }
     }
 
@@ -373,7 +381,7 @@ class ContainersViewModel {
             _ = try await docker.api.ContainerStart(path: .init(id: id))
             setContainerRunningState(id, isRunning: true)
         } catch {
-            print("[ContainersVM] Error starting container \(id): \(error)")
+            Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
@@ -386,7 +394,7 @@ class ContainersViewModel {
             _ = try await docker.api.ContainerStop(path: .init(id: id))
             setContainerRunningState(id, isRunning: false)
         } catch {
-            print("[ContainersVM] Error stopping container \(id): \(error)")
+            Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
@@ -399,7 +407,7 @@ class ContainersViewModel {
             removeContainerLocally(id)
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
-            print("[ContainersVM] Error removing container \(id): \(error)")
+            Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         await loadContainersFromDocker(docker: docker)
     }
@@ -428,11 +436,11 @@ class ContainersViewModel {
                 mounts: mounts,
                 rootfsMountPath: Self.normalized(snapshot.rootfsMountPath)
             )
-            print(
-                "[ContainersVM] Raw inspect snapshot for \(id), domain=\(Self.normalized(snapshot.domainname) ?? "-"), ip=\(Self.normalized(snapshot.ipAddress) ?? "-"), mounts=\(mounts.count), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-")"
+            Log.container.debug(
+                "Inspect snapshot for \(id, privacy: .public): domain=\(Self.normalized(snapshot.domainname) ?? "-", privacy: .public), ip=\(Self.normalized(snapshot.ipAddress) ?? "-", privacy: .public), mounts=\(mounts.count, privacy: .public), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-", privacy: .public)"
             )
         } catch {
-            print("[ContainersVM] Raw inspect snapshot failed for \(id): \(error)")
+            Log.container.error("Inspect snapshot failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             do {
                 // Fallback to generated inspect model if raw path fails unexpectedly.
                 let response = try await docker.api.ContainerInspect(path: .init(id: id))
@@ -455,11 +463,11 @@ class ContainersViewModel {
                     ipAddress: Self.normalized(details.NetworkSettings?.IPAddress),
                     mounts: mounts
                 )
-                print(
-                    "[ContainersVM] Generated inspect fallback for \(id), domain=\(Self.normalized(details.Config?.Domainname) ?? "-"), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-"), mounts=\(mounts.count)"
+                Log.container.debug(
+                    "Inspect fallback for \(id, privacy: .public): domain=\(Self.normalized(details.Config?.Domainname) ?? "-", privacy: .public), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-", privacy: .public), mounts=\(mounts.count, privacy: .public)"
                 )
             } catch {
-                print("[ContainersVM] Generated inspect fallback failed for \(id): \(error)")
+                Log.container.error("Inspect fallback failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -479,7 +487,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStart(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: true)
                     } catch {
-                        print("[ContainersVM] Error starting container \(id): \(error)")
+                        Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -501,7 +509,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStop(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: false)
                     } catch {
-                        print("[ContainersVM] Error stopping container \(id): \(error)")
+                        Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -520,7 +528,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
                         await self?.removeContainerLocally(id)
                     } catch {
-                        print("[ContainersVM] Error removing container \(id): \(error)")
+                        Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }

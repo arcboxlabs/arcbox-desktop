@@ -1,5 +1,7 @@
 import Foundation
 import Observation
+import OSLog
+@preconcurrency import Sentry
 
 // MARK: - Startup Constants
 
@@ -137,6 +139,9 @@ public final class StartupOrchestrator {
     private let daemonManager: DaemonManager
     private let dockerToolSetupManager: DockerToolSetupManager
     private let onClientsNeeded: @MainActor () throws -> Void
+
+    private static let signposter = OSSignposter(
+        subsystem: "com.arcboxlabs.desktop", category: "startup")
 
     /// Prevents concurrent startup runs from interleaving.
     private var isStarting = false
@@ -283,6 +288,59 @@ public final class StartupOrchestrator {
         await runStep(.initClients) {
             try self.onClientsNeeded()
         }
+
+        // After daemon is fully ready, install host routes for container
+        // subnets via the vmnet bridge. This enables `curl http://172.17.0.2/`
+        // from the host without -p port mapping.
+        Task {
+            await self.installContainerRoutes()
+        }
+    }
+
+    // MARK: - Container Route Installation
+
+    /// Installs a host route for container subnets via the vmnet bridge interface.
+    ///
+    /// With proxy ARP enabled on the guest's bridge NIC, the guest answers ARP
+    /// requests for container IPs (172.17.x.x) on bridge100. This means we can
+    /// use interface-based routing — no need to discover the guest's bridge IP.
+    private func installContainerRoutes() async {
+        // Wait for VM to boot and bridge interface to appear.
+        try? await Task.sleep(for: .seconds(3))
+
+        // Find the vmnet bridge interface (bridge100, bridge101, etc.)
+        let bridgeIface = findBridgeInterface() ?? "bridge100"
+
+        do {
+            try await helperManager.addRouteInterface(
+                subnet: "172.16.0.0/12",
+                iface: bridgeIface
+            )
+            ClientLog.helper.info("Route installed: 172.16.0.0/12 -interface \(bridgeIface, privacy: .public)")
+        } catch {
+            ClientLog.helper.error("Failed to install route: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Finds the vmnet bridge interface by checking bridge100-109.
+    private func findBridgeInterface() -> String? {
+        for i in 100..<110 {
+            let name = "bridge\(i)"
+            var ifr = ifreq()
+            name.withCString { cstr in
+                withUnsafeMutablePointer(to: &ifr.ifr_name) { ptr in
+                    _ = strcpy(UnsafeMutableRawPointer(ptr).assumingMemoryBound(to: CChar.self), cstr)
+                }
+            }
+            let fd = socket(AF_INET, SOCK_DGRAM, 0)
+            guard fd >= 0 else { continue }
+            defer { close(fd) }
+            // Check if interface exists by getting flags.
+            if ioctl(fd, UInt(0xc0206911) /* SIOCGIFFLAGS */, &ifr) == 0 {
+                return name
+            }
+        }
+        return nil
     }
 
     // MARK: - Helper Setup
@@ -306,19 +364,19 @@ public final class StartupOrchestrator {
         do {
             try await helperManager.setupDockerSocket(socketPath: socketPath)
         } catch {
-            print("[Helper] setupDockerSocket failed: \(error)")
+            ClientLog.helper.error("setupDockerSocket failed: \(error.localizedDescription, privacy: .public)")
         }
 
         do {
             try await helperManager.installCLITools(appBundlePath: bundlePath)
         } catch {
-            print("[Helper] installCLITools failed: \(error)")
+            ClientLog.helper.error("installCLITools failed: \(error.localizedDescription, privacy: .public)")
         }
 
         do {
             try await helperManager.setupDNSResolver()
         } catch {
-            print("[Helper] setupDNSResolver failed: \(error)")
+            ClientLog.helper.error("setupDNSResolver failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -338,12 +396,28 @@ public final class StartupOrchestrator {
             phase = .running(step: step)
         }
 
+        let signpostID = Self.signposter.makeSignpostID()
+        let state = Self.signposter.beginInterval(
+            "Startup Step", id: signpostID, "\(step.label, privacy: .public)")
+        let startTime = CFAbsoluteTimeGetCurrent()
+
         do {
             try await body()
+            let elapsedMs = Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
+            ClientLog.startup.info(
+                "\(step.label, privacy: .public) completed in \(elapsedMs, privacy: .public)ms")
+            Self.signposter.endInterval("Startup Step", state)
             stepStatuses[step] = .completed
             return true
         } catch {
+            let elapsedMs = Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
             let message = error.localizedDescription
+            ClientLog.startup.error(
+                "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .public)")
+            SentrySDK.capture(error: error) { scope in
+                scope.setTag(value: step.label, key: "startup_step")
+            }
+            Self.signposter.endInterval("Startup Step", state)
             stepStatuses[step] = .failed(message)
             if step.isCritical {
                 phase = .failed(step: step, message: message)
