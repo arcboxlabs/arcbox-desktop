@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.7.1...v1.8.0) (2026-03-15)
+
+
+### Features
+
+* **net:** L3 direct routing via vmnet bridge and proxy ARP ([e0238f5](https://github.com/arcboxlabs/arcbox-desktop/commit/e0238f555d76d9cfd08d783a8759e549a299a296))
+
 ## [1.7.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.7.0...v1.7.1) (2026-03-15)
 
 
