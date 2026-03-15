@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.7.0...v1.7.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** use vars context instead of secrets in workflow if condition ([5e11e55](https://github.com/arcboxlabs/arcbox-desktop/commit/5e11e551efb176e44bec26a24086762c17b0c841))
+
 ## [1.7.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.6.1...v1.7.0) (2026-03-15)
 
 
