@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.6.1...v1.7.0) (2026-03-15)
+
+
+### Features
+
+* **helper:** add route management for L3 direct routing ([10ea4d3](https://github.com/arcboxlabs/arcbox-desktop/commit/10ea4d3c5de646c05f2fe5c1234f7289f906386a))
+
+
+### Refactoring
+
+* improve release workflow DRY and reliability ([f782c14](https://github.com/arcboxlabs/arcbox-desktop/commit/f782c143096a48c3bb58131ebe8a98fa625b405f))
+
 ## [1.6.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.6.0...v1.6.1) (2026-03-15)
 
 
