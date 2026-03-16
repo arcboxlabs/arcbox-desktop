@@ -22,10 +22,11 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
         }
 
         do {
+            // Allow any binary signed by the same team (app + helperctl + daemon).
+            // Previously restricted to appBundleID only, which blocked helperctl.
             try connection.setCodeSigningRequirement(
                 "anchor apple generic and " +
-                "certificate leaf[subject.OU] = \"\(teamID)\" and " +
-                "identifier \"\(Self.appBundleID)\""
+                "certificate leaf[subject.OU] = \"\(teamID)\""
             )
         } catch {
             HelperLog.xpc.error("Code signing requirement failed: \(error.localizedDescription, privacy: .public)")

@@ -139,6 +139,7 @@ public final class StartupOrchestrator {
     private let daemonManager: DaemonManager
     private let dockerToolSetupManager: DockerToolSetupManager
     private let onClientsNeeded: @MainActor () throws -> Void
+    private let containerRouteController: ContainerRouteController
 
     private static let signposter = OSSignposter(
         subsystem: "com.arcboxlabs.desktop", category: "startup")
@@ -161,6 +162,14 @@ public final class StartupOrchestrator {
         self.daemonManager = daemonManager
         self.dockerToolSetupManager = dockerToolSetupManager
         self.onClientsNeeded = onClientsNeeded
+        self.containerRouteController = ContainerRouteController(
+            addRouteInterface: { subnet, iface in
+                try await helperManager.addRouteInterface(subnet: subnet, iface: iface)
+            },
+            removeRouteInterface: { subnet, iface in
+                try await helperManager.removeRouteInterface(subnet: subnet, iface: iface)
+            }
+        )
 
         var statuses: [StartupStep: StepStatus] = [:]
         for step in StartupStep.allCases {
@@ -289,117 +298,22 @@ public final class StartupOrchestrator {
             try self.onClientsNeeded()
         }
 
-        // After daemon is fully ready, install host routes for container
-        // subnets via the vmnet bridge. This enables `curl http://172.17.0.2/`
-        // from the host without -p port mapping.
-        Task {
-            await self.installContainerRoutes()
-        }
+        // Route lifecycle is owned by the daemon (via arcbox-helperctl).
+        // Desktop no longer installs or removes routes.
     }
 
     // MARK: - Container Route Installation
 
-    private static let containerSubnet = "172.16.0.0/12"
-    private static let maxRouteRetries = 10
-    private static let retryInterval: Duration = .seconds(2)
-
-    /// The bridge interface we installed a route on, tracked for cleanup.
-    private var installedRouteInterface: String?
-
     /// Installs a host route for container subnets via the vmnet bridge interface.
     /// Retries until the bridge interface appears or max attempts are exhausted.
     private func installContainerRoutes() async {
-        for attempt in 1...Self.maxRouteRetries {
-            guard let bridgeIface = findBridgeInterface() else {
-                ClientLog.helper.debug("Route attempt \(attempt)/\(Self.maxRouteRetries): bridge interface not found, retrying")
-                try? await Task.sleep(for: Self.retryInterval)
-                continue
-            }
-
-            do {
-                try await helperManager.addRouteInterface(
-                    subnet: Self.containerSubnet,
-                    iface: bridgeIface
-                )
-                installedRouteInterface = bridgeIface
-                ClientLog.helper.info("Route installed: \(Self.containerSubnet) -interface \(bridgeIface, privacy: .public) (attempt \(attempt))")
-                return
-            } catch {
-                ClientLog.helper.warning("Route attempt \(attempt) failed: \(error.localizedDescription, privacy: .public)")
-                try? await Task.sleep(for: Self.retryInterval)
-            }
-        }
-        ClientLog.helper.error("Failed to install container route after \(Self.maxRouteRetries) attempts")
+        await containerRouteController.installRoutes()
     }
 
     /// Removes the host route installed by installContainerRoutes.
     /// Called on app shutdown.
     func removeContainerRoutes() async {
-        guard let iface = installedRouteInterface else { return }
-        do {
-            try await helperManager.removeRouteInterface(
-                subnet: Self.containerSubnet,
-                iface: iface
-            )
-            ClientLog.helper.info("Route removed: \(Self.containerSubnet) -interface \(iface, privacy: .public)")
-        } catch {
-            ClientLog.helper.warning("Route cleanup failed: \(error.localizedDescription, privacy: .public)")
-        }
-        installedRouteInterface = nil
-    }
-
-    /// Finds the vmnet bridge interface by looking for a bridge with a vmenet member.
-    ///
-    /// Apple's vmnet creates bridgeNNN with a member interface named vmenetX.
-    /// We parse `ifconfig` output to find the bridge that has a vmenet member,
-    /// rather than blindly picking the first bridge10x that exists.
-    private func findBridgeInterface() -> String? {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/sbin/ifconfig")
-        proc.arguments = ["-a"]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch {
-            return nil
-        }
-
-        guard let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) else {
-            return nil
-        }
-
-        // Parse ifconfig output: look for bridgeNNN sections containing "member: vmenet"
-        var currentBridge: String?
-        for line in output.components(separatedBy: .newlines) {
-            // New interface section starts with non-whitespace.
-            if !line.hasPrefix("\t") && !line.hasPrefix(" ") && line.contains(": flags=") {
-                let name = String(line.prefix(while: { $0 != ":" }))
-                currentBridge = name.hasPrefix("bridge") ? name : nil
-            } else if let bridge = currentBridge, line.contains("member: vmenet") {
-                return bridge
-            }
-        }
-
-        // Fallback: first bridge10x that exists.
-        for i in 100..<110 {
-            let name = "bridge\(i)"
-            var ifr = ifreq()
-            name.withCString { cstr in
-                withUnsafeMutablePointer(to: &ifr.ifr_name) { ptr in
-                    _ = strcpy(UnsafeMutableRawPointer(ptr).assumingMemoryBound(to: CChar.self), cstr)
-                }
-            }
-            let fd = socket(AF_INET, SOCK_DGRAM, 0)
-            guard fd >= 0 else { continue }
-            defer { close(fd) }
-            if ioctl(fd, UInt(0xc0206911) /* SIOCGIFFLAGS */, &ifr) == 0 {
-                return name
-            }
-        }
-        return nil
+        await containerRouteController.removeRoutes()
     }
 
     // MARK: - Helper Setup

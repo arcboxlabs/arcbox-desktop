@@ -306,6 +306,165 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         reply(nil)
     }
 
+    // MARK: - Operation 5: Smart route management
+
+    func ensureRoute(subnet: String, bridgeMac: String, reply: @escaping (NSString?, NSError?) -> Void) {
+        HelperLog.ops.info("ensureRoute: \(subnet, privacy: .public) mac=\(bridgeMac, privacy: .public)")
+
+        guard isValidCIDR(subnet) else {
+            reply(nil, makeError("Invalid subnet: \(subnet)"))
+            return
+        }
+        guard isValidMAC(bridgeMac) else {
+            reply(nil, makeError("Invalid MAC: \(bridgeMac)"))
+            return
+        }
+
+        // Resolve: bridgeMac → vmenet member → bridge interface.
+        guard let bridgeIface = resolveBridgeByMAC(bridgeMac) else {
+            reply(nil, makeError("No bridge found for MAC \(bridgeMac)"))
+            return
+        }
+
+        // Check existing route.
+        let currentIface = currentRouteInterface(for: subnet)
+        if currentIface == bridgeIface {
+            // Already correct.
+            let json = #"{"ok":true,"bridge":"\#(bridgeIface)","changed":false}"#
+            reply(json as NSString, nil)
+            return
+        }
+
+        // Remove stale route if it points to wrong interface.
+        if let old = currentIface {
+            HelperLog.ops.info("ensureRoute: removing stale route via \(old, privacy: .public)")
+            runRoute(["-n", "delete", "-net", subnet, "-interface", old])
+        }
+
+        // Install new route.
+        let (ok, stderr) = runRoute(["-n", "add", "-net", subnet, "-interface", bridgeIface])
+        if ok || stderr.contains("File exists") {
+            let json = #"{"ok":true,"bridge":"\#(bridgeIface)","changed":true}"#
+            reply(json as NSString, nil)
+        } else {
+            reply(nil, makeError("route add failed: \(stderr)"))
+        }
+    }
+
+    func removeRoute(subnet: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("removeRoute: \(subnet, privacy: .public)")
+        guard isValidCIDR(subnet) else {
+            reply(makeError("Invalid subnet"))
+            return
+        }
+
+        if let iface = currentRouteInterface(for: subnet) {
+            let (ok, stderr) = runRoute(["-n", "delete", "-net", subnet, "-interface", iface])
+            if ok || stderr.contains("not in table") {
+                reply(nil)
+            } else {
+                reply(makeError("route delete failed: \(stderr)"))
+            }
+        } else {
+            reply(nil) // No route exists, nothing to do.
+        }
+    }
+
+    func routeStatus(subnet: String, reply: @escaping (NSString?) -> Void) {
+        guard isValidCIDR(subnet) else {
+            reply(nil)
+            return
+        }
+        if let iface = currentRouteInterface(for: subnet) {
+            reply(#"{"installed":true,"interface":"\#(iface)","subnet":"\#(subnet)"}"# as NSString)
+        } else {
+            reply(#"{"installed":false,"subnet":"\#(subnet)"}"# as NSString)
+        }
+    }
+
+    // MARK: - Bridge resolution (MAC → vmenet → bridge)
+
+    /// Resolves a bridge MAC to a bridge interface name by parsing ifconfig.
+    private func resolveBridgeByMAC(_ mac: String) -> String? {
+        guard let output = runCommand("/sbin/ifconfig", ["-a"]) else { return nil }
+        let macLower = mac.lowercased()
+
+        var currentBridge: String?
+        var currentHasVmenet = false
+
+        for line in output.components(separatedBy: .newlines) {
+            if !line.hasPrefix("\t") && !line.hasPrefix(" ") && line.contains(": flags=") {
+                // Emit previous bridge if it had vmenet with matching MAC.
+                // (checked below after finding member)
+                let name = String(line.prefix(while: { $0 != ":" }))
+                currentBridge = name.hasPrefix("bridge") ? name : nil
+                currentHasVmenet = false
+            } else if let bridge = currentBridge {
+                // Look for: member: vmenetN ... with matching MAC in Address cache.
+                if line.contains("member: vmenet") {
+                    currentHasVmenet = true
+                }
+                // Address cache line: MAC Vlan1 vmenetN
+                if currentHasVmenet && line.lowercased().contains(macLower) {
+                    return bridge
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Queries the current route interface for a subnet via `route -n get`.
+    private func currentRouteInterface(for subnet: String) -> String? {
+        let addr = subnet.split(separator: "/").first.map(String.init) ?? subnet
+        guard let output = runCommand("/sbin/route", ["-n", "get", addr]) else { return nil }
+
+        for line in output.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("interface:") {
+                let iface = trimmed.dropFirst("interface:".count).trimmingCharacters(in: .whitespaces)
+                // Only return bridge interfaces (not en0, utun, etc.)
+                if iface.hasPrefix("bridge") { return iface }
+            }
+        }
+        return nil
+    }
+
+    /// Runs /sbin/route with args. Returns (success, stderr).
+    private func runRoute(_ args: [String]) -> (Bool, String) {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = args
+        let pipe = Pipe()
+        proc.standardError = pipe
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            return (false, error.localizedDescription)
+        }
+        let stderr = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return (proc.terminationStatus == 0, stderr)
+    }
+
+    /// Runs a command and returns stdout, or nil on failure.
+    private func runCommand(_ path: String, _ args: [String]) -> String? {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: path)
+        proc.arguments = args
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch { return nil }
+        return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)
+    }
+
+    private func isValidMAC(_ mac: String) -> Bool {
+        let parts = mac.split(separator: ":")
+        return parts.count == 6 && parts.allSatisfy { $0.count <= 2 && $0.allSatisfy(\.isHexDigit) }
+    }
+
     func getVersion(reply: @escaping (Int) -> Void) {
         reply(kArcBoxHelperProtocolVersion)
     }

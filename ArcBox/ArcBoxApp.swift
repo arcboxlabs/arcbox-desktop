@@ -24,10 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in
             daemonManager.stopMonitoring()
 
-            // Always clean up container routes before stopping daemon.
-            if let orchestrator = startupOrchestrator {
-                await orchestrator.removeContainerRoutes()
-            }
+            // Route cleanup is handled by the daemon on shutdown.
 
             if isUninstalling, let helperManager {
                 // Teardown must complete before daemon is stopped, so that

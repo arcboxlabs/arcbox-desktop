@@ -2,7 +2,7 @@ import Foundation
 
 // Protocol version. Bump when the API surface changes to prevent stale helpers
 // from being called with incompatible arguments.
-let kArcBoxHelperProtocolVersion = 2
+let kArcBoxHelperProtocolVersion = 3
 
 @objc protocol ArcBoxHelperProtocol {
 
@@ -56,6 +56,26 @@ let kArcBoxHelperProtocolVersion = 2
 
     /// Removes an interface host route: /sbin/route -n delete -net <subnet> -interface <iface>.
     func removeRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void)
+
+    // MARK: - Operation 5: Smart route management (v3)
+    //
+    // These replace the raw addRoute*/removeRoute* operations for daemon use.
+    // The helper resolves bridgeMac → vmenet → bridge internally.
+
+    /// Ensures a route exists for `subnet` via the bridge identified by `bridgeMac`.
+    /// Helper resolves: MAC → vmenet member → bridge interface → route add.
+    /// Idempotent: no-op if route already correct, re-binds if iface changed.
+    /// Reply: JSON string with {"ok":true,"bridge":"bridge100","changed":true} or error.
+    func ensureRoute(subnet: String, bridgeMac: String, reply: @escaping (NSString?, NSError?) -> Void)
+
+    /// Removes the route for `subnet` if it exists.
+    /// Idempotent: no-op if route doesn't exist.
+    func removeRoute(subnet: String, reply: @escaping (NSError?) -> Void)
+
+    /// Returns current route status for `subnet` as JSON string.
+    /// {"installed":true,"interface":"bridge100","subnet":"172.16.0.0/12"} or
+    /// {"installed":false}
+    func routeStatus(subnet: String, reply: @escaping (NSString?) -> Void)
 
     // MARK: - Lifecycle
 
