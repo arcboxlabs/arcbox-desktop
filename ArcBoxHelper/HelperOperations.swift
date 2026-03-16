@@ -387,30 +387,42 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     /// Resolves a bridge MAC to a bridge interface name by parsing ifconfig.
     private func resolveBridgeByMAC(_ mac: String) -> String? {
         guard let output = runCommand("/sbin/ifconfig", ["-a"]) else { return nil }
-        let macLower = mac.lowercased()
+        let normalizedTarget = normalizeMAC(mac)
 
         var currentBridge: String?
         var currentHasVmenet = false
 
         for line in output.components(separatedBy: .newlines) {
             if !line.hasPrefix("\t") && !line.hasPrefix(" ") && line.contains(": flags=") {
-                // Emit previous bridge if it had vmenet with matching MAC.
-                // (checked below after finding member)
                 let name = String(line.prefix(while: { $0 != ":" }))
                 currentBridge = name.hasPrefix("bridge") ? name : nil
                 currentHasVmenet = false
             } else if let bridge = currentBridge {
-                // Look for: member: vmenetN ... with matching MAC in Address cache.
                 if line.contains("member: vmenet") {
                     currentHasVmenet = true
                 }
-                // Address cache line: MAC Vlan1 vmenetN
-                if currentHasVmenet && line.lowercased().contains(macLower) {
-                    return bridge
+                // Address cache line format: "  MAC Vlan1 vmenetN ..."
+                // ifconfig may omit leading zeros (e.g. "2:ce:56:c:72:f1"),
+                // so normalize both sides before comparing.
+                if currentHasVmenet {
+                    let trimmed = line.trimmingCharacters(in: .whitespaces)
+                    let firstToken = String(trimmed.prefix(while: { $0 != " " }))
+                    if firstToken.contains(":") && normalizeMAC(firstToken) == normalizedTarget {
+                        return bridge
+                    }
                 }
             }
         }
         return nil
+    }
+
+    /// Normalize a MAC address to lowercase with zero-padded octets.
+    /// e.g. "2:ce:56:c:72:f1" → "02:ce:56:0c:72:f1"
+    private func normalizeMAC(_ mac: String) -> String {
+        mac.lowercased()
+            .split(separator: ":")
+            .map { $0.count == 1 ? "0\($0)" : String($0) }
+            .joined(separator: ":")
     }
 
     /// Queries the current route interface for a subnet via `route -n get`.
