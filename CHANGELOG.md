@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.1...v1.8.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* add explicit self in closure captures for ContainersVM and ImagesVM ([164d069](https://github.com/arcboxlabs/arcbox-desktop/commit/164d069d0d48493f8b384297e20e0b7fe12be5f1))
+* resolve CI build errors in observability code ([c1004fb](https://github.com/arcboxlabs/arcbox-desktop/commit/c1004fbca85bc7fcaa1622f2fcef7b68632d8ed1))
+
 ## [1.8.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.0...v1.8.1) (2026-03-16)
 
 
