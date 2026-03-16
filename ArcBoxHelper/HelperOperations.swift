@@ -261,13 +261,28 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/sbin/route")
         proc.arguments = ["-n", "delete", "-net", subnet, "-interface", iface]
+        let pipe = Pipe()
+        proc.standardError = pipe
+
         do {
             try proc.run()
             proc.waitUntilExit()
         } catch {
-            // Best-effort removal.
+            reply(error as NSError)
+            return
         }
-        reply(nil)
+
+        if proc.terminationStatus == 0 {
+            reply(nil)
+        } else {
+            let stderr = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            // "not in table" means route already gone — not an error.
+            if stderr.contains("not in table") {
+                reply(nil)
+            } else {
+                reply(makeError("route delete failed (exit \(proc.terminationStatus)): \(stderr)"))
+            }
+        }
     }
 
     func removeRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void) {

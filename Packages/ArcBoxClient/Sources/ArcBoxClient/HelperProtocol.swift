@@ -2,7 +2,7 @@ import Foundation
 
 // Protocol version. Bump when the API surface changes to prevent stale helpers
 // from being called with incompatible arguments.
-let kArcBoxHelperProtocolVersion = 1
+let kArcBoxHelperProtocolVersion = 2
 
 @objc protocol ArcBoxHelperProtocol {
 

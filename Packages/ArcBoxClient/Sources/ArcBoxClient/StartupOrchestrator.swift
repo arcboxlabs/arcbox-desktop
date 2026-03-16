@@ -348,8 +348,42 @@ public final class StartupOrchestrator {
         installedRouteInterface = nil
     }
 
-    /// Finds the vmnet bridge interface by checking bridge100-109.
+    /// Finds the vmnet bridge interface by looking for a bridge with a vmenet member.
+    ///
+    /// Apple's vmnet creates bridgeNNN with a member interface named vmenetX.
+    /// We parse `ifconfig` output to find the bridge that has a vmenet member,
+    /// rather than blindly picking the first bridge10x that exists.
     private func findBridgeInterface() -> String? {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/ifconfig")
+        proc.arguments = ["-a"]
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            return nil
+        }
+
+        guard let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) else {
+            return nil
+        }
+
+        // Parse ifconfig output: look for bridgeNNN sections containing "member: vmenet"
+        var currentBridge: String?
+        for line in output.components(separatedBy: .newlines) {
+            // New interface section starts with non-whitespace.
+            if !line.hasPrefix("\t") && !line.hasPrefix(" ") && line.contains(": flags=") {
+                let name = String(line.prefix(while: { $0 != ":" }))
+                currentBridge = name.hasPrefix("bridge") ? name : nil
+            } else if let bridge = currentBridge, line.contains("member: vmenet") {
+                return bridge
+            }
+        }
+
+        // Fallback: first bridge10x that exists.
         for i in 100..<110 {
             let name = "bridge\(i)"
             var ifr = ifreq()
