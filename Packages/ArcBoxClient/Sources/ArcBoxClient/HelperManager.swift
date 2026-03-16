@@ -169,6 +169,10 @@ public final class HelperManager {
         try await call(.removeRouteGateway(subnet: subnet, gateway: gateway))
     }
 
+    public func removeRouteInterface(subnet: String, iface: String) async throws {
+        try await call(.removeRouteInterface(subnet: subnet, iface: iface))
+    }
+
     // MARK: - Private: XPC
 
     private enum HelperOperation: Sendable {
@@ -181,6 +185,7 @@ public final class HelperManager {
         case addRouteGateway(subnet: String, gateway: String)
         case addRouteInterface(subnet: String, iface: String)
         case removeRouteGateway(subnet: String, gateway: String)
+        case removeRouteInterface(subnet: String, iface: String)
     }
 
     private nonisolated func getVersion() async -> Int {
@@ -212,6 +217,8 @@ public final class HelperManager {
                 p.addRouteInterface(subnet: subnet, iface: iface, reply: finish)
             case .removeRouteGateway(let subnet, let gateway):
                 p.removeRouteGateway(subnet: subnet, gateway: gateway, reply: finish)
+            case .removeRouteInterface(let subnet, let iface):
+                p.removeRouteInterface(subnet: subnet, iface: iface, reply: finish)
             }
         }
     }

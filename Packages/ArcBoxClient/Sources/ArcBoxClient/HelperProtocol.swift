@@ -51,8 +51,11 @@ let kArcBoxHelperProtocolVersion = 1
     /// Used for L3 direct routing with proxy ARP.
     func addRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void)
 
-    /// Removes a host route.
+    /// Removes a gateway host route.
     func removeRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void)
+
+    /// Removes an interface host route: /sbin/route -n delete -net <subnet> -interface <iface>.
+    func removeRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void)
 
     // MARK: - Lifecycle
 

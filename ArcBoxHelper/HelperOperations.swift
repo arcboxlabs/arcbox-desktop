@@ -247,6 +247,29 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         }
     }
 
+    func removeRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("removeRouteInterface: \(subnet, privacy: .public) -interface \(iface, privacy: .public)")
+        guard isValidCIDR(subnet) else {
+            reply(makeError("Invalid subnet"))
+            return
+        }
+        guard iface.hasPrefix("bridge"), iface.dropFirst(6).allSatisfy(\.isNumber) else {
+            reply(makeError("Invalid interface: \(iface)"))
+            return
+        }
+
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = ["-n", "delete", "-net", subnet, "-interface", iface]
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            // Best-effort removal.
+        }
+        reply(nil)
+    }
+
     func removeRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void) {
         HelperLog.ops.info("removeRouteGateway: \(subnet, privacy: .public) via \(gateway, privacy: .public)")
         guard isValidCIDR(subnet), isValidIPv4(gateway) else {

@@ -299,27 +299,53 @@ public final class StartupOrchestrator {
 
     // MARK: - Container Route Installation
 
+    private static let containerSubnet = "172.16.0.0/12"
+    private static let maxRouteRetries = 10
+    private static let retryInterval: Duration = .seconds(2)
+
+    /// The bridge interface we installed a route on, tracked for cleanup.
+    private var installedRouteInterface: String?
+
     /// Installs a host route for container subnets via the vmnet bridge interface.
-    ///
-    /// With proxy ARP enabled on the guest's bridge NIC, the guest answers ARP
-    /// requests for container IPs (172.17.x.x) on bridge100. This means we can
-    /// use interface-based routing — no need to discover the guest's bridge IP.
+    /// Retries until the bridge interface appears or max attempts are exhausted.
     private func installContainerRoutes() async {
-        // Wait for VM to boot and bridge interface to appear.
-        try? await Task.sleep(for: .seconds(3))
+        for attempt in 1...Self.maxRouteRetries {
+            guard let bridgeIface = findBridgeInterface() else {
+                ClientLog.helper.debug("Route attempt \(attempt)/\(Self.maxRouteRetries): bridge interface not found, retrying")
+                try? await Task.sleep(for: Self.retryInterval)
+                continue
+            }
 
-        // Find the vmnet bridge interface (bridge100, bridge101, etc.)
-        let bridgeIface = findBridgeInterface() ?? "bridge100"
-
-        do {
-            try await helperManager.addRouteInterface(
-                subnet: "172.16.0.0/12",
-                iface: bridgeIface
-            )
-            ClientLog.helper.info("Route installed: 172.16.0.0/12 -interface \(bridgeIface, privacy: .public)")
-        } catch {
-            ClientLog.helper.error("Failed to install route: \(error.localizedDescription, privacy: .public)")
+            do {
+                try await helperManager.addRouteInterface(
+                    subnet: Self.containerSubnet,
+                    iface: bridgeIface
+                )
+                installedRouteInterface = bridgeIface
+                ClientLog.helper.info("Route installed: \(Self.containerSubnet) -interface \(bridgeIface, privacy: .public) (attempt \(attempt))")
+                return
+            } catch {
+                ClientLog.helper.warning("Route attempt \(attempt) failed: \(error.localizedDescription, privacy: .public)")
+                try? await Task.sleep(for: Self.retryInterval)
+            }
         }
+        ClientLog.helper.error("Failed to install container route after \(Self.maxRouteRetries) attempts")
+    }
+
+    /// Removes the host route installed by installContainerRoutes.
+    /// Called on app shutdown.
+    func removeContainerRoutes() async {
+        guard let iface = installedRouteInterface else { return }
+        do {
+            try await helperManager.removeRouteInterface(
+                subnet: Self.containerSubnet,
+                iface: iface
+            )
+            ClientLog.helper.info("Route removed: \(Self.containerSubnet) -interface \(iface, privacy: .public)")
+        } catch {
+            ClientLog.helper.warning("Route cleanup failed: \(error.localizedDescription, privacy: .public)")
+        }
+        installedRouteInterface = nil
     }
 
     /// Finds the vmnet bridge interface by checking bridge100-109.
@@ -335,7 +361,6 @@ public final class StartupOrchestrator {
             let fd = socket(AF_INET, SOCK_DGRAM, 0)
             guard fd >= 0 else { continue }
             defer { close(fd) }
-            // Check if interface exists by getting flags.
             if ioctl(fd, UInt(0xc0206911) /* SIOCGIFFLAGS */, &ifr) == 0 {
                 return name
             }

@@ -13,6 +13,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var helperManager: HelperManager?
     var eventMonitor: DockerEventMonitor?
+    var startupOrchestrator: StartupOrchestrator?
     var isUninstalling = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -22,6 +23,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         Task { @MainActor in
             daemonManager.stopMonitoring()
+
+            // Always clean up container routes before stopping daemon.
+            if let orchestrator = startupOrchestrator {
+                await orchestrator.removeContainerRoutes()
+            }
 
             if isUninstalling, let helperManager {
                 // Teardown must complete before daemon is stopped, so that
@@ -142,6 +148,7 @@ struct ArcBoxDesktopApp: App {
                         onClientsNeeded: { try initClientsIfNeeded() }
                     )
                     startupOrchestrator = orchestrator
+                    appDelegate.startupOrchestrator = orchestrator
                     helperManager.startMonitoring()
                     await orchestrator.start()
 
