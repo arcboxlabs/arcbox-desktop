@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.2...v1.9.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* **helper:** force re-register helper on app update ([deda0ca](https://github.com/arcboxlabs/arcbox-desktop/commit/deda0ca24c7efc1b32a834e6307d7784e3c0eed8))
+
 ## [1.9.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.1...v1.9.2) (2026-03-16)
 
 
