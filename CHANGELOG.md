@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.0...v1.9.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **build:** remove restricted com.apple.vm.networking entitlement ([75d4060](https://github.com/arcboxlabs/arcbox-desktop/commit/75d4060dc9ff5beb83094c21f72a27b97d01420c))
+
 ## [1.9.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.3...v1.9.0) (2026-03-16)
 
 
