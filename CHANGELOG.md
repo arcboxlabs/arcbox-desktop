@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.2...v1.8.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* **net:** add com.apple.vm.networking entitlement for vmnet bridge ([d106943](https://github.com/arcboxlabs/arcbox-desktop/commit/d10694321a20143f657adf267c8d96bdfa4c1a85))
+
 ## [1.8.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.1...v1.8.2) (2026-03-16)
 
 
