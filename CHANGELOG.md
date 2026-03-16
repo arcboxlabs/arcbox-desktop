@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.1...v1.9.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* **helper:** normalize MAC addresses before bridge resolution ([162c014](https://github.com/arcboxlabs/arcbox-desktop/commit/162c014b224558f5d989ede27bf070baeb53f6f0))
+
 ## [1.9.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.0...v1.9.1) (2026-03-16)
 
 
