@@ -51,7 +51,7 @@ if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String,
         options.enableCrashHandler = true
         options.enableAutoSessionTracking = false
         options.enableAutoPerformanceTracing = false
-        options.attachScreenshot = false
+        // attachScreenshot is unavailable in macOS command-line tools.
         options.tracesSampleRate = 0
         #if DEBUG
         options.debug = true
