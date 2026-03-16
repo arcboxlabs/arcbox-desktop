@@ -14,6 +14,16 @@ enum NavItem: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Whether this item belongs to a not-yet-implemented section.
+    var isComingSoon: Bool {
+        switch self {
+        case .pods, .services, .machines, .sandboxes, .templates:
+            true
+        default:
+            false
+        }
+    }
+
     var label: String {
         switch self {
         case .containers: "Containers"

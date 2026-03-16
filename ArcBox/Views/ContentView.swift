@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(HelperManager.self) private var helperManager
 
     // Feature ViewModels – shared between content and detail columns
     @State private var containersVM = ContainersViewModel()
@@ -14,6 +15,9 @@ struct ContentView: View {
     @State private var machinesVM = MachinesViewModel()
     @State private var sandboxesVM = SandboxesViewModel()
     @State private var templatesVM = TemplatesViewModel()
+
+    @State private var showApprovalSheet = false
+    @State private var lastValidNav: NavItem? = .containers
 
     var body: some View {
         @Bindable var vm = appVM
@@ -59,6 +63,24 @@ struct ContentView: View {
             }
         } detail: {
             detailColumn
+        }
+        .sheet(isPresented: $showApprovalSheet) {
+            LoginItemApprovalSheet()
+                .interactiveDismissDisabled(helperManager.requiresApproval)
+        }
+        .onChange(of: appVM.currentNav) { _, newNav in
+            guard let newNav else { return }
+            if newNav.isComingSoon {
+                showComingSoonPanel()
+                appVM.currentNav = lastValidNav
+            } else {
+                lastValidNav = newNav
+            }
+        }
+        .onChange(of: helperManager.requiresApproval, initial: true) { _, needsApproval in
+            if needsApproval {
+                showApprovalSheet = true
+            }
         }
     }
 
