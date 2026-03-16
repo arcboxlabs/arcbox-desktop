@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.0...v1.8.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **helper:** remove attachScreenshot (unavailable in macOS CLI tools) ([14c3527](https://github.com/arcboxlabs/arcbox-desktop/commit/14c352723607817ed98cc0054053dc291472a6ad))
+
 ## [1.8.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.7.1...v1.8.0) (2026-03-15)
 
 
