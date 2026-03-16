@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var templatesVM = TemplatesViewModel()
 
     @State private var showApprovalSheet = false
+    @State private var lastValidNav: NavItem? = .containers
 
     var body: some View {
         @Bindable var vm = appVM
@@ -66,6 +67,15 @@ struct ContentView: View {
         .sheet(isPresented: $showApprovalSheet) {
             LoginItemApprovalSheet()
                 .interactiveDismissDisabled(helperManager.requiresApproval)
+        }
+        .onChange(of: appVM.currentNav) { _, newNav in
+            guard let newNav else { return }
+            if newNav.isComingSoon {
+                showComingSoonPanel()
+                appVM.currentNav = lastValidNav
+            } else {
+                lastValidNav = newNav
+            }
         }
         .onChange(of: helperManager.requiresApproval, initial: true) { _, needsApproval in
             if needsApproval {
