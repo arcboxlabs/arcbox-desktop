@@ -7,4 +7,5 @@ enum ClientLog {
     static let helper  = Logger(subsystem: subsystem, category: "helper")
     static let grpc    = Logger(subsystem: subsystem, category: "grpc")
     static let cli     = Logger(subsystem: subsystem, category: "cli")
+    static let dns     = Logger(subsystem: subsystem, category: "dns")
 }
