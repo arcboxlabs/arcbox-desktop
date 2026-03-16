@@ -13,10 +13,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var helperManager: HelperManager?
     var eventMonitor: DockerEventMonitor?
+    var dnsServer: DNSServer?
     var isUninstalling = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
+        dnsServer?.stop()
         helperManager?.stopMonitoring()
         guard let daemonManager else { return .terminateNow }
 
@@ -54,6 +56,7 @@ struct ArcBoxDesktopApp: App {
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
+    @State private var dnsServer = DNSServer()
     @State private var startupOrchestrator: StartupOrchestrator?
 
     private let updaterDelegate = UpdaterDelegate()
@@ -128,11 +131,20 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
+                .environment(\.dnsServer, dnsServer)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
                     appDelegate.helperManager = helperManager
                     appDelegate.eventMonitor = eventMonitor
+                    appDelegate.dnsServer = dnsServer
+
+                    // Start DNS server early so it's ready when containers load.
+                    do {
+                        try dnsServer.start()
+                    } catch {
+                        Log.startup.error("DNS server failed to start: \(error.localizedDescription, privacy: .public)")
+                    }
 
                     let orchestrator = StartupOrchestrator(
                         bootAssetManager: bootAssetManager,
@@ -211,6 +223,10 @@ private struct StartupOrchestratorKey: EnvironmentKey {
     static let defaultValue: StartupOrchestrator? = nil
 }
 
+private struct DNSServerKey: EnvironmentKey {
+    static let defaultValue: DNSServer? = nil
+}
+
 extension EnvironmentValues {
     var arcboxClient: ArcBoxClient? {
         get { self[ArcBoxClientKey.self] }
@@ -225,5 +241,10 @@ extension EnvironmentValues {
     var startupOrchestrator: StartupOrchestrator? {
         get { self[StartupOrchestratorKey.self] }
         set { self[StartupOrchestratorKey.self] = newValue }
+    }
+
+    var dnsServer: DNSServer? {
+        get { self[DNSServerKey.self] }
+        set { self[DNSServerKey.self] = newValue }
     }
 }

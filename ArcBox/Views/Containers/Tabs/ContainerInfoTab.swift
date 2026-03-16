@@ -22,11 +22,20 @@ struct ContainerInfoTab: View {
                 .infoSectionStyle()
 
                 // Domain & IP section
-                if !container.hostPorts.isEmpty || container.domain != nil
-                    || container.ipAddress != nil
+                if container.ipAddress != nil || !container.hostPorts.isEmpty
+                    || container.domain != nil
                 {
                     VStack(spacing: 0) {
-                        if !container.hostPorts.isEmpty {
+                        if container.ipAddress != nil {
+                            // Container has a real IP — use arcbox.local domain
+                            let domain = container.arcboxDomain
+                            InfoRow(
+                                label: "Domain",
+                                value: domain,
+                                link: URL(string: "http://\(domain)")
+                            )
+                        } else if !container.hostPorts.isEmpty {
+                            // Fallback: no direct IP, use localhost with port
                             InfoRow(
                                 label: "Domain",
                                 value: "localhost",

@@ -37,6 +37,9 @@ class ContainersViewModel {
         let rootfsMountPath: String?
     }
 
+    /// DNS server for updating container name → IP records.
+    var dnsServer: DNSServer?
+
     var containers: [ContainerViewModel] = []
     var selectedID: String? = nil
     var activeTab: ContainerDetailTab = .info
@@ -262,6 +265,7 @@ class ContainersViewModel {
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetails(selectedID, client: client)
             }
+            await refreshDNSRecords(client: client)
         } catch {
             Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .public)")
             SentrySDK.capture(error: error) { scope in
@@ -366,6 +370,7 @@ class ContainersViewModel {
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }
+            await refreshDNSRecords(docker: docker)
         } catch {
             Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .public)")
             SentrySDK.capture(error: error) { scope in
@@ -487,7 +492,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStart(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: true)
                     } catch {
-                        Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                      await Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -509,7 +514,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStop(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: false)
                     } catch {
-                        Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                      await Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -528,7 +533,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
                         await self?.removeContainerLocally(id)
                     } catch {
-                        Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                      await Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -537,7 +542,110 @@ class ContainersViewModel {
         await loadContainersFromDocker(docker: docker)
     }
 
+    // MARK: - DNS Record Refresh
+
+    /// Inspect all running containers via gRPC to get their IPs and update the DNS server.
+    func refreshDNSRecords(client: ArcBoxClient?) async {
+        guard let dnsServer, let client else { return }
+
+        let running = containers.filter(\.isRunning)
+        guard !running.isEmpty else {
+            dnsServer.updateRecords([:])
+            return
+        }
+
+        // Snapshot cached IPs on MainActor before crossing isolation boundary.
+        let cachedIPs: [String: String] = running.reduce(into: [:]) { result, container in
+            if let cached = detailsByID[container.id], let ip = cached.ipAddress {
+                result[container.id] = ip
+            }
+        }
+
+        var newRecords: [String: String] = [:]
+
+        await withTaskGroup(of: (String, String?).self) { group in
+            for container in running {
+                let cachedIP = cachedIPs[container.id]
+                group.addTask {
+                    if let ip = cachedIP {
+                        return (container.name, ip)
+                    }
+                    do {
+                        var request = Arcbox_V1_InspectContainerRequest()
+                        request.id = container.id
+                        let details = try await client.containers.inspect(request)
+                        let ip = Self.normalizedValue(details.networkSettings.ipAddress)
+                        return (container.name, ip)
+                    } catch {
+                        return (container.name, nil)
+                    }
+                }
+            }
+
+            for await (name, ip) in group {
+                guard let ip else { continue }
+                let dnsName = DNSServer.sanitizeContainerName(name)
+                guard !dnsName.isEmpty else { continue }
+                newRecords[dnsName] = ip
+            }
+        }
+
+        dnsServer.updateRecords(newRecords)
+    }
+
+    /// Inspect all running containers via Docker API to get their IPs and update the DNS server.
+    func refreshDNSRecords(docker: DockerClient?) async {
+        guard let dnsServer, let docker else { return }
+
+        let running = containers.filter(\.isRunning)
+        guard !running.isEmpty else {
+            dnsServer.updateRecords([:])
+            return
+        }
+
+        // Snapshot cached IPs on MainActor before crossing isolation boundary.
+        let cachedIPs: [String: String] = running.reduce(into: [:]) { result, container in
+            if let cached = detailsByID[container.id], let ip = cached.ipAddress {
+                result[container.id] = ip
+            }
+        }
+
+        var newRecords: [String: String] = [:]
+
+        await withTaskGroup(of: (String, String?).self) { group in
+            for container in running {
+                let cachedIP = cachedIPs[container.id]
+                group.addTask {
+                    if let ip = cachedIP {
+                        return (container.name, ip)
+                    }
+                    do {
+                        let snapshot = try await docker.inspectContainerSnapshot(id: container.id)
+                        let ip = Self.normalizedValue(snapshot.ipAddress)
+                        return (container.name, ip)
+                    } catch {
+                        return (container.name, nil)
+                    }
+                }
+            }
+
+            for await (name, ip) in group {
+                guard let ip else { continue }
+                let dnsName = DNSServer.sanitizeContainerName(name)
+                guard !dnsName.isEmpty else { continue }
+                newRecords[dnsName] = ip
+            }
+        }
+
+        dnsServer.updateRecords(newRecords)
+    }
+
     fileprivate static func normalized(_ value: String?) -> String? {
+        normalizedValue(value)
+    }
+
+    /// Nonisolated variant safe for use in detached tasks / task groups.
+    fileprivate nonisolated static func normalizedValue(_ value: String?) -> String? {
         guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
             return nil
         }

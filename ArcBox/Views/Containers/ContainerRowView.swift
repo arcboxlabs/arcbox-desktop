@@ -25,8 +25,15 @@ struct ContainerRowView: View {
         return colors[abs(hash) % colors.count]
     }
 
-    private func openLocalhost(port: UInt16) {
-        if let url = URL(string: "http://localhost:\(port)") {
+    private func openContainerURL(port: UInt16) {
+        // Prefer arcbox.local domain (resolves to container's real IP via DNS)
+        let urlString: String
+        if container.ipAddress != nil {
+            urlString = "http://\(container.arcboxDomain)"
+        } else {
+            urlString = "http://localhost:\(port)"
+        }
+        if let url = URL(string: urlString) {
             NSWorkspace.shared.open(url)
         }
     }
@@ -105,14 +112,14 @@ struct ContainerRowView: View {
                         {
                             IconButton(
                                 symbol: "link",
-                                action: { openLocalhost(port: port) },
+                                action: { openContainerURL(port: port) },
                                 color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                             )
                         } else {
                             Menu {
                                 ForEach(container.hostPorts, id: \.self) { port in
-                                    Button("localhost:\(port)") {
-                                        openLocalhost(port: port)
+                                    Button(container.ipAddress != nil ? "\(container.arcboxDomain):\(port)" : "localhost:\(port)") {
+                                        openContainerURL(port: port)
                                     }
                                 }
                             } label: {

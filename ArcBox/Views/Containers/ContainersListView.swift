@@ -9,6 +9,7 @@ struct ContainersListView: View {
     @Environment(\.startupOrchestrator) private var orchestrator
     @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
+    @Environment(\.dnsServer) private var dnsServer
 
     /// Compose groups with at least one running container
     private var activeComposeGroups: [(project: String, containers: [ContainerViewModel])] {
@@ -79,6 +80,7 @@ struct ContainersListView: View {
             }
         }
         .task(id: docker != nil) {
+            vm.dnsServer = dnsServer
             await vm.loadContainersFromDocker(docker: docker)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in

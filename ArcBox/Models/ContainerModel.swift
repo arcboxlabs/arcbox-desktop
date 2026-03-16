@@ -1,3 +1,4 @@
+import ArcBoxClient
 import Foundation
 import SwiftUI
 
@@ -105,6 +106,16 @@ struct ContainerViewModel: Identifiable, Hashable {
         }
 
         return nil
+    }
+
+    /// DNS-safe name for `{name}.arcbox.local` resolution.
+    var dnsName: String {
+        DNSServer.sanitizeContainerName(name)
+    }
+
+    /// Full domain for this container (e.g. `myapp.arcbox.local`).
+    var arcboxDomain: String {
+        "\(dnsName).\(DNSServer.domain)"
     }
 
     var hostPorts: [UInt16] {
