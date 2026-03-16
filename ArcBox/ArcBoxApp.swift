@@ -85,7 +85,6 @@ struct ArcBoxDesktopApp: App {
             options.enableCrashHandler = true
             options.enableAutoPerformanceTracing = true
             options.tracesSampleRate = 0.2
-            options.attachScreenshot = false
             options.beforeSend = { event in
                 // Scrub PII: remove user paths from breadcrumbs and exceptions.
                 Self.scrubPII(event)

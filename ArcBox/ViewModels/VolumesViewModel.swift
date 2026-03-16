@@ -88,7 +88,7 @@ class VolumesViewModel {
             let response = try await docker.api.SystemDataUsage(query: .init(_type: [.volume]))
             let dfResponse = try response.ok.body.json
             volumes = (dfResponse.Volumes ?? []).map { VolumeViewModel(fromDocker: $0) }
-            Log.volume.info("Loaded \(volumes.count, privacy: .public) volumes")
+            Log.volume.info("Loaded \(self.volumes.count, privacy: .public) volumes")
         } catch {
             Log.volume.error("Error loading volumes: \(error.localizedDescription, privacy: .public)")
         }

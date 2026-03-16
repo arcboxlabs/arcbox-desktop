@@ -68,7 +68,7 @@ class NetworksViewModel {
             let response = try await docker.api.NetworkList(.init())
             let networkList = try response.ok.body.json
             networks = networkList.compactMap(NetworkViewModel.init(fromDocker:))
-            Log.network.info("Loaded \(networks.count, privacy: .public) networks")
+            Log.network.info("Loaded \(self.networks.count, privacy: .public) networks")
         } catch {
             Log.network.error("Error loading networks: \(error.localizedDescription, privacy: .public)")
         }
