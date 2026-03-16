@@ -68,8 +68,11 @@ public final class HelperManager {
 
         switch service.status {
         case .enabled:
-            // Best-effort re-register to update helper binary path.
-            try? service.register()
+            // Force re-register to pick up updated helper binary after app
+            // update. Without unregister(), launchd keeps the old process and
+            // the new binary is never loaded.
+            try? await service.unregister()
+            try service.register()
             requiresApproval = false
         case .notRegistered, .notFound:
             try service.register()
