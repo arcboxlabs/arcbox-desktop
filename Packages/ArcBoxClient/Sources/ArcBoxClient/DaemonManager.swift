@@ -109,7 +109,49 @@ public final class DaemonManager {
         }
 
         if !isReachable {
-            ClientLog.daemon.warning("Daemon registered but not reachable after 10s")
+            ClientLog.daemon.warning("Daemon registered but not reachable after 10s, attempting bootout recovery")
+
+            // launchctl bootout fully resets launchd state (crash counter, throttling)
+            // that SMAppService.unregister() does not clear — this recovers from crash loops.
+            let uid = getuid()
+            let serviceName = "gui/\(uid)/com.arcboxlabs.desktop.daemon"
+            let bootoutResult = await Task.detached {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+                process.arguments = ["bootout", serviceName]
+                try? process.run()
+                process.waitUntilExit()
+                return process.terminationStatus
+            }.value
+            ClientLog.daemon.info("bootout exit code: \(bootoutResult, privacy: .public)")
+
+            // Brief pause for launchd to fully tear down the old service.
+            try? await Task.sleep(for: .milliseconds(500))
+
+            // Re-register with a clean slate.
+            do {
+                try service.register()
+                ClientLog.daemon.info("Service re-registered after bootout")
+            } catch {
+                ClientLog.daemon.error("Re-register after bootout failed: \(error.localizedDescription, privacy: .public)")
+                errorMessage = error.localizedDescription
+                state = .error("Failed to re-register daemon: \(error.localizedDescription)")
+                return
+            }
+
+            // Poll again (up to 10 seconds).
+            for i in 0..<StartupConstants.daemonPollMaxAttempts {
+                try? await Task.sleep(for: StartupConstants.daemonPollInterval)
+                await checkReachability()
+                if isReachable {
+                    ClientLog.daemon.info("Daemon reachable after bootout recovery, \(i + 1, privacy: .public) checks")
+                    break
+                }
+            }
+        }
+
+        if !isReachable {
+            ClientLog.daemon.warning("Daemon not reachable after bootout recovery")
             errorMessage = "Daemon registered but not responding. Check Console.app for launch errors."
             state = .registered
         } else {
