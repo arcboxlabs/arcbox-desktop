@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.9.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.3...v1.9.0) (2026-03-16)
+
+
+### Features
+
+* **net:** move route ownership to daemon, add helperctl + smart route ops ([e6076e0](https://github.com/arcboxlabs/arcbox-desktop/commit/e6076e06300092e89ae248f22654583fba179ccb))
+
+
+### Bug Fixes
+
+* **net:** bump protocol version, real error reporting, vmnet bridge identity ([93c1003](https://github.com/arcboxlabs/arcbox-desktop/commit/93c10032110e03db477eeb17d5257bddc967b143))
+* **net:** route retry/reconcile and cleanup on shutdown ([85fb92c](https://github.com/arcboxlabs/arcbox-desktop/commit/85fb92c2e4ee2c09cd04a830c5b95888efd17950))
+
+
+### Refactoring
+
+* **helper:** merge helperctl into ArcBoxHelper as route subcommand ([e4b4a22](https://github.com/arcboxlabs/arcbox-desktop/commit/e4b4a22a3cd906b2165a632a6012288c21f593c9))
+
 ## [1.8.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.2...v1.8.3) (2026-03-16)
 
 
