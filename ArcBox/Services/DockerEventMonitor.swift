@@ -1,5 +1,6 @@
 import Foundation
 import DockerClient
+import OSLog
 
 // MARK: - Fine-grained Notification Names
 
@@ -68,15 +69,15 @@ final class DockerEventMonitor {
                     }
                 } catch {
                     if Task.isCancelled || isStopped { break }
-                    print("[EventMonitor] Stream error, reconnecting in 2s: \(error)")
+                    Log.docker.warning("Event stream error, reconnecting in 2s: \(error.localizedDescription, privacy: .public)")
                 }
 
                 guard !Task.isCancelled, !isStopped else { break }
                 try? await Task.sleep(for: .seconds(2))
             }
-            print("[EventMonitor] stopped")
+            Log.docker.info("Event monitor stopped")
         }
-        print("[EventMonitor] started")
+        Log.docker.info("Event monitor started")
     }
 
     func stop() {

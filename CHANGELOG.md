@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.8.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.1...v1.8.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* add explicit self in closure captures for ContainersVM and ImagesVM ([164d069](https://github.com/arcboxlabs/arcbox-desktop/commit/164d069d0d48493f8b384297e20e0b7fe12be5f1))
+* resolve CI build errors in observability code ([c1004fb](https://github.com/arcboxlabs/arcbox-desktop/commit/c1004fbca85bc7fcaa1622f2fcef7b68632d8ed1))
+
+## [1.8.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.0...v1.8.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **helper:** remove attachScreenshot (unavailable in macOS CLI tools) ([14c3527](https://github.com/arcboxlabs/arcbox-desktop/commit/14c352723607817ed98cc0054053dc291472a6ad))
+
+## [1.8.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.7.1...v1.8.0) (2026-03-15)
+
+
+### Features
+
+* **net:** L3 direct routing via vmnet bridge and proxy ARP ([e0238f5](https://github.com/arcboxlabs/arcbox-desktop/commit/e0238f555d76d9cfd08d783a8759e549a299a296))
+
+## [1.7.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.7.0...v1.7.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** use vars context instead of secrets in workflow if condition ([5e11e55](https://github.com/arcboxlabs/arcbox-desktop/commit/5e11e551efb176e44bec26a24086762c17b0c841))
+
+## [1.7.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.6.1...v1.7.0) (2026-03-15)
+
+
+### Features
+
+* **helper:** add route management for L3 direct routing ([10ea4d3](https://github.com/arcboxlabs/arcbox-desktop/commit/10ea4d3c5de646c05f2fe5c1234f7289f906386a))
+
+
+### Refactoring
+
+* improve release workflow DRY and reliability ([f782c14](https://github.com/arcboxlabs/arcbox-desktop/commit/f782c143096a48c3bb58131ebe8a98fa625b405f))
+
 ## [1.6.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.6.0...v1.6.1) (2026-03-15)
 
 

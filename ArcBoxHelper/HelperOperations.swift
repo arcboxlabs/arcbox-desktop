@@ -1,10 +1,13 @@
 import Foundation
+import OSLog
+@preconcurrency import Sentry
 
 final class HelperOperations: NSObject, ArcBoxHelperProtocol {
 
     // MARK: - Operation 1: Docker Socket
 
     func setupDockerSocket(socketPath: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("setupDockerSocket: \(socketPath, privacy: .public)")
         // Validate using regex — NOT FileManager.home, which returns /var/root when running as root.
         // Product constraint: ArcBox only supports GUI users whose home is under /Users/<name>/.
         guard isValidArcBoxSocketPath(socketPath) else {
@@ -59,6 +62,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     }
 
     func teardownDockerSocket(reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("teardownDockerSocket")
         let symlinkPath = "/var/run/docker.sock"
         if let existing = try? FileManager.default.destinationOfSymbolicLink(atPath: symlinkPath),
             isValidArcBoxSocketPath(existing)
@@ -72,6 +76,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     // MARK: - Operation 2: CLI Tools
 
     func installCLITools(appBundlePath: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("installCLITools: \(appBundlePath, privacy: .public)")
         // appBundlePath must be an .app bundle under a trusted location.
         let allowedPrefixes = ["/Applications/", "/Users/"]
         guard appBundlePath.hasSuffix(".app"),
@@ -127,6 +132,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     }
 
     func uninstallCLITools(reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("uninstallCLITools")
         for link in ["/usr/local/bin/abctl"] {
             if let target = try? FileManager.default.destinationOfSymbolicLink(atPath: link),
                 isArcBoxOwnedSymlink(target)
@@ -140,6 +146,7 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     // MARK: - Operation 3: DNS Resolver
 
     func setupDNSResolver(domain: String, port: Int, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("setupDNSResolver: \(domain, privacy: .public):\(port, privacy: .public)")
         guard isAllowedDomain(domain), (1024...65535).contains(port) else {
             reply(makeError("Invalid domain or port"))
             return
@@ -158,11 +165,106 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
     }
 
     func teardownDNSResolver(domain: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("teardownDNSResolver: \(domain, privacy: .public)")
         guard isAllowedDomain(domain) else {
             reply(makeError("Invalid domain"))
             return
         }
         try? FileManager.default.removeItem(atPath: "/etc/resolver/\(domain)")
+        reply(nil)
+    }
+
+    // MARK: - Operation 4: Network routes
+
+    func addRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("addRouteGateway: \(subnet, privacy: .public) via \(gateway, privacy: .public)")
+        guard isValidCIDR(subnet), isValidIPv4(gateway) else {
+            reply(makeError("Invalid subnet or gateway"))
+            return
+        }
+
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = ["-n", "add", "-net", subnet, gateway]
+        let pipe = Pipe()
+        proc.standardError = pipe
+
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            reply(error as NSError)
+            return
+        }
+
+        if proc.terminationStatus == 0 {
+            reply(nil)
+        } else {
+            let stderr = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            if stderr.contains("File exists") {
+                reply(nil) // Idempotent — route already installed.
+            } else {
+                reply(makeError("route add failed: \(stderr)"))
+            }
+        }
+    }
+
+    func addRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("addRouteInterface: \(subnet, privacy: .public) -interface \(iface, privacy: .public)")
+        guard isValidCIDR(subnet) else {
+            reply(makeError("Invalid subnet"))
+            return
+        }
+        // Validate interface name: must start with "bridge" and be followed by digits.
+        guard iface.hasPrefix("bridge"), iface.dropFirst(6).allSatisfy(\.isNumber) else {
+            reply(makeError("Invalid interface: \(iface)"))
+            return
+        }
+
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = ["-n", "add", "-net", subnet, "-interface", iface]
+        let pipe = Pipe()
+        proc.standardError = pipe
+
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            reply(error as NSError)
+            return
+        }
+
+        if proc.terminationStatus == 0 {
+            reply(nil)
+        } else {
+            let stderr = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            if stderr.contains("File exists") {
+                reply(nil)
+            } else {
+                reply(makeError("route add failed: \(stderr)"))
+            }
+        }
+    }
+
+    func removeRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("removeRouteGateway: \(subnet, privacy: .public) via \(gateway, privacy: .public)")
+        guard isValidCIDR(subnet), isValidIPv4(gateway) else {
+            reply(makeError("Invalid subnet or gateway"))
+            return
+        }
+
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = ["-n", "delete", "-net", subnet, gateway]
+
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            // Best-effort removal.
+        }
+
         reply(nil)
     }
 
@@ -194,9 +296,28 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         ["arcbox.local", "arcbox.internal"].contains(domain)
     }
 
+    private func isValidCIDR(_ cidr: String) -> Bool {
+        let parts = cidr.split(separator: "/")
+        guard parts.count == 2,
+              isValidIPv4(String(parts[0])),
+              let prefix = UInt8(parts[1]),
+              prefix <= 32 else { return false }
+        return true
+    }
+
+    private func isValidIPv4(_ ip: String) -> Bool {
+        let parts = ip.split(separator: ".")
+        return parts.count == 4 && parts.allSatisfy { UInt8($0) != nil }
+    }
+
     private func makeError(_ msg: String) -> NSError {
-        NSError(
+        let error = NSError(
             domain: "com.arcboxlabs.desktop.helper", code: -1,
             userInfo: [NSLocalizedDescriptionKey: msg])
+        HelperLog.ops.error("\(msg, privacy: .public)")
+        SentrySDK.capture(error: error) { scope in
+            scope.setTag(value: "helper", key: "process_type")
+        }
+        return error
     }
 }

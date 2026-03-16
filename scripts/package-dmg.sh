@@ -6,8 +6,6 @@
 #
 # Environment variables:
 #   DESKTOP_REPO   - Path to arcbox-desktop checkout (default: script dir/..)
-#   BUNDLE_ID      - App bundle identifier (default: com.arcboxlabs.desktop)
-#   TEAM_ID        - Apple Developer Team ID (required for signing)
 #   ARCBOX_DIR     - Path to arcbox checkout (default: DESKTOP_REPO/../arcbox or ./arcbox)
 #   PSTRAMP_DIR    - Path to pstramp checkout (default: ARCBOX_DIR/../pstramp)
 #
@@ -70,7 +68,7 @@ sign_binary() {
     fi
 }
 
-BUNDLE_ID="${BUNDLE_ID:-com.arcboxlabs.desktop}"
+BUNDLE_ID="com.arcboxlabs.desktop"
 BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
 APP_NAME="ArcBox Desktop"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
@@ -119,7 +117,6 @@ if [ -n "$SIGN_IDENTITY" ]; then
     XCODE_FLAGS+=(
         CODE_SIGN_IDENTITY="$SIGN_IDENTITY"
         CODE_SIGN_STYLE=Manual
-        DEVELOPMENT_TEAM="${TEAM_ID:-}"
     )
 fi
 

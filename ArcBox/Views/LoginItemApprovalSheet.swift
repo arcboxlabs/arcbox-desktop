@@ -1,4 +1,5 @@
 import ArcBoxClient
+import OSLog
 import ServiceManagement
 import SwiftUI
 
@@ -104,7 +105,7 @@ struct LoginItemApprovalSheet: View {
                         try await helperManager.register()
                         withAnimation { approved = true }
                     } catch {
-                        print("[ApprovalSheet] register failed after approval: \(error)")
+                        Log.helper.error("Register failed after approval: \(error.localizedDescription, privacy: .public)")
                     }
                     break
                 }

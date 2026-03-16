@@ -14,6 +14,8 @@
 		AB0E00132F70000000000013 /* ArcBoxHelper in Copy Helper Tool */ = {isa = PBXBuildFile; fileRef = AB0E00012F70000000000001 /* ArcBoxHelper */; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
+		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
+		SE0300022F90000000000002 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200022F90000000000002 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +100,7 @@
 				65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */,
 				DC0A11012F4E000000000001 /* DockerClient in Frameworks */,
 				DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */,
+				SE0300012F90000000000001 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,6 +108,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				SE0300022F90000000000002 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,6 +132,7 @@
 				AB0E00042F70000000000004 /* ArcBoxHelper */,
 				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
 				AB0D00062F60000000000001 /* LaunchDaemons */,
+				BA8AF73F2F66F38100CDDA35 /* Frameworks */,
 				657F657C2F3A2ADB00C7005A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -149,6 +154,13 @@
 				AB0E00022F70000000000002 /* com.arcboxlabs.desktop.helper.plist */,
 			);
 			path = LaunchDaemons;
+			sourceTree = "<group>";
+		};
+		BA8AF73F2F66F38100CDDA35 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -181,6 +193,7 @@
 				DC0A11002F4E000000000001 /* DockerClient */,
 				DC0B11002F4E000000000001 /* SwiftTerm */,
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
+				SE0200012F90000000000001 /* Sentry */,
 			);
 			productName = "ArcBox Desktop";
 			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */;
@@ -221,6 +234,7 @@
 			);
 			name = ArcBoxHelper;
 			packageProductDependencies = (
+				SE0200022F90000000000002 /* Sentry */,
 			);
 			productName = ArcBoxHelper;
 			productReference = AB0E00012F70000000000001 /* ArcBoxHelper */;
@@ -233,7 +247,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					657F657A2F3A2ADB00C7005A = {
@@ -258,6 +272,7 @@
 				DC0A11022F4E000000000001 /* XCLocalSwiftPackageReference "Packages/DockerClient" */,
 				DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 657F657C2F3A2ADB00C7005A /* Products */;
@@ -526,6 +541,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
 				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -567,6 +583,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
 				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -714,6 +731,14 @@
 				minimumVersion = 1.0.0;
 			};
 		};
+		SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.7.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -734,6 +759,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
 			productName = SwiftTerm;
+		};
+		SE0200012F90000000000001 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+		SE0200022F90000000000002 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

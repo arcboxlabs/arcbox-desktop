@@ -2,3 +2,4 @@
 // Local.xcconfig is gitignored and will not be committed.
 #include "Version.xcconfig"
 DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
+SENTRY_DSN = YOUR_SENTRY_DSN_HERE

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import ServiceManagement
 
 /// Daemon connection state derived from SMAppService registration + reachability.
@@ -80,7 +81,7 @@ public final class DaemonManager {
         try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
 
         let status = service.status
-        print("[DaemonManager] Current SMAppService status: \(status)")
+        ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
 
         do {
             // Force re-register to ensure BundleProgram resolves against the current
@@ -89,9 +90,9 @@ public final class DaemonManager {
             // /Applications/) cause launchd to look for the binary in the old path.
             try? await service.unregister()
             try service.register()
-            print("[DaemonManager] Service registered successfully")
+            ClientLog.daemon.info("Service registered successfully")
         } catch {
-            print("[DaemonManager] Failed to register: \(error)")
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
             return
@@ -102,13 +103,13 @@ public final class DaemonManager {
             try? await Task.sleep(for: StartupConstants.daemonPollInterval)
             await checkReachability()
             if isReachable {
-                print("[DaemonManager] Daemon reachable after \(i + 1) checks")
+                ClientLog.daemon.info("Daemon reachable after \(i + 1, privacy: .public) checks")
                 break
             }
         }
 
         if !isReachable {
-            print("[DaemonManager] Daemon registered but not reachable after 10s")
+            ClientLog.daemon.warning("Daemon registered but not reachable after 10s")
             errorMessage = "Daemon registered but not responding. Check Console.app for launch errors."
             state = .registered
         } else {
@@ -145,9 +146,18 @@ public final class DaemonManager {
     public func startMonitoring() {
         monitorTask?.cancel()
         monitorTask = Task { [weak self] in
+            var previousReachable: Bool?
             while !Task.isCancelled {
                 await self?.checkReachability()
                 self?.refresh()
+                if let current = self?.isReachable, current != previousReachable {
+                    if current {
+                        ClientLog.daemon.info("Daemon became reachable")
+                    } else if previousReachable != nil {
+                        ClientLog.daemon.warning("Daemon became unreachable")
+                    }
+                    previousReachable = current
+                }
                 try? await Task.sleep(for: StartupConstants.healthMonitorInterval)
             }
         }

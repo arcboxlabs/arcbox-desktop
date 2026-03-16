@@ -1,5 +1,6 @@
 import SwiftUI
 import DockerClient
+import OSLog
 
 /// Inline section showing containers connected to this network
 struct NetworkContainersSection: View {
@@ -86,7 +87,7 @@ struct NetworkContainersSection: View {
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
-            print("[NetworkContainers] Error loading containers for network \(network.id): \(error)")
+            Log.network.error("Error loading containers for network \(network.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             containers = []
         }
     }

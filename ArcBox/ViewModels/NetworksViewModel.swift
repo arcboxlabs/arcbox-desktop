@@ -1,5 +1,6 @@
 import SwiftUI
 import DockerClient
+import OSLog
 
 /// Sort field for networks
 enum NetworkSortField: String, CaseIterable {
@@ -59,7 +60,7 @@ class NetworksViewModel {
     /// Load networks from Docker Engine API.
     func loadNetworks(docker: DockerClient?) async {
         guard let docker else {
-            print("[NetworksVM] No docker client available")
+            Log.network.debug("No docker client available")
             return
         }
 
@@ -67,9 +68,9 @@ class NetworksViewModel {
             let response = try await docker.api.NetworkList(.init())
             let networkList = try response.ok.body.json
             networks = networkList.compactMap(NetworkViewModel.init(fromDocker:))
-            print("[NetworksVM] Loaded \(networks.count) networks")
+            Log.network.info("Loaded \(self.networks.count, privacy: .public) networks")
         } catch {
-            print("[NetworksVM] Error loading networks: \(error)")
+            Log.network.error("Error loading networks: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -79,9 +80,9 @@ class NetworksViewModel {
         do {
             let response = try await docker.api.NetworkDelete(path: .init(id: id))
             _ = try response.noContent
-            print("[NetworksVM] Successfully removed network \(id)")
+            Log.network.info("Removed network \(id, privacy: .public)")
         } catch {
-            print("[NetworksVM] Error removing network \(id): \(error)")
+            Log.network.error("Error removing network \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         await loadNetworks(docker: docker)
     }
@@ -106,7 +107,7 @@ class NetworksViewModel {
             let output = try await docker.api.NetworkCreate(body: .json(payload))
             switch output {
             case .created:
-                print("[NetworksVM] Successfully created network \(trimmedName)")
+                Log.network.info("Created network \(trimmedName, privacy: .public)")
                 await loadNetworks(docker: docker)
                 return nil
             case let .badRequest(response):
@@ -121,7 +122,7 @@ class NetworksViewModel {
                 return "Unexpected response status: \(status)."
             }
         } catch {
-            print("[NetworksVM] Error creating network \(trimmedName): \(error)")
+            Log.network.error("Error creating network \(trimmedName, privacy: .public): \(error.localizedDescription, privacy: .public)")
             return error.localizedDescription
         }
     }
