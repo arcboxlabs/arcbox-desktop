@@ -361,7 +361,7 @@ class ContainersViewModel {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
-            Log.container.info("Loaded \(containers.count, privacy: .public) containers")
+            Log.container.info("Loaded \(self.containers.count, privacy: .public) containers")
             applyExpandedGroups(from: containers)
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)

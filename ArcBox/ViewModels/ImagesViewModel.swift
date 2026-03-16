@@ -88,7 +88,7 @@ class ImagesViewModel {
             let response = try await docker.api.ImageList(.init())
             let imageList = try response.ok.body.json
             images = imageList.flatMap { ImageViewModel.fromDocker($0) }
-            Log.image.info("Loaded \(images.count, privacy: .public) images")
+            Log.image.info("Loaded \(self.images.count, privacy: .public) images")
         } catch {
             Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
         }
