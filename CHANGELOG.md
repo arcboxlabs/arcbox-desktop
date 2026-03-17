@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.9.6](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.5...v1.9.6) (2026-03-17)
+
+
+### Bug Fixes
+
+* **helper:** check approval status after initial registration ([7c424bf](https://github.com/arcboxlabs/arcbox-desktop/commit/7c424bffbee2a58d86db59dcc22f54fda20e7131))
+* **helper:** query bridge interfaces individually for Address cache ([0d5eb5a](https://github.com/arcboxlabs/arcbox-desktop/commit/0d5eb5ac726761bd4587549a7a382359352c6739))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.2.5 ([#48](https://github.com/arcboxlabs/arcbox-desktop/issues/48)) ([8af214a](https://github.com/arcboxlabs/arcbox-desktop/commit/8af214a4e77363902afb5b1b031b40c473769b6f))
+
+
+### Documentation
+
+* add README ([8c2f5a6](https://github.com/arcboxlabs/arcbox-desktop/commit/8c2f5a629f151fef006cd3b33c81842ad9d1f495))
+
 ## [1.9.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.4...v1.9.5) (2026-03-17)
 
 
