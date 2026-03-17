@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.6...v1.10.0) (2026-03-17)
+
+
+### Features
+
+* **helper:** add pure mutation CLI commands (add-interface, remove-interface) ([62ea523](https://github.com/arcboxlabs/arcbox-desktop/commit/62ea5237ab3d3396d36e486bd27191fd649ab9f9))
+
 ## [1.9.6](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.5...v1.9.6) (2026-03-17)
 
 
