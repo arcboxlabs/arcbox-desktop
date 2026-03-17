@@ -74,7 +74,7 @@ func runCLI() -> Never {
     let args = CommandLine.arguments
 
     guard args.count >= 3 else {
-        fputs("Usage: ArcBoxHelper route {ensure|remove|status} [--subnet ...] [--bridge-mac ...]\n", stderr)
+        fputs("Usage: ArcBoxHelper route {add-interface|remove-interface|ensure|remove|status} [--subnet ...] [--iface ...]\n", stderr)
         exit(1)
     }
 
@@ -105,6 +105,50 @@ func runCLI() -> Never {
     }
 
     switch subcommand {
+    // ── Pure mutation commands (new, preferred by daemon) ──
+    case "add-interface":
+        guard let iface = arg("--iface") else {
+            fputs("{\"ok\":false,\"error\":\"--iface required\"}\n", stderr)
+            exit(1)
+        }
+        proxy.addRouteInterface(subnet: subnet, iface: iface) { error in
+            if let error {
+                print("{\"ok\":false,\"error\":\"\(error.localizedDescription)\"}")
+                exitCode = 1
+            } else {
+                print("{\"ok\":true}")
+            }
+            sem.signal()
+        }
+
+    case "remove-interface":
+        guard let iface = arg("--iface") else {
+            // Without --iface, try to remove any existing route for the subnet.
+            // This delegates to the smart removeRoute which finds the current interface.
+            proxy.removeRoute(subnet: subnet) { error in
+                if let error {
+                    print("{\"ok\":false,\"error\":\"\(error.localizedDescription)\"}")
+                    exitCode = 1
+                } else {
+                    print("{\"ok\":true}")
+                }
+                sem.signal()
+            }
+            sem.wait()
+            conn.invalidate()
+            exit(exitCode)
+        }
+        proxy.removeRouteInterface(subnet: subnet, iface: iface) { error in
+            if let error {
+                print("{\"ok\":false,\"error\":\"\(error.localizedDescription)\"}")
+                exitCode = 1
+            } else {
+                print("{\"ok\":true}")
+            }
+            sem.signal()
+        }
+
+    // ── Legacy commands (kept for backward compatibility) ──
     case "ensure":
         guard let mac = arg("--bridge-mac") else {
             fputs("{\"ok\":false,\"error\":\"--bridge-mac required\"}\n", stderr)
