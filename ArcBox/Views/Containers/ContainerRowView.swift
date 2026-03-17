@@ -28,8 +28,8 @@ struct ContainerRowView: View {
     private func openContainerURL(port: UInt16) {
         // Prefer arcbox.local domain (resolves to container's real IP via DNS)
         let urlString: String
-        if container.ipAddress != nil {
-            urlString = "http://\(container.arcboxDomain)"
+        if let domain = container.arcboxDomain, container.ipAddress != nil {
+            urlString = "http://\(domain):\(port)"
         } else {
             urlString = "http://localhost:\(port)"
         }
@@ -118,7 +118,7 @@ struct ContainerRowView: View {
                         } else {
                             Menu {
                                 ForEach(container.hostPorts, id: \.self) { port in
-                                    Button(container.ipAddress != nil ? "\(container.arcboxDomain):\(port)" : "localhost:\(port)") {
+                                    Button(container.arcboxDomain != nil && container.ipAddress != nil ? "\(container.arcboxDomain!):\(port)" : "localhost:\(port)") {
                                         openContainerURL(port: port)
                                     }
                                 }

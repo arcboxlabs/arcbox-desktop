@@ -26,9 +26,8 @@ struct ContainerInfoTab: View {
                     || container.domain != nil
                 {
                     VStack(spacing: 0) {
-                        if container.ipAddress != nil {
+                        if container.ipAddress != nil, let domain = container.arcboxDomain {
                             // Container has a real IP — use arcbox.local domain
-                            let domain = container.arcboxDomain
                             InfoRow(
                                 label: "Domain",
                                 value: domain,

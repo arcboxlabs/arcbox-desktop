@@ -114,8 +114,11 @@ struct ContainerViewModel: Identifiable, Hashable {
     }
 
     /// Full domain for this container (e.g. `myapp.arcbox.local`).
-    var arcboxDomain: String {
-        "\(dnsName).\(DNSServer.domain)"
+    /// Returns `nil` when the sanitized DNS name is empty (invalid host).
+    var arcboxDomain: String? {
+        let name = dnsName
+        guard !name.isEmpty else { return nil }
+        return "\(name).\(DNSServer.domain)"
     }
 
     var hostPorts: [UInt16] {
