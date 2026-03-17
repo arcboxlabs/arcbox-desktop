@@ -403,36 +403,45 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
 
     // MARK: - Bridge resolution (MAC → vmenet → bridge)
 
-    /// Resolves a bridge MAC to a bridge interface name by parsing ifconfig.
+    /// Resolves a bridge MAC to a bridge interface name.
+    ///
+    /// `ifconfig -a` omits the Address cache section on macOS; only per-interface
+    /// queries (`ifconfig bridgeN`) include it. So we first enumerate bridge
+    /// interfaces with vmenet members, then query each individually.
     private func resolveBridgeByMAC(_ mac: String) -> String? {
-        guard let output = runCommand("/sbin/ifconfig", ["-a"]) else { return nil }
+        let bridges = findBridgesWithVmenet()
+        guard !bridges.isEmpty else { return nil }
+
         let normalizedTarget = normalizeMAC(mac)
 
+        for bridge in bridges {
+            guard let output = runCommand("/sbin/ifconfig", [bridge]) else { continue }
+            for line in output.components(separatedBy: .newlines) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                let firstToken = String(trimmed.prefix(while: { $0 != " " }))
+                if firstToken.contains(":") && normalizeMAC(firstToken) == normalizedTarget {
+                    return bridge
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Returns names of bridge interfaces that have a vmenet member.
+    private func findBridgesWithVmenet() -> [String] {
+        guard let output = runCommand("/sbin/ifconfig", ["-a"]) else { return [] }
+        var bridges: [String] = []
         var currentBridge: String?
-        var currentHasVmenet = false
 
         for line in output.components(separatedBy: .newlines) {
             if !line.hasPrefix("\t") && !line.hasPrefix(" ") && line.contains(": flags=") {
                 let name = String(line.prefix(while: { $0 != ":" }))
                 currentBridge = name.hasPrefix("bridge") ? name : nil
-                currentHasVmenet = false
-            } else if let bridge = currentBridge {
-                if line.contains("member: vmenet") {
-                    currentHasVmenet = true
-                }
-                // Address cache line format: "  MAC Vlan1 vmenetN ..."
-                // ifconfig may omit leading zeros (e.g. "2:ce:56:c:72:f1"),
-                // so normalize both sides before comparing.
-                if currentHasVmenet {
-                    let trimmed = line.trimmingCharacters(in: .whitespaces)
-                    let firstToken = String(trimmed.prefix(while: { $0 != " " }))
-                    if firstToken.contains(":") && normalizeMAC(firstToken) == normalizedTarget {
-                        return bridge
-                    }
-                }
+            } else if let bridge = currentBridge, line.contains("member: vmenet") {
+                bridges.append(bridge)
             }
         }
-        return nil
+        return bridges
     }
 
     /// Normalize a MAC address to lowercase with zero-padded octets.
