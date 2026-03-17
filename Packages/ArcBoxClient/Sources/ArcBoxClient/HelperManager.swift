@@ -76,6 +76,13 @@ public final class HelperManager {
             requiresApproval = false
         case .notRegistered, .notFound:
             try service.register()
+            // On macOS 13+, register() may succeed but the service still
+            // needs user approval in System Settings → Login Items. Re-check
+            // status so registerWithRetry() can open Settings and poll.
+            if service.status == .requiresApproval {
+                requiresApproval = true
+                throw HelperError.requiresApproval
+            }
             requiresApproval = false
         case .requiresApproval:
             requiresApproval = true
