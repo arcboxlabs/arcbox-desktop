@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.4...v1.9.5) (2026-03-17)
+
+
+### Bug Fixes
+
+* **boot:** use SHA256 to detect and replace stale agent/runtime binaries ([498216a](https://github.com/arcboxlabs/arcbox-desktop/commit/498216a3bda877118205164c272a5d9c10ed6575))
+* **helper:** handle non-bridge stale routes in ensureRoute/removeRoute ([cfc91d6](https://github.com/arcboxlabs/arcbox-desktop/commit/cfc91d6eaa10f0706e7e30d3c11c152a59ec24c6))
+
 ## [1.9.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.3...v1.9.4) (2026-03-17)
 
 
