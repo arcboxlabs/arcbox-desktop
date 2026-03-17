@@ -326,19 +326,28 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             return
         }
 
-        // Check existing route.
-        let currentIface = currentRouteInterface(for: subnet)
-        if currentIface == bridgeIface {
+        // Check existing route. currentRouteInfo returns the interface for ANY
+        // existing route (not just bridge*), so we can detect and replace stale
+        // routes that point to en0, utun, or a gateway.
+        let current = currentRouteInfo(for: subnet)
+        if current.iface == bridgeIface {
             // Already correct.
             let json = #"{"ok":true,"bridge":"\#(bridgeIface)","changed":false}"#
             reply(json as NSString, nil)
             return
         }
 
-        // Remove stale route if it points to wrong interface.
-        if let old = currentIface {
+        // Remove stale route regardless of what interface it points to.
+        // Without this, route add returns "File exists" and the wrong route stays.
+        if let old = current.iface {
             HelperLog.ops.info("ensureRoute: removing stale route via \(old, privacy: .public)")
-            runRoute(["-n", "delete", "-net", subnet, "-interface", old])
+            if old.hasPrefix("bridge") {
+                runRoute(["-n", "delete", "-net", subnet, "-interface", old])
+            } else if let gw = current.gateway {
+                runRoute(["-n", "delete", "-net", subnet, gw])
+            } else {
+                runRoute(["-n", "delete", "-net", subnet])
+            }
         }
 
         // Install new route.
@@ -358,8 +367,17 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             return
         }
 
-        if let iface = currentRouteInterface(for: subnet) {
-            let (ok, stderr) = runRoute(["-n", "delete", "-net", subnet, "-interface", iface])
+        let current = currentRouteInfo(for: subnet)
+        if let iface = current.iface {
+            let args: [String]
+            if iface.hasPrefix("bridge") {
+                args = ["-n", "delete", "-net", subnet, "-interface", iface]
+            } else if let gw = current.gateway {
+                args = ["-n", "delete", "-net", subnet, gw]
+            } else {
+                args = ["-n", "delete", "-net", subnet]
+            }
+            let (ok, stderr) = runRoute(args)
             if ok || stderr.contains("not in table") {
                 reply(nil)
             } else {
@@ -375,7 +393,8 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             reply(nil)
             return
         }
-        if let iface = currentRouteInterface(for: subnet) {
+        let current = currentRouteInfo(for: subnet)
+        if let iface = current.iface {
             reply(#"{"installed":true,"interface":"\#(iface)","subnet":"\#(subnet)"}"# as NSString)
         } else {
             reply(#"{"installed":false,"subnet":"\#(subnet)"}"# as NSString)
@@ -425,20 +444,33 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
             .joined(separator: ":")
     }
 
-    /// Queries the current route interface for a subnet via `route -n get`.
-    private func currentRouteInterface(for subnet: String) -> String? {
-        let addr = subnet.split(separator: "/").first.map(String.init) ?? subnet
-        guard let output = runCommand("/sbin/route", ["-n", "get", addr]) else { return nil }
+    /// Route info returned by `route -n get`.
+    private struct RouteInfo {
+        var iface: String?
+        var gateway: String?
+    }
 
+    /// Queries the current route for a subnet via `route -n get`.
+    /// Returns both the interface and gateway so callers can properly delete
+    /// any type of route (interface-based or gateway-based).
+    private func currentRouteInfo(for subnet: String) -> RouteInfo {
+        let addr = subnet.split(separator: "/").first.map(String.init) ?? subnet
+        guard let output = runCommand("/sbin/route", ["-n", "get", addr]) else {
+            return RouteInfo()
+        }
+
+        var info = RouteInfo()
         for line in output.components(separatedBy: .newlines) {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("interface:") {
-                let iface = trimmed.dropFirst("interface:".count).trimmingCharacters(in: .whitespaces)
-                // Only return bridge interfaces (not en0, utun, etc.)
-                if iface.hasPrefix("bridge") { return iface }
+                info.iface = trimmed.dropFirst("interface:".count)
+                    .trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("gateway:") {
+                info.gateway = trimmed.dropFirst("gateway:".count)
+                    .trimmingCharacters(in: .whitespaces)
             }
         }
-        return nil
+        return info
     }
 
     /// Runs /sbin/route with args. Returns (success, stderr).
