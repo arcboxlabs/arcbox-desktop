@@ -69,9 +69,8 @@ public final class DNSServer: @unchecked Sendable {
             self?.handleIncoming()
         }
         let capturedFd = sock
-        readSource.setCancelHandler { [weak self] in
+        readSource.setCancelHandler {
             Darwin.close(capturedFd)
-            self?.fd = -1
         }
         readSource.resume()
         source = readSource
@@ -83,7 +82,10 @@ public final class DNSServer: @unchecked Sendable {
     public func stop() {
         source?.cancel()
         source = nil
-        // fd is closed by the cancel handler
+        // Reset fd synchronously so a subsequent start() sees the server as stopped,
+        // even if the cancel handler hasn't fired yet. The cancel handler closes the
+        // actual file descriptor via its captured copy.
+        fd = -1
     }
 
     // MARK: - Record Management
@@ -196,7 +198,7 @@ public final class DNSServer: @unchecked Sendable {
         response.append(UInt8(id >> 8))
         response.append(UInt8(id & 0xFF))
 
-        // Flags: QR=1 (response), AA=1 (authoritative), RD=1 (recursion desired, echoed)
+        // Flags: QR=1 (response), AA=1 (authoritative)
         let flags: UInt16 = 0x8400 | UInt16(rcode)
         response.append(UInt8(flags >> 8))
         response.append(UInt8(flags & 0xFF))
