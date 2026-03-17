@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.3...v1.9.4) (2026-03-17)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.2.4 ([#44](https://github.com/arcboxlabs/arcbox-desktop/issues/44)) ([2cc3c60](https://github.com/arcboxlabs/arcbox-desktop/commit/2cc3c601ae64f0b48387e63f5c3f90b9a5737fcc))
+* **release:** unhide chore/docs/ci from changelog and version bumps ([83f3b73](https://github.com/arcboxlabs/arcbox-desktop/commit/83f3b7349c961c6f64c5af0adc6f83750b404310))
+
 ## [1.9.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.2...v1.9.3) (2026-03-16)
 
 
