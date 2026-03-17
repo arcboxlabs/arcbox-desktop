@@ -26,5 +26,9 @@ let package = Package(
                 .product(name: "Sentry", package: "sentry-cocoa"),
             ]
         ),
+        .testTarget(
+            name: "ArcBoxClientTests",
+            dependencies: ["ArcBoxClient"]
+        ),
     ]
 )
