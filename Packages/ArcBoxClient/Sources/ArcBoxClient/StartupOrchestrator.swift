@@ -139,6 +139,7 @@ public final class StartupOrchestrator {
     private let daemonManager: DaemonManager
     private let dockerToolSetupManager: DockerToolSetupManager
     private let onClientsNeeded: @MainActor () throws -> Void
+    private let containerRouteController: ContainerRouteController
 
     private static let signposter = OSSignposter(
         subsystem: "com.arcboxlabs.desktop", category: "startup")
@@ -161,6 +162,14 @@ public final class StartupOrchestrator {
         self.daemonManager = daemonManager
         self.dockerToolSetupManager = dockerToolSetupManager
         self.onClientsNeeded = onClientsNeeded
+        self.containerRouteController = ContainerRouteController(
+            addRouteInterface: { subnet, iface in
+                try await helperManager.addRouteInterface(subnet: subnet, iface: iface)
+            },
+            removeRouteInterface: { subnet, iface in
+                try await helperManager.removeRouteInterface(subnet: subnet, iface: iface)
+            }
+        )
 
         var statuses: [StartupStep: StepStatus] = [:]
         for step in StartupStep.allCases {
@@ -289,58 +298,22 @@ public final class StartupOrchestrator {
             try self.onClientsNeeded()
         }
 
-        // After daemon is fully ready, install host routes for container
-        // subnets via the vmnet bridge. This enables `curl http://172.17.0.2/`
-        // from the host without -p port mapping.
-        Task {
-            await self.installContainerRoutes()
-        }
+        // Route lifecycle is owned by the daemon (via arcbox-helperctl).
+        // Desktop no longer installs or removes routes.
     }
 
     // MARK: - Container Route Installation
 
     /// Installs a host route for container subnets via the vmnet bridge interface.
-    ///
-    /// With proxy ARP enabled on the guest's bridge NIC, the guest answers ARP
-    /// requests for container IPs (172.17.x.x) on bridge100. This means we can
-    /// use interface-based routing — no need to discover the guest's bridge IP.
+    /// Retries until the bridge interface appears or max attempts are exhausted.
     private func installContainerRoutes() async {
-        // Wait for VM to boot and bridge interface to appear.
-        try? await Task.sleep(for: .seconds(3))
-
-        // Find the vmnet bridge interface (bridge100, bridge101, etc.)
-        let bridgeIface = findBridgeInterface() ?? "bridge100"
-
-        do {
-            try await helperManager.addRouteInterface(
-                subnet: "172.16.0.0/12",
-                iface: bridgeIface
-            )
-            ClientLog.helper.info("Route installed: 172.16.0.0/12 -interface \(bridgeIface, privacy: .public)")
-        } catch {
-            ClientLog.helper.error("Failed to install route: \(error.localizedDescription, privacy: .public)")
-        }
+        await containerRouteController.installRoutes()
     }
 
-    /// Finds the vmnet bridge interface by checking bridge100-109.
-    private func findBridgeInterface() -> String? {
-        for i in 100..<110 {
-            let name = "bridge\(i)"
-            var ifr = ifreq()
-            name.withCString { cstr in
-                withUnsafeMutablePointer(to: &ifr.ifr_name) { ptr in
-                    _ = strcpy(UnsafeMutableRawPointer(ptr).assumingMemoryBound(to: CChar.self), cstr)
-                }
-            }
-            let fd = socket(AF_INET, SOCK_DGRAM, 0)
-            guard fd >= 0 else { continue }
-            defer { close(fd) }
-            // Check if interface exists by getting flags.
-            if ioctl(fd, UInt(0xc0206911) /* SIOCGIFFLAGS */, &ifr) == 0 {
-                return name
-            }
-        }
-        return nil
+    /// Removes the host route installed by installContainerRoutes.
+    /// Called on app shutdown.
+    func removeContainerRoutes() async {
+        await containerRouteController.removeRoutes()
     }
 
     // MARK: - Helper Setup

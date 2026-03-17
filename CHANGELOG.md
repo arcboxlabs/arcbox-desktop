@@ -1,5 +1,85 @@
 # Changelog
 
+## [1.9.6](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.5...v1.9.6) (2026-03-17)
+
+
+### Bug Fixes
+
+* **helper:** check approval status after initial registration ([7c424bf](https://github.com/arcboxlabs/arcbox-desktop/commit/7c424bffbee2a58d86db59dcc22f54fda20e7131))
+* **helper:** query bridge interfaces individually for Address cache ([0d5eb5a](https://github.com/arcboxlabs/arcbox-desktop/commit/0d5eb5ac726761bd4587549a7a382359352c6739))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.2.5 ([#48](https://github.com/arcboxlabs/arcbox-desktop/issues/48)) ([8af214a](https://github.com/arcboxlabs/arcbox-desktop/commit/8af214a4e77363902afb5b1b031b40c473769b6f))
+
+
+### Documentation
+
+* add README ([8c2f5a6](https://github.com/arcboxlabs/arcbox-desktop/commit/8c2f5a629f151fef006cd3b33c81842ad9d1f495))
+
+## [1.9.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.4...v1.9.5) (2026-03-17)
+
+
+### Bug Fixes
+
+* **boot:** use SHA256 to detect and replace stale agent/runtime binaries ([498216a](https://github.com/arcboxlabs/arcbox-desktop/commit/498216a3bda877118205164c272a5d9c10ed6575))
+* **helper:** handle non-bridge stale routes in ensureRoute/removeRoute ([cfc91d6](https://github.com/arcboxlabs/arcbox-desktop/commit/cfc91d6eaa10f0706e7e30d3c11c152a59ec24c6))
+
+## [1.9.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.3...v1.9.4) (2026-03-17)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.2.4 ([#44](https://github.com/arcboxlabs/arcbox-desktop/issues/44)) ([2cc3c60](https://github.com/arcboxlabs/arcbox-desktop/commit/2cc3c601ae64f0b48387e63f5c3f90b9a5737fcc))
+* **release:** unhide chore/docs/ci from changelog and version bumps ([83f3b73](https://github.com/arcboxlabs/arcbox-desktop/commit/83f3b7349c961c6f64c5af0adc6f83750b404310))
+
+## [1.9.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.2...v1.9.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* **helper:** force re-register helper on app update ([deda0ca](https://github.com/arcboxlabs/arcbox-desktop/commit/deda0ca24c7efc1b32a834e6307d7784e3c0eed8))
+
+## [1.9.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.1...v1.9.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* **helper:** normalize MAC addresses before bridge resolution ([162c014](https://github.com/arcboxlabs/arcbox-desktop/commit/162c014b224558f5d989ede27bf070baeb53f6f0))
+
+## [1.9.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.0...v1.9.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* **build:** remove restricted com.apple.vm.networking entitlement ([75d4060](https://github.com/arcboxlabs/arcbox-desktop/commit/75d4060dc9ff5beb83094c21f72a27b97d01420c))
+
+## [1.9.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.3...v1.9.0) (2026-03-16)
+
+
+### Features
+
+* **net:** move route ownership to daemon, add helperctl + smart route ops ([e6076e0](https://github.com/arcboxlabs/arcbox-desktop/commit/e6076e06300092e89ae248f22654583fba179ccb))
+
+
+### Bug Fixes
+
+* **net:** bump protocol version, real error reporting, vmnet bridge identity ([93c1003](https://github.com/arcboxlabs/arcbox-desktop/commit/93c10032110e03db477eeb17d5257bddc967b143))
+* **net:** route retry/reconcile and cleanup on shutdown ([85fb92c](https://github.com/arcboxlabs/arcbox-desktop/commit/85fb92c2e4ee2c09cd04a830c5b95888efd17950))
+
+
+### Refactoring
+
+* **helper:** merge helperctl into ArcBoxHelper as route subcommand ([e4b4a22](https://github.com/arcboxlabs/arcbox-desktop/commit/e4b4a22a3cd906b2165a632a6012288c21f593c9))
+
+## [1.8.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.2...v1.8.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* **net:** add com.apple.vm.networking entitlement for vmnet bridge ([d106943](https://github.com/arcboxlabs/arcbox-desktop/commit/d10694321a20143f657adf267c8d96bdfa4c1a85))
+
 ## [1.8.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.8.1...v1.8.2) (2026-03-16)
 
 

@@ -20,7 +20,7 @@ PROTO_TMPDIR=""
 
 GITHUB_REPO="arcbox-labs/arcbox"
 GITHUB_BRANCH="main"
-GITHUB_PROTO_PATH="crates/arcbox-protocol/proto"
+GITHUB_PROTO_PATH="rpc/arcbox-protocol/proto"
 
 PROTOS=(
     "common.proto"
@@ -43,8 +43,7 @@ trap cleanup EXIT
 # Try to find local proto directory
 find_local_proto() {
     local candidates=(
-        "${SCRIPT_DIR}/../../arcbox/crates/arcbox-protocol/proto"
-        "${SCRIPT_DIR}/../../../arcbox/crates/arcbox-protocol/proto"
+        "${SCRIPT_DIR}/../../../arcbox/rpc/arcbox-protocol/proto"
     )
     for dir in "${candidates[@]}"; do
         if [ -d "$dir" ]; then

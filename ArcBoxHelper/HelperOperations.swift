@@ -247,6 +247,44 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         }
     }
 
+    func removeRouteInterface(subnet: String, iface: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("removeRouteInterface: \(subnet, privacy: .public) -interface \(iface, privacy: .public)")
+        guard isValidCIDR(subnet) else {
+            reply(makeError("Invalid subnet"))
+            return
+        }
+        guard iface.hasPrefix("bridge"), iface.dropFirst(6).allSatisfy(\.isNumber) else {
+            reply(makeError("Invalid interface: \(iface)"))
+            return
+        }
+
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = ["-n", "delete", "-net", subnet, "-interface", iface]
+        let pipe = Pipe()
+        proc.standardError = pipe
+
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            reply(error as NSError)
+            return
+        }
+
+        if proc.terminationStatus == 0 {
+            reply(nil)
+        } else {
+            let stderr = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            // "not in table" means route already gone — not an error.
+            if stderr.contains("not in table") {
+                reply(nil)
+            } else {
+                reply(makeError("route delete failed (exit \(proc.terminationStatus)): \(stderr)"))
+            }
+        }
+    }
+
     func removeRouteGateway(subnet: String, gateway: String, reply: @escaping (NSError?) -> Void) {
         HelperLog.ops.info("removeRouteGateway: \(subnet, privacy: .public) via \(gateway, privacy: .public)")
         guard isValidCIDR(subnet), isValidIPv4(gateway) else {
@@ -266,6 +304,218 @@ final class HelperOperations: NSObject, ArcBoxHelperProtocol {
         }
 
         reply(nil)
+    }
+
+    // MARK: - Operation 5: Smart route management
+
+    func ensureRoute(subnet: String, bridgeMac: String, reply: @escaping (NSString?, NSError?) -> Void) {
+        HelperLog.ops.info("ensureRoute: \(subnet, privacy: .public) mac=\(bridgeMac, privacy: .public)")
+
+        guard isValidCIDR(subnet) else {
+            reply(nil, makeError("Invalid subnet: \(subnet)"))
+            return
+        }
+        guard isValidMAC(bridgeMac) else {
+            reply(nil, makeError("Invalid MAC: \(bridgeMac)"))
+            return
+        }
+
+        // Resolve: bridgeMac → vmenet member → bridge interface.
+        guard let bridgeIface = resolveBridgeByMAC(bridgeMac) else {
+            reply(nil, makeError("No bridge found for MAC \(bridgeMac)"))
+            return
+        }
+
+        // Check existing route. currentRouteInfo returns the interface for ANY
+        // existing route (not just bridge*), so we can detect and replace stale
+        // routes that point to en0, utun, or a gateway.
+        let current = currentRouteInfo(for: subnet)
+        if current.iface == bridgeIface {
+            // Already correct.
+            let json = #"{"ok":true,"bridge":"\#(bridgeIface)","changed":false}"#
+            reply(json as NSString, nil)
+            return
+        }
+
+        // Remove stale route regardless of what interface it points to.
+        // Without this, route add returns "File exists" and the wrong route stays.
+        if let old = current.iface {
+            HelperLog.ops.info("ensureRoute: removing stale route via \(old, privacy: .public)")
+            if old.hasPrefix("bridge") {
+                runRoute(["-n", "delete", "-net", subnet, "-interface", old])
+            } else if let gw = current.gateway {
+                runRoute(["-n", "delete", "-net", subnet, gw])
+            } else {
+                runRoute(["-n", "delete", "-net", subnet])
+            }
+        }
+
+        // Install new route.
+        let (ok, stderr) = runRoute(["-n", "add", "-net", subnet, "-interface", bridgeIface])
+        if ok || stderr.contains("File exists") {
+            let json = #"{"ok":true,"bridge":"\#(bridgeIface)","changed":true}"#
+            reply(json as NSString, nil)
+        } else {
+            reply(nil, makeError("route add failed: \(stderr)"))
+        }
+    }
+
+    func removeRoute(subnet: String, reply: @escaping (NSError?) -> Void) {
+        HelperLog.ops.info("removeRoute: \(subnet, privacy: .public)")
+        guard isValidCIDR(subnet) else {
+            reply(makeError("Invalid subnet"))
+            return
+        }
+
+        let current = currentRouteInfo(for: subnet)
+        if let iface = current.iface {
+            let args: [String]
+            if iface.hasPrefix("bridge") {
+                args = ["-n", "delete", "-net", subnet, "-interface", iface]
+            } else if let gw = current.gateway {
+                args = ["-n", "delete", "-net", subnet, gw]
+            } else {
+                args = ["-n", "delete", "-net", subnet]
+            }
+            let (ok, stderr) = runRoute(args)
+            if ok || stderr.contains("not in table") {
+                reply(nil)
+            } else {
+                reply(makeError("route delete failed: \(stderr)"))
+            }
+        } else {
+            reply(nil) // No route exists, nothing to do.
+        }
+    }
+
+    func routeStatus(subnet: String, reply: @escaping (NSString?) -> Void) {
+        guard isValidCIDR(subnet) else {
+            reply(nil)
+            return
+        }
+        let current = currentRouteInfo(for: subnet)
+        if let iface = current.iface {
+            reply(#"{"installed":true,"interface":"\#(iface)","subnet":"\#(subnet)"}"# as NSString)
+        } else {
+            reply(#"{"installed":false,"subnet":"\#(subnet)"}"# as NSString)
+        }
+    }
+
+    // MARK: - Bridge resolution (MAC → vmenet → bridge)
+
+    /// Resolves a bridge MAC to a bridge interface name.
+    ///
+    /// `ifconfig -a` omits the Address cache section on macOS; only per-interface
+    /// queries (`ifconfig bridgeN`) include it. So we first enumerate bridge
+    /// interfaces with vmenet members, then query each individually.
+    private func resolveBridgeByMAC(_ mac: String) -> String? {
+        let bridges = findBridgesWithVmenet()
+        guard !bridges.isEmpty else { return nil }
+
+        let normalizedTarget = normalizeMAC(mac)
+
+        for bridge in bridges {
+            guard let output = runCommand("/sbin/ifconfig", [bridge]) else { continue }
+            for line in output.components(separatedBy: .newlines) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                let firstToken = String(trimmed.prefix(while: { $0 != " " }))
+                if firstToken.contains(":") && normalizeMAC(firstToken) == normalizedTarget {
+                    return bridge
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Returns names of bridge interfaces that have a vmenet member.
+    private func findBridgesWithVmenet() -> [String] {
+        guard let output = runCommand("/sbin/ifconfig", ["-a"]) else { return [] }
+        var bridges: [String] = []
+        var currentBridge: String?
+
+        for line in output.components(separatedBy: .newlines) {
+            if !line.hasPrefix("\t") && !line.hasPrefix(" ") && line.contains(": flags=") {
+                let name = String(line.prefix(while: { $0 != ":" }))
+                currentBridge = name.hasPrefix("bridge") ? name : nil
+            } else if let bridge = currentBridge, line.contains("member: vmenet") {
+                bridges.append(bridge)
+            }
+        }
+        return bridges
+    }
+
+    /// Normalize a MAC address to lowercase with zero-padded octets.
+    /// e.g. "2:ce:56:c:72:f1" → "02:ce:56:0c:72:f1"
+    private func normalizeMAC(_ mac: String) -> String {
+        mac.lowercased()
+            .split(separator: ":")
+            .map { $0.count == 1 ? "0\($0)" : String($0) }
+            .joined(separator: ":")
+    }
+
+    /// Route info returned by `route -n get`.
+    private struct RouteInfo {
+        var iface: String?
+        var gateway: String?
+    }
+
+    /// Queries the current route for a subnet via `route -n get`.
+    /// Returns both the interface and gateway so callers can properly delete
+    /// any type of route (interface-based or gateway-based).
+    private func currentRouteInfo(for subnet: String) -> RouteInfo {
+        let addr = subnet.split(separator: "/").first.map(String.init) ?? subnet
+        guard let output = runCommand("/sbin/route", ["-n", "get", addr]) else {
+            return RouteInfo()
+        }
+
+        var info = RouteInfo()
+        for line in output.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("interface:") {
+                info.iface = trimmed.dropFirst("interface:".count)
+                    .trimmingCharacters(in: .whitespaces)
+            } else if trimmed.hasPrefix("gateway:") {
+                info.gateway = trimmed.dropFirst("gateway:".count)
+                    .trimmingCharacters(in: .whitespaces)
+            }
+        }
+        return info
+    }
+
+    /// Runs /sbin/route with args. Returns (success, stderr).
+    private func runRoute(_ args: [String]) -> (Bool, String) {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/sbin/route")
+        proc.arguments = args
+        let pipe = Pipe()
+        proc.standardError = pipe
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            return (false, error.localizedDescription)
+        }
+        let stderr = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return (proc.terminationStatus == 0, stderr)
+    }
+
+    /// Runs a command and returns stdout, or nil on failure.
+    private func runCommand(_ path: String, _ args: [String]) -> String? {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: path)
+        proc.arguments = args
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch { return nil }
+        return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)
+    }
+
+    private func isValidMAC(_ mac: String) -> Bool {
+        let parts = mac.split(separator: ":")
+        return parts.count == 6 && parts.allSatisfy { $0.count <= 2 && $0.allSatisfy(\.isHexDigit) }
     }
 
     func getVersion(reply: @escaping (Int) -> Void) {
