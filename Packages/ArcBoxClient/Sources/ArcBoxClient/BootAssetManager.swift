@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Observation
 import OSLog
@@ -315,9 +316,10 @@ public final class BootAssetManager {
                     continue
                 }
 
-                if fm.fileExists(atPath: dst) {
+                if fm.fileExists(atPath: dst), fileSHA256(src) == fileSHA256(dst) {
                     continue
                 }
+                try? fm.removeItem(atPath: dst)
 
                 ClientLog.startup.info("Seeding runtime binary: \(relativePath, privacy: .public)")
                 do {
@@ -349,12 +351,15 @@ public final class BootAssetManager {
                 return
             }
 
-            if fm.fileExists(atPath: destPath) {
+            if fm.fileExists(atPath: destPath),
+               fileSHA256(bundleBin.path) == fileSHA256(destPath)
+            {
                 return
             }
 
             do {
                 try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+                try? fm.removeItem(atPath: destPath)
                 try fm.copyItem(atPath: bundleBin.path, toPath: destPath)
                 ClientLog.startup.info("Seeded arcbox-agent → \(destPath, privacy: .public)")
             } catch {
@@ -390,4 +395,11 @@ public final class BootAssetManager {
         }
         return nil
     }
+}
+
+/// SHA-256 digest of a file's contents. Returns nil on read failure.
+private func fileSHA256(_ path: String) -> String? {
+    guard let data = FileManager.default.contents(atPath: path) else { return nil }
+    let digest = SHA256.hash(data: data)
+    return digest.map { String(format: "%02x", $0) }.joined()
 }
