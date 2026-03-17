@@ -68,11 +68,10 @@ public final class DNSServer: @unchecked Sendable {
         readSource.setEventHandler { [weak self] in
             self?.handleIncoming()
         }
+        let capturedFd = sock
         readSource.setCancelHandler { [weak self] in
-            if let fd = self?.fd, fd >= 0 {
-                Darwin.close(fd)
-                self?.fd = -1
-            }
+            Darwin.close(capturedFd)
+            self?.fd = -1
         }
         readSource.resume()
         source = readSource
@@ -252,7 +251,8 @@ public final class DNSServer: @unchecked Sendable {
 
     /// Parse a DNS domain name from a packet starting at `offset`.
     /// Returns the dotted name and the byte offset after the name.
-    private func parseDomainName(_ packet: [UInt8], offset: Int) -> (String, Int)? {
+    private func parseDomainName(_ packet: [UInt8], offset: Int, depth: Int = 0) -> (String, Int)? {
+        guard depth < 10 else { return nil } // prevent infinite recursion from pointer cycles
         var labels: [String] = []
         var pos = offset
 
@@ -266,7 +266,7 @@ public final class DNSServer: @unchecked Sendable {
             if length & 0xC0 == 0xC0 {
                 guard pos + 1 < packet.count else { return nil }
                 let ptrOffset = Int(length & 0x3F) << 8 | Int(packet[pos + 1])
-                guard let (name, _) = parseDomainName(packet, offset: ptrOffset) else { return nil }
+                guard let (name, _) = parseDomainName(packet, offset: ptrOffset, depth: depth + 1) else { return nil }
                 let remaining = name.split(separator: ".").map(String.init)
                 labels.append(contentsOf: remaining)
                 pos += 2
