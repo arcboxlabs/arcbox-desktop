@@ -119,9 +119,14 @@ public final class DaemonManager {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
                 process.arguments = ["bootout", serviceName]
-                try? process.run()
-                process.waitUntilExit()
-                return process.terminationStatus
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+                    return process.terminationStatus
+                } catch {
+                    ClientLog.daemon.error("bootout launch failed: \(error.localizedDescription, privacy: .public)")
+                    return Int32(-1)
+                }
             }.value
             ClientLog.daemon.info("bootout exit code: \(bootoutResult, privacy: .public)")
 
