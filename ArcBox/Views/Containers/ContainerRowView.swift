@@ -13,6 +13,16 @@ struct ContainerRowView: View {
 
     private var isStopped: Bool { !container.isRunning && !container.isTransitioning }
 
+    /// Port mappings that can be opened as links.
+    /// With a container IP, all ports are reachable via arcbox.local.
+    /// Without one, only ports with a valid host mapping (hostPort > 0) are useful.
+    private var linkablePorts: [PortMapping] {
+        if container.ipAddress != nil {
+            return container.ports
+        }
+        return container.ports.filter { $0.hostPort > 0 }
+    }
+
     /// Generate a consistent color based on image name
     private var containerColor: Color {
         let colors: [Color] = [
@@ -25,13 +35,15 @@ struct ContainerRowView: View {
         return colors[abs(hash) % colors.count]
     }
 
-    private func openContainerURL(port: UInt16) {
-        // Prefer arcbox.local domain (resolves to container's real IP via DNS)
+    private func openContainerURL(mapping: PortMapping) {
+        // Prefer arcbox.local domain (resolves to container's real IP via DNS).
+        // Use containerPort for arcbox.local (service listens on that port inside the container).
+        // Use hostPort for localhost (port forwarded to the host).
         let urlString: String
         if let domain = container.arcboxDomain, container.ipAddress != nil {
-            urlString = "http://\(domain):\(port)"
+            urlString = "http://\(domain):\(mapping.containerPort)"
         } else {
-            urlString = "http://localhost:\(port)"
+            urlString = "http://localhost:\(mapping.hostPort)"
         }
         if let url = URL(string: urlString) {
             NSWorkspace.shared.open(url)
@@ -106,20 +118,26 @@ struct ContainerRowView: View {
             if isHovered || isSelected {
                 HStack(spacing: 4) {
                     // Link button for containers with port mappings
-                    if !container.hostPorts.isEmpty {
-                        if container.hostPorts.count == 1,
-                           let port = container.hostPorts.first
+                    if !linkablePorts.isEmpty {
+                        if linkablePorts.count == 1,
+                           let mapping = linkablePorts.first
                         {
                             IconButton(
                                 symbol: "link",
-                                action: { openContainerURL(port: port) },
+                                action: { openContainerURL(mapping: mapping) },
                                 color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                             )
                         } else {
                             Menu {
-                                ForEach(container.hostPorts, id: \.self) { port in
-                                    Button(container.arcboxDomain != nil && container.ipAddress != nil ? "\(container.arcboxDomain!):\(port)" : "localhost:\(port)") {
-                                        openContainerURL(port: port)
+                                ForEach(linkablePorts) { mapping in
+                                    if let domain = container.arcboxDomain, container.ipAddress != nil {
+                                        Button("\(domain):\(mapping.containerPort)") {
+                                            openContainerURL(mapping: mapping)
+                                        }
+                                    } else {
+                                        Button("localhost:\(mapping.hostPort)") {
+                                            openContainerURL(mapping: mapping)
+                                        }
                                     }
                                 }
                             } label: {
