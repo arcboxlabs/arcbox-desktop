@@ -492,7 +492,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStart(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: true)
                     } catch {
-                      await Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                      await MainActor.run { Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -514,7 +514,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStop(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: false)
                     } catch {
-                      await Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                      await MainActor.run { Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -533,7 +533,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
                         await self?.removeContainerLocally(id)
                     } catch {
-                      await Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                      await MainActor.run { Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
