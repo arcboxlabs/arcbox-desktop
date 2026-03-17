@@ -7,9 +7,9 @@
     {"type": "fix", "section": "Bug Fixes"},
     {"type": "refactor", "section": "Refactoring"},
     {"type": "perf", "section": "Performance"},
-    {"type": "chore", "section": "Miscellaneous", "hidden": true},
-    {"type": "docs", "section": "Documentation", "hidden": true},
-    {"type": "ci", "section": "CI", "hidden": true}
+    {"type": "chore", "section": "Miscellaneous"},
+    {"type": "docs", "section": "Documentation"},
+    {"type": "ci", "section": "CI"}
   ],
   "packages": {
     ".": {
