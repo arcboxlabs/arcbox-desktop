@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Shows a floating "Coming Soon" panel centered on screen.
+@MainActor
 func showComingSoonPanel() {
     let panel = NSPanel(
         contentRect: NSRect(x: 0, y: 0, width: 280, height: 260),
