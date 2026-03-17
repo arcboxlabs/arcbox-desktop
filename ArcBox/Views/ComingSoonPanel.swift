@@ -9,7 +9,7 @@ func showComingSoonPanel() {
         backing: .buffered,
         defer: false
     )
-    panel.isReleasedWhenClosed = false
+    panel.isReleasedWhenClosed = true
     panel.titleVisibility = .hidden
     panel.titlebarAppearsTransparent = true
     panel.isOpaque = false
@@ -18,8 +18,8 @@ func showComingSoonPanel() {
     panel.center()
 
     let hostingView = NSHostingView(
-        rootView: ComingSoonContent(onDismiss: {
-            panel.close()
+        rootView: ComingSoonContent(onDismiss: { [weak panel] in
+            panel?.close()
         }))
     hostingView.wantsLayer = true
     hostingView.layer?.cornerRadius = 20
