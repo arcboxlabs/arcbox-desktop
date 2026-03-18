@@ -52,7 +52,7 @@ public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
     /// Whether failure of this step should abort the startup sequence.
     public var isCritical: Bool {
         switch self {
-        case .ensureAssets, .enableDaemon, .initClients: return true
+        case .ensureAssets, .seedRuntime, .setupHelper, .enableDaemon, .initClients: return true
         default: return false
         }
     }
@@ -99,9 +99,10 @@ private enum StartupError: LocalizedError {
 ///
 /// Steps are organized into phases:
 /// - Phase 1: `ensureAssets` (critical, blocks everything)
-/// - Phase 2: Non-critical steps (helper, CLI, Docker, runtime) run as
-///   fire-and-forget background tasks. The critical daemon path
-///   (enableDaemon -> initClients) blocks readiness.
+/// - Phase 2a: Non-critical steps (CLI, Docker) run as fire-and-forget
+///   background tasks.
+/// - Phase 2b: Critical preconditions (`seedRuntime` + `setupHelper` in
+///   parallel), then `enableDaemon` → `initClients`.
 @Observable
 @MainActor
 public final class StartupOrchestrator {
@@ -139,7 +140,6 @@ public final class StartupOrchestrator {
     private let daemonManager: DaemonManager
     private let dockerToolSetupManager: DockerToolSetupManager
     private let onClientsNeeded: @MainActor () throws -> Void
-    private let containerRouteController: ContainerRouteController
 
     private static let signposter = OSSignposter(
         subsystem: "com.arcboxlabs.desktop", category: "startup")
@@ -162,14 +162,6 @@ public final class StartupOrchestrator {
         self.daemonManager = daemonManager
         self.dockerToolSetupManager = dockerToolSetupManager
         self.onClientsNeeded = onClientsNeeded
-        self.containerRouteController = ContainerRouteController(
-            addRouteInterface: { subnet, iface in
-                try await helperManager.addRouteInterface(subnet: subnet, iface: iface)
-            },
-            removeRouteInterface: { subnet, iface in
-                try await helperManager.removeRouteInterface(subnet: subnet, iface: iface)
-            }
-        )
 
         var statuses: [StartupStep: StepStatus] = [:]
         for step in StartupStep.allCases {
@@ -246,11 +238,6 @@ public final class StartupOrchestrator {
     private func launchNonCriticalSteps() {
         nonCriticalTasks = [
             Task {
-                await self.runStep(.setupHelper) {
-                    try await self.performSetupHelper()
-                }
-            },
-            Task {
                 await self.runStep(.cliSetup) {
                     let cli = try CLIRunner()
                     try await cli.run(arguments: ["setup", "install"])
@@ -259,12 +246,6 @@ public final class StartupOrchestrator {
             Task {
                 await self.runStep(.dockerToolSetup) {
                     await self.dockerToolSetupManager.installAndEnable()
-                }
-            },
-            Task {
-                await self.runStep(.seedRuntime) {
-                    await self.bootAssetManager.seedRuntimeBinaries()
-                    await self.bootAssetManager.seedAgentBinary()
                 }
             },
         ]
@@ -278,9 +259,38 @@ public final class StartupOrchestrator {
         nonCriticalTasks = []
     }
 
-    /// Critical daemon startup: monitoring -> enable -> init clients.
-    /// Each step must succeed for the next to proceed.
+    /// Critical startup path: preconditions → daemon → clients.
+    ///
+    /// seedRuntime and setupHelper run in parallel (no mutual dependency),
+    /// but both must succeed before enableDaemon starts. The daemon requires
+    /// runtime binaries on disk (seedRuntime) and the helper XPC daemon
+    /// running (setupHelper) for route installation.
     private func runDaemonPath() async {
+        // Phase 2b.1: Run seedRuntime and setupHelper in parallel.
+        // They write to disjoint paths — no shared resources.
+        async let seedOK = runStep(.seedRuntime) {
+            try await self.bootAssetManager.seedRuntimeBinaries()
+            try await self.bootAssetManager.seedAgentBinary()
+        }
+        async let helperOK = runStep(.setupHelper) {
+            try await self.performSetupHelper()
+        }
+
+        let seedResult = await seedOK
+        let helperResult = await helperOK
+        let preconditionsMet = seedResult && helperResult
+
+        guard preconditionsMet else {
+            // Skip remaining steps if either precondition failed.
+            for step in [StartupStep.enableDaemon, .initClients] {
+                if stepStatuses[step] == .pending {
+                    stepStatuses[step] = .skipped
+                }
+            }
+            return
+        }
+
+        // Phase 2b.2: Start daemon (preconditions guaranteed met).
         let daemonOK = await runStep(.enableDaemon) {
             self.daemonManager.startMonitoring()
             await self.daemonManager.enableDaemon()
@@ -294,26 +304,13 @@ public final class StartupOrchestrator {
             return
         }
 
+        // Phase 2b.3: Connect clients.
         await runStep(.initClients) {
             try self.onClientsNeeded()
         }
 
-        // Route lifecycle is owned by the daemon (via arcbox-helperctl).
-        // Desktop no longer installs or removes routes.
-    }
-
-    // MARK: - Container Route Installation
-
-    /// Installs a host route for container subnets via the vmnet bridge interface.
-    /// Retries until the bridge interface appears or max attempts are exhausted.
-    private func installContainerRoutes() async {
-        await containerRouteController.installRoutes()
-    }
-
-    /// Removes the host route installed by installContainerRoutes.
-    /// Called on app shutdown.
-    func removeContainerRoutes() async {
-        await containerRouteController.removeRoutes()
+        // Route lifecycle is owned by the daemon (via route_reconciler).
+        // Desktop does not install or remove routes.
     }
 
     // MARK: - Helper Setup

@@ -285,16 +285,19 @@ public final class BootAssetManager {
         return "\(home)/.arcbox/runtime"
     }()
 
-    /// Seed bundled runtime binaries (dockerd, containerd, k3s, etc.) from
+    /// Seed bundled runtime binaries (dockerd, containerd, etc.) from
     /// `Contents/Resources/runtime/` to `~/.arcbox/runtime/`, preserving the
     /// subdirectory structure (bin/, kernel/, etc.).
-    public func seedRuntimeBinaries() async {
+    ///
+    /// Throws if any bundled file fails to copy. "No bundled runtime directory"
+    /// is not an error — the binaries may already be cached from a prior install.
+    public func seedRuntimeBinaries() async throws {
         let bundleDir = Bundle.main.bundleURL
             .appendingPathComponent("Contents/Resources/runtime")
 
         let destBase = Self.runtimeDir
 
-        await Task.detached(priority: .utility) {
+        try await Task.detached(priority: .utility) {
             let fm = FileManager.default
             guard fm.fileExists(atPath: bundleDir.path) else {
                 ClientLog.startup.info("No bundled runtime directory, skipping seed")
@@ -312,7 +315,7 @@ public final class BootAssetManager {
                 var isDir: ObjCBool = false
                 fm.fileExists(atPath: src, isDirectory: &isDir)
                 if isDir.boolValue {
-                    try? fm.createDirectory(atPath: dst, withIntermediateDirectories: true)
+                    try fm.createDirectory(atPath: dst, withIntermediateDirectories: true)
                     continue
                 }
 
@@ -322,21 +325,20 @@ public final class BootAssetManager {
                 try? fm.removeItem(atPath: dst)
 
                 ClientLog.startup.info("Seeding runtime binary: \(relativePath, privacy: .public)")
-                do {
-                    try fm.createDirectory(
-                        atPath: (dst as NSString).deletingLastPathComponent,
-                        withIntermediateDirectories: true)
-                    try fm.copyItem(atPath: src, toPath: dst)
-                } catch {
-                    ClientLog.startup.error("Failed to seed \(relativePath, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                }
+                try fm.createDirectory(
+                    atPath: (dst as NSString).deletingLastPathComponent,
+                    withIntermediateDirectories: true)
+                try fm.copyItem(atPath: src, toPath: dst)
             }
         }.value
     }
 
     /// Seed bundled arcbox-agent from `Contents/Resources/bin/` to `~/.arcbox/bin/`.
     /// The daemon expects the agent at `~/.arcbox/bin/arcbox-agent` for guest VMs.
-    public func seedAgentBinary() async {
+    ///
+    /// Throws if the bundled binary exists but the copy fails. "No bundled
+    /// arcbox-agent" is not an error — it may already be cached.
+    public func seedAgentBinary() async throws {
         let bundleBin = Bundle.main.bundleURL
             .appendingPathComponent("Contents/Resources/bin/arcbox-agent")
 
@@ -344,7 +346,7 @@ public final class BootAssetManager {
         let destDir = "\(home)/.arcbox/bin"
         let destPath = "\(destDir)/arcbox-agent"
 
-        await Task.detached(priority: .utility) {
+        try await Task.detached(priority: .utility) {
             let fm = FileManager.default
             guard fm.fileExists(atPath: bundleBin.path) else {
                 ClientLog.startup.info("No bundled arcbox-agent, skipping seed")
@@ -357,14 +359,10 @@ public final class BootAssetManager {
                 return
             }
 
-            do {
-                try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
-                try? fm.removeItem(atPath: destPath)
-                try fm.copyItem(atPath: bundleBin.path, toPath: destPath)
-                ClientLog.startup.info("Seeded arcbox-agent → \(destPath, privacy: .public)")
-            } catch {
-                ClientLog.startup.error("Failed to seed arcbox-agent: \(error.localizedDescription, privacy: .public)")
-            }
+            try fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+            try? fm.removeItem(atPath: destPath)
+            try fm.copyItem(atPath: bundleBin.path, toPath: destPath)
+            ClientLog.startup.info("Seeded arcbox-agent → \(destPath, privacy: .public)")
         }.value
     }
 

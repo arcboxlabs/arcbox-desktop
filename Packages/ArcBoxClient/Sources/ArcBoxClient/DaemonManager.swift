@@ -109,9 +109,10 @@ public final class DaemonManager {
         }
 
         if !isReachable {
+            let msg = "Daemon registered but not responding after 10s. Check Console.app for launch errors."
             ClientLog.daemon.warning("Daemon registered but not reachable after 10s")
-            errorMessage = "Daemon registered but not responding. Check Console.app for launch errors."
-            state = .registered
+            errorMessage = msg
+            state = .error(msg)
         } else {
             state = .running
         }
