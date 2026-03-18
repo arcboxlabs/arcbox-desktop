@@ -305,7 +305,10 @@ public final class BootAssetManager {
             }
 
             guard let enumerator = fm.enumerator(atPath: bundleDir.path) else {
-                return
+                throw NSError(
+                    domain: "BootAssetManager",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to enumerate runtime directory at \(bundleDir.path)"])
             }
 
             while let relativePath = enumerator.nextObject() as? String {
