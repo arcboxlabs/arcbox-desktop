@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.0...v1.10.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* **startup:** reorder preconditions to prevent daemon race conditions ([c856a1e](https://github.com/arcboxlabs/arcbox-desktop/commit/c856a1e8e14116dc36d4db7d7fdb6eff9f8b1f89))
+* **startup:** throw on enumerator failure, restore test target ([5d48f94](https://github.com/arcboxlabs/arcbox-desktop/commit/5d48f94501fa8c2ce53ae41de25bb14635cc7ab6))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.2.7 ([#52](https://github.com/arcboxlabs/arcbox-desktop/issues/52)) ([01c7950](https://github.com/arcboxlabs/arcbox-desktop/commit/01c7950e875e87539833949627b9419cf866de1c))
+
 ## [1.10.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.6...v1.10.0) (2026-03-17)
 
 
