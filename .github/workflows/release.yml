@@ -226,19 +226,10 @@ jobs:
         if: steps.prebuilt.outputs.found != 'true'
         timeout-minutes: 15
         working-directory: arcbox-core
-        run: cargo build --release --locked -p arcbox-cli -p arcbox-daemon
+        run: cargo build --release --locked -p arcbox-cli -p arcbox-daemon -p arcbox-helper
 
-      - name: Prefetch boot-assets
-        working-directory: arcbox-core
-        run: |
-          codesign --entitlements tests/resources/entitlements.plist \
-            --force -s - target/release/arcbox-daemon
-          codesign --force -s - target/release/abctl
-          target/release/abctl boot prefetch
-
-      - name: Download Docker CLI tools
-        working-directory: arcbox-core
-        run: target/release/abctl docker setup
+      - name: Prefetch boot assets + Docker tools
+        run: make prefetch ARCBOX_DIR="${{ github.workspace }}/arcbox-core" SKIP_BUILD=1
 
       - name: Download pstramp
         env:
@@ -275,16 +266,15 @@ jobs:
 
       - name: Build DMG
         id: dmg
-        env:
-          DESKTOP_REPO: ${{ github.workspace }}
-          ARCBOX_DIR: ${{ github.workspace }}/arcbox-core
-          VERSION: ${{ steps.version.outputs.version }}
-          SPARKLE_FEED_URL: "https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml"
         run: |
-          scripts/package-dmg.sh \
-            --sign "${{ secrets.APPLE_SIGNING_IDENTITY }}" \
-            --notarize
-          DMG_PATH=$(ls arcbox-core/target/ArcBox-*.dmg | head -1)
+          make dmg-release \
+            ARCBOX_DIR="${{ github.workspace }}/arcbox-core" \
+            SKIP_BUILD=1 \
+            SIGN_IDENTITY="${{ secrets.APPLE_SIGNING_IDENTITY }}" \
+            VERSION="${{ steps.version.outputs.version }}" \
+            SPARKLE_FEED_URL="https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml" \
+            NOTARIZE=1
+          DMG_PATH=$(ls "${{ github.workspace }}/arcbox-core/target/ArcBox-"*.dmg | head -1)
           DMG_NAME=$(basename "$DMG_PATH")
           echo "dmg=$DMG_NAME" >> "$GITHUB_OUTPUT"
           echo "dmg_path=$DMG_PATH" >> "$GITHUB_OUTPUT"
