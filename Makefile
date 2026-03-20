@@ -48,6 +48,7 @@ build-rust:
 		exit 1; \
 	fi
 	cd "$(ARCBOX_DIR)" && cargo build --release -p arcbox-cli -p arcbox-daemon -p arcbox-helper
+	cd "$(ARCBOX_DIR)" && make build-agent
 	cd "$(ARCBOX_DIR)" && make sign-daemon PROFILE=release
 
 prefetch:
