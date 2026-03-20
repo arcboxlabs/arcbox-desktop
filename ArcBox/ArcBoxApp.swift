@@ -18,7 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
-            daemonManager.stopMonitoring()
+            daemonManager.stopWatching()
             await daemonManager.disableDaemon()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
@@ -33,8 +33,6 @@ struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appVM = AppViewModel()
     @State private var daemonManager = DaemonManager()
-    @State private var bootAssetManager = BootAssetManager()
-    @State private var dockerToolSetupManager = DockerToolSetupManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
@@ -106,8 +104,6 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
-                .environment(bootAssetManager)
-                .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
@@ -117,28 +113,16 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.eventMonitor = eventMonitor
 
                     let orchestrator = StartupOrchestrator(
-                        bootAssetManager: bootAssetManager,
                         daemonManager: daemonManager,
-                        dockerToolSetupManager: dockerToolSetupManager,
-                        onClientsNeeded: { try initClientsIfNeeded() }
+                        onClientsNeeded: { try initClientsAndReturn() }
                     )
                     startupOrchestrator = orchestrator
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
-
-                    Task {
-                        try? await Task.sleep(for: StartupConstants.updateCheckDelay)
-                        await bootAssetManager.checkForUpdates()
-                    }
                 }
-                // Re-create clients whenever daemon transitions to running
-                // (covers the case where monitoring detects the daemon after
-                // the initial .task check has already passed).
-                // When login item approval is revoked and then re-granted,
-                // re-run helper setup and restart the daemon.
+                // When daemon transitions to running, start event monitor.
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
-                        try? initClientsIfNeeded()
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
                         }
@@ -155,18 +139,20 @@ struct ArcBoxDesktopApp: App {
         }
     }
 
-    private func initClientsIfNeeded() throws {
-        guard daemonManager.state.isRunning else { return }
-
+    /// Create clients and return the ArcBoxClient for the orchestrator.
+    private func initClientsAndReturn() throws -> ArcBoxClient {
         if dockerClient == nil {
             dockerClient = DockerClient()
         }
 
-        if arcboxClient == nil {
-            let client = try ArcBoxClient()
-            Task { try await client.runConnections() }
-            arcboxClient = client
+        if let existing = arcboxClient {
+            return existing
         }
+
+        let client = try ArcBoxClient()
+        Task { try await client.runConnections() }
+        arcboxClient = client
+        return client
     }
 }
 
