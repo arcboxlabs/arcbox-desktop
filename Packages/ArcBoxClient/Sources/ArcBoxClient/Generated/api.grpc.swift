@@ -1098,13 +1098,39 @@ public enum Arcbox_V1_SystemService {
                 method: "Prune"
             )
         }
+        /// Namespace for "GetSetupStatus" metadata.
+        public enum GetSetupStatus {
+            /// Request type for "GetSetupStatus".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "GetSetupStatus".
+            public typealias Output = Arcbox_V1_SetupStatus
+            /// Descriptor for "GetSetupStatus".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "GetSetupStatus"
+            )
+        }
+        /// Namespace for "WatchSetupStatus" metadata.
+        public enum WatchSetupStatus {
+            /// Request type for "WatchSetupStatus".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "WatchSetupStatus".
+            public typealias Output = Arcbox_V1_SetupStatus
+            /// Descriptor for "WatchSetupStatus".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "WatchSetupStatus"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.SystemService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetInfo.descriptor,
             GetVersion.descriptor,
             Ping.descriptor,
             Events.descriptor,
-            Prune.descriptor
+            Prune.descriptor,
+            GetSetupStatus.descriptor,
+            WatchSetupStatus.descriptor
         ]
     }
 }
@@ -1223,6 +1249,44 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_PruneRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_PruneResponse>
+
+        /// Handle the "GetSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets current daemon setup status. Used by desktop app to show
+        /// > startup progress without managing the daemon lifecycle.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SetupStatus` messages.
+        func getSetupStatus(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
+
+        /// Handle the "WatchSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams setup status updates. The server pushes a new message
+        /// > each time the daemon phase changes (e.g. VM starting → ready).
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SetupStatus` messages.
+        func watchSetupStatus(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
     }
 
     /// Service protocol for the "arcbox.v1.SystemService" service.
@@ -1326,6 +1390,44 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.ServerRequest<Arcbox_V1_PruneRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_PruneResponse>
+
+        /// Handle the "GetSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets current daemon setup status. Used by desktop app to show
+        /// > startup progress without managing the daemon lifecycle.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_SetupStatus` message.
+        func getSetupStatus(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SetupStatus>
+
+        /// Handle the "WatchSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams setup status updates. The server pushes a new message
+        /// > each time the daemon phase changes (e.g. VM starting → ready).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SetupStatus` messages.
+        func watchSetupStatus(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
     }
 
     /// Simple service protocol for the "arcbox.v1.SystemService" service.
@@ -1428,6 +1530,45 @@ extension Arcbox_V1_SystemService {
             request: Arcbox_V1_PruneRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_PruneResponse
+
+        /// Handle the "GetSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets current daemon setup status. Used by desktop app to show
+        /// > startup progress without managing the daemon lifecycle.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_SetupStatus` to respond with.
+        func getSetupStatus(
+            request: Arcbox_V1_Empty,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_SetupStatus
+
+        /// Handle the "WatchSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams setup status updates. The server pushes a new message
+        /// > each time the daemon phase changes (e.g. VM starting → ready).
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - response: A response stream of `Arcbox_V1_SetupStatus` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchSetupStatus(
+            request: Arcbox_V1_Empty,
+            response: GRPCCore.RPCWriter<Arcbox_V1_SetupStatus>,
+            context: GRPCCore.ServerContext
+        ) async throws
     }
 }
 
@@ -1485,6 +1626,28 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_PruneResponse>(),
             handler: { request, context in
                 try await self.prune(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.GetSetupStatus.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetupStatus>(),
+            handler: { request, context in
+                try await self.getSetupStatus(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.WatchSetupStatus.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetupStatus>(),
+            handler: { request, context in
+                try await self.watchSetupStatus(
                     request: request,
                     context: context
                 )
@@ -1549,6 +1712,28 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
             context: context
         )
         return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func getSetupStatus(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus> {
+        let response = try await self.getSetupStatus(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func watchSetupStatus(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus> {
+        let response = try await self.watchSetupStatus(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
     }
 }
 
@@ -1621,6 +1806,36 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
                 context: context
             ),
             metadata: [:]
+        )
+    }
+
+    public func getSetupStatus(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SetupStatus> {
+        return GRPCCore.ServerResponse<Arcbox_V1_SetupStatus>(
+            message: try await self.getSetupStatus(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func watchSetupStatus(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchSetupStatus(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
         )
     }
 }
@@ -1751,6 +1966,54 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_PruneResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_PruneResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets current daemon setup status. Used by desktop app to show
+        /// > startup progress without managing the daemon lifecycle.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SetupStatus` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getSetupStatus<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetupStatus>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams setup status updates. The server pushes a new message
+        /// > each time the daemon phase changes (e.g. VM starting → ready).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SetupStatus` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchSetupStatus<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetupStatus>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -1941,6 +2204,74 @@ extension Arcbox_V1_SystemService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "GetSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets current daemon setup status. Used by desktop app to show
+        /// > startup progress without managing the daemon lifecycle.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SetupStatus` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getSetupStatus<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetupStatus>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.GetSetupStatus.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "WatchSetupStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams setup status updates. The server pushes a new message
+        /// > each time the daemon phase changes (e.g. VM starting → ready).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SetupStatus` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchSetupStatus<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetupStatus>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.WatchSetupStatus.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2085,6 +2416,64 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_PruneRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_PruneResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetSetupStatus" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Gets current daemon setup status. Used by desktop app to show
+    /// > startup progress without managing the daemon lifecycle.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getSetupStatus<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getSetupStatus(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetupStatus>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchSetupStatus" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams setup status updates. The server pushes a new message
+    /// > each time the daemon phase changes (e.g. VM starting → ready).
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchSetupStatus<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchSetupStatus(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetupStatus>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2251,6 +2640,72 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.prune(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetSetupStatus" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Gets current daemon setup status. Used by desktop app to show
+    /// > startup progress without managing the daemon lifecycle.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getSetupStatus<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getSetupStatus(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchSetupStatus" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams setup status updates. The server pushes a new message
+    /// > each time the daemon phase changes (e.g. VM starting → ready).
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchSetupStatus<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchSetupStatus(
             request: request,
             options: options,
             onResponse: handleResponse
