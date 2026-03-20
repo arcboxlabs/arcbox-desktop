@@ -6,16 +6,11 @@ import OSLog
 // MARK: - Startup Constants
 
 /// Centralized timing constants for the startup sequence.
-/// Eliminates magic numbers scattered across DaemonManager, HelperManager, etc.
 public enum StartupConstants {
     public static let daemonPollTimeout: Duration = .seconds(10)
     public static let daemonPollInterval: Duration = .milliseconds(500)
     public static let daemonPollMaxAttempts = 20
     public static let healthMonitorInterval: Duration = .seconds(3)
-    public static let helperApprovalTimeout: Duration = .seconds(120)
-    public static let helperApprovalPollInterval: Duration = .seconds(2)
-    public static let helperApprovalMaxAttempts = 60
-    public static let xpcTimeout: TimeInterval = 10
     public static let daemonStopTimeout: Duration = .seconds(5)
     public static let daemonStopPollInterval: Duration = .milliseconds(500)
     public static let daemonStopMaxAttempts = 10
@@ -25,14 +20,17 @@ public enum StartupConstants {
 // MARK: - Startup Step
 
 /// Each discrete step in the startup sequence.
+///
+/// Privileged host setup (DNS resolver, Docker socket, routes) is handled
+/// by `arcbox-helper` (Rust tarpc daemon) invoked by the daemon's self-setup
+/// or by `arcbox install`. The desktop app no longer manages these.
 public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
     case ensureAssets = 0
-    case setupHelper = 1
-    case cliSetup = 2
-    case dockerToolSetup = 3
-    case seedRuntime = 4
-    case enableDaemon = 5   // Includes startMonitoring
-    case initClients = 6
+    case cliSetup = 1
+    case dockerToolSetup = 2
+    case seedRuntime = 3
+    case enableDaemon = 4   // Includes startMonitoring
+    case initClients = 5
 
     public var id: Int { rawValue }
 
@@ -40,7 +38,6 @@ public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
     public var label: String {
         switch self {
         case .ensureAssets:     return "Preparing boot assets"
-        case .setupHelper:     return "Registering privileged helper"
         case .cliSetup:        return "Installing CLI tools"
         case .dockerToolSetup: return "Setting up Docker tools"
         case .seedRuntime:     return "Seeding runtime binaries"
@@ -52,7 +49,7 @@ public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
     /// Whether failure of this step should abort the startup sequence.
     public var isCritical: Bool {
         switch self {
-        case .ensureAssets, .seedRuntime, .setupHelper, .enableDaemon, .initClients: return true
+        case .ensureAssets, .seedRuntime, .enableDaemon, .initClients: return true
         default: return false
         }
     }
@@ -101,8 +98,10 @@ private enum StartupError: LocalizedError {
 /// - Phase 1: `ensureAssets` (critical, blocks everything)
 /// - Phase 2a: Non-critical steps (CLI, Docker) run as fire-and-forget
 ///   background tasks.
-/// - Phase 2b: Critical preconditions (`seedRuntime` + `setupHelper` in
-///   parallel), then `enableDaemon` → `initClients`.
+/// - Phase 2b: `seedRuntime` → `enableDaemon` → `initClients`.
+///
+/// Privileged host setup (DNS, Docker socket, routes) is handled by the
+/// daemon via `arcbox-helper`. The desktop app is a pure display layer.
 @Observable
 @MainActor
 public final class StartupOrchestrator {
@@ -136,7 +135,6 @@ public final class StartupOrchestrator {
 
     // Dependencies
     private let bootAssetManager: BootAssetManager
-    private let helperManager: HelperManager
     private let daemonManager: DaemonManager
     private let dockerToolSetupManager: DockerToolSetupManager
     private let onClientsNeeded: @MainActor () throws -> Void
@@ -152,13 +150,11 @@ public final class StartupOrchestrator {
 
     public init(
         bootAssetManager: BootAssetManager,
-        helperManager: HelperManager,
         daemonManager: DaemonManager,
         dockerToolSetupManager: DockerToolSetupManager,
         onClientsNeeded: @escaping @MainActor () throws -> Void
     ) {
         self.bootAssetManager = bootAssetManager
-        self.helperManager = helperManager
         self.daemonManager = daemonManager
         self.dockerToolSetupManager = dockerToolSetupManager
         self.onClientsNeeded = onClientsNeeded
@@ -259,29 +255,14 @@ public final class StartupOrchestrator {
         nonCriticalTasks = []
     }
 
-    /// Critical startup path: preconditions → daemon → clients.
-    ///
-    /// seedRuntime and setupHelper run in parallel (no mutual dependency),
-    /// but both must succeed before enableDaemon starts. The daemon requires
-    /// runtime binaries on disk (seedRuntime) and the helper XPC daemon
-    /// running (setupHelper) for route installation.
+    /// Critical startup path: seedRuntime → daemon → clients.
     private func runDaemonPath() async {
-        // Phase 2b.1: Run seedRuntime and setupHelper in parallel.
-        // They write to disjoint paths — no shared resources.
-        async let seedOK = runStep(.seedRuntime) {
+        let seedOK = await runStep(.seedRuntime) {
             try await self.bootAssetManager.seedRuntimeBinaries()
             try await self.bootAssetManager.seedAgentBinary()
         }
-        async let helperOK = runStep(.setupHelper) {
-            try await self.performSetupHelper()
-        }
 
-        let seedResult = await seedOK
-        let helperResult = await helperOK
-        let preconditionsMet = seedResult && helperResult
-
-        guard preconditionsMet else {
-            // Skip remaining steps if either precondition failed.
+        guard seedOK else {
             for step in [StartupStep.enableDaemon, .initClients] {
                 if stepStatuses[step] == .pending {
                     stepStatuses[step] = .skipped
@@ -290,7 +271,7 @@ public final class StartupOrchestrator {
             return
         }
 
-        // Phase 2b.2: Start daemon (preconditions guaranteed met).
+        // Start daemon (runtime binaries guaranteed on disk).
         let daemonOK = await runStep(.enableDaemon) {
             self.daemonManager.startMonitoring()
             await self.daemonManager.enableDaemon()
@@ -304,49 +285,9 @@ public final class StartupOrchestrator {
             return
         }
 
-        // Phase 2b.3: Connect clients.
+        // Connect clients.
         await runStep(.initClients) {
             try self.onClientsNeeded()
-        }
-
-        // Route lifecycle is owned by the daemon (via route_reconciler).
-        // Desktop does not install or remove routes.
-    }
-
-    // MARK: - Helper Setup
-
-    /// Migrated from ArcBoxApp.setupHelper() — registers the privileged helper
-    /// and performs Docker socket, CLI tools, and DNS resolver setup.
-    /// Throws on registration failure so runStep can mark .failed.
-    private func performSetupHelper() async throws {
-        do {
-            try await helperManager.registerWithRetry()
-        } catch {
-            throw StartupError.stepFailed(
-                "Helper registration failed: \(error.localizedDescription)")
-        }
-
-        let socketPath = DaemonManager.dockerSocketPath
-        let bundlePath = Bundle.main.bundleURL.path
-
-        // Each operation is independent — run separately so one failure
-        // does not cancel the others.
-        do {
-            try await helperManager.setupDockerSocket(socketPath: socketPath)
-        } catch {
-            ClientLog.helper.error("setupDockerSocket failed: \(error.localizedDescription, privacy: .public)")
-        }
-
-        do {
-            try await helperManager.installCLITools(appBundlePath: bundlePath)
-        } catch {
-            ClientLog.helper.error("installCLITools failed: \(error.localizedDescription, privacy: .public)")
-        }
-
-        do {
-            try await helperManager.setupDNSResolver()
-        } catch {
-            ClientLog.helper.error("setupDNSResolver failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

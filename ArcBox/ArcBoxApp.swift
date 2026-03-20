@@ -3,7 +3,6 @@ import ArcBoxClient
 import DockerClient
 import OSLog
 @preconcurrency import Sentry
-import ServiceManagement
 import Sparkle
 import SwiftUI
 
@@ -11,32 +10,15 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
-    var helperManager: HelperManager?
     var eventMonitor: DockerEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
-    var isUninstalling = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
-        helperManager?.stopMonitoring()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
             daemonManager.stopMonitoring()
-
-            // Route cleanup is handled by the daemon on shutdown.
-
-            if isUninstalling, let helperManager {
-                // Teardown must complete before daemon is stopped, so that
-                // each helper operation can confirm the current state.
-                try? await helperManager.teardownDockerSocket()
-                try? await helperManager.uninstallCLITools()
-                try? await helperManager.teardownDNSResolver()
-                try? await SMAppService.daemon(
-                    plistName: "com.arcboxlabs.desktop.helper.plist"
-                ).unregister()
-            }
-
             await daemonManager.disableDaemon()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
@@ -51,7 +33,6 @@ struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appVM = AppViewModel()
     @State private var daemonManager = DaemonManager()
-    @State private var helperManager = HelperManager()
     @State private var bootAssetManager = BootAssetManager()
     @State private var dockerToolSetupManager = DockerToolSetupManager()
     @State private var arcboxClient: ArcBoxClient?
@@ -125,7 +106,6 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
-                .environment(helperManager)
                 .environment(bootAssetManager)
                 .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
@@ -134,19 +114,16 @@ struct ArcBoxDesktopApp: App {
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
-                    appDelegate.helperManager = helperManager
                     appDelegate.eventMonitor = eventMonitor
 
                     let orchestrator = StartupOrchestrator(
                         bootAssetManager: bootAssetManager,
-                        helperManager: helperManager,
                         daemonManager: daemonManager,
                         dockerToolSetupManager: dockerToolSetupManager,
                         onClientsNeeded: { try initClientsIfNeeded() }
                     )
                     startupOrchestrator = orchestrator
                     appDelegate.startupOrchestrator = orchestrator
-                    helperManager.startMonitoring()
                     await orchestrator.start()
 
                     Task {
@@ -159,14 +136,6 @@ struct ArcBoxDesktopApp: App {
                 // the initial .task check has already passed).
                 // When login item approval is revoked and then re-granted,
                 // re-run helper setup and restart the daemon.
-                .onChange(of: helperManager.requiresApproval) { oldValue, newValue in
-                    if oldValue == true, newValue == false {
-                        Log.startup.info("Login item re-approved — retrying startup")
-                        Task {
-                            await startupOrchestrator?.retry()
-                        }
-                    }
-                }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         try? initClientsIfNeeded()
