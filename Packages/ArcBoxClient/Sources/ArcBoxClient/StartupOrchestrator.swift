@@ -20,17 +20,19 @@ public enum StartupConstants {
 /// Each discrete step in the startup sequence.
 ///
 /// The daemon handles all provisioning (boot assets, runtime binaries, Docker
-/// tools). The desktop app only needs to register the LaunchAgent and connect
-/// the gRPC stream.
+/// tools). The desktop app registers the helper (privileged, one-time),
+/// starts the daemon LaunchAgent, and connects the gRPC stream.
 public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
-    case enableDaemon = 0
-    case connectAndWatch = 1
+    case installHelper = 0
+    case enableDaemon = 1
+    case connectAndWatch = 2
 
     public var id: Int { rawValue }
 
     /// Human-readable label shown in the progress UI.
     public var label: String {
         switch self {
+        case .installHelper:   return "Installing helper service"
         case .enableDaemon:    return "Starting daemon"
         case .connectAndWatch: return "Connecting to daemon"
         }
@@ -149,7 +151,13 @@ public final class StartupOrchestrator {
             stepStatuses[step] = .pending
         }
 
-        // Step 1: Register daemon with launchd.
+        // Step 1: Install privileged helper (one-time, macOS prompts for admin).
+        // Non-critical: daemon works without it, just no DNS/socket integration.
+        await runStep(.installHelper) {
+            await self.daemonManager.installHelper()
+        }
+
+        // Step 2: Register daemon with launchd.
         let daemonOK = await runStep(.enableDaemon) {
             await self.daemonManager.enableDaemon()
             if case .error(let msg) = self.daemonManager.state {
@@ -162,7 +170,7 @@ public final class StartupOrchestrator {
             return
         }
 
-        // Step 2: Connect gRPC and start watching setup status.
+        // Step 3: Connect gRPC and start watching setup status.
         let connectOK = await runStep(.connectAndWatch) {
             let client = try self.onClientsNeeded()
             self.daemonManager.connectAndWatch(client: client)

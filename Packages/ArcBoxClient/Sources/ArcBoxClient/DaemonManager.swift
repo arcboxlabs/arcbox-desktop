@@ -63,15 +63,51 @@ public final class DaemonManager {
     /// Last error message from enable/disable operations.
     public private(set) var errorMessage: String?
 
-    private nonisolated static let plistName = "com.arcboxlabs.desktop.daemon.plist"
+    private nonisolated static let daemonPlistName = "com.arcboxlabs.desktop.daemon.plist"
+    private nonisolated static let helperPlistName = "com.arcboxlabs.desktop.helper.plist"
 
-    private nonisolated var service: SMAppService {
-        SMAppService.agent(plistName: Self.plistName)
+    private nonisolated var daemonService: SMAppService {
+        SMAppService.agent(plistName: Self.daemonPlistName)
     }
+
+    private nonisolated var helperService: SMAppService {
+        SMAppService.daemon(plistName: Self.helperPlistName)
+    }
+
+    /// Whether the privileged helper is registered.
+    public private(set) var helperInstalled: Bool = false
 
     private var watchTask: Task<Void, Never>?
 
     public init() {}
+
+    // MARK: - Helper Lifecycle
+
+    /// Register the privileged helper as a system-level LaunchDaemon.
+    ///
+    /// macOS presents a native authorization prompt (password / Touch ID)
+    /// because this is a privileged operation. The helper binary and plist
+    /// must be embedded in the app bundle.
+    public func installHelper() async {
+        let status = helperService.status
+        ClientLog.daemon.info("Helper status: \(String(describing: status), privacy: .public)")
+
+        if status == .enabled {
+            helperInstalled = true
+            ClientLog.daemon.info("Helper already registered")
+            return
+        }
+
+        do {
+            try helperService.register()
+            helperInstalled = true
+            ClientLog.daemon.info("Helper registered successfully")
+        } catch {
+            // Non-fatal: daemon still works, just without DNS/socket integration.
+            helperInstalled = false
+            ClientLog.daemon.warning("Helper registration failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
 
     // MARK: - Daemon Lifecycle
 
@@ -86,14 +122,14 @@ public final class DaemonManager {
         let logDir = "\(home)/.arcbox/log"
         try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
 
-        let status = service.status
+        let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
 
         do {
             // Force re-register to ensure BundleProgram resolves against the current
             // app bundle path.
-            try? await service.unregister()
-            try service.register()
+            try? await daemonService.unregister()
+            try daemonService.register()
             ClientLog.daemon.info("Service registered successfully")
             state = .registered
         } catch {
@@ -110,7 +146,7 @@ public final class DaemonManager {
         state = .stopping
 
         do {
-            try await service.unregister()
+            try await daemonService.unregister()
         } catch {
             errorMessage = error.localizedDescription
         }
