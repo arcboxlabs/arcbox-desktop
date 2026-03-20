@@ -61,6 +61,35 @@ else
     echo "warning: No signing identity available; daemon signed ad-hoc (SMAppService will not work)"
 fi
 
+# Copy com.arcboxlabs.desktop.helper → Contents/Library/HelperTools/
+# SMAppService.daemon() expects the helper binary here (matches BundleProgram in plist).
+HELPER_SRC="${SRC_DIR}/arcbox-helper"
+if [ -f "${HELPER_SRC}" ]; then
+    HELPER_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/HelperTools"
+    mkdir -p "${HELPER_DIR}"
+    cp -f "${HELPER_SRC}" "${HELPER_DIR}/com.arcboxlabs.desktop.helper"
+
+    if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ] && [ "${EXPANDED_CODE_SIGN_IDENTITY}" != "-" ]; then
+        codesign --force --options runtime \
+            --sign "${EXPANDED_CODE_SIGN_IDENTITY}" \
+            --identifier "com.arcboxlabs.desktop.helper" \
+            "${HELPER_DIR}/com.arcboxlabs.desktop.helper"
+        echo "note: Signed helper with identity: ${EXPANDED_CODE_SIGN_IDENTITY}"
+    elif [ -n "${CODE_SIGN_IDENTITY:-}" ] && [ "${CODE_SIGN_IDENTITY}" != "-" ]; then
+        codesign --force --options runtime \
+            --sign "${CODE_SIGN_IDENTITY}" \
+            --identifier "com.arcboxlabs.desktop.helper" \
+            "${HELPER_DIR}/com.arcboxlabs.desktop.helper"
+        echo "note: Signed helper with identity: ${CODE_SIGN_IDENTITY}"
+    else
+        codesign --force -s - "${HELPER_DIR}/com.arcboxlabs.desktop.helper"
+        echo "warning: Helper signed ad-hoc (SMAppService.daemon will not work)"
+    fi
+    echo "note: Embedded com.arcboxlabs.desktop.helper → Library/HelperTools/com.arcboxlabs.desktop.helper"
+else
+    echo "warning: arcbox-helper not found at ${HELPER_SRC}, skipping"
+fi
+
 # Copy abctl CLI → Contents/MacOS/bin/
 CLI_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin"
 mkdir -p "${CLI_DIR}"
