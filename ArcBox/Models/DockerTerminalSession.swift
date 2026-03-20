@@ -99,7 +99,8 @@ class DockerTerminalSession {
         proc.arguments = arguments
         // Ensure docker CLI connects to the ArcBox daemon socket
         var env = ProcessInfo.processInfo.environment
-        env["DOCKER_HOST"] = "unix://\(DaemonManager.dockerSocketPath)"
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        env["DOCKER_HOST"] = "unix://\(home)/.arcbox/run/docker.sock"
         proc.environment = env
         proc.standardInput = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
         proc.standardOutput = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
