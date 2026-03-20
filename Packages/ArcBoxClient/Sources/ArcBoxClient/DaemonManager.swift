@@ -201,7 +201,7 @@ public final class DaemonManager {
                 self?.setupPhase = .unknown
 
                 // Back off before reconnecting.
-                try? await Task.sleep(for: .seconds(2))
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }

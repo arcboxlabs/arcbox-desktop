@@ -7,9 +7,9 @@ import OSLog
 
 /// Centralized timing constants for the startup sequence.
 public enum StartupConstants {
-    public static let daemonPollTimeout: Duration = .seconds(10)
+    public static let daemonPollTimeout: Duration = .seconds(30)
     public static let daemonPollInterval: Duration = .milliseconds(500)
-    public static let daemonPollMaxAttempts = 20
+    public static let daemonPollMaxAttempts = 60
     public static let daemonStopTimeout: Duration = .seconds(5)
     public static let daemonStopPollInterval: Duration = .milliseconds(500)
     public static let daemonStopMaxAttempts = 10
