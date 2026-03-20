@@ -137,6 +137,13 @@ struct ArcBoxDesktopApp: App {
                 CheckForUpdatesView(updater: updaterController.updater)
             }
         }
+
+        MenuBarExtra("ArcBox", systemImage: "shippingbox") {
+            MenuBarView()
+                .environment(daemonManager)
+                .environment(\.dockerClient, dockerClient)
+        }
+        .menuBarExtraStyle(.window)
     }
 
     /// Create clients and return the ArcBoxClient for the orchestrator.
