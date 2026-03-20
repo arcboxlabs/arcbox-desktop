@@ -140,6 +140,7 @@ struct ArcBoxDesktopApp: App {
 
         MenuBarExtra("ArcBox", systemImage: "shippingbox") {
             MenuBarView()
+                .environment(appVM)
                 .environment(daemonManager)
                 .environment(\.dockerClient, dockerClient)
         }
