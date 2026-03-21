@@ -12,7 +12,7 @@ struct NetworksListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // "In Use" section header — only show when data is loaded
-            if orchestrator?.isReady != false && daemonManager.state.isRunning {
+            if orchestrator?.isReady == true && daemonManager.state.isRunning {
                 HStack {
                     Text("In Use")
                         .font(.system(size: 11))

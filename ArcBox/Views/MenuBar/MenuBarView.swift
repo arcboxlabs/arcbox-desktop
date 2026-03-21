@@ -34,11 +34,23 @@ struct MenuBarView: View {
         .padding(6)
         .animation(.easeInOut(duration: 0.2), value: containersExpanded)
         .animation(.easeInOut(duration: 0.15), value: showFlyout)
-        .task(id: docker != nil) {
-            guard docker != nil else { return }
+        .task(id: docker != nil && daemonManager.state.isRunning) {
+            guard docker != nil, daemonManager.state.isRunning else { return }
             await loadAll()
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
+            Task { await containersVM.loadContainersFromDocker(docker: docker) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
+            Task { await imagesVM.loadImages(docker: docker) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
+            Task { await networksVM.loadNetworks(docker: docker) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
+            Task { await volumesVM.loadVolumes(docker: docker) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
             Task { await loadAll() }
         }
     }
@@ -398,11 +410,23 @@ struct MenuBarView: View {
     }
 
     private var daemonStateDisplay: String {
-        daemonManager.state.isRunning ? "Running" : "Starting"
+        switch daemonManager.state {
+        case .running: "Running"
+        case .starting: "Starting"
+        case .stopping: "Stopping"
+        case .registered: "Registered"
+        case .stopped: "Stopped"
+        case .error: "Error"
+        }
     }
 
     private var daemonStateColor: Color {
-        daemonManager.state.isRunning ? AppColors.running : AppColors.textSecondary
+        switch daemonManager.state {
+        case .running: AppColors.running
+        case .starting, .registered, .stopping: AppColors.textSecondary
+        case .stopped: AppColors.stopped
+        case .error: AppColors.error
+        }
     }
 
     private func statusPill(title: String, color: Color) -> some View {
