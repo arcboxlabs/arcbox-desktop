@@ -1,12 +1,22 @@
 import AppKit
 import SwiftUI
 
+/// Tracks the currently visible "Coming Soon" panel so we don't create duplicates.
+private weak var currentPanel: NSPanel?
+
 /// Shows a floating "Coming Soon" panel centered on screen.
+/// Re-focuses the existing panel if one is already visible.
 @MainActor
 func showComingSoonPanel() {
-    let panel = NSPanel(
+    if let existing = currentPanel {
+        existing.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        return
+    }
+
+    let panel = ComingSoonPanel(
         contentRect: NSRect(x: 0, y: 0, width: 280, height: 260),
-        styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+        styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
         backing: .buffered,
         defer: false
     )
@@ -28,7 +38,19 @@ func showComingSoonPanel() {
     panel.contentView = hostingView
     panel.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
+
+    currentPanel = panel
 }
+
+// MARK: - Panel subclass for Esc key support
+
+private final class ComingSoonPanel: NSPanel {
+    override func cancelOperation(_ sender: Any?) {
+        close()
+    }
+}
+
+// MARK: - Content
 
 private struct ComingSoonContent: View {
     var onDismiss: () -> Void

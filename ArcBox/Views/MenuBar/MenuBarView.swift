@@ -5,12 +5,12 @@ import SwiftUI
 struct MenuBarView: View {
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(AppViewModel.self) private var appVM
+    @Environment(ContainersViewModel.self) private var containersVM
+    @Environment(ImagesViewModel.self) private var imagesVM
+    @Environment(NetworksViewModel.self) private var networksVM
+    @Environment(VolumesViewModel.self) private var volumesVM
     @Environment(\.dockerClient) private var docker
 
-    @State private var containersVM = ContainersViewModel()
-    @State private var imagesVM = ImagesViewModel()
-    @State private var networksVM = NetworksViewModel()
-    @State private var volumesVM = VolumesViewModel()
     @State private var containersExpanded = true
     @State private var hoveredItem: HoveredItem?
     @State private var flyoutAnchorY: CGFloat = 0
