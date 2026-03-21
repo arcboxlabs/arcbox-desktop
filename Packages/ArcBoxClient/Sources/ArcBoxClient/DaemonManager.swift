@@ -64,17 +64,13 @@ public final class DaemonManager {
     public private(set) var errorMessage: String?
 
     private nonisolated static let daemonPlistName = "com.arcboxlabs.desktop.daemon.plist"
-    private nonisolated static let helperPlistName = "com.arcboxlabs.desktop.helper.plist"
+    private nonisolated static let helperSocket = "/var/run/arcbox-helper.sock"
 
     private nonisolated var daemonService: SMAppService {
         SMAppService.agent(plistName: Self.daemonPlistName)
     }
 
-    private nonisolated var helperService: SMAppService {
-        SMAppService.daemon(plistName: Self.helperPlistName)
-    }
-
-    /// Whether the privileged helper is registered.
+    /// Whether the privileged helper is installed.
     public private(set) var helperInstalled: Bool = false
 
     private var watchTask: Task<Void, Never>?
@@ -83,29 +79,55 @@ public final class DaemonManager {
 
     // MARK: - Helper Lifecycle
 
-    /// Register the privileged helper as a system-level LaunchDaemon.
+    /// Installs the privileged helper via `abctl _install` with a macOS
+    /// admin password prompt.
     ///
-    /// macOS presents a native authorization prompt (password / Touch ID)
-    /// because this is a privileged operation. The helper binary and plist
-    /// must be embedded in the app bundle.
+    /// SMAppService.daemon() is unreliable — macOS registers the daemon
+    /// as disabled without notifying the user, and System Settings provides
+    /// no toggle to enable it. Instead, we use osascript to trigger the
+    /// standard macOS "wants to make changes" password dialog, the same
+    /// approach used by Docker Desktop and OrbStack.
+    ///
+    /// Skips silently if the helper is already installed (socket exists).
+    /// Only prompts for password on first install.
     public func installHelper() async {
-        let status = helperService.status
-        ClientLog.daemon.info("Helper status: \(String(describing: status), privacy: .public)")
-
-        if status == .enabled {
+        // Fast path: helper already installed from a previous launch.
+        if FileManager.default.fileExists(atPath: Self.helperSocket) {
             helperInstalled = true
-            ClientLog.daemon.info("Helper already registered")
+            ClientLog.daemon.info("Helper already installed")
             return
         }
 
-        do {
-            try helperService.register()
-            helperInstalled = true
-            ClientLog.daemon.info("Helper registered successfully")
-        } catch {
-            // Non-fatal: daemon still works, just without DNS/socket integration.
-            helperInstalled = false
-            ClientLog.daemon.warning("Helper registration failed: \(error.localizedDescription, privacy: .public)")
+        // Find abctl in the app bundle.
+        let abctl = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/MacOS/bin/abctl").path
+        guard FileManager.default.isExecutableFile(atPath: abctl) else {
+            ClientLog.daemon.warning("abctl not found in bundle, skipping helper install")
+            return
+        }
+
+        ClientLog.daemon.info("Installing helper via abctl _install")
+
+        let escaped = abctl.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        let script = "do shell script \"\(escaped) _install --no-daemon --no-shell\" with administrator privileges"
+
+        let result = await Task.detached { () -> Bool in
+            var error: NSDictionary?
+            if let appleScript = NSAppleScript(source: script) {
+                appleScript.executeAndReturnError(&error)
+                if let error {
+                    ClientLog.daemon.warning("Helper install failed: \(error, privacy: .public)")
+                    return false
+                }
+                return true
+            }
+            return false
+        }.value
+
+        helperInstalled = result
+        if result {
+            ClientLog.daemon.info("Helper installed successfully")
         }
     }
 
