@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.1...v1.10.2) (2026-03-21)
+
+
+### Refactoring
+
+* daemon self-provisioning — desktop becomes pure gRPC display layer ([#57](https://github.com/arcboxlabs/arcbox-desktop/issues/57)) ([c173980](https://github.com/arcboxlabs/arcbox-desktop/commit/c173980e3645019bf3e239afc81ecf94dd7411bb))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.1 ([#54](https://github.com/arcboxlabs/arcbox-desktop/issues/54)) ([e05f711](https://github.com/arcboxlabs/arcbox-desktop/commit/e05f71146dbc98a6cd790794aff8c65b32b73f71))
+* bump arcbox version to v0.3.2 ([#56](https://github.com/arcboxlabs/arcbox-desktop/issues/56)) ([2cbf8ed](https://github.com/arcboxlabs/arcbox-desktop/commit/2cbf8ed8d266619d366e79dc1e7f808c7674858e))
+
 ## [1.10.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.0...v1.10.1) (2026-03-18)
 
 
