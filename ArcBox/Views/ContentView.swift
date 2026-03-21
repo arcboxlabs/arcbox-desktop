@@ -169,4 +169,8 @@ struct DetailPlaceholderView: View {
 #Preview {
     ContentView()
         .environment(AppViewModel())
+        .environment(ContainersViewModel())
+        .environment(ImagesViewModel())
+        .environment(NetworksViewModel())
+        .environment(VolumesViewModel())
 }
