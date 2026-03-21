@@ -50,7 +50,7 @@
 		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
 
-		AB0E00022F70000000000002 /* com.arcboxlabs.desktop.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.helper.plist; sourceTree = "<group>"; };
+
 		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -121,7 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */,
-				AB0E00022F70000000000002 /* com.arcboxlabs.desktop.helper.plist */,
+
 			);
 			path = LaunchDaemons;
 			sourceTree = "<group>";
@@ -146,7 +146,7 @@
 				657F65792F3A2ADB00C7005A /* Resources */,
 				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
 
-				AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */,
+
 				AB0D00052F60000000000001 /* Sign Rust Binaries */,
 			);
 			buildRules = (
@@ -273,22 +273,7 @@
 			shellPath = /bin/bash;
 			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/com.arcboxlabs.desktop.daemon\"\nCLI_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin/abctl\"\nENTITLEMENTS=\"${PROJECT_DIR}/ArcBox/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ ! -f \"${CLI_PATH}\" ]; then\n    echo \"error: CLI binary not found at ${CLI_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.abctl\" \"${CLI_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --sign - \"${CLI_PATH}\"\nfi\n";
 		};
-		AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/LaunchDaemons/com.arcboxlabs.desktop.helper.plist",
-			);
-			name = "Generate Helper LaunchDaemon Plist";
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons/com.arcboxlabs.desktop.helper.plist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "INPUT=\"${SRCROOT}/LaunchDaemons/com.arcboxlabs.desktop.helper.plist\"\nOUTPUT=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchDaemons/com.arcboxlabs.desktop.helper.plist\"\n\nmkdir -p \"$(dirname \"$OUTPUT\")\"\nsed \"s/__DEVELOPMENT_TEAM__/${DEVELOPMENT_TEAM}/g\" \"$INPUT\" > \"$OUTPUT\"\n";
-		};
+
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */

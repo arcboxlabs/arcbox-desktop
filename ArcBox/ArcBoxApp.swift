@@ -146,11 +146,21 @@ struct ArcBoxDesktopApp: App {
         }
 
         if let existing = arcboxClient {
+            Log.startup.info("Reusing existing ArcBoxClient")
             return existing
         }
 
+        Log.startup.info("Creating new ArcBoxClient at \(ArcBoxClient.defaultSocketPath, privacy: .public)")
         let client = try ArcBoxClient()
-        Task { try await client.runConnections() }
+        Task {
+            do {
+                Log.startup.info("runConnections starting")
+                try await client.runConnections()
+                Log.startup.info("runConnections ended")
+            } catch {
+                Log.startup.error("runConnections failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
         arcboxClient = client
         return client
     }

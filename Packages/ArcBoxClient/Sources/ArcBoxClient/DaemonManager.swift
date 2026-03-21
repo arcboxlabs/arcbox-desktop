@@ -98,9 +98,10 @@ public final class DaemonManager {
             return
         }
 
-        // Find abctl in the app bundle.
-        let abctl = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/MacOS/bin/abctl").path
+        // Find abctl and helper in the app bundle.
+        let bundle = Bundle.main.bundleURL
+        let abctl = bundle.appendingPathComponent("Contents/MacOS/bin/abctl").path
+        let helper = bundle.appendingPathComponent("Contents/MacOS/bin/arcbox-helper").path
         guard FileManager.default.isExecutableFile(atPath: abctl) else {
             ClientLog.daemon.warning("abctl not found in bundle, skipping helper install")
             return
@@ -108,9 +109,12 @@ public final class DaemonManager {
 
         ClientLog.daemon.info("Installing helper via abctl _install")
 
-        let escaped = abctl.replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-        let script = "do shell script \"\(escaped) _install --no-daemon --no-shell\" with administrator privileges"
+        func shellEscape(_ s: String) -> String {
+            s.replacingOccurrences(of: "\\", with: "\\\\")
+             .replacingOccurrences(of: "\"", with: "\\\"")
+        }
+        let cmd = "\(shellEscape(abctl)) _install --no-daemon --no-shell --helper-path \(shellEscape(helper))"
+        let script = "do shell script \"\(cmd)\" with administrator privileges"
 
         let result = await Task.detached { () -> Bool in
             var error: NSDictionary?
