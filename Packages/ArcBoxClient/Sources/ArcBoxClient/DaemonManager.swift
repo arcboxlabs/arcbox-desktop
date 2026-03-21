@@ -109,11 +109,10 @@ public final class DaemonManager {
 
         ClientLog.daemon.info("Installing helper via abctl _install")
 
-        func shellEscape(_ s: String) -> String {
-            s.replacingOccurrences(of: "\\", with: "\\\\")
-             .replacingOccurrences(of: "\"", with: "\\\"")
+        func shellQuote(_ s: String) -> String {
+            "'\(s.replacingOccurrences(of: "'", with: "'\\''"))'"
         }
-        let cmd = "\(shellEscape(abctl)) _install --no-daemon --no-shell --helper-path \(shellEscape(helper))"
+        let cmd = "\(shellQuote(abctl)) _install --no-daemon --no-shell --helper-path \(shellQuote(helper))"
         let script = "do shell script \"\(cmd)\" with administrator privileges"
 
         let result = await Task.detached { () -> Bool in
