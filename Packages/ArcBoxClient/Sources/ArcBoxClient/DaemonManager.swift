@@ -64,8 +64,6 @@ public final class DaemonManager {
     public private(set) var errorMessage: String?
 
     private nonisolated static let daemonPlistName = "com.arcboxlabs.desktop.daemon.plist"
-    private nonisolated static let helperSocket = "/var/run/arcbox-helper.sock"
-
     private nonisolated var daemonService: SMAppService {
         SMAppService.agent(plistName: Self.daemonPlistName)
     }
@@ -88,8 +86,8 @@ public final class DaemonManager {
     /// standard macOS "wants to make changes" password dialog, the same
     /// approach used by Docker Desktop and OrbStack.
     ///
-    /// Skips silently if the helper is already installed (socket exists).
-    /// Only prompts for password on first install.
+    /// Skips silently if the installed helper version matches the bundled one.
+    /// Only prompts for password on first install or upgrade.
     /// Installed helper binary path (must match arcbox-constants privileged::HELPER_BINARY).
     private nonisolated static let installedHelperPath = "/usr/local/libexec/arcbox-helper"
 
@@ -248,8 +246,7 @@ public final class DaemonManager {
 
     // MARK: - Internal
 
-    /// Apply a setup status message synchronously on the MainActor.
-    /// Called from within `MainActor.run` in the stream handler.
+    /// Apply a setup status update. Called from MainActor-isolated stream handlers.
     private func applySetupStatusSync(_ status: Arcbox_V1_SetupStatus) {
         dnsResolverInstalled = status.dnsResolverInstalled
         dockerSocketLinked = status.dockerSocketLinked

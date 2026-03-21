@@ -55,6 +55,11 @@ prefetch:
 	@if [ "$(SKIP_BUILD)" != "1" ]; then \
 		$(MAKE) build-rust; \
 	fi
+	@if [ ! -x "$(ABCTL)" ]; then \
+		echo "ERROR: abctl not found at $(ABCTL)" >&2; \
+		echo "  Run 'make build-rust' or set ARCBOX_DIR" >&2; \
+		exit 1; \
+	fi
 	"$(ABCTL)" boot prefetch
 	"$(ABCTL)" docker setup
 
@@ -100,4 +105,6 @@ dmg-release: prefetch
 
 clean:
 	rm -rf .build/DerivedData
-	cd "$(ARCBOX_DIR)" && rm -rf target/dmg-build target/ArcBox-*.dmg
+	@if [ -n "$(ARCBOX_DIR)" ] && [ -d "$(ARCBOX_DIR)" ]; then \
+		cd "$(ARCBOX_DIR)" && rm -rf target/dmg-build target/ArcBox-*.dmg; \
+	fi
