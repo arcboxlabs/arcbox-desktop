@@ -3,7 +3,6 @@ import ArcBoxClient
 import DockerClient
 import OSLog
 @preconcurrency import Sentry
-import ServiceManagement
 import Sparkle
 import SwiftUI
 
@@ -11,32 +10,15 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
-    var helperManager: HelperManager?
     var eventMonitor: DockerEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
-    var isUninstalling = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
-        helperManager?.stopMonitoring()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
-            daemonManager.stopMonitoring()
-
-            // Route cleanup is handled by the daemon on shutdown.
-
-            if isUninstalling, let helperManager {
-                // Teardown must complete before daemon is stopped, so that
-                // each helper operation can confirm the current state.
-                try? await helperManager.teardownDockerSocket()
-                try? await helperManager.uninstallCLITools()
-                try? await helperManager.teardownDNSResolver()
-                try? await SMAppService.daemon(
-                    plistName: "com.arcboxlabs.desktop.helper.plist"
-                ).unregister()
-            }
-
+            daemonManager.stopWatching()
             await daemonManager.disableDaemon()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
@@ -51,9 +33,6 @@ struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appVM = AppViewModel()
     @State private var daemonManager = DaemonManager()
-    @State private var helperManager = HelperManager()
-    @State private var bootAssetManager = BootAssetManager()
-    @State private var dockerToolSetupManager = DockerToolSetupManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
@@ -125,51 +104,25 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
-                .environment(helperManager)
-                .environment(bootAssetManager)
-                .environment(dockerToolSetupManager)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     appDelegate.daemonManager = daemonManager
-                    appDelegate.helperManager = helperManager
                     appDelegate.eventMonitor = eventMonitor
 
                     let orchestrator = StartupOrchestrator(
-                        bootAssetManager: bootAssetManager,
-                        helperManager: helperManager,
                         daemonManager: daemonManager,
-                        dockerToolSetupManager: dockerToolSetupManager,
-                        onClientsNeeded: { try initClientsIfNeeded() }
+                        onClientsNeeded: { try initClientsAndReturn() }
                     )
                     startupOrchestrator = orchestrator
                     appDelegate.startupOrchestrator = orchestrator
-                    helperManager.startMonitoring()
                     await orchestrator.start()
-
-                    Task {
-                        try? await Task.sleep(for: StartupConstants.updateCheckDelay)
-                        await bootAssetManager.checkForUpdates()
-                    }
                 }
-                // Re-create clients whenever daemon transitions to running
-                // (covers the case where monitoring detects the daemon after
-                // the initial .task check has already passed).
-                // When login item approval is revoked and then re-granted,
-                // re-run helper setup and restart the daemon.
-                .onChange(of: helperManager.requiresApproval) { oldValue, newValue in
-                    if oldValue == true, newValue == false {
-                        Log.startup.info("Login item re-approved — retrying startup")
-                        Task {
-                            await startupOrchestrator?.retry()
-                        }
-                    }
-                }
+                // When daemon transitions to running, start event monitor.
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
-                        try? initClientsIfNeeded()
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
                         }
@@ -186,18 +139,30 @@ struct ArcBoxDesktopApp: App {
         }
     }
 
-    private func initClientsIfNeeded() throws {
-        guard daemonManager.state.isRunning else { return }
-
+    /// Create clients and return the ArcBoxClient for the orchestrator.
+    private func initClientsAndReturn() throws -> ArcBoxClient {
         if dockerClient == nil {
             dockerClient = DockerClient()
         }
 
-        if arcboxClient == nil {
-            let client = try ArcBoxClient()
-            Task { try await client.runConnections() }
-            arcboxClient = client
+        if let existing = arcboxClient {
+            Log.startup.info("Reusing existing ArcBoxClient")
+            return existing
         }
+
+        Log.startup.info("Creating new ArcBoxClient at \(ArcBoxClient.defaultSocketPath, privacy: .public)")
+        let client = try ArcBoxClient()
+        Task {
+            do {
+                Log.startup.info("runConnections starting")
+                try await client.runConnections()
+                Log.startup.info("runConnections ended")
+            } catch {
+                Log.startup.error("runConnections failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        arcboxClient = client
+        return client
     }
 }
 

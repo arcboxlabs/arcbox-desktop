@@ -6,54 +6,35 @@ import OSLog
 // MARK: - Startup Constants
 
 /// Centralized timing constants for the startup sequence.
-/// Eliminates magic numbers scattered across DaemonManager, HelperManager, etc.
 public enum StartupConstants {
-    public static let daemonPollTimeout: Duration = .seconds(10)
+    public static let daemonPollTimeout: Duration = .seconds(30)
     public static let daemonPollInterval: Duration = .milliseconds(500)
-    public static let daemonPollMaxAttempts = 20
-    public static let healthMonitorInterval: Duration = .seconds(3)
-    public static let helperApprovalTimeout: Duration = .seconds(120)
-    public static let helperApprovalPollInterval: Duration = .seconds(2)
-    public static let helperApprovalMaxAttempts = 60
-    public static let xpcTimeout: TimeInterval = 10
+    public static let daemonPollMaxAttempts = 60
     public static let daemonStopTimeout: Duration = .seconds(5)
     public static let daemonStopPollInterval: Duration = .milliseconds(500)
     public static let daemonStopMaxAttempts = 10
-    public static let updateCheckDelay: Duration = .seconds(5)
 }
 
 // MARK: - Startup Step
 
 /// Each discrete step in the startup sequence.
+///
+/// The daemon handles all provisioning (boot assets, runtime binaries, Docker
+/// tools). The desktop app registers the helper (privileged, one-time),
+/// starts the daemon LaunchAgent, and connects the gRPC stream.
 public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
-    case ensureAssets = 0
-    case setupHelper = 1
-    case cliSetup = 2
-    case dockerToolSetup = 3
-    case seedRuntime = 4
-    case enableDaemon = 5   // Includes startMonitoring
-    case initClients = 6
+    case installHelper = 0
+    case enableDaemon = 1
+    case connectAndWatch = 2
 
     public var id: Int { rawValue }
 
     /// Human-readable label shown in the progress UI.
     public var label: String {
         switch self {
-        case .ensureAssets:     return "Preparing boot assets"
-        case .setupHelper:     return "Registering privileged helper"
-        case .cliSetup:        return "Installing CLI tools"
-        case .dockerToolSetup: return "Setting up Docker tools"
-        case .seedRuntime:     return "Seeding runtime binaries"
+        case .installHelper:   return "Installing helper service"
         case .enableDaemon:    return "Starting daemon"
-        case .initClients:     return "Connecting to daemon"
-        }
-    }
-
-    /// Whether failure of this step should abort the startup sequence.
-    public var isCritical: Bool {
-        switch self {
-        case .ensureAssets, .seedRuntime, .setupHelper, .enableDaemon, .initClients: return true
-        default: return false
+        case .connectAndWatch: return "Connecting to daemon"
         }
     }
 }
@@ -97,12 +78,8 @@ private enum StartupError: LocalizedError {
 /// Coordinates the app startup sequence with step tracking, error propagation,
 /// and retry support.
 ///
-/// Steps are organized into phases:
-/// - Phase 1: `ensureAssets` (critical, blocks everything)
-/// - Phase 2a: Non-critical steps (CLI, Docker) run as fire-and-forget
-///   background tasks.
-/// - Phase 2b: Critical preconditions (`seedRuntime` + `setupHelper` in
-///   parallel), then `enableDaemon` → `initClients`.
+/// The daemon self-provisions all assets. The desktop app is a pure display
+/// layer: register the LaunchAgent, then connect gRPC and watch setup status.
 @Observable
 @MainActor
 public final class StartupOrchestrator {
@@ -125,21 +102,18 @@ public final class StartupOrchestrator {
         return done / total
     }
 
-    /// Whether all critical steps have completed successfully.
+    /// Whether all steps have completed successfully.
     public var isReady: Bool { phase == .completed }
 
-    /// Whether a retry is possible (i.e., startup has failed and not currently running).
+    /// Whether a retry is possible.
     public var canRetry: Bool {
         if case .failed = phase { return true }
         return false
     }
 
     // Dependencies
-    private let bootAssetManager: BootAssetManager
-    private let helperManager: HelperManager
     private let daemonManager: DaemonManager
-    private let dockerToolSetupManager: DockerToolSetupManager
-    private let onClientsNeeded: @MainActor () throws -> Void
+    private let onClientsNeeded: @MainActor () throws -> ArcBoxClient
 
     private static let signposter = OSSignposter(
         subsystem: "com.arcboxlabs.desktop", category: "startup")
@@ -147,20 +121,11 @@ public final class StartupOrchestrator {
     /// Prevents concurrent startup runs from interleaving.
     private var isStarting = false
 
-    /// Handles for non-critical background tasks, cancelled on critical failure.
-    private var nonCriticalTasks: [Task<Void, Never>] = []
-
     public init(
-        bootAssetManager: BootAssetManager,
-        helperManager: HelperManager,
         daemonManager: DaemonManager,
-        dockerToolSetupManager: DockerToolSetupManager,
-        onClientsNeeded: @escaping @MainActor () throws -> Void
+        onClientsNeeded: @escaping @MainActor () throws -> ArcBoxClient
     ) {
-        self.bootAssetManager = bootAssetManager
-        self.helperManager = helperManager
         self.daemonManager = daemonManager
-        self.dockerToolSetupManager = dockerToolSetupManager
         self.onClientsNeeded = onClientsNeeded
 
         var statuses: [StartupStep: StepStatus] = [:]
@@ -175,124 +140,25 @@ public final class StartupOrchestrator {
     /// Run the full startup sequence.
     ///
     /// Safe to call multiple times — resets state on each invocation.
-    /// Already-cached steps (e.g., boot assets) will complete instantly.
-    /// Guarded against concurrent execution: if already running, subsequent
-    /// calls are no-ops.
+    /// Guarded against concurrent execution.
+    @available(macOS 15.0, *)
     public func start() async {
         guard !isStarting else { return }
         isStarting = true
         defer { isStarting = false }
 
-        // Cancel leftover non-critical tasks from a previous run.
-        cancelNonCriticalTasks()
-
-        // Reset all step statuses.
         for step in StartupStep.allCases {
             stepStatuses[step] = .pending
         }
 
-        // Phase 1: Ensure boot assets (critical, blocks all subsequent steps).
-        let assetsOK = await runStep(.ensureAssets) {
-            await self.bootAssetManager.ensureAssets()
-            if case .error(let msg) = self.bootAssetManager.state {
-                throw StartupError.stepFailed(msg)
-            }
+        // Step 1: Install privileged helper (one-time, macOS prompts for admin).
+        // Non-critical: daemon works without it, just no DNS/socket integration.
+        await runStep(.installHelper) {
+            await self.daemonManager.installHelper()
         }
 
-        guard assetsOK else {
-            for step in StartupStep.allCases where step != .ensureAssets {
-                stepStatuses[step] = .skipped
-            }
-            return
-        }
-
-        // Phase 2: Start non-critical steps as fire-and-forget background tasks.
-        // They don't block readiness — only the critical path gates .completed.
-        launchNonCriticalSteps()
-
-        // Phase 2: Critical daemon path (sequential, blocks readiness).
-        await runDaemonPath()
-
-        // Mark completed as soon as critical path finishes.
-        // Non-critical tasks continue in the background.
-        if case .failed = phase {
-            cancelNonCriticalTasks()
-            return
-        }
-        phase = .completed
-    }
-
-    /// Retry the startup sequence after a failure.
-    ///
-    /// Performs a full restart — already-cached operations (boot assets,
-    /// runtime binaries) will complete instantly.
-    public func retry() async {
-        await start()
-    }
-
-    // MARK: - Step Groups
-
-    /// Launch non-critical steps as fire-and-forget background tasks.
-    /// Failures are recorded in stepStatuses but do not block readiness
-    /// or abort the startup sequence.
-    private func launchNonCriticalSteps() {
-        nonCriticalTasks = [
-            Task {
-                await self.runStep(.cliSetup) {
-                    let cli = try CLIRunner()
-                    try await cli.run(arguments: ["setup", "install"])
-                }
-            },
-            Task {
-                await self.runStep(.dockerToolSetup) {
-                    await self.dockerToolSetupManager.installAndEnable()
-                }
-            },
-        ]
-    }
-
-    /// Cancel all non-critical background tasks (e.g., on critical failure).
-    private func cancelNonCriticalTasks() {
-        for task in nonCriticalTasks {
-            task.cancel()
-        }
-        nonCriticalTasks = []
-    }
-
-    /// Critical startup path: preconditions → daemon → clients.
-    ///
-    /// seedRuntime and setupHelper run in parallel (no mutual dependency),
-    /// but both must succeed before enableDaemon starts. The daemon requires
-    /// runtime binaries on disk (seedRuntime) and the helper XPC daemon
-    /// running (setupHelper) for route installation.
-    private func runDaemonPath() async {
-        // Phase 2b.1: Run seedRuntime and setupHelper in parallel.
-        // They write to disjoint paths — no shared resources.
-        async let seedOK = runStep(.seedRuntime) {
-            try await self.bootAssetManager.seedRuntimeBinaries()
-            try await self.bootAssetManager.seedAgentBinary()
-        }
-        async let helperOK = runStep(.setupHelper) {
-            try await self.performSetupHelper()
-        }
-
-        let seedResult = await seedOK
-        let helperResult = await helperOK
-        let preconditionsMet = seedResult && helperResult
-
-        guard preconditionsMet else {
-            // Skip remaining steps if either precondition failed.
-            for step in [StartupStep.enableDaemon, .initClients] {
-                if stepStatuses[step] == .pending {
-                    stepStatuses[step] = .skipped
-                }
-            }
-            return
-        }
-
-        // Phase 2b.2: Start daemon (preconditions guaranteed met).
+        // Step 2: Register daemon with launchd.
         let daemonOK = await runStep(.enableDaemon) {
-            self.daemonManager.startMonitoring()
             await self.daemonManager.enableDaemon()
             if case .error(let msg) = self.daemonManager.state {
                 throw StartupError.stepFailed(msg)
@@ -300,71 +166,48 @@ public final class StartupOrchestrator {
         }
 
         guard daemonOK else {
-            stepStatuses[.initClients] = .skipped
+            stepStatuses[.connectAndWatch] = .skipped
             return
         }
 
-        // Phase 2b.3: Connect clients.
-        await runStep(.initClients) {
-            try self.onClientsNeeded()
+        // Step 3: Connect gRPC and start watching setup status.
+        let connectOK = await runStep(.connectAndWatch) {
+            let client = try self.onClientsNeeded()
+            self.daemonManager.connectAndWatch(client: client)
+
+            // Wait for the first status message (daemon is alive).
+            for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                try await Task.sleep(for: StartupConstants.daemonPollInterval)
+                if self.daemonManager.state.isRunning {
+                    break
+                }
+            }
+
+            if !self.daemonManager.state.isRunning {
+                throw StartupError.stepFailed(
+                    "Daemon registered but gRPC stream not connected after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s")
+            }
         }
 
-        // Route lifecycle is owned by the daemon (via route_reconciler).
-        // Desktop does not install or remove routes.
+        guard connectOK else { return }
+        phase = .completed
     }
 
-    // MARK: - Helper Setup
-
-    /// Migrated from ArcBoxApp.setupHelper() — registers the privileged helper
-    /// and performs Docker socket, CLI tools, and DNS resolver setup.
-    /// Throws on registration failure so runStep can mark .failed.
-    private func performSetupHelper() async throws {
-        do {
-            try await helperManager.registerWithRetry()
-        } catch {
-            throw StartupError.stepFailed(
-                "Helper registration failed: \(error.localizedDescription)")
-        }
-
-        let socketPath = DaemonManager.dockerSocketPath
-        let bundlePath = Bundle.main.bundleURL.path
-
-        // Each operation is independent — run separately so one failure
-        // does not cancel the others.
-        do {
-            try await helperManager.setupDockerSocket(socketPath: socketPath)
-        } catch {
-            ClientLog.helper.error("setupDockerSocket failed: \(error.localizedDescription, privacy: .public)")
-        }
-
-        do {
-            try await helperManager.installCLITools(appBundlePath: bundlePath)
-        } catch {
-            ClientLog.helper.error("installCLITools failed: \(error.localizedDescription, privacy: .public)")
-        }
-
-        do {
-            try await helperManager.setupDNSResolver()
-        } catch {
-            ClientLog.helper.error("setupDNSResolver failed: \(error.localizedDescription, privacy: .public)")
-        }
+    /// Retry the startup sequence after a failure.
+    @available(macOS 15.0, *)
+    public func retry() async {
+        await start()
     }
 
     // MARK: - Step Runner
 
-    /// Execute a step body with automatic status tracking.
-    ///
-    /// Updates `stepStatuses` and (for critical steps) `phase`.
-    /// Returns `true` if the step completed successfully.
     @discardableResult
     private func runStep(
         _ step: StartupStep,
         body: @MainActor () async throws -> Void
     ) async -> Bool {
         stepStatuses[step] = .running
-        if step.isCritical {
-            phase = .running(step: step)
-        }
+        phase = .running(step: step)
 
         let signpostID = Self.signposter.makeSignpostID()
         let state = Self.signposter.beginInterval(
@@ -389,9 +232,7 @@ public final class StartupOrchestrator {
             }
             Self.signposter.endInterval("Startup Step", state)
             stepStatuses[step] = .failed(message)
-            if step.isCritical {
-                phase = .failed(step: step, message: message)
-            }
+            phase = .failed(step: step, message: message)
             return false
         }
     }

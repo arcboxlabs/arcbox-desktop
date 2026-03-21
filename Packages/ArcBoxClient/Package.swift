@@ -20,7 +20,7 @@ let package = Package(
         .target(
             name: "ArcBoxClient",
             dependencies: [
-                .product(name: "GRPCNIOTransportHTTP2Posix", package: "grpc-swift-nio-transport"),
+                .product(name: "GRPCNIOTransportHTTP2TransportServices", package: "grpc-swift-nio-transport"),
                 .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
                 .product(name: "SwiftProtobuf", package: "swift-protobuf"),
                 .product(name: "Sentry", package: "sentry-cocoa"),
