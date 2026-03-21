@@ -70,7 +70,22 @@ cp -f "${SRC_DIR}/abctl" "${CLI_DIR}/abctl"
 HELPER_SRC="${SRC_DIR}/arcbox-helper"
 if [ -f "${HELPER_SRC}" ]; then
     cp -f "${HELPER_SRC}" "${CLI_DIR}/arcbox-helper"
-    echo "note: Copied arcbox-helper → MacOS/bin/arcbox-helper"
+    # Sign helper with the same identity as the app (required for notarization).
+    if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ] && [ "${EXPANDED_CODE_SIGN_IDENTITY}" != "-" ]; then
+        codesign --force --options runtime \
+            --sign "${EXPANDED_CODE_SIGN_IDENTITY}" \
+            --identifier "com.arcboxlabs.desktop.helper" \
+            "${CLI_DIR}/arcbox-helper"
+        echo "note: Signed arcbox-helper with identity: ${EXPANDED_CODE_SIGN_IDENTITY}"
+    elif [ -n "${CODE_SIGN_IDENTITY:-}" ] && [ "${CODE_SIGN_IDENTITY}" != "-" ]; then
+        codesign --force --options runtime \
+            --sign "${CODE_SIGN_IDENTITY}" \
+            --identifier "com.arcboxlabs.desktop.helper" \
+            "${CLI_DIR}/arcbox-helper"
+    else
+        codesign --force -s - "${CLI_DIR}/arcbox-helper"
+    fi
+    echo "note: Embedded arcbox-helper → MacOS/bin/arcbox-helper"
 else
     echo "warning: arcbox-helper not found at ${HELPER_SRC}, skipping"
 fi

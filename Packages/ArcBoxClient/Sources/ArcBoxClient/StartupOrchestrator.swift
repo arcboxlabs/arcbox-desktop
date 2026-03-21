@@ -177,7 +177,7 @@ public final class StartupOrchestrator {
 
             // Wait for the first status message (daemon is alive).
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
-                try? await Task.sleep(for: StartupConstants.daemonPollInterval)
+                try await Task.sleep(for: StartupConstants.daemonPollInterval)
                 if self.daemonManager.state.isRunning {
                     break
                 }

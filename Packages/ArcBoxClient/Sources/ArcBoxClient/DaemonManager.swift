@@ -92,6 +92,7 @@ public final class DaemonManager {
     /// Only prompts for password on first install.
     public func installHelper() async {
         // Fast path: helper already installed from a previous launch.
+        // TODO: Add version check to re-install on app update.
         if FileManager.default.fileExists(atPath: Self.helperSocket) {
             helperInstalled = true
             ClientLog.daemon.info("Helper already installed")
@@ -104,6 +105,10 @@ public final class DaemonManager {
         let helper = bundle.appendingPathComponent("Contents/MacOS/bin/arcbox-helper").path
         guard FileManager.default.isExecutableFile(atPath: abctl) else {
             ClientLog.daemon.warning("abctl not found in bundle, skipping helper install")
+            return
+        }
+        guard FileManager.default.isExecutableFile(atPath: helper) else {
+            ClientLog.daemon.warning("arcbox-helper not found in bundle, skipping helper install")
             return
         }
 
@@ -142,10 +147,10 @@ public final class DaemonManager {
         errorMessage = nil
         state = .starting
 
-        // Ensure log directory exists (launchd fails if it can't create stdout/stderr paths).
+        // Ensure data directory exists so the daemon can create sockets and state.
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let logDir = "\(home)/.arcbox/log"
-        try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(
+            atPath: "\(home)/.arcbox/run", withIntermediateDirectories: true)
 
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
