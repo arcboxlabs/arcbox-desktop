@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 
 /// Tracks the currently visible "Coming Soon" panel so we don't create duplicates.
-private weak var currentPanel: NSPanel?
+/// Strong ref: we manage the lifecycle ourselves since isReleasedWhenClosed is off.
+private var currentPanel: NSPanel?
 
 /// Shows a floating "Coming Soon" panel centered on screen.
 /// Re-focuses the existing panel if one is already visible.
@@ -20,7 +21,7 @@ func showComingSoonPanel() {
         backing: .buffered,
         defer: false
     )
-    panel.isReleasedWhenClosed = true
+    panel.isReleasedWhenClosed = false
     panel.titleVisibility = .hidden
     panel.titlebarAppearsTransparent = true
     panel.isOpaque = false
@@ -29,8 +30,9 @@ func showComingSoonPanel() {
     panel.center()
 
     let hostingView = NSHostingView(
-        rootView: ComingSoonContent(onDismiss: { [weak panel] in
-            panel?.close()
+        rootView: ComingSoonContent(onDismiss: {
+            currentPanel?.close()
+            currentPanel = nil
         }))
     hostingView.wantsLayer = true
     hostingView.layer?.cornerRadius = 20
@@ -47,6 +49,7 @@ func showComingSoonPanel() {
 private final class ComingSoonPanel: NSPanel {
     override func cancelOperation(_ sender: Any?) {
         close()
+        currentPanel = nil
     }
 }
 
