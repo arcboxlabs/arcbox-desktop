@@ -90,15 +90,10 @@ public final class DaemonManager {
     ///
     /// Skips silently if the helper is already installed (socket exists).
     /// Only prompts for password on first install.
-    public func installHelper() async {
-        // Fast path: helper already installed from a previous launch.
-        // TODO: Add version check to re-install on app update.
-        if FileManager.default.fileExists(atPath: Self.helperSocket) {
-            helperInstalled = true
-            ClientLog.daemon.info("Helper already installed")
-            return
-        }
+    /// Installed helper binary path (must match arcbox-constants privileged::HELPER_BINARY).
+    private nonisolated static let installedHelperPath = "/usr/local/libexec/arcbox-helper"
 
+    public func installHelper() async {
         // Find abctl and helper in the app bundle.
         let bundle = Bundle.main.bundleURL
         let abctl = bundle.appendingPathComponent("Contents/MacOS/bin/abctl").path
@@ -109,6 +104,15 @@ public final class DaemonManager {
         }
         guard FileManager.default.isExecutableFile(atPath: helper) else {
             ClientLog.daemon.warning("arcbox-helper not found in bundle, skipping helper install")
+            return
+        }
+
+        // Skip if installed helper is the same version as the bundled one.
+        let installedVersion = binaryVersion(Self.installedHelperPath)
+        let bundledVersion = binaryVersion(helper)
+        if let iv = installedVersion, let bv = bundledVersion, iv == bv {
+            helperInstalled = true
+            ClientLog.daemon.info("Helper \(iv, privacy: .public) already installed")
             return
         }
 
@@ -272,5 +276,26 @@ public final class DaemonManager {
             state = .running
             ClientLog.daemon.info("Daemon is running (gRPC stream connected)")
         }
+    }
+}
+
+/// Runs `<binary> --version` and returns the trimmed stdout (e.g. "arcbox-helper 0.3.1").
+/// Returns nil if the binary doesn't exist or the command fails.
+private func binaryVersion(_ path: String) -> String? {
+    guard FileManager.default.isExecutableFile(atPath: path) else { return nil }
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: path)
+    process.arguments = ["--version"]
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = FileHandle.nullDevice
+    do {
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    } catch {
+        return nil
     }
 }
