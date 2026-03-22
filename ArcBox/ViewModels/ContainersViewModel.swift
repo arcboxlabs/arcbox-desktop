@@ -264,9 +264,7 @@ class ContainersViewModel {
                 }
             }
             for await (image, url) in group {
-                if let url {
-                    iconsByImage[image] = url
-                }
+                iconsByImage[image] = url ?? ""
             }
         }
 

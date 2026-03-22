@@ -107,9 +107,7 @@ class ImagesViewModel {
                 }
             }
             for await (repo, url) in group {
-                if let url {
-                    iconsByImage[repo] = url
-                }
+                iconsByImage[repo] = url ?? ""
             }
         }
 
