@@ -142,14 +142,20 @@ struct MenuBarView: View {
     ) -> some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(title)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: symbol)
+                        .font(.caption2)
+                        .foregroundStyle(tint)
+                    Text(title)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 Spacer(minLength: 0)
 
                 Text("\(count)")
                     .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(tint)
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 Spacer(minLength: 0)

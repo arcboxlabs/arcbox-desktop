@@ -32,7 +32,6 @@ func showComingSoonPanel() {
     let hostingView = NSHostingView(
         rootView: ComingSoonContent(onDismiss: {
             currentPanel?.close()
-            currentPanel = nil
         }))
     hostingView.wantsLayer = true
     hostingView.layer?.cornerRadius = 20
@@ -47,9 +46,15 @@ func showComingSoonPanel() {
 // MARK: - Panel subclass for Esc key support
 
 private final class ComingSoonPanel: NSPanel {
+    override func close() {
+        super.close()
+        if currentPanel === self {
+            currentPanel = nil
+        }
+    }
+
     override func cancelOperation(_ sender: Any?) {
         close()
-        currentPanel = nil
     }
 }
 
