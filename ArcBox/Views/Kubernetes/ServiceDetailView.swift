@@ -34,7 +34,6 @@ struct ServiceDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppColors.background)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("Tab", selection: $vm.activeTab) {

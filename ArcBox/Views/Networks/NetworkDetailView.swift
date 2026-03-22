@@ -36,7 +36,6 @@ struct NetworkDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppColors.background)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Spacer()

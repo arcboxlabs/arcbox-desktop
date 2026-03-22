@@ -4,16 +4,20 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppViewModel.self) private var appVM
 
-    // Feature ViewModels – shared between content and detail columns
-    @State private var containersVM = ContainersViewModel()
-    @State private var volumesVM = VolumesViewModel()
-    @State private var imagesVM = ImagesViewModel()
-    @State private var networksVM = NetworksViewModel()
+    // Shared ViewModels (injected from ArcBoxApp, shared with menu bar)
+    @Environment(ContainersViewModel.self) private var containersVM
+    @Environment(VolumesViewModel.self) private var volumesVM
+    @Environment(ImagesViewModel.self) private var imagesVM
+    @Environment(NetworksViewModel.self) private var networksVM
+
+    // Feature ViewModels – local to main window
     @State private var podsVM = PodsViewModel()
     @State private var servicesVM = ServicesViewModel()
     @State private var machinesVM = MachinesViewModel()
     @State private var sandboxesVM = SandboxesViewModel()
     @State private var templatesVM = TemplatesViewModel()
+
+    @State private var lastValidNav: NavItem? = .containers
 
     var body: some View {
         @Bindable var vm = appVM
@@ -59,6 +63,15 @@ struct ContentView: View {
             }
         } detail: {
             detailColumn
+        }
+        .onChange(of: appVM.currentNav) { _, newNav in
+            guard let newNav else { return }
+            if newNav.isComingSoon {
+                showComingSoonPanel()
+                appVM.currentNav = lastValidNav
+            } else {
+                lastValidNav = newNav
+            }
         }
     }
 
@@ -156,4 +169,8 @@ struct DetailPlaceholderView: View {
 #Preview {
     ContentView()
         .environment(AppViewModel())
+        .environment(ContainersViewModel())
+        .environment(ImagesViewModel())
+        .environment(NetworksViewModel())
+        .environment(VolumesViewModel())
 }

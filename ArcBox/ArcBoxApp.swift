@@ -38,6 +38,12 @@ struct ArcBoxDesktopApp: App {
     @State private var eventMonitor = DockerEventMonitor()
     @State private var startupOrchestrator: StartupOrchestrator?
 
+    // Shared ViewModels used by both main window and menu bar
+    @State private var containersVM = ContainersViewModel()
+    @State private var imagesVM = ImagesViewModel()
+    @State private var networksVM = NetworksViewModel()
+    @State private var volumesVM = VolumesViewModel()
+
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
 
@@ -104,6 +110,10 @@ struct ArcBoxDesktopApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
+                .environment(containersVM)
+                .environment(imagesVM)
+                .environment(networksVM)
+                .environment(volumesVM)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
@@ -137,6 +147,18 @@ struct ArcBoxDesktopApp: App {
                 CheckForUpdatesView(updater: updaterController.updater)
             }
         }
+
+        MenuBarExtra("ArcBox", systemImage: "shippingbox") {
+            MenuBarView()
+                .environment(appVM)
+                .environment(daemonManager)
+                .environment(containersVM)
+                .environment(imagesVM)
+                .environment(networksVM)
+                .environment(volumesVM)
+                .environment(\.dockerClient, dockerClient)
+        }
+        .menuBarExtraStyle(.window)
     }
 
     /// Create clients and return the ArcBoxClient for the orchestrator.
