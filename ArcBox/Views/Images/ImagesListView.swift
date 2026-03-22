@@ -7,6 +7,7 @@ struct ImagesListView: View {
     @Environment(ImagesViewModel.self) private var vm
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(\.startupOrchestrator) private var orchestrator
+    @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
     var body: some View {
@@ -63,12 +64,12 @@ struct ImagesListView: View {
         .sheet(isPresented: Bindable(vm).showPullImageSheet) {
             PullImageSheet()
         }
-        .task(id: docker != nil) { await vm.loadImages(docker: docker) }
+        .task(id: docker != nil) { await vm.loadImages(docker: docker, iconClient: client) }
         .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
-            Task { await vm.loadImages(docker: docker) }
+            Task { await vm.loadImages(docker: docker, iconClient: client) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
-            Task { await vm.loadImages(docker: docker) }
+            Task { await vm.loadImages(docker: docker, iconClient: client) }
         }
     }
 }

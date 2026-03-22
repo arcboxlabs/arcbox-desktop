@@ -60,6 +60,7 @@ struct ContainerViewModel: Identifiable, Hashable {
     var ipAddress: String?
     var mounts: [ContainerMount] = []
     var rootfsMountPath: String?
+    var iconURL: String?
 
     var isRunning: Bool { state.isRunning }
 

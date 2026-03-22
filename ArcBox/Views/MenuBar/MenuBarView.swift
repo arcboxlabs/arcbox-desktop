@@ -9,6 +9,7 @@ struct MenuBarView: View {
     @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(NetworksViewModel.self) private var networksVM
     @Environment(VolumesViewModel.self) private var volumesVM
+    @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
     @State private var containersExpanded = true
@@ -39,10 +40,10 @@ struct MenuBarView: View {
             await loadAll()
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-            Task { await containersVM.loadContainersFromDocker(docker: docker) }
+            Task { await containersVM.loadContainersFromDocker(docker: docker, iconClient: client) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
-            Task { await imagesVM.loadImages(docker: docker) }
+            Task { await imagesVM.loadImages(docker: docker, iconClient: client) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
             Task { await networksVM.loadNetworks(docker: docker) }
@@ -58,8 +59,8 @@ struct MenuBarView: View {
     // MARK: - Data
 
     private func loadAll() async {
-        async let c: () = containersVM.loadContainersFromDocker(docker: docker)
-        async let i: () = imagesVM.loadImages(docker: docker)
+        async let c: () = containersVM.loadContainersFromDocker(docker: docker, iconClient: client)
+        async let i: () = imagesVM.loadImages(docker: docker, iconClient: client)
         async let n: () = networksVM.loadNetworks(docker: docker)
         async let v: () = volumesVM.loadVolumes(docker: docker)
         _ = await (c, i, n, v)

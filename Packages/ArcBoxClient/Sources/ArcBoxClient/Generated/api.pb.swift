@@ -613,6 +613,37 @@ public struct Arcbox_V1_PruneResponse: Sendable {
   public init() {}
 }
 
+/// Request to get the icon URL for a container image.
+public struct Arcbox_V1_GetImageIconRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Fully qualified image name (e.g., "nginx", "localstack/localstack", "ghcr.io/astral-sh/uv").
+  public var fqin: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response containing the icon URL.
+public struct Arcbox_V1_GetImageIconResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Icon URL, empty if not found.
+  public var url: String = String()
+
+  /// Icon source (e.g., "docker_hub_logo", "docker_official_image", "ghcr_avatar").
+  public var source: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Request to create a volume.
 public struct Arcbox_V1_CreateVolumeRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -1988,6 +2019,71 @@ extension Arcbox_V1_PruneResponse: SwiftProtobuf.Message, SwiftProtobuf._Message
     if lhs.imagesDeleted != rhs.imagesDeleted {return false}
     if lhs.networksDeleted != rhs.networksDeleted {return false}
     if lhs.volumesDeleted != rhs.volumesDeleted {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_GetImageIconRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetImageIconRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}fqin\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.fqin) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.fqin.isEmpty {
+      try visitor.visitSingularStringField(value: self.fqin, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_GetImageIconRequest, rhs: Arcbox_V1_GetImageIconRequest) -> Bool {
+    if lhs.fqin != rhs.fqin {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_GetImageIconResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetImageIconResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}url\0\u{1}source\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.url) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.source) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.url.isEmpty {
+      try visitor.visitSingularStringField(value: self.url, fieldNumber: 1)
+    }
+    if !self.source.isEmpty {
+      try visitor.visitSingularStringField(value: self.source, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_GetImageIconResponse, rhs: Arcbox_V1_GetImageIconResponse) -> Bool {
+    if lhs.url != rhs.url {return false}
+    if lhs.source != rhs.source {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
