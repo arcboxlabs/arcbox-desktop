@@ -1,4 +1,5 @@
 import SwiftUI
+import ArcBoxClient
 import DockerClient
 import OSLog
 
@@ -30,6 +31,7 @@ class ImagesViewModel {
     var isSearching: Bool = false
     var sortBy: ImageSortField = .name
     var sortAscending: Bool = true
+    private var iconsByImage: [String: String] = [:]
 
     var totalSize: String {
         let bytes: UInt64 = images.map(\.sizeBytes).reduce(0, +)
@@ -75,10 +77,51 @@ class ImagesViewModel {
         selectedID = id
     }
 
+    private func applyCachedIcons(to viewModels: inout [ImageViewModel]) {
+        for i in viewModels.indices {
+            viewModels[i].iconURL = iconsByImage[viewModels[i].repository]
+        }
+    }
+
+    /// Fetch icon URLs for all unique image repositories that are not already cached.
+    func fetchIcons(client: ArcBoxClient?) async {
+        guard let client else { return }
+        let uncached = Set(images.map(\.repository))
+            .filter { $0 != "<none>" }
+            .subtracting(iconsByImage.keys)
+        guard !uncached.isEmpty else { return }
+
+        await withTaskGroup(of: (String, String?).self) { group in
+            for repo in uncached {
+                group.addTask {
+                    do {
+                        var request = Arcbox_V1_GetImageIconRequest()
+                        request.fqin = repo
+                        let response = try await client.icons.getImageIcon(request)
+                        let url = response.url.isEmpty ? nil : response.url
+                        return (repo, url)
+                    } catch {
+                        Log.image.debug("Icon fetch failed for \(repo, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        return (repo, nil)
+                    }
+                }
+            }
+            for await (repo, url) in group {
+                if let url {
+                    iconsByImage[repo] = url
+                }
+            }
+        }
+
+        var snapshot = images
+        applyCachedIcons(to: &snapshot)
+        images = snapshot
+    }
+
     // MARK: - Docker API Operations
 
     /// Load images from Docker Engine API.
-    func loadImages(docker: DockerClient?) async {
+    func loadImages(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
             Log.image.debug("No docker client available")
             return
@@ -87,8 +130,11 @@ class ImagesViewModel {
         do {
             let response = try await docker.api.ImageList(.init())
             let imageList = try response.ok.body.json
-            images = imageList.flatMap { ImageViewModel.fromDocker($0) }
+            var viewModels = imageList.flatMap { ImageViewModel.fromDocker($0) }
+            applyCachedIcons(to: &viewModels)
+            images = viewModels
             Log.image.info("Loaded \(self.images.count, privacy: .public) images")
+            await fetchIcons(client: iconClient)
         } catch {
             Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
         }

@@ -76,4 +76,9 @@ public final class ArcBoxClient: Sendable {
     public var machines: Arcbox_V1_MachineService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
     }
+
+    /// Container image icon lookups.
+    public var icons: Arcbox_V1_IconService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
 }
