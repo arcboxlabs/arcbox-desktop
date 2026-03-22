@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.2...v1.11.0) (2026-03-22)
+
+
+### Features
+
+* DNS-based container domain resolution & UI improvements ([#35](https://github.com/arcboxlabs/arcbox-desktop/issues/35)) ([402012f](https://github.com/arcboxlabs/arcbox-desktop/commit/402012f6456ca2d6b64c0da772758aae95fcc945))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.3 ([#60](https://github.com/arcboxlabs/arcbox-desktop/issues/60)) ([c2fcb71](https://github.com/arcboxlabs/arcbox-desktop/commit/c2fcb7114b36211fe280773331335d792731e9b4))
+
 ## [1.10.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.1...v1.10.2) (2026-03-21)
 
 
