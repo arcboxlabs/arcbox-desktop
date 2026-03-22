@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.11.0...v1.12.0) (2026-03-22)
+
+
+### Features
+
+* integrate IconService for container/image icon display ([#61](https://github.com/arcboxlabs/arcbox-desktop/issues/61)) ([384acd1](https://github.com/arcboxlabs/arcbox-desktop/commit/384acd109f02028d524eb57888ac4b58bb855441))
+
 ## [1.11.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.2...v1.11.0) (2026-03-22)
 
 
