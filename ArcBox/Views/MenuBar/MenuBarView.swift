@@ -13,28 +13,11 @@ struct MenuBarView: View {
     @Environment(\.dockerClient) private var docker
 
     @State private var containersExpanded = true
-    @State private var hoveredItem: HoveredItem?
-    @State private var flyoutAnchorY: CGFloat = 0
-    @State private var isOverFlyout = false
-
-    private var showFlyout: Bool { hoveredItem != nil || isOverFlyout }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            mainPanel
-                .coordinateSpace(name: "mainPanel")
-
-            if showFlyout, let hoveredItem {
-                flyoutPanel(for: hoveredItem)
-                    .padding(.top, flyoutAnchorY)
-                    .padding(.leading, 8)
-                    .transition(.opacity.combined(with: .offset(x: -6)))
-                    .onHover { isOverFlyout = $0 }
-            }
-        }
+        mainPanel
         .padding(6)
         .animation(.easeInOut(duration: 0.2), value: containersExpanded)
-        .animation(.easeInOut(duration: 0.15), value: showFlyout)
         .task(id: docker != nil && daemonManager.state.isRunning) {
             guard docker != nil, daemonManager.state.isRunning else { return }
             await loadAll()
@@ -189,8 +172,6 @@ struct MenuBarView: View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 containersExpanded.toggle()
-                hoveredItem = nil
-                isOverFlyout = false
             }
         } label: {
             HStack(spacing: 10) {
@@ -242,133 +223,29 @@ struct MenuBarView: View {
     }
 
     private func containerRow(_ container: ContainerViewModel) -> some View {
-        let id = HoveredItem.container(container.id)
-        let isActive = hoveredItem == id
+        MenuBarHoverButton {
+            containersVM.selectContainer(container.id)
+            appVM.navigate(to: .containers)
+            NSApp.activate(ignoringOtherApps: true)
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(container.state.color)
+                    .frame(width: 7, height: 7)
 
-        return HStack(spacing: 8) {
-            Circle()
-                .fill(container.state.color)
-                .frame(width: 7, height: 7)
-
-            Text(container.name)
-                .font(.caption.weight(.medium))
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
-
-            Text(container.state.label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.tertiary)
-                .opacity(isActive ? 1 : 0)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 5)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isActive ? Color.primary.opacity(0.10) : .clear)
-        )
-        .background(
-            GeometryReader { geo in
-                Color.clear
-                    .onChange(of: hoveredItem) { _, newVal in
-                        if newVal == id {
-                            flyoutAnchorY = geo.frame(in: .named("mainPanel")).minY
-                        }
-                    }
-            }
-        )
-        .onHover { hovering in
-            if hovering {
-                hoveredItem = id
-                isOverFlyout = false
-            } else if hoveredItem == id, !isOverFlyout {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    if hoveredItem == id, !isOverFlyout {
-                        hoveredItem = nil
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Flyout Panel
-
-    @ViewBuilder
-    private func flyoutPanel(for item: HoveredItem) -> some View {
-        switch item {
-        case .container(let id):
-            if let c = sortedContainers.first(where: { $0.id == id }) {
-                containerFlyout(c)
-            }
-        }
-    }
-
-    private func containerFlyout(_ container: ContainerViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            VStack(alignment: .leading, spacing: 2) {
                 Text(container.name)
-                    .font(.caption.weight(.semibold))
+                    .font(.caption.weight(.medium))
                     .lineLimit(1)
-                Text(container.image)
+
+                Spacer(minLength: 0)
+
+                Text(container.state.label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
             .padding(.horizontal, 6)
-            .padding(.top, 2)
-
-            Divider()
-                .padding(.vertical, 2)
-
-            MenuBarHoverButton {
-                Task {
-                    if container.isRunning {
-                        await containersVM.stopContainerDocker(container.id, docker: docker)
-                    } else {
-                        await containersVM.startContainerDocker(container.id, docker: docker)
-                    }
-                }
-            } label: {
-                Label(
-                    container.isRunning ? "Stop" : "Start",
-                    systemImage: container.isRunning ? "stop.fill" : "play.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(container.isRunning ? AppColors.error : AppColors.running)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 4)
-            }
-
-            MenuBarHoverButton {
-                // TODO: restart
-            } label: {
-                Label("Restart", systemImage: "arrow.clockwise")
-                    .font(.caption)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-            }
-
-            MenuBarHoverButton {
-                Task { await containersVM.removeContainerDocker(container.id, docker: docker) }
-            } label: {
-                Label("Remove", systemImage: "trash")
-                    .font(.caption)
-                    .foregroundStyle(AppColors.error)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-            }
+            .padding(.vertical, 5)
         }
-        .padding(8)
-        .frame(width: 170, alignment: .leading)
-        .background(
-            .quaternary.opacity(0.50),
-            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-        )
     }
 
     // MARK: - Actions
@@ -449,12 +326,6 @@ struct MenuBarView: View {
         appVM.navigate(to: item)
         NSApp.activate(ignoringOtherApps: true)
     }
-}
-
-// MARK: - Supporting Types
-
-private enum HoveredItem: Equatable, Hashable {
-    case container(String)
 }
 
 // MARK: - Hover Components
