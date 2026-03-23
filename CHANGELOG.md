@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.2...v1.12.3) (2026-03-23)
+
+
+### Bug Fixes
+
+* inject SUFeedURL via PlistBuddy instead of xcodebuild build setting ([#69](https://github.com/arcboxlabs/arcbox-desktop/issues/69)) ([2ff1655](https://github.com/arcboxlabs/arcbox-desktop/commit/2ff1655b7664cad599e18184372403c28cc1ae97))
+
 ## [1.12.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.1...v1.12.2) (2026-03-23)
 
 
