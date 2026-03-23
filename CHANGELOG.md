@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.12.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.0...v1.12.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* cache negative icon lookups and include iconURL in equality check ([5823203](https://github.com/arcboxlabs/arcbox-desktop/commit/58232033075d89cc9aa28705741da102623276ce))
+* cache negative icon lookups to avoid repeated RPCs ([ab7214e](https://github.com/arcboxlabs/arcbox-desktop/commit/ab7214e581b007be9ef296a668df9829e4533b50))
+* include iconURL in ContainerViewModel equality check ([d28d8a8](https://github.com/arcboxlabs/arcbox-desktop/commit/d28d8a869a8406bb0a7cd52995490412b3326ba6))
+
 ## [1.12.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.11.0...v1.12.0) (2026-03-22)
 
 
