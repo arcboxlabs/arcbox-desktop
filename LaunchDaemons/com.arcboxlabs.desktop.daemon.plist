@@ -30,9 +30,16 @@
     <key>ProcessType</key>
     <string>Background</string>
 
-    <!-- Daemon manages its own log files via tracing-appender at
-         ~/.arcbox/log/daemon.log. No StandardOutPath/StandardErrorPath
-         needed — stdout/stderr are discarded by launchd. -->
+    <!-- Kept for backward compatibility: older daemon versions write to
+         stdout/stderr. Once the bundled daemon uses tracing-appender
+         (arcbox >= 0.4), these can be removed. Paths moved from /tmp/
+         to ~/.arcbox/log/ so all logs are in one place. launchd routes
+         output to the system log if these keys are absent. -->
+    <key>StandardOutPath</key>
+    <string>/tmp/arcbox-daemon.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/arcbox-daemon.stderr.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
