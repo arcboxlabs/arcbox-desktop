@@ -120,11 +120,6 @@ if [ -n "$SIGN_IDENTITY" ]; then
     )
 fi
 
-# Pass Sparkle feed URL as command-line build setting (xcconfig can't handle // in URLs)
-if [ -n "${SPARKLE_FEED_URL:-}" ]; then
-    XCODE_FLAGS+=("INFOPLIST_KEY_SUFeedURL=$SPARKLE_FEED_URL")
-fi
-
 xcodebuild build "${XCODE_FLAGS[@]}" | tail -20
 
 # Locate the built .app
@@ -142,6 +137,18 @@ mkdir -p "$BUILD_DIR"
 cp -R "$BUILT_APP" "$APP_BUNDLE"
 
 echo "  App bundle: $APP_BUNDLE"
+
+# Inject Sparkle feed URL directly into Info.plist via PlistBuddy.
+# xcodebuild build settings (both xcconfig and command-line) treat "//" as a
+# comment delimiter, which silently truncates URLs.  PlistBuddy has no such
+# limitation.
+if [ -n "${SPARKLE_FEED_URL:-}" ]; then
+    /usr/libexec/PlistBuddy -c "Add :SUFeedURL string $SPARKLE_FEED_URL" \
+        "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Set :SUFeedURL $SPARKLE_FEED_URL" \
+        "$APP_BUNDLE/Contents/Info.plist"
+    echo "  SUFeedURL: $SPARKLE_FEED_URL"
+fi
 
 # ---------------------------------------------------------------------------
 # 2. Embed boot-assets → Contents/Resources/assets/{version}/
