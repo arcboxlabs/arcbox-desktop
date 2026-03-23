@@ -52,7 +52,7 @@ struct SandboxRowView: View {
             // Action buttons
             if isHovered || isSelected {
                 IconButton(
-                    symbol: sandbox.isRunning ? "stop.fill" : "trash",
+                    symbol: sandbox.isRunning ? "stop.fill" : "trash.fill",
                     action: {},
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )

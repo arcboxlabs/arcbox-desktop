@@ -66,7 +66,7 @@ struct ImageRowView: View {
             // Delete button
             if isHovered || isSelected {
                 IconButton(
-                    symbol: "trash",
+                    symbol: "trash.fill",
                     action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )

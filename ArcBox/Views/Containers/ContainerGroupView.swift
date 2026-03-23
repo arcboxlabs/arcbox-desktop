@@ -75,7 +75,7 @@ struct ContainerGroupView: View {
                             )
                         }
                         IconButton(
-                            symbol: "trash",
+                            symbol: "trash.fill",
                             action: { onDeleteAll(allContainerIDs) },
                             color: AppColors.textSecondary
                         )

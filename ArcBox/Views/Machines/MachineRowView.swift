@@ -85,7 +85,7 @@ struct MachineRowView: View {
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
                     IconButton(
-                        symbol: "trash",
+                        symbol: "trash.fill",
                         action: onDelete,
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )

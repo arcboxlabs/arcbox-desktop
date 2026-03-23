@@ -37,7 +37,7 @@ struct NetworkRowView: View {
             // Delete button (only for non-system networks)
             if !network.isSystem && (isHovered || isSelected) {
                 IconButton(
-                    symbol: "trash",
+                    symbol: "trash.fill",
                     action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )

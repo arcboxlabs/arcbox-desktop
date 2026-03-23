@@ -90,7 +90,7 @@ struct ContainerRowView: View {
                     // Link button for containers with port mappings
                     if !container.hostPorts.isEmpty {
                         if container.hostPorts.count == 1,
-                           let port = container.hostPorts.first
+                            let port = container.hostPorts.first
                         {
                             IconButton(
                                 symbol: "link",
@@ -130,7 +130,7 @@ struct ContainerRowView: View {
                         )
                     }
                     IconButton(
-                        symbol: "trash",
+                        symbol: "trash.fill",
                         action: onDelete,
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
