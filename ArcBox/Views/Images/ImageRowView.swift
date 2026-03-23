@@ -24,16 +24,13 @@ struct ImageRowView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Image icon
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated)
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: "shippingbox")
-                        .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : imageColor
-                        )
-                }
+            RemoteIconView(
+                iconURL: image.iconURL,
+                size: 32,
+                symbolFontSize: 14,
+                foregroundColor: isSelected ? AppColors.onAccent : imageColor,
+                backgroundColor: isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated
+            )
 
             // Name, size, and age
             VStack(alignment: .leading, spacing: 2) {

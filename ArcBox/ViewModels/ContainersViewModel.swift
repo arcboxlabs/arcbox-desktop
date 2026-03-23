@@ -68,6 +68,7 @@ class ContainersViewModel {
     }
 
     private var detailsByID: [String: ContainerDetailSnapshot] = [:]
+    private var iconsByImage: [String: String] = [:]
 
     private func sortedContainers(_ list: [ContainerViewModel]) -> [ContainerViewModel] {
         list.sorted { a, b in
@@ -238,6 +239,43 @@ class ContainersViewModel {
         }
     }
 
+    private func applyCachedIcons(to viewModels: inout [ContainerViewModel]) {
+        for i in viewModels.indices {
+            viewModels[i].iconURL = iconsByImage[viewModels[i].image]
+        }
+    }
+
+    /// Fetch icon URLs for all unique image references that are not already cached.
+    func fetchIcons(client: ArcBoxClient?) async {
+        guard let client else { return }
+        let uncached = Set(containers.map(\.image)).subtracting(iconsByImage.keys)
+        guard !uncached.isEmpty else { return }
+
+        await withTaskGroup(of: (String, String?).self) { group in
+            for image in uncached {
+                group.addTask {
+                    do {
+                        var request = Arcbox_V1_GetImageIconRequest()
+                        request.fqin = image
+                        let response = try await client.icons.getImageIcon(request)
+                        let url = response.url.isEmpty ? nil : response.url
+                        return (image, url)
+                    } catch {
+                        Log.container.debug("Icon fetch failed for \(image, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        return (image, nil)
+                    }
+                }
+            }
+            for await (image, url) in group {
+                iconsByImage[image] = url ?? ""
+            }
+        }
+
+        var snapshot = containers
+        applyCachedIcons(to: &snapshot)
+        containers = snapshot
+    }
+
     // MARK: - gRPC Operations
 
     /// Load containers from daemon via gRPC.
@@ -257,11 +295,13 @@ class ContainersViewModel {
                 ContainerViewModel(from: summary)
             }
             applyCachedDetails(cachedDetails, to: &viewModels)
+            applyCachedIcons(to: &viewModels)
             for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
             applyExpandedGroups(from: containers)
+            await fetchIcons(client: client)
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetails(selectedID, client: client)
             }
@@ -347,7 +387,7 @@ class ContainersViewModel {
     // MARK: - Docker API Operations
 
     /// Load containers from Docker Engine API.
-    func loadContainersFromDocker(docker: DockerClient?) async {
+    func loadContainersFromDocker(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
             Log.container.debug("No docker client available")
             return
@@ -360,6 +400,7 @@ class ContainersViewModel {
             let containerList = try response.ok.body.json
             var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
             applyCachedDetails(cachedDetails, to: &viewModels)
+            applyCachedIcons(to: &viewModels)
             // Preserve transitioning state across reload
             for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
@@ -367,6 +408,7 @@ class ContainersViewModel {
             containers = viewModels
             Log.container.info("Loaded \(self.containers.count, privacy: .public) containers")
             applyExpandedGroups(from: containers)
+            await fetchIcons(client: iconClient)
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }

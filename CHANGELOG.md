@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.12.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.11.0...v1.12.0) (2026-03-22)
+
+
+### Features
+
+* integrate IconService for container/image icon display ([#61](https://github.com/arcboxlabs/arcbox-desktop/issues/61)) ([384acd1](https://github.com/arcboxlabs/arcbox-desktop/commit/384acd109f02028d524eb57888ac4b58bb855441))
+
+## [1.11.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.2...v1.11.0) (2026-03-22)
+
+
+### Features
+
+* DNS-based container domain resolution & UI improvements ([#35](https://github.com/arcboxlabs/arcbox-desktop/issues/35)) ([402012f](https://github.com/arcboxlabs/arcbox-desktop/commit/402012f6456ca2d6b64c0da772758aae95fcc945))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.3 ([#60](https://github.com/arcboxlabs/arcbox-desktop/issues/60)) ([c2fcb71](https://github.com/arcboxlabs/arcbox-desktop/commit/c2fcb7114b36211fe280773331335d792731e9b4))
+
+## [1.10.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.1...v1.10.2) (2026-03-21)
+
+
+### Refactoring
+
+* daemon self-provisioning — desktop becomes pure gRPC display layer ([#57](https://github.com/arcboxlabs/arcbox-desktop/issues/57)) ([c173980](https://github.com/arcboxlabs/arcbox-desktop/commit/c173980e3645019bf3e239afc81ecf94dd7411bb))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.1 ([#54](https://github.com/arcboxlabs/arcbox-desktop/issues/54)) ([e05f711](https://github.com/arcboxlabs/arcbox-desktop/commit/e05f71146dbc98a6cd790794aff8c65b32b73f71))
+* bump arcbox version to v0.3.2 ([#56](https://github.com/arcboxlabs/arcbox-desktop/issues/56)) ([2cbf8ed](https://github.com/arcboxlabs/arcbox-desktop/commit/2cbf8ed8d266619d366e79dc1e7f808c7674858e))
+
+## [1.10.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.10.0...v1.10.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* **startup:** reorder preconditions to prevent daemon race conditions ([c856a1e](https://github.com/arcboxlabs/arcbox-desktop/commit/c856a1e8e14116dc36d4db7d7fdb6eff9f8b1f89))
+* **startup:** throw on enumerator failure, restore test target ([5d48f94](https://github.com/arcboxlabs/arcbox-desktop/commit/5d48f94501fa8c2ce53ae41de25bb14635cc7ab6))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.2.7 ([#52](https://github.com/arcboxlabs/arcbox-desktop/issues/52)) ([01c7950](https://github.com/arcboxlabs/arcbox-desktop/commit/01c7950e875e87539833949627b9419cf866de1c))
+
+## [1.10.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.6...v1.10.0) (2026-03-17)
+
+
+### Features
+
+* **helper:** add pure mutation CLI commands (add-interface, remove-interface) ([62ea523](https://github.com/arcboxlabs/arcbox-desktop/commit/62ea5237ab3d3396d36e486bd27191fd649ab9f9))
+
 ## [1.9.6](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.9.5...v1.9.6) (2026-03-17)
 
 

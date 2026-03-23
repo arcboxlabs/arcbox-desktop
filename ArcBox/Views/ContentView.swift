@@ -3,20 +3,20 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppViewModel.self) private var appVM
-    @Environment(HelperManager.self) private var helperManager
 
-    // Feature ViewModels – shared between content and detail columns
-    @State private var containersVM = ContainersViewModel()
-    @State private var volumesVM = VolumesViewModel()
-    @State private var imagesVM = ImagesViewModel()
-    @State private var networksVM = NetworksViewModel()
+    // Shared ViewModels (injected from ArcBoxApp, shared with menu bar)
+    @Environment(ContainersViewModel.self) private var containersVM
+    @Environment(VolumesViewModel.self) private var volumesVM
+    @Environment(ImagesViewModel.self) private var imagesVM
+    @Environment(NetworksViewModel.self) private var networksVM
+
+    // Feature ViewModels – local to main window
     @State private var podsVM = PodsViewModel()
     @State private var servicesVM = ServicesViewModel()
     @State private var machinesVM = MachinesViewModel()
     @State private var sandboxesVM = SandboxesViewModel()
     @State private var templatesVM = TemplatesViewModel()
 
-    @State private var showApprovalSheet = false
     @State private var lastValidNav: NavItem? = .containers
 
     var body: some View {
@@ -64,10 +64,6 @@ struct ContentView: View {
         } detail: {
             detailColumn
         }
-        .sheet(isPresented: $showApprovalSheet) {
-            LoginItemApprovalSheet()
-                .interactiveDismissDisabled(helperManager.requiresApproval)
-        }
         .onChange(of: appVM.currentNav) { _, newNav in
             guard let newNav else { return }
             if newNav.isComingSoon {
@@ -75,11 +71,6 @@ struct ContentView: View {
                 appVM.currentNav = lastValidNav
             } else {
                 lastValidNav = newNav
-            }
-        }
-        .onChange(of: helperManager.requiresApproval, initial: true) { _, needsApproval in
-            if needsApproval {
-                showApprovalSheet = true
             }
         }
     }
@@ -178,5 +169,8 @@ struct DetailPlaceholderView: View {
 #Preview {
     ContentView()
         .environment(AppViewModel())
-        .environment(HelperManager())
+        .environment(ContainersViewModel())
+        .environment(ImagesViewModel())
+        .environment(NetworksViewModel())
+        .environment(VolumesViewModel())
 }

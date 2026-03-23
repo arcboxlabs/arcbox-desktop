@@ -10,6 +10,7 @@ struct ImageViewModel: Identifiable, Hashable {
     let inUse: Bool
     let os: String
     let architecture: String
+    var iconURL: String?
 
     var fullName: String {
         if repository == "<none>" {

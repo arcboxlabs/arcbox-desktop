@@ -81,10 +81,10 @@ struct ContainersListView: View {
         }
         .task(id: docker != nil) {
             vm.dnsServer = dnsServer
-            await vm.loadContainersFromDocker(docker: docker)
+            await vm.loadContainersFromDocker(docker: docker, iconClient: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-            Task { await vm.loadContainersFromDocker(docker: docker) }
+            Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
         }
         .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
             NewContainerSheet()

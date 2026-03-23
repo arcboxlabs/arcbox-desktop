@@ -61,6 +61,7 @@ struct ContainerViewModel: Identifiable, Hashable {
     var ipAddress: String?
     var mounts: [ContainerMount] = []
     var rootfsMountPath: String?
+    var iconURL: String?
 
     var isRunning: Bool { state.isRunning }
 
@@ -148,6 +149,7 @@ struct ContainerViewModel: Identifiable, Hashable {
 
     static func == (lhs: ContainerViewModel, rhs: ContainerViewModel) -> Bool {
         lhs.id == rhs.id && lhs.state == rhs.state && lhs.isTransitioning == rhs.isTransitioning
+            && lhs.iconURL == rhs.iconURL
     }
 
     private static func normalizedPath(_ path: String?) -> String? {

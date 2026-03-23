@@ -11,7 +11,7 @@
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
 		65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 65D867EC2F5C228600DAAEE6 /* Sparkle */; };
 		AB0D00022F60000000000001 /* com.arcboxlabs.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */; };
-		AB0E00132F70000000000013 /* ArcBoxHelper in Copy Helper Tool */ = {isa = PBXBuildFile; fileRef = AB0E00012F70000000000001 /* ArcBoxHelper */; };
+
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
 		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
@@ -26,13 +26,7 @@
 			remoteGlobalIDString = 657F657A2F3A2ADB00C7005A;
 			remoteInfo = ArcBox;
 		};
-		AB0E00402F70000000000040 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 657F65732F3A2ADB00C7005A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AB0E00602F70000000000060;
-			remoteInfo = ArcBoxHelper;
-		};
+
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,17 +41,6 @@
 			name = "Copy LaunchDaemon Plist";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AB0E00322F70000000000032 /* Copy Helper Tool */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Contents/Library/HelperTools;
-			dstSubfolderSpec = 1;
-			files = (
-				AB0E00132F70000000000013 /* ArcBoxHelper in Copy Helper Tool */,
-			);
-			name = "Copy Helper Tool";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -66,8 +49,8 @@
 		8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
 		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
-		AB0E00012F70000000000001 /* ArcBoxHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ArcBoxHelper; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB0E00022F70000000000002 /* com.arcboxlabs.desktop.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.helper.plist; sourceTree = "<group>"; };
+
+
 		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -75,11 +58,6 @@
 		657F657D2F3A2ADB00C7005A /* ArcBox */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ArcBox;
-			sourceTree = "<group>";
-		};
-		AB0E00042F70000000000004 /* ArcBoxHelper */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ArcBoxHelper;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -104,14 +82,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AB0E00312F70000000000031 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				SE0300022F90000000000002 /* Sentry in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -129,7 +100,6 @@
 				657F65A02F3A2ADB00C7005A /* Local.xcconfig */,
 				AB0F00012F80000000000001 /* Version.xcconfig */,
 				657F657D2F3A2ADB00C7005A /* ArcBox */,
-				AB0E00042F70000000000004 /* ArcBoxHelper */,
 				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
 				AB0D00062F60000000000001 /* LaunchDaemons */,
 				BA8AF73F2F66F38100CDDA35 /* Frameworks */,
@@ -142,7 +112,7 @@
 			children = (
 				8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */,
 				657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */,
-				AB0E00012F70000000000001 /* ArcBoxHelper */,
+
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -151,7 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */,
-				AB0E00022F70000000000002 /* com.arcboxlabs.desktop.helper.plist */,
+
 			);
 			path = LaunchDaemons;
 			sourceTree = "<group>";
@@ -175,14 +145,13 @@
 				657F65782F3A2ADB00C7005A /* Frameworks */,
 				657F65792F3A2ADB00C7005A /* Resources */,
 				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
-				AB0E00322F70000000000032 /* Copy Helper Tool */,
-				AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */,
+
+
 				AB0D00052F60000000000001 /* Sign Rust Binaries */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				AB0E00412F70000000000041 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				657F657D2F3A2ADB00C7005A /* ArcBox */,
@@ -218,28 +187,7 @@
 			productReference = 8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		AB0E00602F70000000000060 /* ArcBoxHelper */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AB0E00522F70000000000052 /* Build configuration list for PBXNativeTarget "ArcBoxHelper" */;
-			buildPhases = (
-				AB0E00302F70000000000030 /* Sources */,
-				AB0E00312F70000000000031 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				AB0E00042F70000000000004 /* ArcBoxHelper */,
-			);
-			name = ArcBoxHelper;
-			packageProductDependencies = (
-				SE0200022F90000000000002 /* Sentry */,
-			);
-			productName = ArcBoxHelper;
-			productReference = AB0E00012F70000000000001 /* ArcBoxHelper */;
-			productType = "com.apple.product-type.tool";
-		};
+
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -253,9 +201,7 @@
 					657F657A2F3A2ADB00C7005A = {
 						CreatedOnToolsVersion = 26.2;
 					};
-					AB0E00602F70000000000060 = {
-						CreatedOnToolsVersion = 26.2;
-					};
+
 				};
 			};
 			buildConfigurationList = 657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "ArcBox" */;
@@ -281,7 +227,7 @@
 			targets = (
 				8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */,
 				657F657A2F3A2ADB00C7005A /* ArcBox */,
-				AB0E00602F70000000000060 /* ArcBoxHelper */,
+
 			);
 		};
 /* End PBXProject section */
@@ -327,22 +273,7 @@
 			shellPath = /bin/bash;
 			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/com.arcboxlabs.desktop.daemon\"\nCLI_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin/abctl\"\nENTITLEMENTS=\"${PROJECT_DIR}/ArcBox/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ ! -f \"${CLI_PATH}\" ]; then\n    echo \"error: CLI binary not found at ${CLI_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.abctl\" \"${CLI_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --sign - \"${CLI_PATH}\"\nfi\n";
 		};
-		AB0E00332F70000000000033 /* Generate Helper LaunchDaemon Plist */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/LaunchDaemons/com.arcboxlabs.desktop.helper.plist",
-			);
-			name = "Generate Helper LaunchDaemon Plist";
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons/com.arcboxlabs.desktop.helper.plist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "INPUT=\"${SRCROOT}/LaunchDaemons/com.arcboxlabs.desktop.helper.plist\"\nOUTPUT=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchDaemons/com.arcboxlabs.desktop.helper.plist\"\n\nmkdir -p \"$(dirname \"$OUTPUT\")\"\nsed \"s/__DEVELOPMENT_TEAM__/${DEVELOPMENT_TEAM}/g\" \"$INPUT\" > \"$OUTPUT\"\n";
-		};
+
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -361,13 +292,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AB0E00302F70000000000030 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -376,11 +301,7 @@
 			target = 657F657A2F3A2ADB00C7005A /* ArcBox */;
 			targetProxy = 3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */;
 		};
-		AB0E00412F70000000000041 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = AB0E00602F70000000000060 /* ArcBoxHelper */;
-			targetProxy = AB0E00402F70000000000040 /* PBXContainerItemProxy */;
-		};
+
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -624,44 +545,7 @@
 			};
 			name = Release;
 		};
-		AB0E00502F70000000000050 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = ArcBoxHelper/ArcBoxHelper.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
-				DEVELOPMENT_TEAM = 422ACSY6Y5;
-				ENABLE_APP_SANDBOX = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ArcBoxHelper/ArcBoxHelperInfo.plist;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop.helper;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		AB0E00512F70000000000051 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = ArcBoxHelper/ArcBoxHelper.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
-				DEVELOPMENT_TEAM = 422ACSY6Y5;
-				ENABLE_APP_SANDBOX = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ArcBoxHelper/ArcBoxHelperInfo.plist;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop.helper;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
+
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -683,15 +567,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB0E00522F70000000000052 /* Build configuration list for PBXNativeTarget "ArcBoxHelper" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AB0E00502F70000000000050 /* Debug */,
-				AB0E00512F70000000000051 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
+
 		CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "ArcBoxTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

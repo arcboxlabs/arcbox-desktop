@@ -613,6 +613,37 @@ public struct Arcbox_V1_PruneResponse: Sendable {
   public init() {}
 }
 
+/// Request to get the icon URL for a container image.
+public struct Arcbox_V1_GetImageIconRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Fully qualified image name (e.g., "nginx", "localstack/localstack", "ghcr.io/astral-sh/uv").
+  public var fqin: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response containing the icon URL.
+public struct Arcbox_V1_GetImageIconResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Icon URL, empty if not found.
+  public var url: String = String()
+
+  /// Icon source (e.g., "docker_hub_logo", "docker_official_image", "ghcr_avatar").
+  public var source: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Request to create a volume.
 public struct Arcbox_V1_CreateVolumeRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -841,6 +872,103 @@ public struct Arcbox_V1_TerminalSize: Sendable {
   public var height: UInt32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Daemon startup progress and infrastructure health.
+/// Allows the desktop app (or any gRPC client) to observe daemon readiness
+/// without managing its lifecycle.
+public struct Arcbox_V1_SetupStatus: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Current daemon phase.
+  public var phase: Arcbox_V1_SetupStatus.Phase = .unspecified
+
+  /// Whether the DNS resolver file is installed.
+  public var dnsResolverInstalled: Bool = false
+
+  /// Whether /var/run/docker.sock is symlinked to ArcBox.
+  public var dockerSocketLinked: Bool = false
+
+  /// Whether the container subnet route is installed.
+  public var routeInstalled: Bool = false
+
+  /// Whether the default VM is running.
+  public var vmRunning: Bool = false
+
+  /// Human-readable status message.
+  public var message: String = String()
+
+  /// Whether Docker CLI tools are installed.
+  public var dockerToolsInstalled: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// Daemon startup phases, ordered by progression.
+  public enum Phase: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+    case initializing // = 1
+    case assetsReady // = 2
+    case vmStarting // = 3
+    case vmReady // = 4
+    case networkReady // = 5
+    case ready // = 6
+    case degraded // = 7
+    case downloadingAssets // = 8
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .initializing
+      case 2: self = .assetsReady
+      case 3: self = .vmStarting
+      case 4: self = .vmReady
+      case 5: self = .networkReady
+      case 6: self = .ready
+      case 7: self = .degraded
+      case 8: self = .downloadingAssets
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .initializing: return 1
+      case .assetsReady: return 2
+      case .vmStarting: return 3
+      case .vmReady: return 4
+      case .networkReady: return 5
+      case .ready: return 6
+      case .degraded: return 7
+      case .downloadingAssets: return 8
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_SetupStatus.Phase] = [
+      .unspecified,
+      .initializing,
+      .assetsReady,
+      .vmStarting,
+      .vmReady,
+      .networkReady,
+      .ready,
+      .degraded,
+      .downloadingAssets,
+    ]
+
+  }
 
   public init() {}
 }
@@ -1896,6 +2024,71 @@ extension Arcbox_V1_PruneResponse: SwiftProtobuf.Message, SwiftProtobuf._Message
   }
 }
 
+extension Arcbox_V1_GetImageIconRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetImageIconRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}fqin\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.fqin) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.fqin.isEmpty {
+      try visitor.visitSingularStringField(value: self.fqin, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_GetImageIconRequest, rhs: Arcbox_V1_GetImageIconRequest) -> Bool {
+    if lhs.fqin != rhs.fqin {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_GetImageIconResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetImageIconResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}url\0\u{1}source\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.url) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.source) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.url.isEmpty {
+      try visitor.visitSingularStringField(value: self.url, fieldNumber: 1)
+    }
+    if !self.source.isEmpty {
+      try visitor.visitSingularStringField(value: self.source, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_GetImageIconResponse, rhs: Arcbox_V1_GetImageIconResponse) -> Bool {
+    if lhs.url != rhs.url {return false}
+    if lhs.source != rhs.source {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Arcbox_V1_CreateVolumeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateVolumeRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}driver\0\u{3}driver_opts\0\u{1}labels\0")
@@ -2332,4 +2525,68 @@ extension Arcbox_V1_TerminalSize: SwiftProtobuf.Message, SwiftProtobuf._MessageI
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetupStatus"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.phase) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.dnsResolverInstalled) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.dockerSocketLinked) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.routeInstalled) }()
+      case 5: try { try decoder.decodeSingularBoolField(value: &self.vmRunning) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.message) }()
+      case 7: try { try decoder.decodeSingularBoolField(value: &self.dockerToolsInstalled) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.phase != .unspecified {
+      try visitor.visitSingularEnumField(value: self.phase, fieldNumber: 1)
+    }
+    if self.dnsResolverInstalled != false {
+      try visitor.visitSingularBoolField(value: self.dnsResolverInstalled, fieldNumber: 2)
+    }
+    if self.dockerSocketLinked != false {
+      try visitor.visitSingularBoolField(value: self.dockerSocketLinked, fieldNumber: 3)
+    }
+    if self.routeInstalled != false {
+      try visitor.visitSingularBoolField(value: self.routeInstalled, fieldNumber: 4)
+    }
+    if self.vmRunning != false {
+      try visitor.visitSingularBoolField(value: self.vmRunning, fieldNumber: 5)
+    }
+    if !self.message.isEmpty {
+      try visitor.visitSingularStringField(value: self.message, fieldNumber: 6)
+    }
+    if self.dockerToolsInstalled != false {
+      try visitor.visitSingularBoolField(value: self.dockerToolsInstalled, fieldNumber: 7)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetupStatus, rhs: Arcbox_V1_SetupStatus) -> Bool {
+    if lhs.phase != rhs.phase {return false}
+    if lhs.dnsResolverInstalled != rhs.dnsResolverInstalled {return false}
+    if lhs.dockerSocketLinked != rhs.dockerSocketLinked {return false}
+    if lhs.routeInstalled != rhs.routeInstalled {return false}
+    if lhs.vmRunning != rhs.vmRunning {return false}
+    if lhs.message != rhs.message {return false}
+    if lhs.dockerToolsInstalled != rhs.dockerToolsInstalled {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetupStatus.Phase: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0")
 }

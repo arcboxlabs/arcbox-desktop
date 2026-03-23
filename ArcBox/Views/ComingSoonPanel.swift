@@ -1,16 +1,27 @@
 import AppKit
 import SwiftUI
 
+/// Tracks the currently visible "Coming Soon" panel so we don't create duplicates.
+/// Strong ref: we manage the lifecycle ourselves since isReleasedWhenClosed is off.
+private var currentPanel: NSPanel?
+
 /// Shows a floating "Coming Soon" panel centered on screen.
+/// Re-focuses the existing panel if one is already visible.
 @MainActor
 func showComingSoonPanel() {
-    let panel = NSPanel(
+    if let existing = currentPanel {
+        existing.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        return
+    }
+
+    let panel = ComingSoonPanel(
         contentRect: NSRect(x: 0, y: 0, width: 280, height: 260),
-        styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+        styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
         backing: .buffered,
         defer: false
     )
-    panel.isReleasedWhenClosed = true
+    panel.isReleasedWhenClosed = false
     panel.titleVisibility = .hidden
     panel.titlebarAppearsTransparent = true
     panel.isOpaque = false
@@ -19,8 +30,8 @@ func showComingSoonPanel() {
     panel.center()
 
     let hostingView = NSHostingView(
-        rootView: ComingSoonContent(onDismiss: { [weak panel] in
-            panel?.close()
+        rootView: ComingSoonContent(onDismiss: {
+            currentPanel?.close()
         }))
     hostingView.wantsLayer = true
     hostingView.layer?.cornerRadius = 20
@@ -28,7 +39,26 @@ func showComingSoonPanel() {
     panel.contentView = hostingView
     panel.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
+
+    currentPanel = panel
 }
+
+// MARK: - Panel subclass for Esc key support
+
+private final class ComingSoonPanel: NSPanel {
+    override func close() {
+        super.close()
+        if currentPanel === self {
+            currentPanel = nil
+        }
+    }
+
+    override func cancelOperation(_ sender: Any?) {
+        close()
+    }
+}
+
+// MARK: - Content
 
 private struct ComingSoonContent: View {
     var onDismiss: () -> Void

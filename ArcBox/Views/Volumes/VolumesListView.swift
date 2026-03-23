@@ -11,15 +11,17 @@ struct VolumesListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // "In Use" section header
-            HStack {
-                Text("In Use")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppColors.textSecondary)
-                Spacer()
+            // "In Use" section header — only show when data is loaded
+            if orchestrator?.isReady == true && daemonManager.state.isRunning {
+                HStack {
+                    Text("In Use")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppColors.textSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
 
             if let orchestrator, !orchestrator.isReady {
                 StartupProgressView(orchestrator: orchestrator)

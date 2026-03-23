@@ -54,23 +54,16 @@ struct ContainerRowView: View {
         HStack(spacing: 8) {
             // Container icon with status dot
             ZStack(alignment: .bottomTrailing) {
-                // Container icon (colored box fallback)
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(
-                        isSelected
-                            ? Color.white.opacity(0.12)
-                            : AppColors.surfaceElevated
-                    )
-                    .frame(width: 32, height: 32)
-                    .overlay {
-                        Image(systemName: "shippingbox")
-                            .font(.system(size: 16))
-                            .foregroundStyle(
-                                isSelected
-                                    ? AppColors.onAccent
-                                    : (isStopped ? AppColors.textMuted : containerColor)
-                            )
-                    }
+                RemoteIconView(
+                    iconURL: container.iconURL,
+                    size: 32,
+                    foregroundColor: isSelected
+                        ? AppColors.onAccent
+                        : (isStopped ? AppColors.textMuted : containerColor),
+                    backgroundColor: isSelected
+                        ? Color.white.opacity(0.12)
+                        : AppColors.surfaceElevated
+                )
 
                 // Status dot
                 if container.isTransitioning {

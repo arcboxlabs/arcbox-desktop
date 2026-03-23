@@ -7,19 +7,22 @@ struct ImagesListView: View {
     @Environment(ImagesViewModel.self) private var vm
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(\.startupOrchestrator) private var orchestrator
+    @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
     var body: some View {
         VStack(spacing: 0) {
-            // "In Use" section header
-            HStack {
-                Text("In Use")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppColors.textSecondary)
-                Spacer()
+            // "In Use" section header — only show when data is loaded
+            if orchestrator?.isReady == true && daemonManager.state.isRunning {
+                HStack {
+                    Text("In Use")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppColors.textSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
 
             if let orchestrator, !orchestrator.isReady {
                 StartupProgressView(orchestrator: orchestrator)
@@ -61,12 +64,12 @@ struct ImagesListView: View {
         .sheet(isPresented: Bindable(vm).showPullImageSheet) {
             PullImageSheet()
         }
-        .task(id: docker != nil) { await vm.loadImages(docker: docker) }
+        .task(id: docker != nil) { await vm.loadImages(docker: docker, iconClient: client) }
         .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
-            Task { await vm.loadImages(docker: docker) }
+            Task { await vm.loadImages(docker: docker, iconClient: client) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
-            Task { await vm.loadImages(docker: docker) }
+            Task { await vm.loadImages(docker: docker, iconClient: client) }
         }
     }
 }
