@@ -20,7 +20,7 @@ struct SandboxRowView: View {
         HStack(spacing: 12) {
             // Sandbox icon
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated)
+                .fill(AppColors.iconBackground)
                 .frame(width: 32, height: 32)
                 .overlay {
                     Image(systemName: "square.stack.3d.up")

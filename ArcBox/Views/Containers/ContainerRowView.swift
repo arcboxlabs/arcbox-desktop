@@ -38,12 +38,8 @@ struct ContainerRowView: View {
                 RemoteIconView(
                     iconURL: container.iconURL,
                     size: 32,
-                    foregroundColor: isSelected
-                        ? AppColors.onAccent
-                        : (isStopped ? AppColors.textMuted : containerColor),
-                    backgroundColor: isSelected
-                        ? Color.white.opacity(0.12)
-                        : AppColors.surfaceElevated
+                    foregroundColor: isStopped ? AppColors.textMuted : containerColor,
+                    backgroundColor: AppColors.iconBackground
                 )
 
                 // Status dot

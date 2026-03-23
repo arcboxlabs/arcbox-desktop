@@ -29,11 +29,7 @@ struct MachineRowView: View {
             // Machine icon with status dot
             ZStack(alignment: .bottomTrailing) {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(
-                        isSelected
-                            ? Color.white.opacity(0.12)
-                            : AppColors.surfaceElevated
-                    )
+                    .fill(AppColors.iconBackground)
                     .frame(width: 32, height: 32)
                     .overlay {
                         Image(systemName: "desktopcomputer")
