@@ -39,7 +39,7 @@ struct ImagesListView: View {
                                 isSelected: vm.selectedID == image.id,
                                 onSelect: { vm.selectImage(image.id) },
                                 onDelete: {
-                                    Task { await vm.removeImage(image.id, docker: docker) }
+                                    Task { await vm.removeImage(image.id, dockerId: image.dockerId, docker: docker) }
                                 }
                             )
                         }
