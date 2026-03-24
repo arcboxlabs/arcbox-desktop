@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.3...v1.13.0) (2026-03-24)
+
+
+### Features
+
+* **ci:** update Dub download short links after stable release ([#71](https://github.com/arcboxlabs/arcbox-desktop/issues/71)) ([768027d](https://github.com/arcboxlabs/arcbox-desktop/commit/768027d04fb46edcd5e496912f131f0130956b8f))
+
 ## [1.12.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.2...v1.12.3) (2026-03-23)
 
 
