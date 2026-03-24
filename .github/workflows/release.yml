@@ -578,3 +578,33 @@ jobs:
           if [ "$FAILED" -eq 1 ]; then
             echo "::warning::Some CDN URLs did not return HTTP 200"
           fi
+
+      - name: Update Dub download short links
+        if: needs.build-dmg.outputs.channel == 'stable'
+        env:
+          DUB_API_KEY: ${{ secrets.DUB_API_KEY }}
+        run: |
+          VERSION="${{ steps.channel.outputs.version }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+          CDN_URL="https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}"
+
+          update_dub_link() {
+            local LINK_ID="$1"
+            local URL="$2"
+            if [ -z "$LINK_ID" ]; then
+              echo "Skipping: no link ID provided"
+              return 0
+            fi
+            RESPONSE=$(curl -fsSL -X PATCH \
+              "https://api.dub.co/links/${LINK_ID}" \
+              -H "Authorization: Bearer $DUB_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"url\": \"${URL}\"}")
+            echo "$RESPONSE" | jq '{shortLink, url}'
+          }
+
+          echo "=== Updating ARM64 download link ==="
+          update_dub_link "${{ secrets.DUB_LINKID_DOWNLOAD_DESKTOP_ARM64 }}" "$CDN_URL"
+
+          echo "=== Updating x64 download link ==="
+          update_dub_link "${{ secrets.DUB_LINKID_DOWNLOAD_DESKTOP_X64 }}" "$CDN_URL"
