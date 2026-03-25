@@ -569,7 +569,7 @@ jobs:
             "https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}" \
             "https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml" \
             "https://release.arcboxcdn.com/desktop/latest.json"; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$URL")
+            HTTP_STATUS=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 15 "$URL") || true
             echo "CDN check: $URL -> HTTP $HTTP_STATUS"
             if [ "$HTTP_STATUS" != "200" ]; then
               echo "::warning::CDN returned HTTP $HTTP_STATUS for $URL"
