@@ -1,6 +1,6 @@
 <div align="center">
 
-# ArcBox Desktop
+# ArcBox
 
 **Native macOS GUI for ArcBox — containers, VMs, and sandboxes at your fingertips.**
 
@@ -14,11 +14,11 @@
 
 ## Overview
 
-ArcBox Desktop is the official graphical interface for the [ArcBox](https://github.com/arcboxlabs/arcbox) runtime. It communicates with `arcbox-daemon` over gRPC and the Docker Engine API, providing a three-column interface for managing your entire ArcBox environment.
+ArcBox is the official graphical interface for the [ArcBox](https://github.com/arcboxlabs/arcbox) runtime. It communicates with `arcbox-daemon` over gRPC and the Docker Engine API, providing a three-column interface for managing your entire ArcBox environment.
 
 ```
 ┌─────────────────────┐
-│  ArcBox Desktop     │  SwiftUI
+│  ArcBox             │  SwiftUI
 └──────────┬──────────┘
            │ gRPC + Docker API (Unix socket)
            ▼
