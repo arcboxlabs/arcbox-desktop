@@ -28,8 +28,8 @@ struct ImageRowView: View {
                 iconURL: image.iconURL,
                 size: 32,
                 symbolFontSize: 14,
-                foregroundColor: isSelected ? AppColors.onAccent : imageColor,
-                backgroundColor: isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated
+                foregroundColor: imageColor,
+                backgroundColor: AppColors.iconBackground
             )
 
             // Name, size, and age
@@ -66,7 +66,7 @@ struct ImageRowView: View {
             // Delete button
             if isHovered || isSelected {
                 IconButton(
-                    symbol: "trash",
+                    symbol: "trash.fill",
                     action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )

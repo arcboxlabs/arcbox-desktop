@@ -38,12 +38,8 @@ struct ContainerRowView: View {
                 RemoteIconView(
                     iconURL: container.iconURL,
                     size: 32,
-                    foregroundColor: isSelected
-                        ? AppColors.onAccent
-                        : (isStopped ? AppColors.textMuted : containerColor),
-                    backgroundColor: isSelected
-                        ? Color.white.opacity(0.12)
-                        : AppColors.surfaceElevated
+                    foregroundColor: isStopped ? AppColors.textMuted : containerColor,
+                    backgroundColor: AppColors.iconBackground
                 )
 
                 // Status dot
@@ -94,7 +90,7 @@ struct ContainerRowView: View {
                     // Link button for containers with port mappings
                     if !container.hostPorts.isEmpty {
                         if container.hostPorts.count == 1,
-                           let port = container.hostPorts.first
+                            let port = container.hostPorts.first
                         {
                             IconButton(
                                 symbol: "link",
@@ -134,7 +130,7 @@ struct ContainerRowView: View {
                         )
                     }
                     IconButton(
-                        symbol: "trash",
+                        symbol: "trash.fill",
                         action: onDelete,
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )

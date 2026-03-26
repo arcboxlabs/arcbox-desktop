@@ -200,7 +200,7 @@ struct ImageFilesTab: View {
         }
 
         do {
-            let snapshot = try await docker.inspectImageSnapshot(id: image.id)
+            let snapshot = try await docker.inspectImageSnapshot(id: image.dockerId)
             if let resolvedPath = ImageViewModel.inferRootFSMountPath(
                 explicitPath: snapshot.rootfsMountPath,
                 labels: snapshot.labels

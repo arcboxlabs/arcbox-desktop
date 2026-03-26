@@ -13,14 +13,12 @@ struct NetworkRowView: View {
         HStack(spacing: 12) {
             // Network icon
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated)
+                .fill(AppColors.iconBackground)
                 .frame(width: 32, height: 32)
                 .overlay {
                     Image(systemName: network.isSystem ? "globe" : "link")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : AppColors.textSecondary
-                        )
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
             // Name and driver
@@ -39,7 +37,7 @@ struct NetworkRowView: View {
             // Delete button (only for non-system networks)
             if !network.isSystem && (isHovered || isSelected) {
                 IconButton(
-                    symbol: "trash",
+                    symbol: "trash.fill",
                     action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )

@@ -138,15 +138,15 @@ class ImagesViewModel {
         }
     }
 
-    func removeImage(_ id: String, docker: DockerClient?) async {
+    func removeImage(_ id: String, dockerId: String, docker: DockerClient?) async {
         guard let docker else { return }
         if selectedID == id { selectedID = nil }
         do {
-            let response = try await docker.api.ImageDelete(path: .init(name: id), query: .init(force: true))
+            let response = try await docker.api.ImageDelete(path: .init(name: dockerId), query: .init(force: true))
             _ = try response.ok
-            Log.image.info("Removed image \(id, privacy: .public)")
+            Log.image.info("Removed image \(dockerId, privacy: .public)")
         } catch {
-            Log.image.error("Error removing image \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.image.error("Error removing image \(dockerId, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
         await loadImages(docker: docker)
     }
@@ -167,7 +167,8 @@ extension ImageViewModel {
             let tag = parts.count > 1 ? String(parts[1]) : "<none>"
 
             return ImageViewModel(
-                id: summary.Id,
+                id: "\(summary.Id)/\(repository):\(tag)",
+                dockerId: summary.Id,
                 repository: repository,
                 tag: tag,
                 sizeBytes: UInt64(summary.Size),

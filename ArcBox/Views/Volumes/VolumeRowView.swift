@@ -13,14 +13,12 @@ struct VolumeRowView: View {
         HStack(spacing: 12) {
             // Volume icon
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated)
+                .fill(AppColors.iconBackground)
                 .frame(width: 32, height: 32)
                 .overlay {
                     Image(systemName: "externaldrive")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : AppColors.textSecondary
-                        )
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
             // Name and size
@@ -39,7 +37,7 @@ struct VolumeRowView: View {
             // Delete button
             if isHovered || isSelected {
                 IconButton(
-                    symbol: "trash",
+                    symbol: "trash.fill",
                     action: onDelete,
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
