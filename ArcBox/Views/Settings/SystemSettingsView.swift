@@ -4,9 +4,9 @@ struct SystemSettingsView: View {
     @State private var memoryLimit: Double = 9
     @State private var cpuLimit: Double = 17 // 17 = "None" (beyond max)
     @State private var useAdminPrivileges = true
-    @State private var switchContextAutomatically = true
+    @AppStorage("switchDockerContextAutomatically") private var switchContextAutomatically = true
     @State private var useRosetta = true
-    @State private var pauseContainersWhileSleeping = true
+    @AppStorage("pauseContainersWhileSleeping") private var pauseContainersWhileSleeping = true
 
     private let memoryRange: ClosedRange<Double> = 1...14
     private let cpuSteps: [String] = ["100%", ""] // display only

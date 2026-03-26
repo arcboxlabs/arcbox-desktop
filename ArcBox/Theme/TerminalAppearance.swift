@@ -4,8 +4,20 @@ import SwiftTerm
 /// Shared terminal appearance configuration for light/dark mode.
 /// Used by ContainerTerminalTab and ImageTerminalTab.
 enum TerminalAppearance {
-    static func configure(_ terminalView: TerminalView) {
-        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    /// Configure terminal colors based on the given theme preference.
+    /// - Parameters:
+    ///   - terminalView: The SwiftTerm view to configure.
+    ///   - theme: One of "system", "light", or "dark". Defaults to "system".
+    static func configure(_ terminalView: TerminalView, theme: String = "system") {
+        let isDark: Bool
+        switch theme {
+        case "light":
+            isDark = false
+        case "dark":
+            isDark = true
+        default: // "system"
+            isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        }
 
         terminalView.nativeBackgroundColor =
             isDark

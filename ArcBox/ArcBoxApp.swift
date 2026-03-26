@@ -14,7 +14,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var startupOrchestrator: StartupOrchestrator?
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let keepRunning = UserDefaults.standard.bool(forKey: "keepRunning")
+        let showInMenuBar = UserDefaults.standard.bool(forKey: "showInMenuBar")
+
+        // If "keep running" is enabled and menu bar is visible, hide the app instead of quitting
+        if keepRunning && showInMenuBar {
+            for window in NSApp.windows where window.isVisible {
+                window.close()
+            }
+            return .terminateCancel
+        }
+
         eventMonitor?.stop()
+        DockerContextManager.restorePreviousContext()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -36,8 +48,11 @@ struct ArcBoxDesktopApp: App {
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
+    @State private var sleepWakeManager = SleepWakeManager()
     @State private var startupOrchestrator: StartupOrchestrator?
     @AppStorage("showInMenuBar") private var showInMenuBar = false
+    @AppStorage("autoUpdate") private var autoUpdate = false
+    @AppStorage("updateChannel") private var updateChannel = "stable"
 
     // Shared ViewModels used by both main window and menu bar
     @State private var containersVM = ContainersViewModel()
@@ -136,10 +151,25 @@ struct ArcBoxDesktopApp: App {
                     if newState.isRunning {
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
+                            sleepWakeManager.dockerClientRef = dockerClient
+                            sleepWakeManager.start()
                         }
+                        DockerContextManager.switchToArcBox()
                     } else {
                         eventMonitor.stop()
+                        sleepWakeManager.stop()
                     }
+                }
+                .onAppear {
+                    // Sync auto-update preference to Sparkle
+                    updaterController.updater.automaticallyChecksForUpdates = autoUpdate
+                }
+                .onChange(of: autoUpdate) { _, newValue in
+                    updaterController.updater.automaticallyChecksForUpdates = newValue
+                }
+                .onChange(of: updateChannel) { _, _ in
+                    // Force Sparkle to re-fetch the feed URL (which reads updateChannel via UpdaterDelegate)
+                    updaterController.updater.resetUpdateCycle()
                 }
         }
         .defaultSize(width: 1200, height: 800)
@@ -152,6 +182,7 @@ struct ArcBoxDesktopApp: App {
 
         Window("", id: "settings") {
             SettingsView()
+                .environment(\.dockerClient, dockerClient)
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(.suppressed)

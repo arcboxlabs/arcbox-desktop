@@ -11,6 +11,8 @@ struct ContainerTerminalTab: View {
     @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
+    @AppStorage("terminalTheme") private var terminalTheme = "system"
+    @AppStorage("externalTerminal") private var externalTerminal = "lastUsed"
     @State private var session = DockerTerminalSession()
     @State private var selectedShell = "/bin/sh"
     @State private var terminalToken = UUID()
@@ -32,6 +34,20 @@ struct ContainerTerminalTab: View {
                     .disabled(session.state == .connected)
 
                     Spacer()
+
+                    Button(action: {
+                        ExternalTerminalLauncher.open(
+                            preference: externalTerminal,
+                            containerID: container.id,
+                            shell: selectedShell
+                        )
+                    }) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open in external terminal")
 
                     if session.state == .connected {
                         Button(action: { session.disconnect() }) {
@@ -99,7 +115,7 @@ struct ContainerTerminalTab: View {
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {
-        TerminalAppearance.configure(terminalView)
+        TerminalAppearance.configure(terminalView, theme: terminalTheme)
     }
 
     private var notRunningView: some View {
