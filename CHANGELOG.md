@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.13.3...v1.14.0) (2026-03-26)
+
+
+### Features
+
+* remove daemon plist log paths (companion to arcbox[#99](https://github.com/arcboxlabs/arcbox-desktop/issues/99)) ([#64](https://github.com/arcboxlabs/arcbox-desktop/issues/64)) ([af2780c](https://github.com/arcboxlabs/arcbox-desktop/commit/af2780cb468ed362f5a53f1f497488d147c10f17))
+
+
+### Refactoring
+
+* rename app from "ArcBox Desktop" to "ArcBox" ([#78](https://github.com/arcboxlabs/arcbox-desktop/issues/78)) ([26c374c](https://github.com/arcboxlabs/arcbox-desktop/commit/26c374c2f7512fa1e6abf7b621e1fb390b1b9b9d))
+
 ## [1.13.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.13.2...v1.13.3) (2026-03-26)
 
 
