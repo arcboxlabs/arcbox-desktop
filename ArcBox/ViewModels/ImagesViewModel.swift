@@ -25,7 +25,6 @@ enum ImageSortField: String, CaseIterable {
 class ImagesViewModel {
     var images: [ImageViewModel] = []
     var selectedID: String? = nil
-    var isPulling: Bool = false
     var activeTab: ImageDetailTab = .info
     var listWidth: CGFloat = 320
     var showPullImageSheet: Bool = false
@@ -140,44 +139,64 @@ class ImagesViewModel {
         }
     }
 
-    /// Pull an image from a registry. Parses "image:tag" format.
-    func pullImage(_ reference: String, platform: String?, docker: DockerClient?) async {
-        guard let docker else { return }
-        // Split "nginx:latest" into fromImage="nginx", tag="latest"
-        let parts = reference.split(separator: ":", maxSplits: 1)
-        let fromImage = String(parts[0])
-        let tag: String? = parts.count > 1 ? String(parts[1]) : nil
+    /// Parse an image reference into (fromImage, tag), handling registry ports and digests.
+    /// e.g. "localhost:5000/repo:tag" → ("localhost:5000/repo", "tag")
+    ///      "repo@sha256:abc" → ("repo@sha256:abc", nil)
+    ///      "nginx:latest" → ("nginx", "latest")
+    private func parseImageReference(_ reference: String) -> (fromImage: String, tag: String?) {
+        if reference.contains("@") {
+            return (fromImage: reference, tag: nil)
+        }
+        // Only treat a colon after the last "/" as a tag separator
+        let searchStart: String.Index
+        if let lastSlash = reference.lastIndex(of: "/") {
+            searchStart = reference.index(after: lastSlash)
+        } else {
+            searchStart = reference.startIndex
+        }
+        if let colonIndex = reference[searchStart...].lastIndex(of: ":") {
+            let fromImage = String(reference[..<colonIndex])
+            let tag = String(reference[reference.index(after: colonIndex)...])
+            return (fromImage: fromImage, tag: tag.isEmpty ? nil : tag)
+        }
+        return (fromImage: reference, tag: nil)
+    }
 
-        isPulling = true
+    /// Pull an image from a registry. Returns true on success.
+    func pullImage(_ reference: String, platform: String?, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+        let parsed = parseImageReference(reference)
+
         do {
             let response = try await docker.api.ImageCreate(
-                query: .init(fromImage: fromImage, tag: tag, platform: platform)
+                query: .init(fromImage: parsed.fromImage, tag: parsed.tag, platform: platform)
             )
             _ = try response.ok
             Log.image.info("Pulled image \(reference, privacy: .public)")
             await loadImages(docker: docker)
+            return true
         } catch {
             Log.image.error("Error pulling image \(reference, privacy: .public): \(String(describing: error), privacy: .public)")
+            return false
         }
-        isPulling = false
     }
 
-    /// Import an image from a local tar archive (equivalent to `docker load`).
-    func importImage(tarURL: URL, docker: DockerClient?) async {
-        guard let docker else { return }
-        isPulling = true
+    /// Import an image from a local tar archive (equivalent to `docker load`). Returns true on success.
+    func importImage(tarURL: URL, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
         do {
-            let data = try Data(contentsOf: tarURL)
+            let data = try Data(contentsOf: tarURL, options: .mappedIfSafe)
             let response = try await docker.api.ImageLoad(
                 body: .application_x_hyphen_tar(HTTPBody(data))
             )
             _ = try response.ok
             Log.image.info("Imported image from \(tarURL.lastPathComponent, privacy: .public)")
             await loadImages(docker: docker)
+            return true
         } catch {
             Log.image.error("Error importing image: \(String(describing: error), privacy: .public)")
+            return false
         }
-        isPulling = false
     }
 
     func removeImage(_ id: String, dockerId: String, docker: DockerClient?) async {

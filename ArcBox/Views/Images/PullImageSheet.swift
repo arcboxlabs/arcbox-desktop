@@ -63,15 +63,17 @@ struct PullImageSheet: View {
 
                 Button("Import...") {
                     let panel = NSOpenPanel()
-                    panel.allowedContentTypes = [UTType(filenameExtension: "tar")!, .gzip]
+                    var types: [UTType] = [.gzip]
+                    if let tar = UTType(filenameExtension: "tar") { types.insert(tar, at: 0) }
+                    panel.allowedContentTypes = types
                     panel.allowsMultipleSelection = false
                     panel.canChooseDirectories = false
                     guard panel.runModal() == .OK, let url = panel.url else { return }
                     isPulling = true
                     Task {
-                        await vm.importImage(tarURL: url, docker: docker)
+                        let ok = await vm.importImage(tarURL: url, docker: docker)
                         isPulling = false
-                        dismiss()
+                        if ok { dismiss() }
                     }
                 }
                 .disabled(isPulling)
@@ -86,12 +88,12 @@ struct PullImageSheet: View {
                 Button("Pull") {
                     isPulling = true
                     Task {
-                        await vm.pullImage(
+                        let ok = await vm.pullImage(
                             image,
                             platform: platform == .auto ? nil : platform.rawValue,
                             docker: docker)
                         isPulling = false
-                        dismiss()
+                        if ok { dismiss() }
                     }
                 }
                 .keyboardShortcut(.defaultAction)

@@ -44,15 +44,17 @@ struct NewVolumeSheet: View {
 
                 Button("Import...") {
                     let panel = NSOpenPanel()
-                    panel.allowedContentTypes = [UTType(filenameExtension: "tar")!, .gzip]
+                    var types: [UTType] = [.gzip]
+                    if let tar = UTType(filenameExtension: "tar") { types.insert(tar, at: 0) }
+                    panel.allowedContentTypes = types
                     panel.allowsMultipleSelection = false
                     panel.canChooseDirectories = false
                     guard panel.runModal() == .OK, let url = panel.url else { return }
                     isCreating = true
                     Task {
-                        await vm.importVolume(name: name, tarURL: url, docker: docker)
+                        let ok = await vm.importVolume(name: name, tarURL: url, docker: docker)
                         isCreating = false
-                        dismiss()
+                        if ok { dismiss() }
                     }
                 }
                 .disabled(isCreating)
@@ -67,9 +69,9 @@ struct NewVolumeSheet: View {
                 Button("Create") {
                     isCreating = true
                     Task {
-                        await vm.createVolume(name: name, docker: docker)
+                        let ok = await vm.createVolume(name: name, docker: docker)
                         isCreating = false
-                        dismiss()
+                        if ok { dismiss() }
                     }
                 }
                 .keyboardShortcut(.defaultAction)

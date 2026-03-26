@@ -95,8 +95,9 @@ class VolumesViewModel {
         }
     }
 
-    func createVolume(name: String, docker: DockerClient?) async {
-        guard let docker else { return }
+    /// Create a volume. Returns true on success.
+    func createVolume(name: String, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
         do {
             let response = try await docker.api.VolumeCreate(
                 body: .json(.init(Name: name.isEmpty ? nil : name))
@@ -104,15 +105,29 @@ class VolumesViewModel {
             let vol = try response.created.body.json
             Log.volume.info("Created volume \(vol.Name, privacy: .public)")
             await loadVolumes(docker: docker)
+            return true
         } catch {
             Log.volume.error("Error creating volume: \(String(describing: error), privacy: .public)")
+            return false
         }
     }
 
-    /// Import a tar archive into a new volume.
+    /// Ensure a helper image exists locally, pulling it on demand if necessary.
+    private func ensureImageExists(_ image: String, docker: DockerClient) async throws {
+        // Check if image exists locally
+        do {
+            _ = try await docker.api.ImageInspect(path: .init(name: image))
+            return
+        } catch {}
+        // Pull it
+        let response = try await docker.api.ImageCreate(query: .init(fromImage: image))
+        _ = try response.ok
+    }
+
+    /// Import a tar archive into a new volume. Returns true on success.
     /// Creates the volume, then uses a temporary container + PutContainerArchive to extract contents.
-    func importVolume(name: String, tarURL: URL, docker: DockerClient?) async {
-        guard let docker else { return }
+    func importVolume(name: String, tarURL: URL, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
 
         // 1. Create volume
         let volName: String
@@ -123,10 +138,28 @@ class VolumesViewModel {
             volName = try response.created.body.json.Name
         } catch {
             Log.volume.error("Error creating volume for import: \(String(describing: error), privacy: .public)")
-            return
+            return false
         }
 
-        // 2. Create temp container with volume mounted
+        // Helper to clean up the volume on failure
+        var success = false
+        defer {
+            if !success {
+                Task {
+                    _ = try? await docker.api.VolumeDelete(path: .init(name: volName), query: .init(force: true))
+                }
+            }
+        }
+
+        // 2. Ensure busybox image exists
+        do {
+            try await ensureImageExists("busybox:latest", docker: docker)
+        } catch {
+            Log.volume.error("Error pulling busybox for import: \(String(describing: error), privacy: .public)")
+            return false
+        }
+
+        // 3. Create temp container with volume mounted
         var config = Components.Schemas.ContainerConfig()
         config.Image = "busybox:latest"
         config.Cmd = ["true"]
@@ -145,17 +178,17 @@ class VolumesViewModel {
             tempID = try response.created.body.json.Id
         } catch {
             Log.volume.error("Error creating temp container for import: \(String(describing: error), privacy: .public)")
-            return
+            return false
         }
 
-        // 3. Upload tar into /data
+        // 4. Upload tar into /data
         defer {
             Task {
                 _ = try? await docker.api.ContainerDelete(path: .init(id: tempID), query: .init(force: true))
             }
         }
         do {
-            let data = try Data(contentsOf: tarURL)
+            let data = try Data(contentsOf: tarURL, options: .mappedIfSafe)
             let body = HTTPBody(data)
             let response = try await docker.api.PutContainerArchive(
                 path: .init(id: tempID),
@@ -166,9 +199,12 @@ class VolumesViewModel {
             Log.volume.info("Imported tar into volume \(volName, privacy: .public)")
         } catch {
             Log.volume.error("Error importing tar into volume: \(String(describing: error), privacy: .public)")
+            return false
         }
 
+        success = true
         await loadVolumes(docker: docker)
+        return true
     }
 
     func removeVolume(_ name: String, docker: DockerClient?) async {

@@ -141,7 +141,7 @@ struct NewContainerSheet: View {
                 Button("Create") {
                     isCreating = true
                     Task {
-                        _ = await vm.createContainer(
+                        let id = await vm.createContainer(
                             image: image, name: name,
                             platform: platform == .auto ? nil : platform.rawValue,
                             command: command, entrypoint: entrypoint, workingDir: workdir,
@@ -149,7 +149,7 @@ struct NewContainerSheet: View {
                             privileged: privileged, readOnlyRootfs: readOnly,
                             dockerInit: useDockerInit, docker: docker)
                         isCreating = false
-                        dismiss()
+                        if id != nil { dismiss() }
                     }
                 }
                 .disabled(isCreating || imageIsEmpty)
@@ -166,9 +166,11 @@ struct NewContainerSheet: View {
                             dockerInit: useDockerInit, docker: docker)
                         {
                             await vm.startContainerDocker(id, docker: docker)
+                            isCreating = false
+                            dismiss()
+                        } else {
+                            isCreating = false
                         }
-                        isCreating = false
-                        dismiss()
                     }
                 }
                 .keyboardShortcut(.defaultAction)
