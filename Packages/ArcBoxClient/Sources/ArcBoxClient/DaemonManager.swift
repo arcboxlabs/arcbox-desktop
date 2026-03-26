@@ -157,6 +157,15 @@ public final class DaemonManager {
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
 
+        // If already enabled, skip the destructive unregister+register cycle.
+        // This avoids killing a healthy daemon when enableDaemon() is called
+        // redundantly (e.g. SwiftUI .task re-entrancy).
+        if status == .enabled {
+            ClientLog.daemon.info("Daemon already registered, skipping re-register")
+            state = .registered
+            return
+        }
+
         do {
             // Force re-register to ensure BundleProgram resolves against the current
             // app bundle path.

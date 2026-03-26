@@ -92,7 +92,7 @@ class ImagesViewModel {
             .subtracting(iconsByImage.keys)
         guard !uncached.isEmpty else { return }
 
-        await withTaskGroup(of: (String, String?).self) { group in
+        await withTaskGroup(of: (String, String?, Bool).self) { group in
             for repo in uncached {
                 group.addTask {
                     do {
@@ -100,15 +100,19 @@ class ImagesViewModel {
                         request.fqin = repo
                         let response = try await client.icons.getImageIcon(request)
                         let url = response.url.isEmpty ? nil : response.url
-                        return (repo, url)
+                        return (repo, url, true)
                     } catch {
                         Log.image.debug("Icon fetch failed for \(repo, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        return (repo, nil)
+                        return (repo, nil, false)
                     }
                 }
             }
-            for await (repo, url) in group {
-                iconsByImage[repo] = url ?? ""
+            for await (repo, url, succeeded) in group {
+                if let url {
+                    iconsByImage[repo] = url
+                } else if succeeded {
+                    iconsByImage[repo] = ""
+                }
             }
         }
 
