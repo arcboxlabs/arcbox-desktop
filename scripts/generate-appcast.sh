@@ -4,7 +4,7 @@
 # Usage:
 #   scripts/generate-appcast.sh \
 #     --version v1.2.0 \
-#     --dmg-url https://release.arcboxcdn.com/desktop/v1.2.0/ArcBox-arm64.dmg \
+#     --dmg-url https://release.arcboxcdn.com/desktop/v1.2.0/ArcBox-1.2.0-arm64.dmg \
 #     --dmg-length 12345678 \
 #     --ed-signature "base64sig==" \
 #     --channel stable \
