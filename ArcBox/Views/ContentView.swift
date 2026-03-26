@@ -76,7 +76,7 @@ struct ContentView: View {
     }
 
     private var isSandboxSection: Bool {
-        appVM.currentNav == .sandboxes || appVM.currentNav == .templates
+        appVM.currentNav == .templates
     }
 
     // MARK: - Content column
@@ -105,7 +105,10 @@ struct ContentView: View {
         case .machines:
             MachinesView()
                 .environment(machinesVM)
-        case .sandboxes, .templates:
+        case .sandboxes:
+            SandboxesListView()
+                .environment(sandboxesVM)
+        case .templates:
             // Handled in detail column
             Color.clear
         case nil:
@@ -142,7 +145,7 @@ struct ContentView: View {
             MachineDetailView()
                 .environment(machinesVM)
         case .sandboxes:
-            SandboxesListView()
+            SandboxDetailView()
                 .environment(sandboxesVM)
         case .templates:
             TemplatesListView()

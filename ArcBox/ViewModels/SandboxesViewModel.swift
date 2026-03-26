@@ -1,9 +1,11 @@
+import ArcBoxClient
+import OSLog
 import SwiftUI
 
 /// Detail tab for sandboxes
 enum SandboxDetailTab: String, CaseIterable, Identifiable {
     case info = "Info"
-    case logs = "Logs"
+    case terminal = "Terminal"
 
     var id: String { rawValue }
 }
@@ -22,7 +24,8 @@ enum SandboxSortField: String, CaseIterable {
     case dateCreated = "Date Created"
 }
 
-/// Sandbox list state
+/// Sandbox list state with gRPC integration.
+@MainActor
 @Observable
 class SandboxesViewModel {
     var sandboxes: [SandboxViewModel] = []
@@ -33,11 +36,17 @@ class SandboxesViewModel {
     var sortBy: SandboxSortField = .name
     var sortAscending: Bool = true
 
+    /// Target machine for sandbox RPCs (x-machine header).
+    var activeMachineID: String = "default"
+
     // Monitoring metrics
     var concurrentSandboxes: Int = 0
     var startRatePerSecond: Double = 0.0
     var peakConcurrentSandboxes: Int = 1
     var concurrentLimit: Int = 20
+
+    // Snapshot list
+    var snapshots: [Sandbox_V1_SnapshotSummary] = []
 
     var sandboxCount: Int { sandboxes.count }
 
@@ -46,9 +55,10 @@ class SandboxesViewModel {
             let result: Bool
             switch sortBy {
             case .name:
-                result = a.alias.localizedCaseInsensitiveCompare(b.alias) == .orderedAscending
+                result = a.displayName.localizedCaseInsensitiveCompare(b.displayName)
+                    == .orderedAscending
             case .dateCreated:
-                result = a.startedAt < b.startedAt
+                result = (a.createdAt ?? .distantPast) < (b.createdAt ?? .distantPast)
             }
             return sortAscending ? result : !result
         }
@@ -63,8 +73,171 @@ class SandboxesViewModel {
         selectedID = id
     }
 
-    func loadSampleData() {
-        sandboxes = SampleData.sandboxes
-        concurrentSandboxes = sandboxes.filter { $0.isRunning }.count
+    // MARK: - gRPC Operations
+
+    func loadSandboxes(client: ArcBoxClient?) async {
+        guard let client else { return }
+        let transitioning = transitioningIDs
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        do {
+            let response = try await client.sandboxes.list(
+                Sandbox_V1_ListSandboxesRequest(),
+                metadata: metadata
+            )
+            var viewModels = response.sandboxes.map { SandboxViewModel(from: $0) }
+            for i in viewModels.indices where transitioning.contains(viewModels[i].id) {
+                viewModels[i].isTransitioning = true
+            }
+            sandboxes = viewModels
+            updateMonitoringMetrics()
+        } catch {
+            Log.sandbox.error(
+                "Error loading sandboxes: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    func loadSandboxDetails(_ id: String, client: ArcBoxClient?) async {
+        guard let client else { return }
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        var request = Sandbox_V1_InspectSandboxRequest()
+        request.id = id
+        do {
+            let info = try await client.sandboxes.inspect(request, metadata: metadata)
+            updateSandbox(id) { sandbox in
+                sandbox.applyDetails(from: info)
+            }
+        } catch {
+            Log.sandbox.error(
+                "Error inspecting sandbox \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+        }
+    }
+
+    func createSandbox(
+        id: String = "",
+        labels: [String: String] = [:],
+        vcpus: UInt32 = 0,
+        memoryMiB: UInt64 = 0,
+        ttlSeconds: UInt32 = 0,
+        client: ArcBoxClient?
+    ) async -> String? {
+        guard let client else { return nil }
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        var request = Sandbox_V1_CreateSandboxRequest()
+        request.id = id
+        request.labels = labels
+        if vcpus > 0 || memoryMiB > 0 {
+            request.limits.vcpus = vcpus
+            request.limits.memoryMib = memoryMiB
+        }
+        request.ttlSeconds = ttlSeconds
+        do {
+            let response = try await client.sandboxes.create(request, metadata: metadata)
+            Log.sandbox.info("Created sandbox \(response.id, privacy: .public)")
+            await loadSandboxes(client: client)
+            return response.id
+        } catch {
+            Log.sandbox.error(
+                "Error creating sandbox: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    func stopSandbox(_ id: String, client: ArcBoxClient?) async {
+        guard let client else { return }
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        setTransitioning(id, true)
+        var request = Sandbox_V1_StopSandboxRequest()
+        request.id = id
+        do {
+            _ = try await client.sandboxes.stop(request, metadata: metadata)
+            updateSandbox(id) { $0.state = .stopped }
+        } catch {
+            Log.sandbox.error(
+                "Error stopping sandbox \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+        }
+        setTransitioning(id, false)
+    }
+
+    func removeSandbox(_ id: String, force: Bool = false, client: ArcBoxClient?) async {
+        guard let client else { return }
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        setTransitioning(id, true)
+        var request = Sandbox_V1_RemoveSandboxRequest()
+        request.id = id
+        request.force = force
+        do {
+            _ = try await client.sandboxes.remove(request, metadata: metadata)
+            removeSandboxLocally(id)
+        } catch {
+            Log.sandbox.error(
+                "Error removing sandbox \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            setTransitioning(id, false)
+        }
+    }
+
+    // MARK: - Snapshot Operations
+
+    func loadSnapshots(client: ArcBoxClient?) async {
+        guard let client else { return }
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        do {
+            let response = try await client.snapshots.listSnapshots(
+                Sandbox_V1_ListSnapshotsRequest(),
+                metadata: metadata
+            )
+            snapshots = response.snapshots
+        } catch {
+            Log.sandbox.error(
+                "Error loading snapshots: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    func deleteSnapshot(_ id: String, client: ArcBoxClient?) async {
+        guard let client else { return }
+        let metadata = SandboxMetadata.forMachine(activeMachineID)
+        var request = Sandbox_V1_DeleteSnapshotRequest()
+        request.snapshotID = id
+        do {
+            _ = try await client.snapshots.deleteSnapshot(request, metadata: metadata)
+            snapshots.removeAll { $0.id == id }
+        } catch {
+            Log.sandbox.error(
+                "Error deleting snapshot \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private var transitioningIDs: Set<String> {
+        Set(sandboxes.filter(\.isTransitioning).map(\.id))
+    }
+
+    private func updateSandbox(_ id: String, mutate: (inout SandboxViewModel) -> Void) {
+        guard let index = sandboxes.firstIndex(where: { $0.id == id }) else { return }
+        mutate(&sandboxes[index])
+    }
+
+    private func setTransitioning(_ id: String, _ value: Bool) {
+        updateSandbox(id) { $0.isTransitioning = value }
+    }
+
+    private func removeSandboxLocally(_ id: String) {
+        sandboxes.removeAll { $0.id == id }
+        if selectedID == id {
+            selectedID = nil
+        }
+        updateMonitoringMetrics()
+    }
+
+    private func updateMonitoringMetrics() {
+        let active = sandboxes.filter { $0.state.isActive }
+        concurrentSandboxes = active.count
+        if concurrentSandboxes > peakConcurrentSandboxes {
+            peakConcurrentSandboxes = concurrentSandboxes
+        }
     }
 }

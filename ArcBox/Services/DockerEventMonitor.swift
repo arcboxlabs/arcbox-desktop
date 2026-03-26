@@ -9,6 +9,7 @@ extension Notification.Name {
     static let dockerImageChanged     = Notification.Name("dockerImageChanged")
     static let dockerNetworkChanged   = Notification.Name("dockerNetworkChanged")
     static let dockerVolumeChanged    = Notification.Name("dockerVolumeChanged")
+    static let sandboxChanged         = Notification.Name("sandboxChanged")
 }
 
 // MARK: - DockerEventMonitor

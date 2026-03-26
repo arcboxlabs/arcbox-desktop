@@ -41,48 +41,7 @@ enum SampleData {
 
     // MARK: - Sandboxes
 
-    static let sandboxes: [SandboxViewModel] = [
-        SandboxViewModel(
-            id: "sbx-a1b2c3d4e5f6",
-            alias: "code-interpreter",
-            templateID: "tmpl-python-base",
-            state: .running,
-            cpuCount: 2,
-            memoryMB: 512,
-            startedAt: Date().addingTimeInterval(-600),
-            endAt: Date().addingTimeInterval(3000)
-        ),
-        SandboxViewModel(
-            id: "sbx-b2c3d4e5f6g7",
-            alias: "data-analysis",
-            templateID: "tmpl-python-data",
-            state: .running,
-            cpuCount: 4,
-            memoryMB: 1024,
-            startedAt: Date().addingTimeInterval(-1800),
-            endAt: Date().addingTimeInterval(1800)
-        ),
-        SandboxViewModel(
-            id: "sbx-c3d4e5f6g7h8",
-            alias: "web-scraper",
-            templateID: "tmpl-node-base",
-            state: .paused,
-            cpuCount: 2,
-            memoryMB: 512,
-            startedAt: Date().addingTimeInterval(-3600),
-            endAt: Date().addingTimeInterval(600)
-        ),
-        SandboxViewModel(
-            id: "sbx-d4e5f6g7h8i9",
-            alias: "test-runner",
-            templateID: "tmpl-python-base",
-            state: .stopped,
-            cpuCount: 2,
-            memoryMB: 256,
-            startedAt: Date().addingTimeInterval(-7200),
-            endAt: Date().addingTimeInterval(-3600)
-        ),
-    ]
+    static let sandboxes: [SandboxViewModel] = []
 
     // MARK: - Templates
 

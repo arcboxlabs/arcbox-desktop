@@ -1,8 +1,10 @@
+import ArcBoxClient
 import SwiftUI
 
 /// Column 2: sandboxes page with Monitoring and List tabs
 struct SandboxesListView: View {
     @Environment(SandboxesViewModel.self) private var vm
+    @Environment(\.arcboxClient) private var client
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,16 +51,24 @@ struct SandboxesListView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.pageTab == .list {
                     SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                    Button(action: {}) {
-                        Image(systemName: "magnifyingglass")
-                    }
                 }
-                Button(action: {}) {
+                Button(action: {
+                    Task {
+                        _ = await vm.createSandbox(client: client)
+                    }
+                }) {
                     Image(systemName: "plus")
                 }
             }
         }
-        .onAppear { vm.loadSampleData() }
+        .task {
+            await vm.loadSandboxes(client: client)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .sandboxChanged)) { _ in
+            Task {
+                await vm.loadSandboxes(client: client)
+            }
+        }
     }
 
     private var sandboxListContent: some View {
@@ -72,7 +82,16 @@ struct SandboxesListView: View {
                             SandboxRowView(
                                 sandbox: sandbox,
                                 isSelected: vm.selectedID == sandbox.id,
-                                onSelect: { vm.selectSandbox(sandbox.id) }
+                                onSelect: { vm.selectSandbox(sandbox.id) },
+                                onStop: {
+                                    Task { await vm.stopSandbox(sandbox.id, client: client) }
+                                },
+                                onRemove: {
+                                    Task {
+                                        await vm.removeSandbox(
+                                            sandbox.id, force: true, client: client)
+                                    }
+                                }
                             )
                         }
                     }
