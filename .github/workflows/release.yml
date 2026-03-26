@@ -406,7 +406,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build-dmg.outputs.version || github.ref_name }}
-          name: ArcBox Desktop ${{ needs.build-dmg.outputs.version || github.ref_name }}
+          name: ArcBox ${{ needs.build-dmg.outputs.version || github.ref_name }}
           draft: false
           prerelease: ${{ needs.build-dmg.outputs.prerelease == 'true' }}
           generate_release_notes: true
@@ -416,7 +416,7 @@ jobs:
           body: |
             ## Installation
 
-            Download `${{ needs.build-dmg.outputs.dmg }}`, open the DMG, and drag ArcBox Desktop to Applications.
+            Download `${{ needs.build-dmg.outputs.dmg }}`, open the DMG, and drag ArcBox to Applications.
 
             Boot-assets and daemon are bundled — no additional setup required.
 

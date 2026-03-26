@@ -44,7 +44,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox Desktop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		657F657B2F3A2ADB00C7005A /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		657F65A02F3A2ADB00C7005A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
 		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -111,7 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */,
-				657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */,
+				657F657B2F3A2ADB00C7005A /* ArcBox.app */,
 
 			);
 			name = Products;
@@ -164,8 +164,8 @@
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 				SE0200012F90000000000001 /* Sentry */,
 			);
-			productName = "ArcBox Desktop";
-			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox Desktop.app */;
+			productName = "ArcBox";
+			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox.app */;
 			productType = "com.apple.product-type.application";
 		};
 		8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */ = {
@@ -318,7 +318,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox Desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox Desktop";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox";
 			};
 			name = Debug;
 		};
@@ -459,8 +459,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
-				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
+				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox";
+				INFOPLIST_KEY_CFBundleName = "ArcBox";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -469,7 +469,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = "ArcBox Desktop";
+				PRODUCT_NAME = "ArcBox";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -501,8 +501,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox Desktop";
-				INFOPLIST_KEY_CFBundleName = "ArcBox Desktop";
+				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox";
+				INFOPLIST_KEY_CFBundleName = "ArcBox";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -511,7 +511,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = "ArcBox Desktop";
+				PRODUCT_NAME = "ArcBox";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -541,7 +541,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox Desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox Desktop";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox";
 			};
 			name = Release;
 		};
