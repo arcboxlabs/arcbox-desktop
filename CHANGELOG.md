@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.2...v1.15.0) (2026-03-26)
+
+
+### Features
+
+* UI polish — icon backgrounds, image list fix, menu bar cleanup ([#67](https://github.com/arcboxlabs/arcbox-desktop/issues/67)) ([0e50974](https://github.com/arcboxlabs/arcbox-desktop/commit/0e50974f3c5a145d673203be9df30e490bf42886))
+
 ## [1.14.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.1...v1.14.2) (2026-03-26)
 
 
