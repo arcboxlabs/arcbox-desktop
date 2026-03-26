@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.1...v1.14.2) (2026-03-26)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.11 ([#84](https://github.com/arcboxlabs/arcbox-desktop/issues/84)) ([22651ac](https://github.com/arcboxlabs/arcbox-desktop/commit/22651ace94de9d15dc817370e59944a078d04153))
+
 ## [1.14.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.0...v1.14.1) (2026-03-26)
 
 
