@@ -25,9 +25,7 @@ struct SandboxRowView: View {
                 .overlay {
                     Image(systemName: "square.stack.3d.up")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : stateColor
-                        )
+                        .foregroundStyle(stateColor)
                 }
 
             // Name and template

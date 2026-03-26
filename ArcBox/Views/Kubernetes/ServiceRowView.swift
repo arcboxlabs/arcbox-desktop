@@ -17,9 +17,7 @@ struct ServiceRowView: View {
                 .overlay {
                     Image(systemName: "network")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : AppColors.textSecondary
-                        )
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
             // Name and type

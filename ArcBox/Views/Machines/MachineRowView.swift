@@ -34,11 +34,7 @@ struct MachineRowView: View {
                     .overlay {
                         Image(systemName: "desktopcomputer")
                             .font(.system(size: 16))
-                            .foregroundStyle(
-                                isSelected
-                                    ? AppColors.onAccent
-                                    : (isStopped ? AppColors.textMuted : distroColor)
-                            )
+                            .foregroundStyle(isStopped ? AppColors.textMuted : distroColor)
                     }
 
                 // Status dot

@@ -17,9 +17,7 @@ struct PodRowView: View {
                 .overlay {
                     Image(systemName: "cube")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : AppColors.textSecondary
-                        )
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
             // Name and namespace

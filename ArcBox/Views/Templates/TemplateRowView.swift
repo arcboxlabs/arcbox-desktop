@@ -17,9 +17,7 @@ struct TemplateRowView: View {
                 .overlay {
                     Image(systemName: "doc.on.doc")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : AppColors.textSecondary
-                        )
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
             // Name and specs
@@ -38,7 +36,7 @@ struct TemplateRowView: View {
             // Action buttons
             if isHovered || isSelected {
                 IconButton(
-                    symbol: "trash",
+                    symbol: "trash.fill",
                     action: {},
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
