@@ -1,6 +1,7 @@
 import SwiftUI
 import ArcBoxClient
 import DockerClient
+import OpenAPIRuntime
 import OSLog
 
 /// Detail tab for images
@@ -24,6 +25,7 @@ enum ImageSortField: String, CaseIterable {
 class ImagesViewModel {
     var images: [ImageViewModel] = []
     var selectedID: String? = nil
+    var isPulling: Bool = false
     var activeTab: ImageDetailTab = .info
     var listWidth: CGFloat = 320
     var showPullImageSheet: Bool = false
@@ -136,6 +138,46 @@ class ImagesViewModel {
         } catch {
             Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    /// Pull an image from a registry. Parses "image:tag" format.
+    func pullImage(_ reference: String, platform: String?, docker: DockerClient?) async {
+        guard let docker else { return }
+        // Split "nginx:latest" into fromImage="nginx", tag="latest"
+        let parts = reference.split(separator: ":", maxSplits: 1)
+        let fromImage = String(parts[0])
+        let tag: String? = parts.count > 1 ? String(parts[1]) : nil
+
+        isPulling = true
+        do {
+            let response = try await docker.api.ImageCreate(
+                query: .init(fromImage: fromImage, tag: tag, platform: platform)
+            )
+            _ = try response.ok
+            Log.image.info("Pulled image \(reference, privacy: .public)")
+            await loadImages(docker: docker)
+        } catch {
+            Log.image.error("Error pulling image \(reference, privacy: .public): \(String(describing: error), privacy: .public)")
+        }
+        isPulling = false
+    }
+
+    /// Import an image from a local tar archive (equivalent to `docker load`).
+    func importImage(tarURL: URL, docker: DockerClient?) async {
+        guard let docker else { return }
+        isPulling = true
+        do {
+            let data = try Data(contentsOf: tarURL)
+            let response = try await docker.api.ImageLoad(
+                body: .application_x_hyphen_tar(HTTPBody(data))
+            )
+            _ = try response.ok
+            Log.image.info("Imported image from \(tarURL.lastPathComponent, privacy: .public)")
+            await loadImages(docker: docker)
+        } catch {
+            Log.image.error("Error importing image: \(String(describing: error), privacy: .public)")
+        }
+        isPulling = false
     }
 
     func removeImage(_ id: String, dockerId: String, docker: DockerClient?) async {

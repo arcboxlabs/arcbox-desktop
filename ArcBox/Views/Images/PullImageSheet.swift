@@ -1,4 +1,7 @@
+import AppKit
+import DockerClient
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Platform options for pulling images
 enum ImagePlatform: String, CaseIterable, Identifiable {
@@ -12,9 +15,16 @@ enum ImagePlatform: String, CaseIterable, Identifiable {
 /// Pull image dialog presented as a sheet
 struct PullImageSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(ImagesViewModel.self) private var vm
+    @Environment(\.dockerClient) private var docker
 
+    @State private var isPulling = false
     @State private var image = ""
     @State private var platform: ImagePlatform = .auto
+
+    private var imageIsEmpty: Bool {
+        image.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,7 +61,20 @@ struct PullImageSheet: View {
                     .buttonStyle(.plain)
                     .frame(width: 24, height: 24)
 
-                Button("Import...") {}
+                Button("Import...") {
+                    let panel = NSOpenPanel()
+                    panel.allowedContentTypes = [UTType(filenameExtension: "tar")!, .gzip]
+                    panel.allowsMultipleSelection = false
+                    panel.canChooseDirectories = false
+                    guard panel.runModal() == .OK, let url = panel.url else { return }
+                    isPulling = true
+                    Task {
+                        await vm.importImage(tarURL: url, docker: docker)
+                        isPulling = false
+                        dismiss()
+                    }
+                }
+                .disabled(isPulling)
 
                 Spacer()
 
@@ -61,10 +84,18 @@ struct PullImageSheet: View {
                 .keyboardShortcut(.cancelAction)
 
                 Button("Pull") {
-                    // TODO: pull image
-                    dismiss()
+                    isPulling = true
+                    Task {
+                        await vm.pullImage(
+                            image,
+                            platform: platform == .auto ? nil : platform.rawValue,
+                            docker: docker)
+                        isPulling = false
+                        dismiss()
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
+                .disabled(isPulling || imageIsEmpty)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
