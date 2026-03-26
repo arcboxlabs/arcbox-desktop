@@ -340,6 +340,79 @@ class ContainersViewModel {
         await loadContainers(client: client)
     }
 
+    /// Creates a new container via Docker API and returns its ID, or nil on failure.
+    func createContainer(
+        image: String,
+        name: String,
+        platform: String?,
+        command: String,
+        entrypoint: String,
+        workingDir: String,
+        autoRemove: Bool,
+        restartPolicy: String,
+        privileged: Bool,
+        readOnlyRootfs: Bool,
+        dockerInit: Bool,
+        docker: DockerClient?
+    ) async -> String? {
+        guard let docker else { return nil }
+        var config = Components.Schemas.ContainerConfig()
+        config.Image = image
+        let cmdParts = command.split(separator: " ").map(String.init)
+        if !cmdParts.isEmpty { config.Cmd = cmdParts }
+        let entrypointParts = entrypoint.split(separator: " ").map(String.init)
+        if !entrypointParts.isEmpty { config.Entrypoint = entrypointParts }
+        if !workingDir.isEmpty { config.WorkingDir = workingDir }
+
+        let policyName: Components.Schemas.RestartPolicy.NamePayload = switch restartPolicy {
+        case "always": .always
+        case "unless-stopped": .unless_hyphen_stopped
+        case "on-failure": .on_hyphen_failure
+        default: .no
+        }
+        var resources = Components.Schemas.Resources()
+        if dockerInit { resources.Init = true }
+        let hostConfig = Components.Schemas.HostConfig(
+            value1: resources,
+            value2: .init(
+                RestartPolicy: .init(Name: policyName),
+                AutoRemove: autoRemove,
+                Privileged: privileged,
+                ReadonlyRootfs: readOnlyRootfs
+            )
+        )
+
+        do {
+            let response = try await docker.api.ContainerCreate(
+                query: .init(name: name.isEmpty ? nil : name, platform: platform),
+                body: .json(.init(value1: config, value2: .init(HostConfig: hostConfig)))
+            )
+            switch response {
+            case .created(let created):
+                switch created.body {
+                case .json(let body):
+                    let id = body.Id
+                    Log.container.info("Created container \(id, privacy: .public)")
+                    await loadContainersFromDocker(docker: docker)
+                    return id
+                }
+            case .badRequest(let err):
+                Log.container.error("Bad request creating container: \(String(describing: err), privacy: .public)")
+            case .notFound(let err):
+                Log.container.error("Image not found: \(String(describing: err), privacy: .public)")
+            case .conflict(let err):
+                Log.container.error("Container name conflict: \(String(describing: err), privacy: .public)")
+            case .internalServerError(let err):
+                Log.container.error("Server error creating container: \(String(describing: err), privacy: .public)")
+            case .undocumented(let statusCode, _):
+                Log.container.error("Unexpected status \(statusCode, privacy: .public) creating container")
+            }
+        } catch {
+            Log.container.error("Error creating container: \(String(describing: error), privacy: .public)")
+        }
+        return nil
+    }
+
     func removeContainer(_ id: String, client: ArcBoxClient?) async {
         guard let client else { return }
         var request = Arcbox_V1_RemoveContainerRequest()

@@ -1,6 +1,6 @@
 import XCTest
-@testable import ArcBox_Desktop
-import DockerClient
+@testable import ArcBox
+@testable import DockerClient
 
 /// Tests for DockerEventMonitor's event filtering, notification dispatch, and debounce logic.
 ///

@@ -1,3 +1,4 @@
+import DockerClient
 import SwiftUI
 
 /// Restart policy options
@@ -22,6 +23,10 @@ enum ContainerPlatform: String, CaseIterable, Identifiable {
 /// New container dialog presented as a sheet
 struct NewContainerSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(ContainersViewModel.self) private var vm
+    @Environment(\.dockerClient) private var docker
+
+    @State private var isCreating = false
 
     // Basic settings
     @State private var image = ""
@@ -39,6 +44,10 @@ struct NewContainerSheet: View {
     @State private var privileged = false
     @State private var readOnly = false
     @State private var useDockerInit = false
+
+    private var imageIsEmpty: Bool {
+        image.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -106,11 +115,12 @@ struct NewContainerSheet: View {
                     Toggle(isOn: $useDockerInit) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Use docker-init")
-                            Text("Run the container payload under a docker-init process. (--init)")
+                            Text("Run the container payload under a docker-init process. (--init) — currently unavailable")
                                 .font(.system(size: 11))
                                 .foregroundStyle(AppColors.textSecondary)
                         }
                     }
+                    .disabled(true)
                 }
             }
             .formStyle(.grouped)
@@ -129,15 +139,42 @@ struct NewContainerSheet: View {
                 .keyboardShortcut(.cancelAction)
 
                 Button("Create") {
-                    // TODO: create container
-                    dismiss()
+                    isCreating = true
+                    Task {
+                        let id = await vm.createContainer(
+                            image: image, name: name,
+                            platform: platform == .auto ? nil : platform.rawValue,
+                            command: command, entrypoint: entrypoint, workingDir: workdir,
+                            autoRemove: removeAfterStop, restartPolicy: restartPolicy.rawValue,
+                            privileged: privileged, readOnlyRootfs: readOnly,
+                            dockerInit: useDockerInit, docker: docker)
+                        isCreating = false
+                        if id != nil { dismiss() }
+                    }
                 }
+                .disabled(isCreating || imageIsEmpty)
 
                 Button("Create & Start") {
-                    // TODO: create & start container
-                    dismiss()
+                    isCreating = true
+                    Task {
+                        if let id = await vm.createContainer(
+                            image: image, name: name,
+                            platform: platform == .auto ? nil : platform.rawValue,
+                            command: command, entrypoint: entrypoint, workingDir: workdir,
+                            autoRemove: removeAfterStop, restartPolicy: restartPolicy.rawValue,
+                            privileged: privileged, readOnlyRootfs: readOnly,
+                            dockerInit: useDockerInit, docker: docker)
+                        {
+                            await vm.startContainerDocker(id, docker: docker)
+                            isCreating = false
+                            dismiss()
+                        } else {
+                            isCreating = false
+                        }
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
+                .disabled(isCreating || imageIsEmpty)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

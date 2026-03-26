@@ -1,9 +1,15 @@
+import AppKit
+import DockerClient
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// New volume dialog presented as a sheet
 struct NewVolumeSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(VolumesViewModel.self) private var vm
+    @Environment(\.dockerClient) private var docker
 
+    @State private var isCreating = false
     @State private var name = ""
 
     var body: some View {
@@ -36,7 +42,22 @@ struct NewVolumeSheet: View {
                     .buttonStyle(.plain)
                     .frame(width: 24, height: 24)
 
-                Button("Import...") {}
+                Button("Import...") {
+                    let panel = NSOpenPanel()
+                    var types: [UTType] = [.gzip]
+                    if let tar = UTType(filenameExtension: "tar") { types.insert(tar, at: 0) }
+                    panel.allowedContentTypes = types
+                    panel.allowsMultipleSelection = false
+                    panel.canChooseDirectories = false
+                    guard panel.runModal() == .OK, let url = panel.url else { return }
+                    isCreating = true
+                    Task {
+                        let ok = await vm.importVolume(name: name, tarURL: url, docker: docker)
+                        isCreating = false
+                        if ok { dismiss() }
+                    }
+                }
+                .disabled(isCreating)
 
                 Spacer()
 
@@ -46,10 +67,15 @@ struct NewVolumeSheet: View {
                 .keyboardShortcut(.cancelAction)
 
                 Button("Create") {
-                    // TODO: create volume
-                    dismiss()
+                    isCreating = true
+                    Task {
+                        let ok = await vm.createVolume(name: name, docker: docker)
+                        isCreating = false
+                        if ok { dismiss() }
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
+                .disabled(isCreating)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
