@@ -67,10 +67,10 @@ struct ContainerInfoTab: View {
                             // Table rows
                             ForEach(container.ports) { port in
                                 HStack {
-                                    Text("\(port.hostPort)")
+                                    Text(verbatim: "\(port.hostPort)")
                                         .foregroundStyle(AppColors.accent)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(port.containerPort)")
+                                    Text(verbatim: "\(port.containerPort)")
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     Text(port.protocol.uppercased())
                                         .frame(maxWidth: .infinity, alignment: .leading)
