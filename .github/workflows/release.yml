@@ -406,7 +406,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build-dmg.outputs.version || github.ref_name }}
-          name: ArcBox Desktop ${{ needs.build-dmg.outputs.version || github.ref_name }}
+          name: ArcBox ${{ needs.build-dmg.outputs.version || github.ref_name }}
           draft: false
           prerelease: ${{ needs.build-dmg.outputs.prerelease == 'true' }}
           generate_release_notes: true
@@ -416,7 +416,7 @@ jobs:
           body: |
             ## Installation
 
-            Download `${{ needs.build-dmg.outputs.dmg }}`, open the DMG, and drag ArcBox Desktop to Applications.
+            Download `${{ needs.build-dmg.outputs.dmg }}`, open the DMG, and drag ArcBox to Applications.
 
             Boot-assets and daemon are bundled — no additional setup required.
 
@@ -558,6 +558,7 @@ jobs:
           AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
 
       - name: Verify CDN URLs
+        id: cdn_verify
         run: |
           VERSION="${{ steps.channel.outputs.version }}"
           CHANNEL="${{ steps.channel.outputs.channel }}"
@@ -578,3 +579,32 @@ jobs:
           if [ "$FAILED" -eq 1 ]; then
             echo "::warning::Some CDN URLs did not return HTTP 200"
           fi
+          echo "ok=$([ $FAILED -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Update Dub download short link
+        if: needs.build-dmg.outputs.channel == 'stable' && steps.cdn_verify.outputs.ok == 'true'
+        env:
+          DUB_API_KEY: ${{ secrets.DUB_API_KEY }}
+        run: |
+          if [ -z "$DUB_API_KEY" ]; then
+            echo "::warning::DUB_API_KEY is not set, skipping Dub link update"
+            exit 0
+          fi
+
+          VERSION="${{ steps.channel.outputs.version }}"
+          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
+          CDN_URL="https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}"
+          LINK_ID="${{ secrets.DUB_LINKID_DOWNLOAD_DESKTOP_ARM64 }}"
+
+          if [ -z "$LINK_ID" ]; then
+            echo "::warning::DUB_LINKID_DOWNLOAD_DESKTOP_ARM64 is not set, skipping"
+            exit 0
+          fi
+
+          RESPONSE=$(curl -fsSL -X PATCH \
+            "https://api.dub.co/links/${LINK_ID}" \
+            -H "Authorization: Bearer $DUB_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"url\": \"${CDN_URL}\"}")
+          echo "$RESPONSE" | jq '{shortLink, url}'
+          echo "Updated ARM64 download link -> $CDN_URL"

@@ -11,9 +11,11 @@
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
 		65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 65D867EC2F5C228600DAAEE6 /* Sparkle */; };
 		AB0D00022F60000000000001 /* com.arcboxlabs.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */; };
+
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
 		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
+		SE0300022F90000000000002 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200022F90000000000002 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,6 +26,7 @@
 			remoteGlobalIDString = 657F657A2F3A2ADB00C7005A;
 			remoteInfo = ArcBox;
 		};
+
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -41,11 +44,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		657F657B2F3A2ADB00C7005A /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArcBox.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		657F657B2F3A2ADB00C7005A /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		657F65A02F3A2ADB00C7005A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
 		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
+
+
 		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -77,6 +82,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -106,6 +112,7 @@
 			children = (
 				8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */,
 				657F657B2F3A2ADB00C7005A /* ArcBox.app */,
+
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -114,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */,
+
 			);
 			path = LaunchDaemons;
 			sourceTree = "<group>";
@@ -137,6 +145,8 @@
 				657F65782F3A2ADB00C7005A /* Frameworks */,
 				657F65792F3A2ADB00C7005A /* Resources */,
 				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
+
+
 				AB0D00052F60000000000001 /* Sign Rust Binaries */,
 			);
 			buildRules = (
@@ -154,7 +164,7 @@
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 				SE0200012F90000000000001 /* Sentry */,
 			);
-			productName = ArcBox;
+			productName = "ArcBox";
 			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -177,6 +187,7 @@
 			productReference = 8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -190,6 +201,7 @@
 					657F657A2F3A2ADB00C7005A = {
 						CreatedOnToolsVersion = 26.2;
 					};
+
 				};
 			};
 			buildConfigurationList = 657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "ArcBox" */;
@@ -215,6 +227,7 @@
 			targets = (
 				8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */,
 				657F657A2F3A2ADB00C7005A /* ArcBox */,
+
 			);
 		};
 /* End PBXProject section */
@@ -260,6 +273,7 @@
 			shellPath = /bin/bash;
 			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/com.arcboxlabs.desktop.daemon\"\nCLI_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin/abctl\"\nENTITLEMENTS=\"${PROJECT_DIR}/ArcBox/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ ! -f \"${CLI_PATH}\" ]; then\n    echo \"error: CLI binary not found at ${CLI_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.abctl\" \"${CLI_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --sign - \"${CLI_PATH}\"\nfi\n";
 		};
+
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -278,6 +292,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -286,6 +301,7 @@
 			target = 657F657A2F3A2ADB00C7005A /* ArcBox */;
 			targetProxy = 3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */;
 		};
+
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -443,8 +459,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
-				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox";
+				INFOPLIST_KEY_CFBundleName = "ArcBox";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -453,7 +469,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = ArcBox;
+				PRODUCT_NAME = "ArcBox";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -485,8 +501,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
-				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox";
+				INFOPLIST_KEY_CFBundleName = "ArcBox";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -495,7 +511,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = ArcBox;
+				PRODUCT_NAME = "ArcBox";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -529,6 +545,7 @@
 			};
 			name = Release;
 		};
+
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -550,6 +567,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+
 		CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "ArcBoxTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -619,6 +637,11 @@
 			productName = SwiftTerm;
 		};
 		SE0200012F90000000000001 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+		SE0200022F90000000000002 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;

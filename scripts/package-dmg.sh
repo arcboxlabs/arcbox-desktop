@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build ArcBox Desktop.app and package it into a signed/notarized DMG.
+# Build ArcBox.app and package it into a signed/notarized DMG.
 #
 # Usage:
 #   scripts/package-dmg.sh [--sign <identity>] [--notarize]
@@ -13,7 +13,7 @@
 #
 #   Contents/
 #   ├── MacOS/
-#   │   ├── ArcBox Desktop          # Main GUI app
+#   │   ├── ArcBox                   # Main GUI app
 #   │   ├── pstramp                 # Process spawn trampoline
 #   │   ├── bin/
 #   │   │   └── abctl               # CLI binary
@@ -70,7 +70,7 @@ sign_binary() {
 
 BUNDLE_ID="com.arcboxlabs.desktop"
 BUILD_DIR="$ARCBOX_DIR/target/dmg-build"
-APP_NAME="ArcBox Desktop"
+APP_NAME="ArcBox"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
 # Version can be passed via VERSION env var; otherwise read from Version.xcconfig.
@@ -82,10 +82,10 @@ fi
 # Strip leading "v" prefix if present (workflow passes v1.2.3, we need 1.2.3).
 VERSION="${VERSION#v}"
 BUILD_NUMBER=$(git -C "$DESKTOP_REPO" rev-list --count HEAD)
-DMG_NAME="ArcBox-Desktop-${VERSION}-arm64"
+DMG_NAME="ArcBox-${VERSION}-arm64"
 DMG_PATH="$ARCBOX_DIR/target/$DMG_NAME.dmg"
 
-echo "=== Building ArcBox Desktop ==="
+echo "=== Building ArcBox ==="
 echo "  Desktop repo : $DESKTOP_REPO"
 echo "  Arcbox dir   : $ARCBOX_DIR"
 echo "  Bundle ID    : $BUNDLE_ID"
@@ -120,11 +120,6 @@ if [ -n "$SIGN_IDENTITY" ]; then
     )
 fi
 
-# Pass Sparkle feed URL as command-line build setting (xcconfig can't handle // in URLs)
-if [ -n "${SPARKLE_FEED_URL:-}" ]; then
-    XCODE_FLAGS+=("INFOPLIST_KEY_SUFeedURL=$SPARKLE_FEED_URL")
-fi
-
 xcodebuild build "${XCODE_FLAGS[@]}" | tail -20
 
 # Locate the built .app
@@ -142,6 +137,15 @@ mkdir -p "$BUILD_DIR"
 cp -R "$BUILT_APP" "$APP_BUNDLE"
 
 echo "  App bundle: $APP_BUNDLE"
+
+# Inject Sparkle feed URL directly into Info.plist via plutil.
+# xcodebuild build settings (both xcconfig and command-line) treat "//" as a
+# comment delimiter, which silently truncates URLs.
+if [ -n "${SPARKLE_FEED_URL:-}" ]; then
+    plutil -replace SUFeedURL -string "$SPARKLE_FEED_URL" \
+        "$APP_BUNDLE/Contents/Info.plist"
+    echo "  SUFeedURL: $SPARKLE_FEED_URL"
+fi
 
 # ---------------------------------------------------------------------------
 # 2. Embed boot-assets → Contents/Resources/assets/{version}/
