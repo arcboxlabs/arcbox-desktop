@@ -248,7 +248,7 @@ class ContainersViewModel {
         let uncached = Set(containers.map(\.image)).subtracting(iconsByImage.keys)
         guard !uncached.isEmpty else { return }
 
-        await withTaskGroup(of: (String, String?).self) { group in
+        await withTaskGroup(of: (String, String?, Bool).self) { group in
             for image in uncached {
                 group.addTask {
                     do {
@@ -256,15 +256,23 @@ class ContainersViewModel {
                         request.fqin = image
                         let response = try await client.icons.getImageIcon(request)
                         let url = response.url.isEmpty ? nil : response.url
-                        return (image, url)
+                        // (image, url, succeeded) — cache empty url as "no icon available"
+                        return (image, url, true)
                     } catch {
                         Log.container.debug("Icon fetch failed for \(image, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        return (image, nil)
+                        // Mark as failed so we don't cache the negative result
+                        return (image, nil, false)
                     }
                 }
             }
-            for await (image, url) in group {
-                iconsByImage[image] = url ?? ""
+            for await (image, url, succeeded) in group {
+                if let url {
+                    iconsByImage[image] = url
+                } else if succeeded {
+                    // RPC succeeded but no icon available — cache to avoid repeated lookups
+                    iconsByImage[image] = ""
+                }
+                // If RPC failed, leave uncached so next load retries
             }
         }
 

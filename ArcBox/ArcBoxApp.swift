@@ -119,6 +119,8 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
+                    guard startupOrchestrator == nil else { return }
+
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
 
