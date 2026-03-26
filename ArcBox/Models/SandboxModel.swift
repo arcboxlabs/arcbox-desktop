@@ -43,7 +43,7 @@ enum SandboxState: String, CaseIterable {
     }
 
     init(apiState: String) {
-        self = SandboxState(rawValue: apiState) ?? .unknown
+        self = SandboxState(rawValue: apiState.lowercased()) ?? .unknown
     }
 }
 
@@ -61,6 +61,8 @@ struct SandboxViewModel: Identifiable, Hashable {
     var vcpus: UInt32
     var memoryMiB: UInt64
     var isTransitioning: Bool = false
+    /// Whether detail data (vcpus, memory, readyAt, error, etc.) has been loaded via inspect.
+    var hasLoadedDetail: Bool = false
 
     var shortID: String {
         String(id.prefix(12))
@@ -139,5 +141,19 @@ struct SandboxViewModel: Identifiable, Hashable {
         self.error = info.error
         self.vcpus = info.limits.vcpus
         self.memoryMiB = info.limits.memoryMib
+        self.hasLoadedDetail = true
+    }
+
+    /// Copy detail-only fields from a previously-inspected model so a list refresh
+    /// does not wipe data that the summary endpoint does not return.
+    mutating func preserveDetailFrom(_ other: SandboxViewModel) {
+        guard other.hasLoadedDetail else { return }
+        self.readyAt = other.readyAt
+        self.lastExitedAt = other.lastExitedAt
+        self.lastExitCode = other.lastExitCode
+        self.error = other.error
+        self.vcpus = other.vcpus
+        self.memoryMiB = other.memoryMiB
+        self.hasLoadedDetail = true
     }
 }

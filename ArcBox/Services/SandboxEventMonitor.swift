@@ -24,6 +24,7 @@ final class SandboxEventMonitor {
         let metadata = SandboxMetadata.forMachine(machineID)
 
         task = Task {
+            var backoffSeconds: UInt64 = 2
             while !Task.isCancelled, !isStopped {
                 do {
                     try await client.sandboxes.events(
@@ -37,15 +38,19 @@ final class SandboxEventMonitor {
                             }
                         }
                     }
+                    // Stream ended cleanly — reset backoff.
+                    backoffSeconds = 2
                 } catch {
                     if Task.isCancelled || isStopped { break }
                     Log.sandbox.warning(
-                        "Sandbox event stream error, reconnecting in 2s: \(error.localizedDescription, privacy: .public)"
+                        "Sandbox event stream error, reconnecting in \(backoffSeconds)s: \(error.localizedDescription, privacy: .public)"
                     )
                 }
 
                 if Task.isCancelled || isStopped { break }
-                try? await Task.sleep(for: .seconds(2))
+                try? await Task.sleep(for: .seconds(backoffSeconds))
+                // Exponential backoff capped at 30 seconds.
+                backoffSeconds = min(backoffSeconds * 2, 30)
             }
             Log.sandbox.info("Sandbox event monitor stopped")
         }

@@ -42,8 +42,13 @@ class SandboxesViewModel {
     // Monitoring metrics
     var concurrentSandboxes: Int = 0
     var startRatePerSecond: Double = 0.0
-    var peakConcurrentSandboxes: Int = 1
+    var peakConcurrentSandboxes: Int = 0
     var concurrentLimit: Int = 20
+
+    // User-visible error from last failed operation
+    var errorMessage: String? = nil
+
+    @ObservationIgnored private var createTimestamps: [Date] = []
 
     // Snapshot list
     var snapshots: [Sandbox_V1_SnapshotSummary] = []
@@ -78,13 +83,22 @@ class SandboxesViewModel {
     func loadSandboxes(client: ArcBoxClient?) async {
         guard let client else { return }
         let transitioning = transitioningIDs
+        let existingByID = Dictionary(uniqueKeysWithValues: sandboxes.map { ($0.id, $0) })
         let metadata = SandboxMetadata.forMachine(activeMachineID)
         do {
             let response = try await client.sandboxes.list(
                 Sandbox_V1_ListSandboxesRequest(),
                 metadata: metadata
             )
-            var viewModels = response.sandboxes.map { SandboxViewModel(from: $0) }
+            var viewModels = response.sandboxes.map { summary -> SandboxViewModel in
+                var vm = SandboxViewModel(from: summary)
+                // Preserve detail fields loaded by a prior inspect call so the list
+                // refresh does not wipe data the summary endpoint does not return.
+                if let existing = existingByID[vm.id] {
+                    vm.preserveDetailFrom(existing)
+                }
+                return vm
+            }
             for i in viewModels.indices where transitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
             }
@@ -134,11 +148,13 @@ class SandboxesViewModel {
         do {
             let response = try await client.sandboxes.create(request, metadata: metadata)
             Log.sandbox.info("Created sandbox \(response.id, privacy: .public)")
+            recordSandboxStart()
             await loadSandboxes(client: client)
             return response.id
         } catch {
             Log.sandbox.error(
                 "Error creating sandbox: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
             return nil
         }
     }
@@ -151,11 +167,13 @@ class SandboxesViewModel {
         request.id = id
         do {
             _ = try await client.sandboxes.stop(request, metadata: metadata)
-            updateSandbox(id) { $0.state = .stopped }
+            // Set intermediate state; event monitor will deliver the final .stopped transition.
+            updateSandbox(id) { $0.state = .stopping }
         } catch {
             Log.sandbox.error(
                 "Error stopping sandbox \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
+            errorMessage = error.localizedDescription
         }
         setTransitioning(id, false)
     }
@@ -174,6 +192,7 @@ class SandboxesViewModel {
             Log.sandbox.error(
                 "Error removing sandbox \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
+            errorMessage = error.localizedDescription
             setTransitioning(id, false)
         }
     }
@@ -239,5 +258,18 @@ class SandboxesViewModel {
         if concurrentSandboxes > peakConcurrentSandboxes {
             peakConcurrentSandboxes = concurrentSandboxes
         }
+    }
+
+    /// Record a sandbox start event and recompute the 5-second rolling start rate.
+    private func recordSandboxStart() {
+        let now = Date()
+        createTimestamps.append(now)
+        let windowStart = now.addingTimeInterval(-5)
+        createTimestamps.removeAll { $0 < windowStart }
+        startRatePerSecond = Double(createTimestamps.count) / 5.0
+    }
+
+    func clearError() {
+        errorMessage = nil
     }
 }

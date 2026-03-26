@@ -55,6 +55,15 @@ struct SandboxTerminalTab: View {
 
             // Terminal content
             switch session.state {
+            case .connecting:
+                VStack {
+                    Spacer()
+                    ProgressView("Connecting…")
+                        .progressViewStyle(.circular)
+                        .foregroundStyle(AppColors.textSecondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .error(let message):
                 errorView(message)
             default:
