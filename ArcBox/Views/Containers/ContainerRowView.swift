@@ -100,7 +100,7 @@ struct ContainerRowView: View {
                         } else {
                             Menu {
                                 ForEach(container.hostPorts, id: \.self) { port in
-                                    Button("localhost:\(port)") {
+                                    Button("localhost:\(String(port))") {
                                         openLocalhost(port: port)
                                     }
                                 }
