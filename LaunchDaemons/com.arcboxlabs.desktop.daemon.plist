@@ -30,11 +30,10 @@
     <key>ProcessType</key>
     <string>Background</string>
 
-    <!-- Kept for backward compatibility: older daemon versions write to
-         stdout/stderr. Once the bundled daemon uses tracing-appender
-         (arcbox >= 0.4), these can be removed. Paths moved from /tmp/
-         to ~/.arcbox/log/ so all logs are in one place. launchd routes
-         output to the system log if these keys are absent. -->
+    <!-- Kept for backward compatibility: the current bundled daemon
+         (< 0.4) still writes to stdout/stderr. Once it switches to
+         tracing-appender (arcbox >= 0.4), these keys can be removed.
+         launchd routes output to the system log if they are absent. -->
     <key>StandardOutPath</key>
     <string>/tmp/arcbox-daemon.stdout.log</string>
 
