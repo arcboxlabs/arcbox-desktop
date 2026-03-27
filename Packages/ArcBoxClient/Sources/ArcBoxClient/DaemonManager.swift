@@ -162,7 +162,9 @@ public final class DaemonManager {
         // redundantly (e.g. SwiftUI .task re-entrancy).
         if status == .enabled {
             ClientLog.daemon.info("Daemon already registered, skipping re-register")
-            state = .registered
+            if state != .running {
+                state = .registered
+            }
             return
         }
 
