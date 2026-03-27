@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.16.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.15.0...v1.16.0) (2026-03-27)
+
+
+### Features
+
+* implement create/import for containers, images, and volumes ([#90](https://github.com/arcboxlabs/arcbox-desktop/issues/90)) ([28b772d](https://github.com/arcboxlabs/arcbox-desktop/commit/28b772d199539b78118dc64d3baa7bf253cb7e89))
+* **ui:** add confirmation dialogs for all delete operations ([a9987d0](https://github.com/arcboxlabs/arcbox-desktop/commit/a9987d0b7e2ef7df80a39c53c45da72881841a04))
+* **ui:** add icons to empty states and "No Selection" placeholders ([0038df2](https://github.com/arcboxlabs/arcbox-desktop/commit/0038df2ecffd0479c6dec17c3266f6fd489b431b))
+* **ui:** implement "In Use" / "Unused" grouping in list views ([c45d119](https://github.com/arcboxlabs/arcbox-desktop/commit/c45d1196a3b7288a8585fef16bc84d158d7b5107))
+
+
+### Bug Fixes
+
+* clamp uptimeDisplay interval to &gt;= 0 for clock skew safety ([b6e69a0](https://github.com/arcboxlabs/arcbox-desktop/commit/b6e69a0ea0b0522d4715e4d8fe258bcba96a0c6f))
+* preserve .running state when enableDaemon is called redundantly ([f117e7e](https://github.com/arcboxlabs/arcbox-desktop/commit/f117e7e21d2387fd9ba70b15907f450411852a17))
+* prevent daemon from being killed and restarted during app startup ([0f1990d](https://github.com/arcboxlabs/arcbox-desktop/commit/0f1990d7d2e1eb1ebf7fb3be286d8cb814ac0a0a))
+* prevent locale thousands separator in port number display ([8afc9d4](https://github.com/arcboxlabs/arcbox-desktop/commit/8afc9d484f6de8b45910df8c66a3dfa1f14f3b82))
+* **ui:** use uptimeDisplay instead of createdAgo for running container status ([8ed68ab](https://github.com/arcboxlabs/arcbox-desktop/commit/8ed68ab0f196f031d60cdb3d996b52027c309504))
+
+
+### Miscellaneous
+
+* add MIT OR Apache-2.0 dual license ([6df90c0](https://github.com/arcboxlabs/arcbox-desktop/commit/6df90c0bbf790305254b8896392715a38fdc4728))
+
 ## [1.15.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.2...v1.15.0) (2026-03-26)
 
 
