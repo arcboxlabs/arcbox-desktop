@@ -38,6 +38,7 @@ class ContainersViewModel {
     }
 
     var containers: [ContainerViewModel] = []
+    var hasCompletedInitialLoad: Bool = false
     var selectedID: String? = nil
     var activeTab: ContainerDetailTab = .info
     var expandedGroups: Set<String> = []
@@ -483,6 +484,7 @@ class ContainersViewModel {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
+            hasCompletedInitialLoad = true
             Log.container.info("Loaded \(self.containers.count, privacy: .public) containers")
             applyExpandedGroups(from: containers)
             await fetchIcons(client: iconClient)

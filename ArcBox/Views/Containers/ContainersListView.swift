@@ -42,6 +42,9 @@ struct ContainersListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
+            } else if !vm.hasCompletedInitialLoad {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.containers.isEmpty {
                 ContainerEmptyState()
             } else {
