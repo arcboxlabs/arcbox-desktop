@@ -129,6 +129,18 @@ struct ContainerViewModel: Identifiable, Hashable {
         return "just now"
     }
 
+    var uptimeDisplay: String {
+        let interval = Date().timeIntervalSince(createdAt)
+        let days = Int(interval / 86400)
+        let hours = Int(interval / 3600)
+        let minutes = Int(interval / 60)
+
+        if days > 0 { return "\(days)d" }
+        if hours > 0 { return "\(hours)h" }
+        if minutes > 0 { return "\(minutes)m" }
+        return "< 1m"
+    }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

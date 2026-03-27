@@ -15,7 +15,7 @@ struct ContainerInfoTab: View {
                     InfoRow(
                         label: "Status",
                         value: container.isRunning
-                            ? "Up \(container.createdAgo)"
+                            ? "Up \(container.uptimeDisplay)"
                             : "Stopped"
                     )
                 }
