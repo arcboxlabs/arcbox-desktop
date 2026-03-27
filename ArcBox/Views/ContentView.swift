@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(NetworksViewModel.self) private var networksVM
 
     // Feature ViewModels – local to main window
+    @State private var k8sState = KubernetesState()
     @State private var podsVM = PodsViewModel()
     @State private var servicesVM = ServicesViewModel()
     @State private var machinesVM = MachinesViewModel()
@@ -100,9 +101,11 @@ struct ContentView: View {
                 .environment(networksVM)
         case .pods:
             PodsListView()
+                .environment(k8sState)
                 .environment(podsVM)
         case .services:
             ServicesListView()
+                .environment(k8sState)
                 .environment(servicesVM)
         case .machines:
             MachinesView()
@@ -136,9 +139,11 @@ struct ContentView: View {
                 .environment(containersVM)
         case .pods:
             PodDetailView()
+                .environment(k8sState)
                 .environment(podsVM)
         case .services:
             ServiceDetailView()
+                .environment(k8sState)
                 .environment(servicesVM)
         case .machines:
             MachineDetailView()
