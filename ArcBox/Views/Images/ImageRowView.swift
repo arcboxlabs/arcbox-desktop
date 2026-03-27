@@ -8,6 +8,7 @@ struct ImageRowView: View {
     let onDelete: () -> Void
 
     @State private var isHovered: Bool = false
+    @State private var showDeleteConfirm = false
 
     /// Generate a consistent color based on repository name
     private var imageColor: Color {
@@ -67,7 +68,7 @@ struct ImageRowView: View {
             if isHovered || isSelected {
                 IconButton(
                     symbol: "trash.fill",
-                    action: onDelete,
+                    action: { showDeleteConfirm = true },
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
             }
@@ -87,5 +88,11 @@ struct ImageRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .confirmationDialog("Delete Image", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete \"\(image.repository):\(image.tag)\"? This action cannot be undone.")
+        }
     }
 }
