@@ -43,14 +43,14 @@ class SandboxTerminalSession {
         let (inputStream, continuation) = AsyncStream<Sandbox_V1_ExecInput>.makeStream()
         self.inputContinuation = continuation
 
-        // Get initial terminal size
+        // Get initial terminal size (use sensible defaults if not yet laid out)
         let terminalSize = terminalView.getTerminal().getDims()
-        let cols = UInt32(terminalSize.cols)
-        let rows = UInt32(terminalSize.rows)
+        let cols = UInt32(max(terminalSize.cols, 80))
+        let rows = UInt32(max(terminalSize.rows, 24))
 
         let metadata = SandboxMetadata.forMachine(machineID)
 
-        execTask = Task { [weak self] in
+        execTask = Task.detached { [weak self] in
             do {
                 try await client.sandboxes.exec(
                     metadata: metadata,
@@ -121,6 +121,7 @@ class SandboxTerminalSession {
 
     /// Notify the sandbox of terminal size changes.
     func resize(cols: Int, rows: Int) {
+        guard cols > 0, rows > 0 else { return }
         var msg = Sandbox_V1_ExecInput()
         var size = Sandbox_V1_TerminalSize()
         size.width = UInt32(cols)

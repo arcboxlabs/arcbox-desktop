@@ -39,7 +39,7 @@ enum SandboxState: String, CaseIterable {
 
     /// Whether the sandbox can accept Run/Exec calls.
     var isAcceptingCommands: Bool {
-        self == .ready || self == .idle
+        self == .ready || self == .idle || self == .running
     }
 
     init(apiState: String) {

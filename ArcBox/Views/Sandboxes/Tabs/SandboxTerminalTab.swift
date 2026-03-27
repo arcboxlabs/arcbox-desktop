@@ -10,8 +10,9 @@ struct SandboxTerminalTab: View {
     @Environment(\.arcboxClient) private var client
 
     @State private var session = SandboxTerminalSession()
-    @State private var selectedShell = "/bin/sh"
+    @State private var selectedShell = "/bin/bash"
     @State private var terminalToken = UUID()
+    @State private var hasConnected = false
 
     private let availableShells = ["/bin/sh", "/bin/bash", "/bin/zsh"]
 
@@ -53,22 +54,26 @@ struct SandboxTerminalTab: View {
 
             Divider()
 
-            // Terminal content
-            switch session.state {
-            case .connecting:
-                VStack {
-                    Spacer()
-                    ProgressView("Connecting…")
-                        .progressViewStyle(.circular)
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .error(let message):
+            // Terminal content — always keep SwiftTermView alive to avoid recreation loops
+            if case .error(let message) = session.state {
                 errorView(message)
-            default:
-                terminalContent
-                    .id(terminalToken)
+            } else {
+                ZStack {
+                    terminalContent
+                        .id(terminalToken)
+
+                    if session.state == .connecting {
+                        VStack {
+                            Spacer()
+                            ProgressView("Connecting…")
+                                .progressViewStyle(.circular)
+                                .foregroundStyle(AppColors.textSecondary)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(AppColors.background)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -82,14 +87,21 @@ struct SandboxTerminalTab: View {
         SwiftTermView(delegate: SandboxTerminalBridge(session: session)) { terminalView in
             TerminalAppearance.configure(terminalView)
 
-            guard let client else { return }
-            session.connect(
-                sandboxID: sandboxID,
-                command: [selectedShell],
-                machineID: vm.activeMachineID,
-                client: client,
-                terminalView: terminalView
-            )
+            guard !hasConnected, let client else { return }
+            let sandboxID = sandboxID
+            let shell = selectedShell
+            let machineID = vm.activeMachineID
+            // Defer state modifications out of the view update cycle.
+            Task { @MainActor in
+                hasConnected = true
+                session.connect(
+                    sandboxID: sandboxID,
+                    command: [shell],
+                    machineID: machineID,
+                    client: client,
+                    terminalView: terminalView
+                )
+            }
         }
     }
 
@@ -114,6 +126,7 @@ struct SandboxTerminalTab: View {
     private func reconnect() {
         session.disconnect()
         session.state = .idle
+        hasConnected = false
         terminalToken = UUID()
     }
 }
