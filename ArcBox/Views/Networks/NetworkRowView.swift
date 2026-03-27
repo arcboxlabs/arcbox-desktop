@@ -44,7 +44,7 @@ struct NetworkRowView: View {
                 )
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .frame(height: 44)
         .background(
             RoundedRectangle(cornerRadius: 6)
@@ -55,7 +55,7 @@ struct NetworkRowView: View {
                 )
         )
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
