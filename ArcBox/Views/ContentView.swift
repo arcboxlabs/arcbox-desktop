@@ -63,6 +63,7 @@ struct ContentView: View {
             }
         } detail: {
             detailColumn
+                .background(AppColors.sidebar)
         }
         .onChange(of: appVM.currentNav) { _, newNav in
             guard let newNav else { return }
