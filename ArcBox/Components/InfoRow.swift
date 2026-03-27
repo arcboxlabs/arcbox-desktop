@@ -42,6 +42,7 @@ extension View {
     /// Wraps content in a rounded-border card for InfoRow groups
     func infoSectionStyle() -> some View {
         self
+            .background(AppColors.background)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
