@@ -10,6 +10,7 @@ struct ContainerRowView: View {
     let onDelete: () -> Void
 
     @State private var isHovered: Bool = false
+    @State private var showDeleteConfirm = false
 
     private var isStopped: Bool { !container.isRunning && !container.isTransitioning }
 
@@ -131,7 +132,7 @@ struct ContainerRowView: View {
                     }
                     IconButton(
                         symbol: "trash.fill",
-                        action: onDelete,
+                        action: { showDeleteConfirm = true },
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
                 }
@@ -154,6 +155,12 @@ struct ContainerRowView: View {
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             isHovered = hovering
+        }
+        .confirmationDialog("Delete Container", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete \"\(container.name)\"? This action cannot be undone.")
         }
     }
 }
