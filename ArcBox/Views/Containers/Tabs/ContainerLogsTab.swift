@@ -89,12 +89,12 @@ struct ContainerLogsTab: View {
 
                 // Follow toggle
                 Button(action: toggleFollow) {
-                    Image(systemName: isFollowing ? "arrow.down.to.line" : "pause")
+                    Image(systemName: isFollowing ? "pause" : "arrow.down.to.line")
                         .font(.system(size: 12))
                         .foregroundStyle(isFollowing ? AppColors.accent : AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .help(isFollowing ? "Following logs" : "Paused")
+                .help(isFollowing ? "Pause" : "Follow")
 
                 Button(action: copyLogs) {
                     Image(systemName: "doc.on.doc")

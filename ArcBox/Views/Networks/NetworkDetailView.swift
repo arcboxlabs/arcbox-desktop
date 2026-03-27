@@ -43,7 +43,9 @@ struct NetworkDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Spacer()
+                Text("Info")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppColors.textSecondary)
             }
         }
     }

@@ -127,10 +127,6 @@ struct NewContainerSheet: View {
 
             // Footer buttons
             HStack {
-                Button("?") {}
-                    .buttonStyle(.plain)
-                    .frame(width: 24, height: 24)
-
                 Spacer()
 
                 Button("Cancel") {

@@ -261,12 +261,13 @@ struct MenuBarView: View {
             }
 
             MenuBarHoverButton {
-                // TODO: open settings
+                // TODO: open settings when settings UI is implemented
             } label: {
                 Label("Settings", systemImage: "gearshape")
                     .padding(.horizontal, 6)
                     .padding(.vertical, 5)
             }
+            .disabled(true)
 
             Divider()
                 .padding(.vertical, 4)
