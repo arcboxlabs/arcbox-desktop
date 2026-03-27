@@ -10,4 +10,5 @@ enum Log {
     static let image     = Logger(subsystem: subsystem, category: "image")
     static let volume    = Logger(subsystem: subsystem, category: "volume")
     static let network   = Logger(subsystem: subsystem, category: "network")
+    static let sandbox   = Logger(subsystem: subsystem, category: "sandbox")
 }

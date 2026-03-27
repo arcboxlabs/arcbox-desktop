@@ -276,6 +276,7 @@ public final class DaemonManager {
         case .networkReady: setupPhase = .networkReady
         case .ready:        setupPhase = .ready
         case .degraded:     setupPhase = .degraded
+        case .cleaningUp:   setupPhase = .unknown
         case .UNRECOGNIZED: setupPhase = .unknown
         }
 

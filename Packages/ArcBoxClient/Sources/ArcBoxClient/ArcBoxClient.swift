@@ -81,4 +81,14 @@ public final class ArcBoxClient: Sendable {
     public var icons: Arcbox_V1_IconService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
     }
+
+    /// Sandbox lifecycle operations.
+    public var sandboxes: Sandbox_V1_SandboxService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
+    /// Sandbox snapshot operations.
+    public var snapshots: Sandbox_V1_SandboxSnapshotService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
 }

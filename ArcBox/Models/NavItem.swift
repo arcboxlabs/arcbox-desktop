@@ -17,7 +17,7 @@ enum NavItem: String, CaseIterable, Identifiable {
     /// Whether this item belongs to a not-yet-implemented section.
     var isComingSoon: Bool {
         switch self {
-        case .pods, .services, .machines, .sandboxes, .templates:
+        case .pods, .services, .machines, .templates:
             true
         default:
             false

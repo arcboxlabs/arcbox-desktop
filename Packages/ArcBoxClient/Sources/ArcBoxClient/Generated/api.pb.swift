@@ -919,6 +919,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
     case ready // = 6
     case degraded // = 7
     case downloadingAssets // = 8
+    case cleaningUp // = 9
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -936,6 +937,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       case 6: self = .ready
       case 7: self = .degraded
       case 8: self = .downloadingAssets
+      case 9: self = .cleaningUp
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -951,6 +953,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       case .ready: return 6
       case .degraded: return 7
       case .downloadingAssets: return 8
+      case .cleaningUp: return 9
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -966,6 +969,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       .ready,
       .degraded,
       .downloadingAssets,
+      .cleaningUp,
     ]
 
   }
@@ -2588,5 +2592,5 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
 }
 
 extension Arcbox_V1_SetupStatus.Phase: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0\u{1}CLEANING_UP\0")
 }

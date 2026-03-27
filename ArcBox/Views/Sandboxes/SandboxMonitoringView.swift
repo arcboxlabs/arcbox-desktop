@@ -139,13 +139,15 @@ struct SandboxMonitoringView: View {
                     MetricCard(
                         title: "Start Rate",
                         value: String(format: "%.3f", vm.startRatePerSecond),
-                        subtitle: "Start Rate Per Second\n(5-sec avg)"
+                        subtitle: "Start Rate Per Second\n(5-sec rolling avg)",
+                        isLive: false
                     )
                     MetricCard(
                         title: "Peak Concurrent",
                         value: "\(vm.peakConcurrentSandboxes)",
-                        subtitle: "Peak Concurrent Sandboxes\n(30-day max)",
-                        limit: vm.concurrentLimit
+                        subtitle: "Peak Concurrent Sandboxes\n(session max)",
+                        limit: vm.concurrentLimit,
+                        isLive: false
                     )
                 }
 

@@ -11,10 +11,12 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var eventMonitor: DockerEventMonitor?
+    var sandboxEventMonitor: SandboxEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
+        sandboxEventMonitor?.stop()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -36,6 +38,7 @@ struct ArcBoxDesktopApp: App {
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var eventMonitor = DockerEventMonitor()
+    @State private var sandboxEventMonitor = SandboxEventMonitor()
     @State private var startupOrchestrator: StartupOrchestrator?
 
     // Shared ViewModels used by both main window and menu bar
@@ -123,6 +126,7 @@ struct ArcBoxDesktopApp: App {
 
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
+                    appDelegate.sandboxEventMonitor = sandboxEventMonitor
 
                     let orchestrator = StartupOrchestrator(
                         daemonManager: daemonManager,
@@ -138,8 +142,13 @@ struct ArcBoxDesktopApp: App {
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
                         }
+                        if let arcboxClient {
+                            sandboxEventMonitor.start(
+                                client: arcboxClient, machineID: "default")
+                        }
                     } else {
                         eventMonitor.stop()
+                        sandboxEventMonitor.stop()
                     }
                 }
         }
