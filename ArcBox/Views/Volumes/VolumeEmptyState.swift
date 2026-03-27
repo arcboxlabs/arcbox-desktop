@@ -5,6 +5,15 @@ struct VolumeEmptyState: View {
         VStack(spacing: 16) {
             Spacer()
 
+            ZStack {
+                Circle()
+                    .fill(AppColors.surfaceElevated)
+                    .frame(width: 64, height: 64)
+                Image(systemName: "internaldrive")
+                    .font(.system(size: 26))
+                    .foregroundStyle(AppColors.textMuted)
+            }
+
             Text("No volumes yet")
                 .font(.system(size: 13))
                 .foregroundStyle(AppColors.textSecondary)

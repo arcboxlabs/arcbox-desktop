@@ -29,9 +29,14 @@ struct NetworkDetailView: View {
                 }
             } else {
                 Spacer()
-                Text("No Selection")
-                    .foregroundStyle(AppColors.textSecondary)
-                    .font(.system(size: 15))
+                VStack(spacing: 12) {
+                    Image(systemName: "point.3.filled.connected.trianglepath.dotted")
+                        .font(.system(size: 32))
+                        .foregroundStyle(AppColors.textMuted)
+                    Text("No Selection")
+                        .foregroundStyle(AppColors.textSecondary)
+                        .font(.system(size: 15))
+                }
                 Spacer()
             }
         }
