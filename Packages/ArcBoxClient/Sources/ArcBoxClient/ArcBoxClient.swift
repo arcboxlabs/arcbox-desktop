@@ -61,7 +61,7 @@ public final class ArcBoxClient: Sendable {
             } catch is CancellationError {
                 return
             } catch {
-                // Transport failed — will recreate below.
+                ClientLog.grpc.warning("gRPC transport failed, will recreate: \(error)")
             }
 
             guard !Task.isCancelled, !_closed.withLock({ $0 }) else { return }

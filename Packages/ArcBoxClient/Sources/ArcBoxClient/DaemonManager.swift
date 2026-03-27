@@ -157,9 +157,34 @@ public final class DaemonManager {
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
 
-        // If already enabled, skip the destructive unregister+register cycle.
-        // This avoids killing a healthy daemon when enableDaemon() is called
-        // redundantly (e.g. SwiftUI .task re-entrancy).
+        #if DEBUG
+        // In development, ALWAYS force unregister+register.
+        //
+        // Every Xcode build re-signs the daemon binary via `codesign --force`,
+        // which generates a new CDHash even for identical content.  SMAppService
+        // stores the CDHash from registration time.  If the daemon exits after a
+        // rebuild, launchd validates the (now different) CDHash, gets a mismatch,
+        // and refuses to spawn with EX_CONFIG (78).  Force re-register ensures
+        // the registered CDHash always matches the current binary.
+        //
+        // This is safe because enableDaemon() is only called once per app launch
+        // (guarded by StartupOrchestrator.isStarting + the `.task` nil check in
+        // ArcBoxApp), so the SwiftUI .task re-entrancy concern does not apply.
+        ClientLog.daemon.info("DEBUG: force re-registering daemon to sync CDHash")
+        do {
+            try? await daemonService.unregister()
+            try daemonService.register()
+            ClientLog.daemon.info("Service registered successfully")
+            state = .registered
+        } catch {
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
+            state = .error("Failed to register daemon: \(error.localizedDescription)")
+        }
+        #else
+        // In production, skip the destructive unregister+register cycle if the
+        // daemon is already enabled.  This avoids killing a healthy daemon when
+        // enableDaemon() is called redundantly (e.g. SwiftUI .task re-entrancy).
         if status == .enabled {
             ClientLog.daemon.info("Daemon already registered, skipping re-register")
             if state != .running {
@@ -180,6 +205,7 @@ public final class DaemonManager {
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
         }
+        #endif
     }
 
     /// Force re-register the daemon with launchd, regardless of current status.

@@ -25,8 +25,8 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
                 .padding(.horizontal, 8)
                 .background(AppColors.surfaceElevated)
 
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    rowContent(item)
+                ForEach(items.indices, id: \.self) { index in
+                    rowContent(items[index])
                         .font(.system(size: 13))
                         .padding(.vertical, 6)
                         .padding(.horizontal, 8)

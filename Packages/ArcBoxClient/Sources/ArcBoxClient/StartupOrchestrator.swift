@@ -193,10 +193,8 @@ public final class StartupOrchestrator {
             // Phase 1: normal poll — daemon may be starting up; give it the
             // full timeout before assuming it's dead.
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                if self.daemonManager.state.isRunning { break }
                 try await Task.sleep(for: StartupConstants.daemonPollInterval)
-                if self.daemonManager.state.isRunning {
-                    break
-                }
             }
 
             if self.daemonManager.state.isRunning { return }
@@ -215,10 +213,8 @@ public final class StartupOrchestrator {
             self.daemonManager.connectAndWatch(client: client)
 
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                if self.daemonManager.state.isRunning { break }
                 try await Task.sleep(for: StartupConstants.daemonPollInterval)
-                if self.daemonManager.state.isRunning {
-                    break
-                }
             }
 
             if !self.daemonManager.state.isRunning {

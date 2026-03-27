@@ -468,6 +468,7 @@ class ContainersViewModel {
     func loadContainersFromDocker(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
             Log.container.debug("No docker client available")
+            hasCompletedInitialLoad = true
             return
         }
 
@@ -484,7 +485,6 @@ class ContainersViewModel {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
-            hasCompletedInitialLoad = true
             Log.container.info("Loaded \(self.containers.count, privacy: .public) containers")
             applyExpandedGroups(from: containers)
             await fetchIcons(client: iconClient)
@@ -497,6 +497,7 @@ class ContainersViewModel {
                 scope.setTag(value: "list_docker", key: "container_op")
             }
         }
+        hasCompletedInitialLoad = true
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {
