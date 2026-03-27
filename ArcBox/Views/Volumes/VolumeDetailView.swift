@@ -14,10 +14,10 @@ struct VolumeDetailView: View {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
-                            InfoRow(label: "Name", value: volume.name, rowIndex: 0)
-                            InfoRow(label: "Driver", value: volume.driver, rowIndex: 1)
-                            InfoRow(label: "Size", value: volume.sizeDisplay, rowIndex: 2)
-                            InfoRow(label: "Created", value: volume.createdAgo, rowIndex: 3)
+                            InfoRow(label: "Name", value: volume.name)
+                            InfoRow(label: "Driver", value: volume.driver)
+                            InfoRow(label: "Size", value: volume.sizeDisplay)
+                            InfoRow(label: "Created", value: volume.createdAgo)
                         }
                         .infoSectionStyle()
                         .padding(16)

@@ -5,7 +5,6 @@ struct InfoRow: View {
     let label: String
     let value: String
     var link: URL? = nil
-    var rowIndex: Int = 0
 
     var body: some View {
         HStack(alignment: .top) {
@@ -24,6 +23,7 @@ struct InfoRow: View {
             } else {
                 Text(value)
                     .font(.system(size: 13))
+                    .foregroundStyle(AppColors.textSecondary)
                     .multilineTextAlignment(.trailing)
                     .textSelection(.enabled)
             }

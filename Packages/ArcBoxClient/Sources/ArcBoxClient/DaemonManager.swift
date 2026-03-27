@@ -238,7 +238,6 @@ public final class DaemonManager {
     @available(macOS 15.0, *)
     public func connectAndWatch(client: ArcBoxClient) {
         stopWatching()
-        let systemService = client.system
         watchTask = Task { [weak self] in
             // Track consecutive failed reconnect attempts since the last
             // successful stream message.  Used to keep .running state for a
@@ -248,6 +247,11 @@ public final class DaemonManager {
 
             // Retry loop: reconnect on stream disconnect.
             while !Task.isCancelled {
+                // Get a fresh service reference each iteration so we pick up
+                // any transport recovery in ArcBoxClient (its internal
+                // GRPCClient is swapped after runConnections() terminates).
+                let systemService = client.system
+
                 // Bridge: gRPC Sendable closure writes into the stream,
                 // MainActor-isolated code reads from it.
                 let (stream, continuation) = AsyncStream<Arcbox_V1_SetupStatus>.makeStream()
