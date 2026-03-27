@@ -81,4 +81,9 @@ public final class ArcBoxClient: Sendable {
     public var icons: Arcbox_V1_IconService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
     }
+
+    /// Kubernetes cluster lifecycle operations.
+    public var kubernetes: Arcbox_V1_KubernetesService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
 }

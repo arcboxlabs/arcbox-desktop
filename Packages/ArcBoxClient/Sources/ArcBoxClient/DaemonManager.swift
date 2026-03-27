@@ -26,6 +26,7 @@ public enum DaemonSetupPhase: Sendable, Equatable {
     case networkReady
     case ready
     case degraded
+    case cleaningUp
 }
 
 /// Manages the arcbox daemon lifecycle via SMAppService (LaunchAgent) and
@@ -265,6 +266,7 @@ public final class DaemonManager {
         case .networkReady: setupPhase = .networkReady
         case .ready:        setupPhase = .ready
         case .degraded:     setupPhase = .degraded
+        case .cleaningUp:   setupPhase = .cleaningUp
         case .UNRECOGNIZED: setupPhase = .unknown
         }
 

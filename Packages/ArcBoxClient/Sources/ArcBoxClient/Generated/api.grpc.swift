@@ -4067,3 +4067,569 @@ extension Arcbox_V1_VolumeService.ClientProtocol {
         )
     }
 }
+
+// MARK: - arcbox.v1.MigrationService
+
+/// Namespace containing generated types for the "arcbox.v1.MigrationService" service.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+public enum Arcbox_V1_MigrationService {
+    /// Service descriptor for the "arcbox.v1.MigrationService" service.
+    public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MigrationService")
+    /// Namespace for method metadata.
+    public enum Method {
+        /// Namespace for "PrepareMigration" metadata.
+        public enum PrepareMigration {
+            /// Request type for "PrepareMigration".
+            public typealias Input = Arcbox_V1_PrepareMigrationRequest
+            /// Response type for "PrepareMigration".
+            public typealias Output = Arcbox_V1_PrepareMigrationResponse
+            /// Descriptor for "PrepareMigration".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MigrationService"),
+                method: "PrepareMigration"
+            )
+        }
+        /// Namespace for "RunMigration" metadata.
+        public enum RunMigration {
+            /// Request type for "RunMigration".
+            public typealias Input = Arcbox_V1_RunMigrationRequest
+            /// Response type for "RunMigration".
+            public typealias Output = Arcbox_V1_RunMigrationEvent
+            /// Descriptor for "RunMigration".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MigrationService"),
+                method: "RunMigration"
+            )
+        }
+        /// Descriptors for all methods in the "arcbox.v1.MigrationService" service.
+        public static let descriptors: [GRPCCore.MethodDescriptor] = [
+            PrepareMigration.descriptor,
+            RunMigration.descriptor
+        ]
+    }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension GRPCCore.ServiceDescriptor {
+    /// Service descriptor for the "arcbox.v1.MigrationService" service.
+    public static let arcbox_v1_MigrationService = GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MigrationService")
+}
+
+// MARK: arcbox.v1.MigrationService (server)
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService {
+    /// Streaming variant of the service protocol for the "arcbox.v1.MigrationService" service.
+    ///
+    /// This protocol is the lowest-level of the service protocols generated for this service
+    /// giving you the most flexibility over the implementation of your service. This comes at
+    /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+    /// terms of a request stream and response stream. Where only a single request or response
+    /// message is expected, you are responsible for enforcing this invariant is maintained.
+    ///
+    /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+    /// or ``SimpleServiceProtocol`` instead.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MigrationService plans and runs host-side runtime migrations.
+    public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+        /// Handle the "PrepareMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a migration plan for a supported external runtime.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_PrepareMigrationRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_PrepareMigrationResponse` messages.
+        func prepareMigration(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_PrepareMigrationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_PrepareMigrationResponse>
+
+        /// Handle the "RunMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Runs a prepared migration plan and streams execution progress.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_RunMigrationRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_RunMigrationEvent` messages.
+        func runMigration(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_RunMigrationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_RunMigrationEvent>
+    }
+
+    /// Service protocol for the "arcbox.v1.MigrationService" service.
+    ///
+    /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+    /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+    /// trailing response metadata. If you don't need these then consider using
+    /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+    /// use ``StreamingServiceProtocol``.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MigrationService plans and runs host-side runtime migrations.
+    public protocol ServiceProtocol: Arcbox_V1_MigrationService.StreamingServiceProtocol {
+        /// Handle the "PrepareMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a migration plan for a supported external runtime.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_PrepareMigrationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_PrepareMigrationResponse` message.
+        func prepareMigration(
+            request: GRPCCore.ServerRequest<Arcbox_V1_PrepareMigrationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_PrepareMigrationResponse>
+
+        /// Handle the "RunMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Runs a prepared migration plan and streams execution progress.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_RunMigrationEvent` messages.
+        func runMigration(
+            request: GRPCCore.ServerRequest<Arcbox_V1_RunMigrationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_RunMigrationEvent>
+    }
+
+    /// Simple service protocol for the "arcbox.v1.MigrationService" service.
+    ///
+    /// This is the highest level protocol for the service. The API is the easiest to use but
+    /// doesn't provide access to request or response metadata. If you need access to these
+    /// then use ``ServiceProtocol`` instead.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MigrationService plans and runs host-side runtime migrations.
+    public protocol SimpleServiceProtocol: Arcbox_V1_MigrationService.ServiceProtocol {
+        /// Handle the "PrepareMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a migration plan for a supported external runtime.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_PrepareMigrationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_PrepareMigrationResponse` to respond with.
+        func prepareMigration(
+            request: Arcbox_V1_PrepareMigrationRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_PrepareMigrationResponse
+
+        /// Handle the "RunMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Runs a prepared migration plan and streams execution progress.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_RunMigrationRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_RunMigrationEvent` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func runMigration(
+            request: Arcbox_V1_RunMigrationRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_RunMigrationEvent>,
+            context: GRPCCore.ServerContext
+        ) async throws
+    }
+}
+
+// Default implementation of 'registerMethods(with:)'.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService.StreamingServiceProtocol {
+    public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
+        router.registerHandler(
+            forMethod: Arcbox_V1_MigrationService.Method.PrepareMigration.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_PrepareMigrationRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_PrepareMigrationResponse>(),
+            handler: { request, context in
+                try await self.prepareMigration(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MigrationService.Method.RunMigration.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_RunMigrationRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_RunMigrationEvent>(),
+            handler: { request, context in
+                try await self.runMigration(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+    }
+}
+
+// Default implementation of streaming methods from 'StreamingServiceProtocol'.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService.ServiceProtocol {
+    public func prepareMigration(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_PrepareMigrationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_PrepareMigrationResponse> {
+        let response = try await self.prepareMigration(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func runMigration(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_RunMigrationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_RunMigrationEvent> {
+        let response = try await self.runMigration(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+}
+
+// Default implementation of methods from 'ServiceProtocol'.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService.SimpleServiceProtocol {
+    public func prepareMigration(
+        request: GRPCCore.ServerRequest<Arcbox_V1_PrepareMigrationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_PrepareMigrationResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_PrepareMigrationResponse>(
+            message: try await self.prepareMigration(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func runMigration(
+        request: GRPCCore.ServerRequest<Arcbox_V1_RunMigrationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_RunMigrationEvent> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_RunMigrationEvent>(
+            metadata: [:],
+            producer: { writer in
+                try await self.runMigration(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+}
+
+// MARK: arcbox.v1.MigrationService (client)
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService {
+    /// Generated client protocol for the "arcbox.v1.MigrationService" service.
+    ///
+    /// You don't need to implement this protocol directly, use the generated
+    /// implementation, ``Client``.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MigrationService plans and runs host-side runtime migrations.
+    public protocol ClientProtocol: Sendable {
+        /// Call the "PrepareMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a migration plan for a supported external runtime.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_PrepareMigrationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_PrepareMigrationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_PrepareMigrationResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func prepareMigration<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_PrepareMigrationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_PrepareMigrationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_PrepareMigrationResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_PrepareMigrationResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "RunMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Runs a prepared migration plan and streams execution progress.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_RunMigrationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_RunMigrationEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func runMigration<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_RunMigrationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_RunMigrationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_RunMigrationEvent>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_RunMigrationEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+    }
+
+    /// Generated client for the "arcbox.v1.MigrationService" service.
+    ///
+    /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
+    /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+    /// means of communication with the remote peer.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MigrationService plans and runs host-side runtime migrations.
+    public struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
+        private let client: GRPCCore.GRPCClient<Transport>
+
+        /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+        ///
+        /// - Parameters:
+        ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
+        public init(wrapping client: GRPCCore.GRPCClient<Transport>) {
+            self.client = client
+        }
+
+        /// Call the "PrepareMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a migration plan for a supported external runtime.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_PrepareMigrationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_PrepareMigrationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_PrepareMigrationResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func prepareMigration<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_PrepareMigrationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_PrepareMigrationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_PrepareMigrationResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_PrepareMigrationResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MigrationService.Method.PrepareMigration.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "RunMigration" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Runs a prepared migration plan and streams execution progress.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_RunMigrationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_RunMigrationEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func runMigration<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_RunMigrationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_RunMigrationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_RunMigrationEvent>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_RunMigrationEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_MigrationService.Method.RunMigration.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+    }
+}
+
+// Helpers providing default arguments to 'ClientProtocol' methods.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService.ClientProtocol {
+    /// Call the "PrepareMigration" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Prepares a migration plan for a supported external runtime.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_PrepareMigrationRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func prepareMigration<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_PrepareMigrationRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_PrepareMigrationResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.prepareMigration(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_PrepareMigrationRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_PrepareMigrationResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "RunMigration" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Runs a prepared migration plan and streams execution progress.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func runMigration<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_RunMigrationRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_RunMigrationEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.runMigration(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_RunMigrationRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_RunMigrationEvent>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+}
+
+// Helpers providing sugared APIs for 'ClientProtocol' methods.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_V1_MigrationService.ClientProtocol {
+    /// Call the "PrepareMigration" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Prepares a migration plan for a supported external runtime.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func prepareMigration<Result>(
+        _ message: Arcbox_V1_PrepareMigrationRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_PrepareMigrationResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_PrepareMigrationRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.prepareMigration(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "RunMigration" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Runs a prepared migration plan and streams execution progress.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func runMigration<Result>(
+        _ message: Arcbox_V1_RunMigrationRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_RunMigrationEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_RunMigrationRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.runMigration(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+}

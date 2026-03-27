@@ -24,10 +24,12 @@ GITHUB_PROTO_PATH="rpc/arcbox-protocol/proto"
 
 PROTOS=(
     "common.proto"
+    "agent.proto"
     "container.proto"
     "image.proto"
     "api.proto"
     "machine.proto"
+    "kubernetes.proto"
 )
 
 # Parse arguments
