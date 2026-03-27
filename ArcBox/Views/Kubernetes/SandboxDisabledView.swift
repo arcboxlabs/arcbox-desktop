@@ -8,7 +8,7 @@ struct KubernetesDisabledView: View {
 
             Image(systemName: "gear")
                 .font(.system(size: 48))
-                .foregroundStyle(AppColors.textSecondary.opacity(0.5))
+                .foregroundStyle(AppColors.textMuted)
 
             Text("Kubernetes Disabled")
                 .font(.system(size: 20, weight: .medium))

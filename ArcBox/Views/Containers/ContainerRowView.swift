@@ -70,16 +70,14 @@ struct ContainerRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                     .foregroundStyle(
-                        isSelected
-                            ? AppColors.onAccent
-                            : (isStopped ? AppColors.textSecondary : AppColors.text)
+                        isSelected ? AppColors.onAccent : AppColors.text
                     )
                 Text(container.image)
                     .font(.system(size: 11))
                     .foregroundStyle(
                         isSelected
                             ? Color.white.opacity(0.67)
-                            : (isStopped ? AppColors.textMuted : AppColors.textSecondary)
+                            : AppColors.textSecondary
                     )
                     .lineLimit(1)
             }
