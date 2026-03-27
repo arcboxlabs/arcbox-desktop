@@ -47,6 +47,11 @@ struct ContainersListView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Running section
+                        if hasRunningContent {
+                            sectionHeader("In Use")
+                        }
+
                         // Active compose groups (has running containers)
                         composeGroupRows(for: activeComposeGroups)
 
@@ -60,7 +65,7 @@ struct ContainersListView: View {
                             standaloneRows(for: stoppedStandaloneContainers)
                         }
                     }
-                    .padding(.top, hasRunningContent ? 6 : 0)
+                    .padding(.top, 6)
                 }
             }
         }
