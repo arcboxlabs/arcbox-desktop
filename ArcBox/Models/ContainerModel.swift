@@ -141,13 +141,20 @@ struct ContainerViewModel: Identifiable, Hashable {
         return "< 1m"
     }
 
-    var infoIdentity: Int {
-        var hasher = Hasher()
-        hasher.combine(id)
-        hasher.combine(domain)
-        hasher.combine(ipAddress)
-        hasher.combine(mounts.map(\.id))
-        return hasher.finalize()
+    struct InfoIdentity: Hashable {
+        let id: String
+        let domain: String?
+        let ipAddress: String?
+        let mountIDs: [String]
+    }
+
+    var infoIdentity: InfoIdentity {
+        InfoIdentity(
+            id: id,
+            domain: domain,
+            ipAddress: ipAddress,
+            mountIDs: mounts.map(\.id)
+        )
     }
 
     func hash(into hasher: inout Hasher) {
