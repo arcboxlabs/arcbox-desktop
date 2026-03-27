@@ -157,6 +157,34 @@ struct ContainerViewModel: Identifiable, Hashable {
         )
     }
 
+    // MARK: - DNS domain helpers
+
+    /// The display domain for this container given the current DNS state.
+    func hostDomain(useDNS: Bool) -> String {
+        useDNS ? "\(name).arcbox.local" : "localhost"
+    }
+
+    /// Build a URL for the container's primary port, respecting DNS mode.
+    func domainURL(useDNS: Bool) -> URL? {
+        if useDNS, let port = ports.first {
+            let suffix = port.containerPort == 80 ? "" : ":\(port.containerPort)"
+            return URL(string: "http://\(hostDomain(useDNS: true))\(suffix)")
+        } else if let hostPort = hostPorts.first {
+            return URL(string: "http://localhost:\(hostPort)")
+        }
+        return nil
+    }
+
+    /// Build a URL for a specific port mapping, respecting DNS mode.
+    func portURL(_ port: PortMapping, useDNS: Bool) -> URL? {
+        if useDNS {
+            let suffix = port.containerPort == 80 ? "" : ":\(port.containerPort)"
+            return URL(string: "http://\(hostDomain(useDNS: true))\(suffix)")
+        } else {
+            return URL(string: "http://localhost:\(port.hostPort)")
+        }
+    }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

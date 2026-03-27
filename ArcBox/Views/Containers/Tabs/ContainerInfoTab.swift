@@ -1,3 +1,4 @@
+import ArcBoxClient
 import SwiftUI
 
 /// A label key-value pair for use in InfoTableView
@@ -10,6 +11,9 @@ private struct LabelEntry: Identifiable {
 /// Info tab content showing container details
 struct ContainerInfoTab: View {
     let container: ContainerViewModel
+    @Environment(DaemonManager.self) private var daemonManager
+
+    private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
 
     var body: some View {
         ScrollView {
@@ -29,15 +33,15 @@ struct ContainerInfoTab: View {
                 .infoSectionStyle()
 
                 // Domain & IP section
-                if !container.hostPorts.isEmpty || container.domain != nil
-                    || container.ipAddress != nil
+                if useDNS || !container.hostPorts.isEmpty
+                    || container.domain != nil || container.ipAddress != nil
                 {
                     VStack(spacing: 0) {
-                        if !container.hostPorts.isEmpty {
+                        if useDNS || !container.hostPorts.isEmpty {
                             InfoRow(
                                 label: "Domain",
-                                value: "localhost",
-                                link: URL(string: "http://localhost:\(container.hostPorts[0])")
+                                value: container.hostDomain(useDNS: useDNS),
+                                link: container.domainURL(useDNS: useDNS)
                             )
                         } else if let domain = container.domain {
                             InfoRow(label: "Domain", value: domain)

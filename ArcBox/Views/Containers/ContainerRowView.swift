@@ -1,3 +1,4 @@
+import ArcBoxClient
 import SwiftUI
 
 /// Single container row in list
@@ -9,6 +10,7 @@ struct ContainerRowView: View {
     let onStartStop: () -> Void
     let onDelete: () -> Void
 
+    @Environment(DaemonManager.self) private var daemonManager
     @State private var isHovered: Bool = false
     @State private var showDeleteConfirm = false
 
@@ -26,8 +28,12 @@ struct ContainerRowView: View {
         return colors[abs(hash) % colors.count]
     }
 
-    private func openLocalhost(port: UInt16) {
-        if let url = URL(string: "http://localhost:\(port)") {
+    private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
+
+    private var hostDomain: String { container.hostDomain(useDNS: useDNS) }
+
+    private func openPort(_ port: PortMapping) {
+        if let url = container.portURL(port, useDNS: useDNS) {
             NSWorkspace.shared.open(url)
         }
     }
@@ -87,20 +93,25 @@ struct ContainerRowView: View {
             if isHovered || isSelected {
                 HStack(spacing: 4) {
                     // Link button for containers with port mappings
-                    if !container.hostPorts.isEmpty {
-                        if container.hostPorts.count == 1,
-                            let port = container.hostPorts.first
+                    let activePorts = useDNS ? container.ports : container.ports.filter { $0.hostPort > 0 }
+                    if !activePorts.isEmpty {
+                        if activePorts.count == 1,
+                            let port = activePorts.first
                         {
                             IconButton(
                                 symbol: "link",
-                                action: { openLocalhost(port: port) },
+                                action: { openPort(port) },
                                 color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                             )
                         } else {
                             Menu {
-                                ForEach(container.hostPorts, id: \.self) { port in
-                                    Button("localhost:\(String(port))") {
-                                        openLocalhost(port: port)
+                                ForEach(activePorts) { port in
+                                    let displayPort = useDNS ? port.containerPort : port.hostPort
+                                    let title = (useDNS && displayPort == 80)
+                                        ? hostDomain
+                                        : "\(hostDomain):\(displayPort)"
+                                    Button(title) {
+                                        openPort(port)
                                     }
                                 }
                             } label: {
