@@ -13,7 +13,7 @@ struct ContainerInfoTab: View {
     let container: ContainerViewModel
     @Environment(DaemonManager.self) private var daemonManager
 
-    private var useDNS: Bool { daemonManager.dnsResolverInstalled }
+    private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
 
     private var hostDomain: String {
         useDNS ? "\(container.name).arcbox.local" : "localhost"
@@ -47,11 +47,11 @@ struct ContainerInfoTab: View {
                 .infoSectionStyle()
 
                 // Domain & IP section
-                if !container.hostPorts.isEmpty || (useDNS && !container.ports.isEmpty)
+                if useDNS || !container.hostPorts.isEmpty
                     || container.domain != nil || container.ipAddress != nil
                 {
                     VStack(spacing: 0) {
-                        if useDNS ? !container.ports.isEmpty : !container.hostPorts.isEmpty {
+                        if useDNS || !container.hostPorts.isEmpty {
                             InfoRow(
                                 label: "Domain",
                                 value: hostDomain,

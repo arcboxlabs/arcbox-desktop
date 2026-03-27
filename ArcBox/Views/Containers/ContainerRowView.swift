@@ -28,7 +28,7 @@ struct ContainerRowView: View {
         return colors[abs(hash) % colors.count]
     }
 
-    private var useDNS: Bool { daemonManager.dnsResolverInstalled }
+    private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
 
     private var hostDomain: String {
         useDNS ? "\(container.name).arcbox.local" : "localhost"
@@ -118,7 +118,10 @@ struct ContainerRowView: View {
                             Menu {
                                 ForEach(activePorts) { port in
                                     let displayPort = useDNS ? port.containerPort : port.hostPort
-                                    Button("\(hostDomain):\(displayPort)") {
+                                    let title = (useDNS && displayPort == 80)
+                                        ? hostDomain
+                                        : "\(hostDomain):\(displayPort)"
+                                    Button(title) {
                                         openPort(port)
                                     }
                                 }
