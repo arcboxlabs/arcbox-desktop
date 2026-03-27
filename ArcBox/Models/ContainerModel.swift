@@ -130,7 +130,7 @@ struct ContainerViewModel: Identifiable, Hashable {
     }
 
     var uptimeDisplay: String {
-        let interval = Date().timeIntervalSince(createdAt)
+        let interval = max(0, Date().timeIntervalSince(createdAt))
         let days = Int(interval / 86400)
         let hours = Int(interval / 3600)
         let minutes = Int(interval / 60)
