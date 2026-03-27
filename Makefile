@@ -1,4 +1,4 @@
-# ArcBox Desktop Makefile
+# ArcBox Makefile
 #
 # Used by both local dev and CI (release.yml). All build/sign/package logic
 # lives here; the workflow only handles CI-specific concerns (secrets,
@@ -25,7 +25,7 @@ ABCTL := $(ARCBOX_DIR)/target/release/abctl
 .PHONY: build-rust prefetch build-app dmg dmg-signed dmg-release clean help
 
 help:
-	@echo "ArcBox Desktop build targets:"
+	@echo "ArcBox build targets:"
 	@echo ""
 	@echo "  make build-rust     Build arcbox binaries (release)"
 	@echo "  make prefetch       Download boot assets + Docker tools"
@@ -106,5 +106,5 @@ dmg-release: prefetch
 clean:
 	rm -rf .build/DerivedData
 	@if [ -n "$(ARCBOX_DIR)" ] && [ -d "$(ARCBOX_DIR)" ]; then \
-		cd "$(ARCBOX_DIR)" && rm -rf target/dmg-build target/ArcBox-*.dmg; \
+		cd "$(ARCBOX_DIR)" && rm -rf target/dmg-build target/ArcBox*.dmg; \
 	fi

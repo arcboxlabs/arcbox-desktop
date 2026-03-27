@@ -1,5 +1,89 @@
 # Changelog
 
+## [1.15.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.2...v1.15.0) (2026-03-26)
+
+
+### Features
+
+* UI polish — icon backgrounds, image list fix, menu bar cleanup ([#67](https://github.com/arcboxlabs/arcbox-desktop/issues/67)) ([0e50974](https://github.com/arcboxlabs/arcbox-desktop/commit/0e50974f3c5a145d673203be9df30e490bf42886))
+
+## [1.14.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.1...v1.14.2) (2026-03-26)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.11 ([#84](https://github.com/arcboxlabs/arcbox-desktop/issues/84)) ([22651ac](https://github.com/arcboxlabs/arcbox-desktop/commit/22651ace94de9d15dc817370e59944a078d04153))
+
+## [1.14.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.0...v1.14.1) (2026-03-26)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.10 ([#82](https://github.com/arcboxlabs/arcbox-desktop/issues/82)) ([fce7807](https://github.com/arcboxlabs/arcbox-desktop/commit/fce7807a2fc0dadf15d3140f0d867c994c1e8006))
+
+## [1.14.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.13.3...v1.14.0) (2026-03-26)
+
+
+### Features
+
+* remove daemon plist log paths (companion to arcbox[#99](https://github.com/arcboxlabs/arcbox-desktop/issues/99)) ([#64](https://github.com/arcboxlabs/arcbox-desktop/issues/64)) ([af2780c](https://github.com/arcboxlabs/arcbox-desktop/commit/af2780cb468ed362f5a53f1f497488d147c10f17))
+
+
+### Refactoring
+
+* rename app from "ArcBox Desktop" to "ArcBox" ([#78](https://github.com/arcboxlabs/arcbox-desktop/issues/78)) ([26c374c](https://github.com/arcboxlabs/arcbox-desktop/commit/26c374c2f7512fa1e6abf7b621e1fb390b1b9b9d))
+
+## [1.13.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.13.2...v1.13.3) (2026-03-26)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.9 ([#77](https://github.com/arcboxlabs/arcbox-desktop/issues/77)) ([02197cd](https://github.com/arcboxlabs/arcbox-desktop/commit/02197cd55afeaa31b5b0e1fd226b4ad5a5655d29))
+
+## [1.13.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.13.1...v1.13.2) (2026-03-26)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.8 ([#76](https://github.com/arcboxlabs/arcbox-desktop/issues/76)) ([764e486](https://github.com/arcboxlabs/arcbox-desktop/commit/764e4861af947957515d5121a85a0d36c7f8161c))
+
+## [1.13.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.13.0...v1.13.1) (2026-03-25)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.7 ([#74](https://github.com/arcboxlabs/arcbox-desktop/issues/74)) ([b243449](https://github.com/arcboxlabs/arcbox-desktop/commit/b2434490a9bf793484ff0655fe7390d82017b7be))
+
+## [1.13.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.3...v1.13.0) (2026-03-24)
+
+
+### Features
+
+* **ci:** update Dub download short links after stable release ([#71](https://github.com/arcboxlabs/arcbox-desktop/issues/71)) ([768027d](https://github.com/arcboxlabs/arcbox-desktop/commit/768027d04fb46edcd5e496912f131f0130956b8f))
+
+## [1.12.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.2...v1.12.3) (2026-03-23)
+
+
+### Bug Fixes
+
+* inject SUFeedURL via PlistBuddy instead of xcodebuild build setting ([#69](https://github.com/arcboxlabs/arcbox-desktop/issues/69)) ([2ff1655](https://github.com/arcboxlabs/arcbox-desktop/commit/2ff1655b7664cad599e18184372403c28cc1ae97))
+
+## [1.12.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.1...v1.12.2) (2026-03-23)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.5 ([#66](https://github.com/arcboxlabs/arcbox-desktop/issues/66)) ([cc27948](https://github.com/arcboxlabs/arcbox-desktop/commit/cc2794860c59c21e2891b334beaa68ed446d1bc0))
+
+## [1.12.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.12.0...v1.12.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* cache negative icon lookups and include iconURL in equality check ([5823203](https://github.com/arcboxlabs/arcbox-desktop/commit/58232033075d89cc9aa28705741da102623276ce))
+* cache negative icon lookups to avoid repeated RPCs ([ab7214e](https://github.com/arcboxlabs/arcbox-desktop/commit/ab7214e581b007be9ef296a668df9829e4533b50))
+* include iconURL in ContainerViewModel equality check ([d28d8a8](https://github.com/arcboxlabs/arcbox-desktop/commit/d28d8a869a8406bb0a7cd52995490412b3326ba6))
+
 ## [1.12.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.11.0...v1.12.0) (2026-03-22)
 
 

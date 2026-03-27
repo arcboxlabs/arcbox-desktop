@@ -30,6 +30,10 @@
     <key>ProcessType</key>
     <string>Background</string>
 
+    <!-- Kept for backward compatibility: the current bundled daemon
+         (< 0.4) still writes to stdout/stderr. Once it switches to
+         tracing-appender (arcbox >= 0.4), these keys can be removed.
+         launchd routes output to the system log if they are absent. -->
     <key>StandardOutPath</key>
     <string>/tmp/arcbox-daemon.stdout.log</string>
 

@@ -1,6 +1,7 @@
 import SwiftUI
 import ArcBoxClient
 import DockerClient
+import OpenAPIRuntime
 import OSLog
 
 /// Detail tab for images
@@ -139,6 +140,66 @@ class ImagesViewModel {
             await fetchIcons(client: iconClient)
         } catch {
             Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Parse an image reference into (fromImage, tag), handling registry ports and digests.
+    /// e.g. "localhost:5000/repo:tag" → ("localhost:5000/repo", "tag")
+    ///      "repo@sha256:abc" → ("repo@sha256:abc", nil)
+    ///      "nginx:latest" → ("nginx", "latest")
+    private func parseImageReference(_ reference: String) -> (fromImage: String, tag: String?) {
+        if reference.contains("@") {
+            return (fromImage: reference, tag: nil)
+        }
+        // Only treat a colon after the last "/" as a tag separator
+        let searchStart: String.Index
+        if let lastSlash = reference.lastIndex(of: "/") {
+            searchStart = reference.index(after: lastSlash)
+        } else {
+            searchStart = reference.startIndex
+        }
+        if let colonIndex = reference[searchStart...].lastIndex(of: ":") {
+            let fromImage = String(reference[..<colonIndex])
+            let tag = String(reference[reference.index(after: colonIndex)...])
+            return (fromImage: fromImage, tag: tag.isEmpty ? nil : tag)
+        }
+        return (fromImage: reference, tag: nil)
+    }
+
+    /// Pull an image from a registry. Returns true on success.
+    func pullImage(_ reference: String, platform: String?, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+        let parsed = parseImageReference(reference)
+
+        do {
+            let response = try await docker.api.ImageCreate(
+                query: .init(fromImage: parsed.fromImage, tag: parsed.tag, platform: platform)
+            )
+            _ = try response.ok
+            Log.image.info("Pulled image \(reference, privacy: .public)")
+            await loadImages(docker: docker)
+            return true
+        } catch {
+            Log.image.error("Error pulling image \(reference, privacy: .public): \(String(describing: error), privacy: .public)")
+            return false
+        }
+    }
+
+    /// Import an image from a local tar archive (equivalent to `docker load`). Returns true on success.
+    func importImage(tarURL: URL, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+        do {
+            let data = try Data(contentsOf: tarURL, options: .mappedIfSafe)
+            let response = try await docker.api.ImageLoad(
+                body: .application_x_hyphen_tar(HTTPBody(data))
+            )
+            _ = try response.ok
+            Log.image.info("Imported image from \(tarURL.lastPathComponent, privacy: .public)")
+            await loadImages(docker: docker)
+            return true
+        } catch {
+            Log.image.error("Error importing image: \(String(describing: error), privacy: .public)")
+            return false
         }
     }
 

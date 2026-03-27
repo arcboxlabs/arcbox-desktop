@@ -4,7 +4,7 @@
 # Usage:
 #   scripts/generate-appcast.sh \
 #     --version v1.2.0 \
-#     --dmg-url https://release.arcboxcdn.com/desktop/v1.2.0/ArcBox-Desktop-arm64.dmg \
+#     --dmg-url https://release.arcboxcdn.com/desktop/v1.2.0/ArcBox-1.2.0-arm64.dmg \
 #     --dmg-length 12345678 \
 #     --ed-signature "base64sig==" \
 #     --channel stable \
@@ -52,7 +52,7 @@ PUB_DATE=$(date -u '+%a, %d %b %Y %H:%M:%S +0000')
 # Build the <item> block
 ITEM=$(cat <<ITEM_EOF
       <item>
-        <title>ArcBox Desktop $DISPLAY_VERSION</title>
+        <title>ArcBox $DISPLAY_VERSION</title>
         <pubDate>$PUB_DATE</pubDate>
         <sparkle:version>$DISPLAY_VERSION</sparkle:version>
         <sparkle:channel>$CHANNEL</sparkle:channel>
@@ -100,9 +100,9 @@ else
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>ArcBox Desktop</title>
+    <title>ArcBox</title>
     <link>https://arcbox.dev</link>
-    <description>ArcBox Desktop release feed</description>
+    <description>ArcBox release feed</description>
     <language>en</language>
 $ITEM
     </channel>
