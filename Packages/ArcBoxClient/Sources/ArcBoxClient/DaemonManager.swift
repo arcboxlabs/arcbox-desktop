@@ -182,6 +182,37 @@ public final class DaemonManager {
         }
     }
 
+    /// Force re-register the daemon with launchd, regardless of current status.
+    ///
+    /// This is a **recovery-only** path for when the daemon is registered but
+    /// unreachable — typically after Xcode "Replace" (SIGKILL) prevents the
+    /// normal `disableDaemon()` cleanup from running, leaving a stale
+    /// registration with no live daemon process behind it.
+    ///
+    /// ⚠️ REGRESSION GUARD — DO NOT call from `enableDaemon()` or any path
+    /// reachable by SwiftUI `.task` re-entrancy.  The `enableDaemon()` "skip
+    /// if .enabled" guard exists to prevent a **known bug** where redundant
+    /// calls each unregister+register the daemon, killing it before it
+    /// finishes initializing.  This method must only be invoked **after** a
+    /// full poll timeout has confirmed the daemon is truly unreachable, not
+    /// merely slow to start.
+    public func forceReregisterDaemon() async {
+        ClientLog.daemon.warning("Force re-registering daemon (recovery path)")
+        errorMessage = nil
+        state = .starting
+
+        do {
+            try? await daemonService.unregister()
+            try daemonService.register()
+            ClientLog.daemon.info("Force re-register completed")
+            state = .registered
+        } catch {
+            ClientLog.daemon.error("Force re-register failed: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
+            state = .error("Force re-register failed: \(error.localizedDescription)")
+        }
+    }
+
     /// Unregister the daemon from launchd.
     public func disableDaemon() async {
         stopWatching()
