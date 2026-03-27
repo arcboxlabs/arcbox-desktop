@@ -22,14 +22,14 @@ struct SandboxDetailView: View {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
-                            InfoRow(label: "Alias", value: sandbox.alias)
-                            InfoRow(label: "ID", value: sandbox.shortID)
-                            InfoRow(label: "Template", value: sandbox.templateID)
-                            InfoRow(label: "Status", value: sandbox.state.label)
-                            InfoRow(label: "CPU", value: sandbox.cpuDisplay)
-                            InfoRow(label: "Memory", value: sandbox.memoryDisplay)
-                            InfoRow(label: "Started", value: sandbox.startedAgo)
-                            InfoRow(label: "Time Left", value: sandbox.timeRemaining)
+                            InfoRow(label: "Alias", value: sandbox.alias, rowIndex: 0)
+                            InfoRow(label: "ID", value: sandbox.shortID, rowIndex: 1)
+                            InfoRow(label: "Template", value: sandbox.templateID, rowIndex: 2)
+                            InfoRow(label: "Status", value: sandbox.state.label, rowIndex: 3)
+                            InfoRow(label: "CPU", value: sandbox.cpuDisplay, rowIndex: 4)
+                            InfoRow(label: "Memory", value: sandbox.memoryDisplay, rowIndex: 5)
+                            InfoRow(label: "Started", value: sandbox.startedAgo, rowIndex: 6)
+                            InfoRow(label: "Time Left", value: sandbox.timeRemaining, rowIndex: 7)
                         }
                         .infoSectionStyle()
                         .padding(16)

@@ -26,14 +26,12 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
                 .padding(.horizontal, 8)
                 .background(AppColors.surfaceElevated)
 
-                ForEach(items) { item in
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     rowContent(item)
                         .font(.system(size: 13))
                         .padding(.vertical, 6)
                         .padding(.horizontal, 8)
-                        .overlay(alignment: .bottom) {
-                            Divider().opacity(0.3)
-                        }
+                        .background(index % 2 == 0 ? Color.clear : AppColors.surfaceElevated)
                 }
             }
             .background(AppColors.surfaceCard)

@@ -240,6 +240,12 @@ public final class DaemonManager {
         stopWatching()
         let systemService = client.system
         watchTask = Task { [weak self] in
+            // Track consecutive failed reconnect attempts since the last
+            // successful stream message.  Used to keep .running state for a
+            // short grace period on transient disconnects so the UI doesn't
+            // flash "Starting ArcBox Daemon..." for a brief stream hiccup.
+            var failedAttemptsSinceLastMessage = 0
+
             // Retry loop: reconnect on stream disconnect.
             while !Task.isCancelled {
                 // Bridge: gRPC Sendable closure writes into the stream,
@@ -263,6 +269,7 @@ public final class DaemonManager {
 
                 for await message in stream {
                     guard !Task.isCancelled else { break }
+                    failedAttemptsSinceLastMessage = 0
                     self?.applySetupStatusSync(message)
                 }
 
@@ -271,8 +278,27 @@ public final class DaemonManager {
                 guard !Task.isCancelled else { return }
 
                 // Stream ended — daemon may have restarted.
-                self?.state = .registered
-                self?.setupPhase = .unknown
+                //
+                // If we were previously .running, DON'T immediately regress
+                // to .registered.  Transient gRPC disconnects (daemon GC
+                // pause, socket buffer pressure, HTTP/2 GOAWAY) are normal
+                // and the reconnect loop usually recovers within one cycle.
+                // Immediately showing the loading UI for these is jarring.
+                //
+                // Grace window: ~3 s (6 attempts × 500 ms backoff).  After
+                // that, the daemon is genuinely unreachable and the UI should
+                // reflect it.
+                failedAttemptsSinceLastMessage += 1
+                let graceExceeded = failedAttemptsSinceLastMessage > 6
+
+                if self?.state.isRunning != true || graceExceeded {
+                    self?.state = .registered
+                    self?.setupPhase = .unknown
+                    if graceExceeded {
+                        ClientLog.daemon.warning(
+                            "Daemon unreachable after \(failedAttemptsSinceLastMessage) reconnect attempts, state → .registered")
+                    }
+                }
 
                 // Back off before reconnecting.
                 try? await Task.sleep(for: .milliseconds(500))

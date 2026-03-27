@@ -16,14 +16,15 @@ struct ContainerInfoTab: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Basic info section
                 VStack(spacing: 0) {
-                    InfoRow(label: "Name", value: container.name)
-                    InfoRow(label: "ID", value: container.id)
-                    InfoRow(label: "Image", value: container.image)
+                    InfoRow(label: "Name", value: container.name, rowIndex: 0)
+                    InfoRow(label: "ID", value: container.id, rowIndex: 1)
+                    InfoRow(label: "Image", value: container.image, rowIndex: 2)
                     InfoRow(
                         label: "Status",
                         value: container.isRunning
                             ? "Up \(container.uptimeDisplay)"
-                            : "Stopped"
+                            : "Stopped",
+                        rowIndex: 3
                     )
                 }
                 .infoSectionStyle()
@@ -37,13 +38,14 @@ struct ContainerInfoTab: View {
                             InfoRow(
                                 label: "Domain",
                                 value: "localhost",
-                                link: URL(string: "http://localhost:\(container.hostPorts[0])")
+                                link: URL(string: "http://localhost:\(container.hostPorts[0])"),
+                                rowIndex: 0
                             )
                         } else if let domain = container.domain {
-                            InfoRow(label: "Domain", value: domain)
+                            InfoRow(label: "Domain", value: domain, rowIndex: 0)
                         }
                         if let ip = container.ipAddress {
-                            InfoRow(label: "IP", value: ip)
+                            InfoRow(label: "IP", value: ip, rowIndex: 1)
                         }
                     }
                     .infoSectionStyle()

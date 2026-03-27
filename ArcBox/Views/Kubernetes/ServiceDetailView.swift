@@ -14,12 +14,12 @@ struct ServiceDetailView: View {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
-                            InfoRow(label: "Name", value: service.name)
-                            InfoRow(label: "Namespace", value: service.namespace)
-                            InfoRow(label: "Type", value: service.type.rawValue)
-                            InfoRow(label: "Cluster IP", value: service.clusterIP ?? "None")
-                            InfoRow(label: "Ports", value: service.portsDisplay.isEmpty ? "None" : service.portsDisplay)
-                            InfoRow(label: "Created", value: service.createdAgo)
+                            InfoRow(label: "Name", value: service.name, rowIndex: 0)
+                            InfoRow(label: "Namespace", value: service.namespace, rowIndex: 1)
+                            InfoRow(label: "Type", value: service.type.rawValue, rowIndex: 2)
+                            InfoRow(label: "Cluster IP", value: service.clusterIP ?? "None", rowIndex: 3)
+                            InfoRow(label: "Ports", value: service.portsDisplay.isEmpty ? "None" : service.portsDisplay, rowIndex: 4)
+                            InfoRow(label: "Created", value: service.createdAgo, rowIndex: 5)
                         }
                         .infoSectionStyle()
                         .padding(16)

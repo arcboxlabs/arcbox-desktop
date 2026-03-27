@@ -17,11 +17,11 @@ struct ImageDetailView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 16) {
                                 VStack(spacing: 0) {
-                                    InfoRow(label: "ID", value: image.dockerId)
-                                    InfoRow(label: "Tag", value: "\(image.repository):\(image.tag)")
-                                    InfoRow(label: "Created", value: image.createdAgo)
-                                    InfoRow(label: "Size", value: image.sizeDisplay)
-                                    InfoRow(label: "Platform", value: "\(image.os)/\(image.architecture)")
+                                    InfoRow(label: "ID", value: image.dockerId, rowIndex: 0)
+                                    InfoRow(label: "Tag", value: "\(image.repository):\(image.tag)", rowIndex: 1)
+                                    InfoRow(label: "Created", value: image.createdAgo, rowIndex: 2)
+                                    InfoRow(label: "Size", value: image.sizeDisplay, rowIndex: 3)
+                                    InfoRow(label: "Platform", value: "\(image.os)/\(image.architecture)", rowIndex: 4)
                                 }
                                 .infoSectionStyle()
 

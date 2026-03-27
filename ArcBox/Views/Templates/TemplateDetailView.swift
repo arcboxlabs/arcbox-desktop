@@ -14,13 +14,13 @@ struct TemplateDetailView: View {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
-                            InfoRow(label: "Name", value: template.name)
-                            InfoRow(label: "ID", value: template.shortID)
-                            InfoRow(label: "CPU", value: template.cpuDisplay)
-                            InfoRow(label: "Memory", value: template.memoryDisplay)
-                            InfoRow(label: "Created", value: template.createdAgo)
-                            InfoRow(label: "Updated", value: template.updatedAgo)
-                            InfoRow(label: "Sandboxes", value: template.sandboxCountDisplay)
+                            InfoRow(label: "Name", value: template.name, rowIndex: 0)
+                            InfoRow(label: "ID", value: template.shortID, rowIndex: 1)
+                            InfoRow(label: "CPU", value: template.cpuDisplay, rowIndex: 2)
+                            InfoRow(label: "Memory", value: template.memoryDisplay, rowIndex: 3)
+                            InfoRow(label: "Created", value: template.createdAgo, rowIndex: 4)
+                            InfoRow(label: "Updated", value: template.updatedAgo, rowIndex: 5)
+                            InfoRow(label: "Sandboxes", value: template.sandboxCountDisplay, rowIndex: 6)
                         }
                         .infoSectionStyle()
                         .padding(16)

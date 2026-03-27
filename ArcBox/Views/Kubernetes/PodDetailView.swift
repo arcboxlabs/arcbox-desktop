@@ -14,12 +14,12 @@ struct PodDetailView: View {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
-                            InfoRow(label: "Name", value: pod.name)
-                            InfoRow(label: "Namespace", value: pod.namespace)
-                            InfoRow(label: "Phase", value: pod.phase.rawValue)
-                            InfoRow(label: "Ready", value: pod.readyDisplay)
-                            InfoRow(label: "Restarts", value: "\(pod.restartCount)")
-                            InfoRow(label: "Created", value: pod.createdAgo)
+                            InfoRow(label: "Name", value: pod.name, rowIndex: 0)
+                            InfoRow(label: "Namespace", value: pod.namespace, rowIndex: 1)
+                            InfoRow(label: "Phase", value: pod.phase.rawValue, rowIndex: 2)
+                            InfoRow(label: "Ready", value: pod.readyDisplay, rowIndex: 3)
+                            InfoRow(label: "Restarts", value: "\(pod.restartCount)", rowIndex: 4)
+                            InfoRow(label: "Created", value: pod.createdAgo, rowIndex: 5)
                         }
                         .infoSectionStyle()
                         .padding(16)

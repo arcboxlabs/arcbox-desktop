@@ -5,6 +5,7 @@ struct InfoRow: View {
     let label: String
     let value: String
     var link: URL? = nil
+    var rowIndex: Int = 0
 
     var body: some View {
         HStack(alignment: .top) {
@@ -30,9 +31,7 @@ struct InfoRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .overlay(alignment: .bottom) {
-            Divider().opacity(0.3)
-        }
+        .background(rowIndex % 2 == 0 ? AppColors.surfaceElevated : Color.clear)
     }
 }
 
