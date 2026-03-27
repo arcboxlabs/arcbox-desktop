@@ -10,6 +10,7 @@ struct InfoRow: View {
         HStack(alignment: .top) {
             Text(label)
                 .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppColors.textSecondary)
             Spacer()
             if let link {
                 Button {
