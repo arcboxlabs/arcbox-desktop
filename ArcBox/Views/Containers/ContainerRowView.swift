@@ -30,19 +30,10 @@ struct ContainerRowView: View {
 
     private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
 
-    private var hostDomain: String {
-        useDNS ? "\(container.name).arcbox.local" : "localhost"
-    }
+    private var hostDomain: String { container.hostDomain(useDNS: useDNS) }
 
     private func openPort(_ port: PortMapping) {
-        let urlString: String
-        if useDNS {
-            let suffix = port.containerPort == 80 ? "" : ":\(port.containerPort)"
-            urlString = "http://\(hostDomain)\(suffix)"
-        } else {
-            urlString = "http://localhost:\(port.hostPort)"
-        }
-        if let url = URL(string: urlString) {
+        if let url = container.portURL(port, useDNS: useDNS) {
             NSWorkspace.shared.open(url)
         }
     }

@@ -15,20 +15,6 @@ struct ContainerInfoTab: View {
 
     private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
 
-    private var hostDomain: String {
-        useDNS ? "\(container.name).arcbox.local" : "localhost"
-    }
-
-    private func domainURL() -> URL? {
-        if useDNS, let port = container.ports.first {
-            let suffix = port.containerPort == 80 ? "" : ":\(port.containerPort)"
-            return URL(string: "http://\(hostDomain)\(suffix)")
-        } else if let hostPort = container.hostPorts.first {
-            return URL(string: "http://localhost:\(hostPort)")
-        }
-        return nil
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -54,8 +40,8 @@ struct ContainerInfoTab: View {
                         if useDNS || !container.hostPorts.isEmpty {
                             InfoRow(
                                 label: "Domain",
-                                value: hostDomain,
-                                link: domainURL()
+                                value: container.hostDomain(useDNS: useDNS),
+                                link: container.domainURL(useDNS: useDNS)
                             )
                         } else if let domain = container.domain {
                             InfoRow(label: "Domain", value: domain)
