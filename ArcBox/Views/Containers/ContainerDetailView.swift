@@ -26,9 +26,14 @@ struct ContainerDetailView: View {
                 }
             } else {
                 Spacer()
-                Text("No Selection")
-                    .foregroundStyle(AppColors.textSecondary)
-                    .font(.system(size: 15))
+                VStack(spacing: 12) {
+                    Image(systemName: "cube")
+                        .font(.system(size: 32))
+                        .foregroundStyle(AppColors.textMuted)
+                    Text("No Selection")
+                        .foregroundStyle(AppColors.textSecondary)
+                        .font(.system(size: 15))
+                }
                 Spacer()
             }
         }

@@ -158,11 +158,16 @@ struct ContentView: View {
 /// Placeholder shown when no detail is available (e.g. Machines)
 struct DetailPlaceholderView: View {
     var body: some View {
-        Text("No Selection")
-            .foregroundStyle(AppColors.textSecondary)
-            .font(.system(size: 15))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppColors.background)
+        VStack(spacing: 12) {
+            Image(systemName: "square.dashed")
+                .font(.system(size: 32))
+                .foregroundStyle(AppColors.textMuted)
+            Text("No Selection")
+                .foregroundStyle(AppColors.textSecondary)
+                .font(.system(size: 15))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background)
     }
 }
 
