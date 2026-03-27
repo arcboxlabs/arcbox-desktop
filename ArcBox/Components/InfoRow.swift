@@ -31,7 +31,9 @@ struct InfoRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(rowIndex % 2 == 0 ? AppColors.surfaceElevated : Color.clear)
+        .overlay(alignment: .bottom) {
+            Divider().opacity(0.3)
+        }
     }
 }
 

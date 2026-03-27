@@ -11,7 +11,7 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(AppColors.textMuted)
+                .foregroundStyle(AppColors.textSecondary)
 
             VStack(spacing: 0) {
                 HStack {
