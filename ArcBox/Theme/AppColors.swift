@@ -16,6 +16,13 @@ enum AppColors {
     static let surface = Color(nsColor: .textBackgroundColor)
     static let surfaceElevated = Color(nsColor: .quaternarySystemFill)
 
+    /// Card background — slightly lighter than windowBackgroundColor, not pure white
+    static let surfaceCard = Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            ? NSColor(white: 0.16, alpha: 1)
+            : NSColor(white: 0.965, alpha: 1)
+    }))
+
     /// Opaque icon background — visually matches surfaceElevated but won't let selection color bleed through
     static let iconBackground = Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
         appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua

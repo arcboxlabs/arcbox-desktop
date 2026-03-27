@@ -36,7 +36,7 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
                         }
                 }
             }
-            .background(AppColors.background)
+            .background(AppColors.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
