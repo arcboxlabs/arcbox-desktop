@@ -25,17 +25,15 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
                 .padding(.horizontal, 8)
                 .background(AppColors.surfaceElevated)
 
-                ForEach(items) { item in
-                    rowContent(item)
+                ForEach(items.indices, id: \.self) { index in
+                    rowContent(items[index])
                         .font(.system(size: 13))
                         .padding(.vertical, 6)
                         .padding(.horizontal, 8)
-                        .overlay(alignment: .bottom) {
-                            Divider().opacity(0.3)
-                        }
+                        .background(index % 2 == 0 ? Color.clear : AppColors.surfaceElevated)
                 }
             }
-            .background(AppColors.background)
+            .background(AppColors.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(
                 RoundedRectangle(cornerRadius: 6)

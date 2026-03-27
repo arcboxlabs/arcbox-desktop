@@ -38,6 +38,7 @@ class ContainersViewModel {
     }
 
     var containers: [ContainerViewModel] = []
+    var hasCompletedInitialLoad: Bool = false
     var selectedID: String? = nil
     var activeTab: ContainerDetailTab = .info
     var expandedGroups: Set<String> = []
@@ -467,6 +468,7 @@ class ContainersViewModel {
     func loadContainersFromDocker(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
             Log.container.debug("No docker client available")
+            hasCompletedInitialLoad = true
             return
         }
 
@@ -495,6 +497,7 @@ class ContainersViewModel {
                 scope.setTag(value: "list_docker", key: "container_op")
             }
         }
+        hasCompletedInitialLoad = true
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {

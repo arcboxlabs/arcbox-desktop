@@ -157,9 +157,34 @@ public final class DaemonManager {
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
 
-        // If already enabled, skip the destructive unregister+register cycle.
-        // This avoids killing a healthy daemon when enableDaemon() is called
-        // redundantly (e.g. SwiftUI .task re-entrancy).
+        #if DEBUG
+        // In development, ALWAYS force unregister+register.
+        //
+        // Every Xcode build re-signs the daemon binary via `codesign --force`,
+        // which generates a new CDHash even for identical content.  SMAppService
+        // stores the CDHash from registration time.  If the daemon exits after a
+        // rebuild, launchd validates the (now different) CDHash, gets a mismatch,
+        // and refuses to spawn with EX_CONFIG (78).  Force re-register ensures
+        // the registered CDHash always matches the current binary.
+        //
+        // This is safe because enableDaemon() is only called once per app launch
+        // (guarded by StartupOrchestrator.isStarting + the `.task` nil check in
+        // ArcBoxApp), so the SwiftUI .task re-entrancy concern does not apply.
+        ClientLog.daemon.info("DEBUG: force re-registering daemon to sync CDHash")
+        do {
+            try? await daemonService.unregister()
+            try daemonService.register()
+            ClientLog.daemon.info("Service registered successfully")
+            state = .registered
+        } catch {
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
+            state = .error("Failed to register daemon: \(error.localizedDescription)")
+        }
+        #else
+        // In production, skip the destructive unregister+register cycle if the
+        // daemon is already enabled.  This avoids killing a healthy daemon when
+        // enableDaemon() is called redundantly (e.g. SwiftUI .task re-entrancy).
         if status == .enabled {
             ClientLog.daemon.info("Daemon already registered, skipping re-register")
             if state != .running {
@@ -179,6 +204,38 @@ public final class DaemonManager {
             ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
+        }
+        #endif
+    }
+
+    /// Force re-register the daemon with launchd, regardless of current status.
+    ///
+    /// This is a **recovery-only** path for when the daemon is registered but
+    /// unreachable — typically after Xcode "Replace" (SIGKILL) prevents the
+    /// normal `disableDaemon()` cleanup from running, leaving a stale
+    /// registration with no live daemon process behind it.
+    ///
+    /// ⚠️ REGRESSION GUARD — DO NOT call from `enableDaemon()` or any path
+    /// reachable by SwiftUI `.task` re-entrancy.  The `enableDaemon()` "skip
+    /// if .enabled" guard exists to prevent a **known bug** where redundant
+    /// calls each unregister+register the daemon, killing it before it
+    /// finishes initializing.  This method must only be invoked **after** a
+    /// full poll timeout has confirmed the daemon is truly unreachable, not
+    /// merely slow to start.
+    public func forceReregisterDaemon() async {
+        ClientLog.daemon.warning("Force re-registering daemon (recovery path)")
+        errorMessage = nil
+        state = .starting
+
+        do {
+            try? await daemonService.unregister()
+            try daemonService.register()
+            ClientLog.daemon.info("Force re-register completed")
+            state = .registered
+        } catch {
+            ClientLog.daemon.error("Force re-register failed: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
+            state = .error("Force re-register failed: \(error.localizedDescription)")
         }
     }
 
@@ -207,10 +264,20 @@ public final class DaemonManager {
     @available(macOS 15.0, *)
     public func connectAndWatch(client: ArcBoxClient) {
         stopWatching()
-        let systemService = client.system
         watchTask = Task { [weak self] in
+            // Track consecutive failed reconnect attempts since the last
+            // successful stream message.  Used to keep .running state for a
+            // short grace period on transient disconnects so the UI doesn't
+            // flash "Starting ArcBox Daemon..." for a brief stream hiccup.
+            var failedAttemptsSinceLastMessage = 0
+
             // Retry loop: reconnect on stream disconnect.
             while !Task.isCancelled {
+                // Get a fresh service reference each iteration so we pick up
+                // any transport recovery in ArcBoxClient (its internal
+                // GRPCClient is swapped after runConnections() terminates).
+                let systemService = client.system
+
                 // Bridge: gRPC Sendable closure writes into the stream,
                 // MainActor-isolated code reads from it.
                 let (stream, continuation) = AsyncStream<Arcbox_V1_SetupStatus>.makeStream()
@@ -232,6 +299,7 @@ public final class DaemonManager {
 
                 for await message in stream {
                     guard !Task.isCancelled else { break }
+                    failedAttemptsSinceLastMessage = 0
                     self?.applySetupStatusSync(message)
                 }
 
@@ -240,8 +308,27 @@ public final class DaemonManager {
                 guard !Task.isCancelled else { return }
 
                 // Stream ended — daemon may have restarted.
-                self?.state = .registered
-                self?.setupPhase = .unknown
+                //
+                // If we were previously .running, DON'T immediately regress
+                // to .registered.  Transient gRPC disconnects (daemon GC
+                // pause, socket buffer pressure, HTTP/2 GOAWAY) are normal
+                // and the reconnect loop usually recovers within one cycle.
+                // Immediately showing the loading UI for these is jarring.
+                //
+                // Grace window: ~3 s (6 attempts × 500 ms backoff).  After
+                // that, the daemon is genuinely unreachable and the UI should
+                // reflect it.
+                failedAttemptsSinceLastMessage += 1
+                let graceExceeded = failedAttemptsSinceLastMessage > 6
+
+                if self?.state.isRunning != true || graceExceeded {
+                    self?.state = .registered
+                    self?.setupPhase = .unknown
+                    if graceExceeded {
+                        ClientLog.daemon.warning(
+                            "Daemon unreachable after \(failedAttemptsSinceLastMessage) reconnect attempts, state → .registered")
+                    }
+                }
 
                 // Back off before reconnecting.
                 try? await Task.sleep(for: .milliseconds(500))

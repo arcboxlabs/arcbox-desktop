@@ -59,10 +59,12 @@ struct ContentView: View {
                     .navigationTitle(appVM.currentNav == .templates ? "Templates" : "Sandboxes")
             } else {
                 contentColumn
+                    .background(AppColors.background)
                     .navigationSplitViewColumnWidth(min: 150, ideal: 320, max: 600)
             }
         } detail: {
             detailColumn
+                .background(AppColors.sidebar)
         }
         .onChange(of: appVM.currentNav) { _, newNav in
             guard let newNav else { return }
