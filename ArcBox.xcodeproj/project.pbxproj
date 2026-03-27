@@ -13,6 +13,7 @@
 		AB0D00022F60000000000001 /* com.arcboxlabs.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
+		K8S100012F90000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = K8S100002F90000000000001 /* K8sClient */; };
 		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
 /* End PBXBuildFile section */
 
@@ -72,6 +73,7 @@
 				657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */,
 				65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */,
 				DC0A11012F4E000000000001 /* DockerClient in Frameworks */,
+				K8S100012F90000000000001 /* K8sClient in Frameworks */,
 				DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */,
 				SE0300012F90000000000001 /* Sentry in Frameworks */,
 			);
@@ -150,6 +152,7 @@
 			packageProductDependencies = (
 				657F65912F3A2ADB00C7005A /* ArcBoxClient */,
 				DC0A11002F4E000000000001 /* DockerClient */,
+				K8S100002F90000000000001 /* K8sClient */,
 				DC0B11002F4E000000000001 /* SwiftTerm */,
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 				SE0200012F90000000000001 /* Sentry */,
@@ -185,7 +188,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					657F657A2F3A2ADB00C7005A = {
 						CreatedOnToolsVersion = 26.2;
@@ -204,6 +207,7 @@
 			packageReferences = (
 				657F65902F3A2ADB00C7005A /* XCLocalSwiftPackageReference "Packages/ArcBoxClient" */,
 				DC0A11022F4E000000000001 /* XCLocalSwiftPackageReference "Packages/DockerClient" */,
+				K8S100032F90000000000001 /* XCLocalSwiftPackageReference "Packages/K8sClient" */,
 				DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
@@ -295,6 +299,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -341,6 +346,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -366,6 +372,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -406,6 +413,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -424,6 +432,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -438,6 +447,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -480,6 +490,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -518,6 +529,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -570,6 +582,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/DockerClient;
 		};
+		K8S100032F90000000000001 /* XCLocalSwiftPackageReference "Packages/K8sClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/K8sClient;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -617,6 +633,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
 			productName = SwiftTerm;
+		};
+		K8S100002F90000000000001 /* K8sClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = K8sClient;
 		};
 		SE0200012F90000000000001 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
