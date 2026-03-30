@@ -617,6 +617,7 @@ jobs:
     needs: [build-dmg, upload-cdn]
     if: needs.build-dmg.outputs.channel == 'stable'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -638,7 +639,12 @@ jobs:
           VERSION: ${{ needs.build-dmg.outputs.version }}
         run: |
           CASK_VERSION="${VERSION#v}"
-          SHA256=$(sha256sum artifacts/ArcBox-*.dmg | awk '{print $1}')
+          DMG_PATH="$(find artifacts/ -type f -name '*.dmg' -print -quit)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "Error: No DMG file found under artifacts/"
+            exit 1
+          fi
+          SHA256=$(sha256sum "$DMG_PATH" | awk '{print $1}')
 
           git clone --depth 1 \
             "https://x-access-token:${GH_TOKEN}@github.com/arcboxlabs/homebrew-tap.git" \
