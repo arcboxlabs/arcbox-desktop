@@ -608,3 +608,53 @@ jobs:
             -d "{\"url\": \"${CDN_URL}\"}")
           echo "$RESPONSE" | jq '{shortLink, url}'
           echo "Updated ARM64 download link -> $CDN_URL"
+
+  # ==========================================================================
+  # Update Homebrew tap Cask with new version and SHA256
+  # ==========================================================================
+  update-homebrew-tap:
+    name: Update Homebrew tap
+    needs: [build-dmg, upload-cdn]
+    if: needs.build-dmg.outputs.channel == 'stable'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          repositories: homebrew-tap
+
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arcbox-desktop-dmg
+          path: artifacts/
+
+      - name: Update Cask
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ needs.build-dmg.outputs.version }}
+        run: |
+          CASK_VERSION="${VERSION#v}"
+          SHA256=$(sha256sum artifacts/ArcBox-*.dmg | awk '{print $1}')
+
+          git clone --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/arcboxlabs/homebrew-tap.git" \
+            /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+          git config user.name "arcbox-labs[bot]"
+          git config user.email "254083426+arcbox-labs[bot]@users.noreply.github.com"
+
+          CASK="Casks/arcbox.rb"
+          sed -i "s|version \".*\"|version \"${CASK_VERSION}\"|" "$CASK"
+          sed -i "s|sha256 arm: *\".*\"|sha256 arm:   \"${SHA256}\"|" "$CASK"
+
+          if git diff --quiet; then
+            echo "Cask already up to date"
+            exit 0
+          fi
+          git add "$CASK"
+          git commit -m "arcbox ${VERSION}"
+          git push
