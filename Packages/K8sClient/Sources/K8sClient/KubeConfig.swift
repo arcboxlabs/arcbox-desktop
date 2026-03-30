@@ -122,10 +122,15 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
         if protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
            let serverTrust = protectionSpace.serverTrust
         {
-            // Pin the CA certificate for server verification
+            // Pin the CA certificate and evaluate server trust
             SecTrustSetAnchorCertificates(serverTrust, [caCertificate] as CFArray)
             SecTrustSetAnchorCertificatesOnly(serverTrust, true)
-            return (.useCredential, URLCredential(trust: serverTrust))
+            var error: CFError?
+            if SecTrustEvaluateWithError(serverTrust, &error) {
+                return (.useCredential, URLCredential(trust: serverTrust))
+            } else {
+                return (.cancelAuthenticationChallenge, nil)
+            }
         }
 
         if protectionSpace.authenticationMethod == NSURLAuthenticationMethodClientCertificate {
