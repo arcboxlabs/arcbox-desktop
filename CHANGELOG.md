@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.17.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.16.0...v1.17.0) (2026-03-30)
+
+
+### Features
+
+* show container DNS domain when resolver is installed ([#96](https://github.com/arcboxlabs/arcbox-desktop/issues/96)) ([49769d3](https://github.com/arcboxlabs/arcbox-desktop/commit/49769d38a37553428f5981ccb43a28e26052d9d8))
+
+
+### Bug Fixes
+
+* remaining UI polish — dead code cleanup, consistency fixes, InfoTableView refactor ([#98](https://github.com/arcboxlabs/arcbox-desktop/issues/98)) ([5566eb5](https://github.com/arcboxlabs/arcbox-desktop/commit/5566eb59254f64ad31c7924f9764e580b23c6e61))
+* remove traffic lights and keep coming soon panel floating ([#103](https://github.com/arcboxlabs/arcbox-desktop/issues/103)) ([255a472](https://github.com/arcboxlabs/arcbox-desktop/commit/255a472dc483788fea6d0d6d01437720420eb834))
+* **ui:** polish visual quality for pre-Liquid Glass macOS (ABXD-15) ([#102](https://github.com/arcboxlabs/arcbox-desktop/issues/102)) ([bb5ac55](https://github.com/arcboxlabs/arcbox-desktop/commit/bb5ac558a5ad3dff909bcd7cd8ec4c950d23e4e2))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.16 ([#104](https://github.com/arcboxlabs/arcbox-desktop/issues/104)) ([e194fd3](https://github.com/arcboxlabs/arcbox-desktop/commit/e194fd335c19a9a633ae727be68faab35900e901))
+* bump arcbox version to v0.3.17 ([#164](https://github.com/arcboxlabs/arcbox-desktop/issues/164)) ([cae95c5](https://github.com/arcboxlabs/arcbox-desktop/commit/cae95c54e6e2e6ccdd9896a2311353c8bf52b60a))
+
+
+### CI
+
+* **release:** auto-update Homebrew tap on stable releases ([#105](https://github.com/arcboxlabs/arcbox-desktop/issues/105)) ([cc29a66](https://github.com/arcboxlabs/arcbox-desktop/commit/cc29a66d610c244e3a546f98e85ef75f4951c23a))
+
 ## [1.16.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.15.0...v1.16.0) (2026-03-27)
 
 
