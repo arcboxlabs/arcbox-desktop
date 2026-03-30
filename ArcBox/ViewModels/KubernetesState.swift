@@ -31,30 +31,38 @@ class KubernetesState {
 
             // Poll until API is fully ready or timeout (~60s).
             for attempt in 0..<30 {
+                if Task.isCancelled || isStopping { break }
                 if attempt > 0 {
                     try await Task.sleep(for: .seconds(2))
                 }
                 let status: Arcbox_V1_KubernetesStatusResponse = try await client.kubernetes.status(.init())
                 if status.running && status.apiReady {
                     self.enabled = true
-                    break
+                    isStarting = false
+                    return
                 }
             }
+            // Timed out — mark as disabled
+            self.enabled = false
+            Log.pods.warning("Kubernetes start timed out after 60s")
         } catch {
             Log.pods.error("Error starting Kubernetes: \(error)")
+            self.enabled = false
         }
         isStarting = false
     }
 
     /// Stop the Kubernetes cluster.
     func stop(client: ArcBoxClient?) async {
-        guard let client else { return }
+        guard let client, !isStopping else { return }
         isStopping = true
         do {
             let _: Arcbox_V1_KubernetesStopResponse = try await client.kubernetes.stop(.init())
             self.enabled = false
         } catch {
             Log.pods.error("Error stopping Kubernetes: \(error)")
+            // Re-check actual status on failure
+            await checkStatus(client: client)
         }
         isStopping = false
     }
