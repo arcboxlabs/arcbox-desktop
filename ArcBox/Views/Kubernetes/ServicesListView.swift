@@ -65,8 +65,10 @@ struct ServicesListView: View {
     /// Retry loading services until the request succeeds or timeout (~30s).
     private func loadServicesUntilReady() async {
         for attempt in 0..<15 {
+            if Task.isCancelled { return }
             if attempt > 0 {
                 try? await Task.sleep(for: .seconds(2))
+                if Task.isCancelled { return }
             }
             let success = await vm.loadServices(client: arcboxClient)
             if success { return }
