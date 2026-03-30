@@ -30,8 +30,12 @@ class KubernetesState {
             Log.pods.info("Kubernetes start: running=\(response.running) apiReady=\(response.apiReady) endpoint=\(response.endpoint)")
 
             // Poll until API is fully ready or timeout (~60s).
+            var interrupted = false
             for attempt in 0..<30 {
-                if Task.isCancelled || isStopping { break }
+                if Task.isCancelled || isStopping {
+                    interrupted = true
+                    break
+                }
                 if attempt > 0 {
                     try await Task.sleep(for: .seconds(2))
                 }
@@ -42,9 +46,10 @@ class KubernetesState {
                     return
                 }
             }
-            // Timed out — mark as disabled
             self.enabled = false
-            Log.pods.warning("Kubernetes start timed out after 60s")
+            if !interrupted {
+                Log.pods.warning("Kubernetes start timed out after 60s")
+            }
         } catch {
             Log.pods.error("Error starting Kubernetes: \(error)")
             self.enabled = false

@@ -92,18 +92,21 @@ public enum K8sError: Error, Sendable {
 
 extension JSONDecoder {
     /// Decoder configured for Kubernetes API JSON (ISO 8601 dates).
+    /// Uses `Date.ISO8601FormatStyle` (Sendable) instead of `ISO8601DateFormatter`.
     static let kubernetes: JSONDecoder = {
         let decoder = JSONDecoder()
+        let isoStrategy = Date.ISO8601FormatStyle()
+        let isoFracStrategy = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let string = try container.decode(String.self)
-            if let date = isoFormatter.date(from: string) {
+            if let date = try? isoStrategy.parse(string) {
                 return date
             }
-            // ISO8601DateFormatter only handles up to 3 fractional digits;
+            // ISO8601FormatStyle only handles up to 3 fractional digits;
             // truncate longer precision (e.g. nanoseconds) before parsing.
             let normalized = truncateFractionalSeconds(string)
-            if let date = isoFractionalFormatter.date(from: normalized) {
+            if let date = try? isoFracStrategy.parse(normalized) {
                 return date
             }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
@@ -111,20 +114,12 @@ extension JSONDecoder {
         return decoder
     }()
 
-    nonisolated(unsafe) private static let isoFormatter = ISO8601DateFormatter()
-    nonisolated(unsafe) private static let isoFractionalFormatter: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
-
-    /// Truncate fractional seconds to 3 digits so ISO8601DateFormatter can parse them.
+    /// Truncate fractional seconds to 3 digits for ISO 8601 parsing.
     /// e.g. "2026-01-01T00:00:00.123456789Z" → "2026-01-01T00:00:00.123Z"
     private static func truncateFractionalSeconds(_ s: String) -> String {
         guard let dotIndex = s.firstIndex(of: ".") else { return s }
         let afterDot = s.index(after: dotIndex)
         guard afterDot < s.endIndex else { return s }
-        // Find where the fractional digits end (next non-digit)
         let fracEnd = s[afterDot...].firstIndex(where: { !$0.isNumber }) ?? s.endIndex
         let fracCount = s.distance(from: afterDot, to: fracEnd)
         guard fracCount > 3 else { return s }

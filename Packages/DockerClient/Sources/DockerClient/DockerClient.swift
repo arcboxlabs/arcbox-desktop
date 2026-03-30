@@ -6,6 +6,7 @@ import NIOHTTP1
 import NIOPosix
 import OpenAPIAsyncHTTPClient
 import OpenAPIRuntime
+import OSLog
 
 @available(macOS 15.0, *)
 public struct ContainerInspectMountSnapshot: Sendable {
@@ -584,13 +585,19 @@ public struct DockerClient: Sendable {
         /// Maximum body size for batch log fetch (50 MB).
         let maxBodySize = 50 * 1024 * 1024
         var data = Data()
+        var truncated = false
         for try await var chunk in response.body {
             if let bytes = chunk.readBytes(length: chunk.readableBytes) {
                 data.append(contentsOf: bytes)
             }
             if data.count > maxBodySize {
+                truncated = true
                 break
             }
+        }
+        if truncated {
+            Logger(subsystem: "com.arcboxlabs.desktop", category: "docker")
+                .warning("Container \(id) logs truncated at \(maxBodySize) bytes")
         }
         return data
     }

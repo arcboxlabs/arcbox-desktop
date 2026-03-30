@@ -12,7 +12,9 @@ final class CheckForUpdatesViewModel {
     init(updater: SPUUpdater) {
         cancellable = updater.publisher(for: \.canCheckForUpdates)
             .sink { [weak self] newValue in
-                self?.canCheckForUpdates = newValue
+                Task { @MainActor in
+                    self?.canCheckForUpdates = newValue
+                }
             }
     }
 }

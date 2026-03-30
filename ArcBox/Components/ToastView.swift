@@ -6,63 +6,41 @@ struct ToastView: View {
     var icon: String = "exclamationmark.triangle.fill"
     var onDismiss: () -> Void = {}
 
-    @State private var isVisible = false
-
     var body: some View {
-        if isVisible {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(AppColors.error)
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppColors.error)
 
-                Text(message)
-                    .font(.system(size: 12))
-                    .lineLimit(2)
-                    .foregroundStyle(AppColors.text)
+            Text(message)
+                .font(.system(size: 12))
+                .lineLimit(2)
+                .foregroundStyle(AppColors.text)
 
-                Spacer(minLength: 0)
+            Spacer(minLength: 0)
 
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(AppColors.textSecondary)
-                }
-                .buttonStyle(.plain)
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(AppColors.textSecondary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(AppColors.error.opacity(0.3), lineWidth: 1)
-            }
-            .padding(.horizontal, 16)
-            .transition(.move(edge: .top).combined(with: .opacity))
+            .buttonStyle(.plain)
         }
-    }
-
-    private func dismiss() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            isVisible = false
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            onDismiss()
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(AppColors.error.opacity(0.3), lineWidth: 1)
         }
-    }
-
-    func show() {
-        withAnimation(.spring(duration: 0.3)) {
-            isVisible = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            if isVisible { dismiss() }
-        }
+        .padding(.horizontal, 16)
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
 
@@ -74,17 +52,18 @@ struct ToastModifier: ViewModifier {
         content.overlay(alignment: .top) {
             if let msg = message {
                 ToastView(message: msg) {
-                    message = nil
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        message = nil
+                    }
                 }
-                .onAppear {
-                    withAnimation(.spring(duration: 0.3)) {}
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                .task {
+                    try? await Task.sleep(for: .seconds(4))
+                    if !Task.isCancelled {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             message = nil
                         }
                     }
                 }
-                .transition(.move(edge: .top).combined(with: .opacity))
                 .padding(.top, 8)
             }
         }
