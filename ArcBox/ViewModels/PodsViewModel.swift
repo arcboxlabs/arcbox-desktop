@@ -55,7 +55,8 @@ class PodsViewModel {
                 self.k8sClient = try K8sClient(config: config)
             }
 
-            let podList = try await k8sClient!.listAllPods()
+            guard let k8s = k8sClient else { return false }
+            let podList = try await k8s.listAllPods()
             self.pods = podList.items.compactMap { Self.mapPod($0) }
             return true
         } catch {

@@ -52,7 +52,8 @@ class ServicesViewModel {
                 self.k8sClient = try K8sClient(config: config)
             }
 
-            let serviceList = try await k8sClient!.listAllServices()
+            guard let k8s = k8sClient else { return false }
+            let serviceList = try await k8s.listAllServices()
             self.services = serviceList.items.compactMap { Self.mapService($0) }
             return true
         } catch {
