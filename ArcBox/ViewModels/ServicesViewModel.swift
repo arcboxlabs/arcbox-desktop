@@ -18,6 +18,7 @@ class ServicesViewModel {
     var selectedID: String? = nil
     var activeTab: ServiceDetailTab = .info
     var listWidth: CGFloat = 320
+    var isLoading: Bool = false
 
     private var k8sClient: K8sClient?
 
@@ -41,18 +42,23 @@ class ServicesViewModel {
             return false
         }
 
-        do {
-            let kubeconfigResponse: Arcbox_V1_KubernetesKubeconfigResponse = try await client.kubernetes.getKubeconfig(.init())
-            let config = try KubeConfig(yaml: kubeconfigResponse.kubeconfig)
-            let k8s = try K8sClient(config: config)
-            self.k8sClient = k8s
+        isLoading = true
+        defer { isLoading = false }
 
-            let serviceList = try await k8s.listAllServices()
+        do {
+            if k8sClient == nil {
+                let kubeconfigResponse: Arcbox_V1_KubernetesKubeconfigResponse = try await client.kubernetes.getKubeconfig(.init())
+                let config = try KubeConfig(yaml: kubeconfigResponse.kubeconfig)
+                self.k8sClient = try K8sClient(config: config)
+            }
+
+            let serviceList = try await k8sClient!.listAllServices()
             self.services = serviceList.items.compactMap { Self.mapService($0) }
             return true
         } catch {
             Log.services.error("Error loading services: \(error)")
             self.services = []
+            self.k8sClient = nil
             return false
         }
     }

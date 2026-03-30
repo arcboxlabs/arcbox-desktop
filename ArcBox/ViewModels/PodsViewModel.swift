@@ -49,17 +49,19 @@ class PodsViewModel {
         defer { isLoading = false }
 
         do {
-            let kubeconfigResponse: Arcbox_V1_KubernetesKubeconfigResponse = try await client.kubernetes.getKubeconfig(.init())
-            let config = try KubeConfig(yaml: kubeconfigResponse.kubeconfig)
-            let k8s = try K8sClient(config: config)
-            self.k8sClient = k8s
+            if k8sClient == nil {
+                let kubeconfigResponse: Arcbox_V1_KubernetesKubeconfigResponse = try await client.kubernetes.getKubeconfig(.init())
+                let config = try KubeConfig(yaml: kubeconfigResponse.kubeconfig)
+                self.k8sClient = try K8sClient(config: config)
+            }
 
-            let podList = try await k8s.listAllPods()
+            let podList = try await k8sClient!.listAllPods()
             self.pods = podList.items.compactMap { Self.mapPod($0) }
             return true
         } catch {
             Log.pods.error("Error loading pods: \(error)")
             self.pods = []
+            self.k8sClient = nil
             return false
         }
     }

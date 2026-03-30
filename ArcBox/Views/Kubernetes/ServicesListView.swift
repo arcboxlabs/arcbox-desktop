@@ -21,8 +21,13 @@ struct ServicesListView: View {
             } else if vm.services.isEmpty {
                 VStack {
                     Spacer()
-                    Text("No services")
-                        .foregroundStyle(AppColors.textSecondary)
+                    if vm.isLoading {
+                        ProgressView()
+                            .controlSize(.regular)
+                    } else {
+                        Text("No services")
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
