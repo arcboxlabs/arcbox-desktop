@@ -84,17 +84,40 @@ public final class ArcBoxClient: Sendable {
         }
     }
 
+    /// Whether the client has been closed.
+    public var isClosed: Bool {
+        _closed.withLock { $0 }
+    }
+
     /// Initiate graceful shutdown of the client transport.
+    ///
+    /// Safe to call multiple times — subsequent calls are no-ops.
     public func close() {
-        _closed.withLock { $0 = true }
+        let wasClosed = _closed.withLock { val -> Bool in
+            let prev = val
+            val = true
+            return prev
+        }
+        guard !wasClosed else { return }
         _grpcClient.withLock { $0 }.beginGracefulShutdown()
+        ClientLog.grpc.info("ArcBoxClient closed")
     }
 
     // MARK: - Service Accessors
 
+    /// Default RPC timeout for unary calls (prevents UI freeze if daemon hangs).
+    public static let defaultRPCTimeout: Duration = .seconds(15)
+
     /// Current gRPC client — may change after transport recovery.
     private var grpcClient: GRPCClient<HTTP2ClientTransport.TransportServices> {
         _grpcClient.withLock { $0 }
+    }
+
+    /// Default call options with timeout.
+    public static var defaultCallOptions: GRPCCore.CallOptions {
+        var options = CallOptions.defaults
+        options.timeout = defaultRPCTimeout
+        return options
     }
 
     /// Container lifecycle operations.

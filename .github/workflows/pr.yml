@@ -1,0 +1,59 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ../arcbox/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox
+
+      - name: Build (Debug)
+        run: |
+          xcodebuild build \
+            -project ArcBox.xcodeproj \
+            -scheme ArcBox \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            SKIP_RUST_BUILD=1 \
+            | xcpretty --color
+
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -project ArcBox.xcodeproj \
+            -scheme ArcBox \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            SKIP_RUST_BUILD=1 \
+            | xcpretty --color

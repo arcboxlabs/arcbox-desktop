@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single image row
@@ -88,6 +89,20 @@ struct ImageRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString("\(image.repository):\(image.tag)", forType: .string)
+            }
+            Button("Copy ID") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(image.dockerId, forType: .string)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                showDeleteConfirm = true
+            }
+        }
         .confirmationDialog("Delete Image", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive, action: onDelete)
             Button("Cancel", role: .cancel) {}

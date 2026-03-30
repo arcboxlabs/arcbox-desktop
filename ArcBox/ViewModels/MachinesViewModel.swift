@@ -11,6 +11,7 @@ enum MachineDetailTab: String, CaseIterable, Identifiable {
 }
 
 /// Machine list state
+@MainActor
 @Observable
 class MachinesViewModel {
     var machines: [MachineViewModel] = []

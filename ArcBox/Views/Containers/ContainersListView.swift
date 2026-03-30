@@ -84,6 +84,7 @@ struct ContainersListView: View {
                 Button(action: { vm.showNewContainerSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .task(id: docker != nil) {
@@ -95,6 +96,7 @@ struct ContainersListView: View {
         .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
             NewContainerSheet()
         }
+        .errorToast(message: Bindable(vm).lastError)
     }
 
     @ViewBuilder

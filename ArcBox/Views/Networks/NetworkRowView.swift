@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single network row
@@ -59,6 +60,18 @@ struct NetworkRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(network.name, forType: .string)
+            }
+            if !network.isSystem {
+                Divider()
+                Button("Delete", role: .destructive) {
+                    showDeleteConfirm = true
+                }
+            }
+        }
         .confirmationDialog("Delete Network", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive, action: onDelete)
             Button("Cancel", role: .cancel) {}

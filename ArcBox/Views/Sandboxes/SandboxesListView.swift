@@ -58,7 +58,11 @@ struct SandboxesListView: View {
                 }
             }
         }
-        .onAppear { vm.loadSampleData() }
+        .onAppear {
+            #if DEBUG
+            vm.loadSampleData()
+            #endif
+        }
     }
 
     private var sandboxListContent: some View {

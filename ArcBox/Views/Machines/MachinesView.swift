@@ -63,7 +63,11 @@ struct MachinesView: View {
                 }
             }
         }
-        .onAppear { vm.loadSampleData() }
+        .onAppear {
+            #if DEBUG
+            vm.loadSampleData()
+            #endif
+        }
     }
 
     @ViewBuilder

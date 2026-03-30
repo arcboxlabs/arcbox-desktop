@@ -12,9 +12,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var eventMonitor: DockerEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
+    var arcboxClient: ArcBoxClient?
+    var connectionTask: Task<Void, Never>?
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         eventMonitor?.stop()
+        arcboxClient?.close()
+        connectionTask?.cancel()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -158,7 +162,9 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(networksVM)
                 .environment(volumesVM)
+                .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.startupOrchestrator, startupOrchestrator)
         }
         .menuBarExtraStyle(.window)
     }
@@ -174,9 +180,13 @@ struct ArcBoxDesktopApp: App {
             return existing
         }
 
+        // Close any previous client that wasn't cleaned up (e.g. after a failed startup).
+        appDelegate.arcboxClient?.close()
+        appDelegate.connectionTask?.cancel()
+
         Log.startup.info("Creating new ArcBoxClient at \(ArcBoxClient.defaultSocketPath, privacy: .public)")
         let client = try ArcBoxClient()
-        Task {
+        let task = Task {
             do {
                 Log.startup.info("runConnections starting")
                 try await client.runConnections()
@@ -186,6 +196,8 @@ struct ArcBoxDesktopApp: App {
             }
         }
         arcboxClient = client
+        appDelegate.arcboxClient = client
+        appDelegate.connectionTask = task
         return client
     }
 }

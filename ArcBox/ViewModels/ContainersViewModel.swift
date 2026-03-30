@@ -48,6 +48,7 @@ class ContainersViewModel {
     var showNewContainerSheet: Bool = false
     var sortBy: ContainerSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var runningCount: Int {
         containers.filter(\.isRunning).count
@@ -255,7 +256,7 @@ class ContainersViewModel {
                     do {
                         var request = Arcbox_V1_GetImageIconRequest()
                         request.fqin = image
-                        let response = try await client.icons.getImageIcon(request)
+                        let response = try await client.icons.getImageIcon(request, options: ArcBoxClient.defaultCallOptions)
                         let url = response.url.isEmpty ? nil : response.url
                         // (image, url, succeeded) — cache empty url as "no icon available"
                         return (image, url, true)
@@ -296,7 +297,7 @@ class ContainersViewModel {
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
-            let response = try await client.containers.list(request)
+            let response = try await client.containers.list(request, options: ArcBoxClient.defaultCallOptions)
             var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)
             }
@@ -320,30 +321,34 @@ class ContainersViewModel {
     }
 
     func startContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         setTransitioning(id, true)
         var request = Arcbox_V1_StartContainerRequest()
         request.id = id
         do {
-            _ = try await client.containers.start(request)
+            _ = try await client.containers.start(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: true)
         } catch {
             Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
     func stopContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         setTransitioning(id, true)
         var request = Arcbox_V1_StopContainerRequest()
         request.id = id
         do {
-            _ = try await client.containers.stop(request)
+            _ = try await client.containers.stop(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: false)
         } catch {
             Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
@@ -423,15 +428,17 @@ class ContainersViewModel {
     }
 
     func removeContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         var request = Arcbox_V1_RemoveContainerRequest()
         request.id = id
         request.force = true
         do {
-            _ = try await client.containers.remove(request)
+            _ = try await client.containers.remove(request, options: ArcBoxClient.defaultCallOptions)
             removeContainerLocally(id)
         } catch {
             Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadContainers(client: client)
     }
@@ -443,7 +450,7 @@ class ContainersViewModel {
         request.id = id
 
         do {
-            let details = try await client.containers.inspect(request)
+            let details = try await client.containers.inspect(request, options: ArcBoxClient.defaultCallOptions)
             setContainerDetails(
                 id,
                 domain: Self.normalized(details.config.domainname),
@@ -501,6 +508,7 @@ class ContainersViewModel {
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         setTransitioning(id, true)
         do {
@@ -508,12 +516,14 @@ class ContainersViewModel {
             setContainerRunningState(id, isRunning: true)
         } catch {
             Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func stopContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         setTransitioning(id, true)
         do {
@@ -521,12 +531,14 @@ class ContainersViewModel {
             setContainerRunningState(id, isRunning: false)
         } catch {
             Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func removeContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         do {
             _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
@@ -534,6 +546,7 @@ class ContainersViewModel {
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
             Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadContainersFromDocker(docker: docker)
     }

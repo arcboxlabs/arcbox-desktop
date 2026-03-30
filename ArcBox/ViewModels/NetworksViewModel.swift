@@ -9,6 +9,7 @@ enum NetworkSortField: String, CaseIterable {
 }
 
 /// Network list state
+@MainActor
 @Observable
 class NetworksViewModel {
     var networks: [NetworkViewModel] = []
@@ -19,6 +20,7 @@ class NetworksViewModel {
     var isSearching: Bool = false
     var sortBy: NetworkSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var networkCount: Int { networks.count }
 
@@ -75,6 +77,7 @@ class NetworksViewModel {
     }
 
     func removeNetwork(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         if selectedID == id { selectedID = nil }
         do {
@@ -83,6 +86,7 @@ class NetworksViewModel {
             Log.network.info("Removed network \(id, privacy: .public)")
         } catch {
             Log.network.error("Error removing network \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadNetworks(docker: docker)
     }

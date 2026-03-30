@@ -98,6 +98,31 @@ struct UnixSocketTransport: ClientTransport {
         baseURL: URL,
         operationID: String
     ) async throws -> (HTTPResponse, HTTPBody?) {
+        // Retry transient connection errors (socket not ready, connection reset).
+        let maxRetries = 2
+        var lastError: Error?
+        for attempt in 0...maxRetries {
+            if attempt > 0 {
+                try? await Task.sleep(for: .milliseconds(500 * attempt))
+            }
+            do {
+                return try await sendOnce(request, body: body, baseURL: baseURL)
+            } catch {
+                lastError = error
+                let nsError = error as NSError
+                let isTransient = nsError.domain == NSPOSIXErrorDomain
+                    && [ECONNREFUSED, ECONNRESET, ENOTCONN, ENETDOWN].contains(Int32(nsError.code))
+                guard isTransient, attempt < maxRetries else { break }
+            }
+        }
+        throw lastError!
+    }
+
+    private func sendOnce(
+        _ request: HTTPRequest,
+        body: HTTPBody?,
+        baseURL: URL
+    ) async throws -> (HTTPResponse, HTTPBody?) {
         // Build the path from baseURL + request path
         let basePath = baseURL.path  // e.g. "/v1.47"
         let requestPath = request.path ?? ""
@@ -188,7 +213,12 @@ public struct DockerClient: Sendable {
     }()
 
     /// Default server URL matching the OpenAPI spec base path.
-    public static let defaultServerURL = try! Servers.Server1.url()
+    public static let defaultServerURL: URL = {
+        guard let url = try? Servers.Server1.url() else {
+            fatalError("DockerClient: Failed to construct default server URL from OpenAPI spec")
+        }
+        return url
+    }()
 
     /// The generated OpenAPI client — use this to call Docker API operations.
     public let api: Client
@@ -551,10 +581,15 @@ public struct DockerClient: Sendable {
             id: id, follow: follow, tail: tail, timestamps: timestamps, since: since
         )
 
+        /// Maximum body size for batch log fetch (50 MB).
+        let maxBodySize = 50 * 1024 * 1024
         var data = Data()
         for try await var chunk in response.body {
             if let bytes = chunk.readBytes(length: chunk.readableBytes) {
                 data.append(contentsOf: bytes)
+            }
+            if data.count > maxBodySize {
+                break
             }
         }
         return data

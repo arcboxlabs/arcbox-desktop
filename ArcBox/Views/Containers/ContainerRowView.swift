@@ -1,3 +1,4 @@
+import AppKit
 import ArcBoxClient
 import SwiftUI
 
@@ -164,6 +165,25 @@ struct ContainerRowView: View {
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             isHovered = hovering
+        }
+        .contextMenu {
+            Button(container.isRunning ? "Stop" : "Start") {
+                onStartStop()
+            }
+            .disabled(container.isTransitioning)
+            Divider()
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(container.name, forType: .string)
+            }
+            Button("Copy ID") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(container.id, forType: .string)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                showDeleteConfirm = true
+            }
         }
         .confirmationDialog("Delete Container", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive, action: onDelete)

@@ -12,11 +12,17 @@ import Foundation
 public final class K8sClient: Sendable {
     private let session: URLSession
     private let baseURL: String
+    private let bearerToken: String?
 
     /// Creates a new client from a parsed kubeconfig.
     public init(config: KubeConfig) throws {
         self.session = try config.makeURLSession()
         self.baseURL = config.server
+        if case .bearerToken(let token) = config.authMode {
+            self.bearerToken = token
+        } else {
+            self.bearerToken = nil
+        }
     }
 
     // MARK: - Pods
@@ -39,6 +45,14 @@ public final class K8sClient: Sendable {
         try await get("/api/v1/services")
     }
 
+    // MARK: - Watch (TODO: implement streaming watch with reconnection)
+    //
+    // Future: implement watch using chunked HTTP response with:
+    // - resourceVersion tracking from list metadata
+    // - Automatic reconnection with exponential backoff
+    // - ADDED/MODIFIED/DELETED event types
+    // See: https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes
+
     // MARK: - Private
 
     private func get<T: Decodable & Sendable>(_ path: String) async throws -> T {
@@ -48,6 +62,9 @@ public final class K8sClient: Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let bearerToken {
+            request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
         let (data, response) = try await session.data(for: request)
         try validateResponse(response)
         return try JSONDecoder.kubernetes.decode(T.self, from: data)

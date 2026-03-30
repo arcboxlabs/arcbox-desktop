@@ -48,11 +48,13 @@ struct VolumesListView: View {
                 Button(action: { vm.showNewVolumeSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .sheet(isPresented: Bindable(vm).showNewVolumeSheet) {
             NewVolumeSheet()
         }
+        .errorToast(message: Bindable(vm).lastError)
         .task(id: docker != nil) { await vm.loadVolumes(docker: docker) }
         .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
             Task { await vm.loadVolumes(docker: docker) }

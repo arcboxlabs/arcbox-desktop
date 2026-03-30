@@ -60,6 +60,14 @@ struct ServicesListView: View {
                 await loadServicesUntilReady()
             }
         }
+        .task(id: k8s.enabled) {
+            guard k8s.enabled else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(10))
+                if Task.isCancelled { break }
+                await vm.loadServices(client: arcboxClient)
+            }
+        }
         .onChange(of: k8s.enabled) { _, enabled in
             if !enabled { vm.clear() }
         }

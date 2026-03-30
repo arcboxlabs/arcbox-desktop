@@ -21,6 +21,7 @@ enum ImageSortField: String, CaseIterable {
 }
 
 /// Image list state
+@MainActor
 @Observable
 class ImagesViewModel {
     var images: [ImageViewModel] = []
@@ -32,6 +33,7 @@ class ImagesViewModel {
     var isSearching: Bool = false
     var sortBy: ImageSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
     private var iconsByImage: [String: String] = [:]
 
     var totalSize: String {
@@ -98,7 +100,7 @@ class ImagesViewModel {
                     do {
                         var request = Arcbox_V1_GetImageIconRequest()
                         request.fqin = repo
-                        let response = try await client.icons.getImageIcon(request)
+                        let response = try await client.icons.getImageIcon(request, options: ArcBoxClient.defaultCallOptions)
                         let url = response.url.isEmpty ? nil : response.url
                         return (repo, url, true)
                     } catch {
@@ -204,6 +206,7 @@ class ImagesViewModel {
     }
 
     func removeImage(_ id: String, dockerId: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         if selectedID == id { selectedID = nil }
         do {
@@ -212,6 +215,7 @@ class ImagesViewModel {
             Log.image.info("Removed image \(dockerId, privacy: .public)")
         } catch {
             Log.image.error("Error removing image \(dockerId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadImages(docker: docker)
     }

@@ -99,6 +99,22 @@ public struct ServicePort: Codable, Sendable {
     public let `protocol`: String?
 }
 
+// MARK: - Exec Credential Plugin
+
+/// Response from an exec-based credential plugin.
+public struct ExecCredential: Codable, Sendable {
+    public let apiVersion: String?
+    public let kind: String?
+    public let status: ExecCredentialStatus?
+}
+
+public struct ExecCredentialStatus: Codable, Sendable {
+    public let token: String?
+    public let expirationTimestamp: String?
+}
+
+// MARK: - Target Port
+
 /// targetPort can be an integer or a string in the K8s API.
 public enum TargetPort: Codable, Sendable {
     case int(Int)
