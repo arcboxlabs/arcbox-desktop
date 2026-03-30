@@ -56,7 +56,6 @@ struct PodsListView: View {
                                 await loadPodsUntilReady()
                             } else {
                                 await k8s.stop(client: arcboxClient)
-                                vm.clear()
                             }
                         }
                     }
@@ -76,6 +75,9 @@ struct PodsListView: View {
             if k8s.enabled {
                 await loadPodsUntilReady()
             }
+        }
+        .onChange(of: k8s.enabled) { _, enabled in
+            if !enabled { vm.clear() }
         }
     }
 

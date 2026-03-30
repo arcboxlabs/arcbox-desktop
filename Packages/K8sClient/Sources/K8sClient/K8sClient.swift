@@ -83,7 +83,10 @@ extension JSONDecoder {
             if let date = isoFormatter.date(from: string) {
                 return date
             }
-            if let date = isoFractionalFormatter.date(from: string) {
+            // ISO8601DateFormatter only handles up to 3 fractional digits;
+            // truncate longer precision (e.g. nanoseconds) before parsing.
+            let normalized = truncateFractionalSeconds(string)
+            if let date = isoFractionalFormatter.date(from: normalized) {
                 return date
             }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
@@ -91,10 +94,24 @@ extension JSONDecoder {
         return decoder
     }()
 
-    private static let isoFormatter = ISO8601DateFormatter()
-    private static let isoFractionalFormatter: ISO8601DateFormatter = {
+    nonisolated(unsafe) private static let isoFormatter = ISO8601DateFormatter()
+    nonisolated(unsafe) private static let isoFractionalFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f
     }()
+
+    /// Truncate fractional seconds to 3 digits so ISO8601DateFormatter can parse them.
+    /// e.g. "2026-01-01T00:00:00.123456789Z" → "2026-01-01T00:00:00.123Z"
+    private static func truncateFractionalSeconds(_ s: String) -> String {
+        guard let dotIndex = s.firstIndex(of: ".") else { return s }
+        let afterDot = s.index(after: dotIndex)
+        guard afterDot < s.endIndex else { return s }
+        // Find where the fractional digits end (next non-digit)
+        let fracEnd = s[afterDot...].firstIndex(where: { !$0.isNumber }) ?? s.endIndex
+        let fracCount = s.distance(from: afterDot, to: fracEnd)
+        guard fracCount > 3 else { return s }
+        let keepEnd = s.index(afterDot, offsetBy: 3)
+        return String(s[..<keepEnd]) + String(s[fracEnd...])
+    }
 }

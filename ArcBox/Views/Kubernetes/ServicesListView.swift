@@ -60,6 +60,9 @@ struct ServicesListView: View {
                 await loadServicesUntilReady()
             }
         }
+        .onChange(of: k8s.enabled) { _, enabled in
+            if !enabled { vm.clear() }
+        }
     }
 
     /// Retry loading services until the request succeeds or timeout (~30s).

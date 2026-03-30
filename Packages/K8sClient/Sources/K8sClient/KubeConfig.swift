@@ -6,11 +6,11 @@ import Security
 public struct KubeConfig: Sendable {
     /// API server URL (e.g. "https://127.0.0.1:16443").
     public let server: String
-    /// PEM-encoded CA certificate data.
+    /// Base64-decoded certificate authority data from kubeconfig (PEM or DER).
     public let certificateAuthorityData: Data
-    /// PEM-encoded client certificate data.
+    /// Base64-decoded client certificate data from kubeconfig (PEM or DER).
     public let clientCertificateData: Data
-    /// PEM-encoded client key data.
+    /// Base64-decoded client private key data from kubeconfig (PEM or DER).
     public let clientKeyData: Data
 
     /// Parse a kubeconfig YAML string into credentials.
