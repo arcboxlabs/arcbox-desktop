@@ -42,7 +42,9 @@ public final class K8sClient: Sendable {
     // MARK: - Private
 
     private func get<T: Decodable & Sendable>(_ path: String) async throws -> T {
-        let url = URL(string: baseURL + path)!
+        guard let url = URL(string: baseURL + path) else {
+            throw K8sError.invalidURL(baseURL + path)
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -64,6 +66,7 @@ public final class K8sClient: Sendable {
 // MARK: - Errors
 
 public enum K8sError: Error, Sendable {
+    case invalidURL(String)
     case invalidResponse
     case httpError(Int)
 }
@@ -77,16 +80,21 @@ extension JSONDecoder {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let string = try container.decode(String.self)
-            if let date = ISO8601DateFormatter().date(from: string) {
+            if let date = isoFormatter.date(from: string) {
                 return date
             }
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: string) {
+            if let date = isoFractionalFormatter.date(from: string) {
                 return date
             }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
         }
         return decoder
+    }()
+
+    private static let isoFormatter = ISO8601DateFormatter()
+    private static let isoFractionalFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
     }()
 }
