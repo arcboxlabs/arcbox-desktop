@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single pod row
@@ -53,5 +54,15 @@ struct PodRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(pod.name, forType: .string)
+            }
+            Button("Copy Namespace") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(pod.namespace, forType: .string)
+            }
+        }
     }
 }

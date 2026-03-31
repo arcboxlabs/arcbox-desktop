@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single service row
@@ -48,5 +49,11 @@ struct ServiceRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(service.name, forType: .string)
+            }
+        }
     }
 }

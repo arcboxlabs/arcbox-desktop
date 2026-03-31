@@ -26,6 +26,7 @@ public enum DaemonSetupPhase: Sendable, Equatable {
     case networkReady
     case ready
     case degraded
+    case cleaningUp
 }
 
 /// Manages the arcbox daemon lifecycle via SMAppService (LaunchAgent) and
@@ -363,6 +364,7 @@ public final class DaemonManager {
         case .networkReady: setupPhase = .networkReady
         case .ready:        setupPhase = .ready
         case .degraded:     setupPhase = .degraded
+        case .cleaningUp:   setupPhase = .cleaningUp
         case .UNRECOGNIZED: setupPhase = .unknown
         }
 
@@ -386,7 +388,15 @@ private func binaryVersion(_ path: String) -> String? {
     process.standardError = FileHandle.nullDevice
     do {
         try process.run()
-        process.waitUntilExit()
+        // Wait with a 5-second timeout to avoid freezing the app.
+        let deadline = Date().addingTimeInterval(5)
+        while process.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        if process.isRunning {
+            process.terminate()
+            return nil
+        }
         guard process.terminationStatus == 0 else { return nil }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)

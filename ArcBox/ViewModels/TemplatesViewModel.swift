@@ -15,6 +15,7 @@ enum TemplateSortField: String, CaseIterable {
 }
 
 /// Template list state
+@MainActor
 @Observable
 class TemplatesViewModel {
     var templates: [TemplateViewModel] = []

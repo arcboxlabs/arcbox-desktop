@@ -48,11 +48,13 @@ struct NetworksListView: View {
                 Button(action: { vm.showNewNetworkSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .sheet(isPresented: Bindable(vm).showNewNetworkSheet) {
             NewNetworkSheet()
         }
+        .errorToast(message: Bindable(vm).lastError)
         .task(id: docker != nil) { await vm.loadNetworks(docker: docker) }
         .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
             Task { await vm.loadNetworks(docker: docker) }

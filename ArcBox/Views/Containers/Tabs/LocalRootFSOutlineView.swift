@@ -70,6 +70,8 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
         }
 
         deinit {
+            let scrollView = self.scrollView
+            let outlineView = self.outlineView
             if let contentView = scrollView?.contentView {
                 NotificationCenter.default.removeObserver(
                     self,
@@ -112,7 +114,7 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             outline.headerView = NSTableHeaderView()
             outline.usesAlternatingRowBackgroundColors = true
             outline.selectionHighlightStyle = .regular
-            outline.backgroundColor = .white
+            outline.backgroundColor = .controlBackgroundColor
             outline.rowSizeStyle = .small
             outline.rowHeight = FinderListMetrics.regularRowHeight
             outline.indentationPerLevel = 14

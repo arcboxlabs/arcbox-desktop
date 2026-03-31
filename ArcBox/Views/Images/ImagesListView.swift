@@ -49,11 +49,13 @@ struct ImagesListView: View {
                 Button(action: { vm.showPullImageSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .sheet(isPresented: Bindable(vm).showPullImageSheet) {
             PullImageSheet()
         }
+        .errorToast(message: Bindable(vm).lastError)
         .task(id: docker != nil) { await vm.loadImages(docker: docker, iconClient: client) }
         .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
             Task { await vm.loadImages(docker: docker, iconClient: client) }

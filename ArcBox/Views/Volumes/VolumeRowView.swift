@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single volume row
@@ -59,6 +60,16 @@ struct VolumeRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(volume.name, forType: .string)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                showDeleteConfirm = true
+            }
+        }
         .confirmationDialog("Delete Volume", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive, action: onDelete)
             Button("Cancel", role: .cancel) {}

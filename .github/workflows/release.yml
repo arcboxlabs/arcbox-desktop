@@ -320,11 +320,12 @@ jobs:
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
 
           KEY_FILE="$(mktemp)"
+          chmod 600 "$KEY_FILE"
+          trap 'rm -f "$KEY_FILE"' EXIT
           printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
           SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE" 2>&1) || {
             echo "::error::sign_update failed"
             echo "$SIGN_OUTPUT"
-            rm -f "$KEY_FILE"
             exit 1
           }
           rm -f "$KEY_FILE"

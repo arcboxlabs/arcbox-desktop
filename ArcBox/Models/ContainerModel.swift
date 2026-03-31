@@ -166,9 +166,12 @@ struct ContainerViewModel: Identifiable, Hashable {
 
     /// Build a URL for the container's primary port, respecting DNS mode.
     func domainURL(useDNS: Bool) -> URL? {
-        if useDNS, let port = ports.first {
-            let suffix = port.containerPort == 80 ? "" : ":\(port.containerPort)"
-            return URL(string: "http://\(hostDomain(useDNS: true))\(suffix)")
+        if useDNS {
+            if let port = ports.first {
+                let suffix = port.containerPort == 80 ? "" : ":\(port.containerPort)"
+                return URL(string: "http://\(hostDomain(useDNS: true))\(suffix)")
+            }
+            return URL(string: "http://\(hostDomain(useDNS: true))")
         } else if let hostPort = hostPorts.first {
             return URL(string: "http://localhost:\(hostPort)")
         }

@@ -19,6 +19,7 @@ enum VolumeSortField: String, CaseIterable {
 }
 
 /// Volume list state
+@MainActor
 @Observable
 class VolumesViewModel {
     var volumes: [VolumeViewModel] = []
@@ -30,6 +31,7 @@ class VolumesViewModel {
     var isSearching: Bool = false
     var sortBy: VolumeSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var totalSize: String {
         let bytes: UInt64 = volumes.compactMap(\.sizeBytes).reduce(0, +)
@@ -208,6 +210,7 @@ class VolumesViewModel {
     }
 
     func removeVolume(_ name: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         if selectedID == name { selectedID = nil }
         do {
@@ -216,6 +219,7 @@ class VolumesViewModel {
             Log.volume.info("Removed volume \(name, privacy: .public)")
         } catch {
             Log.volume.error("Error removing volume \(name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadVolumes(docker: docker)
     }

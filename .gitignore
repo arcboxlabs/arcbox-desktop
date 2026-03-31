@@ -26,3 +26,12 @@ build/
 
 # Local developer settings
 Local.xcconfig
+
+# Security-sensitive files
+*.p12
+*.p8
+*.key
+*.pem
+*.cer
+.env
+.env.*

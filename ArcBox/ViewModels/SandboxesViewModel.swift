@@ -23,6 +23,7 @@ enum SandboxSortField: String, CaseIterable {
 }
 
 /// Sandbox list state
+@MainActor
 @Observable
 class SandboxesViewModel {
     var sandboxes: [SandboxViewModel] = []

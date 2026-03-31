@@ -84,17 +84,40 @@ public final class ArcBoxClient: Sendable {
         }
     }
 
+    /// Whether the client has been closed.
+    public var isClosed: Bool {
+        _closed.withLock { $0 }
+    }
+
     /// Initiate graceful shutdown of the client transport.
+    ///
+    /// Safe to call multiple times — subsequent calls are no-ops.
     public func close() {
-        _closed.withLock { $0 = true }
+        let wasClosed = _closed.withLock { val -> Bool in
+            let prev = val
+            val = true
+            return prev
+        }
+        guard !wasClosed else { return }
         _grpcClient.withLock { $0 }.beginGracefulShutdown()
+        ClientLog.grpc.info("ArcBoxClient closed")
     }
 
     // MARK: - Service Accessors
 
+    /// Default RPC timeout for unary calls (prevents UI freeze if daemon hangs).
+    public static let defaultRPCTimeout: Duration = .seconds(15)
+
     /// Current gRPC client — may change after transport recovery.
     private var grpcClient: GRPCClient<HTTP2ClientTransport.TransportServices> {
         _grpcClient.withLock { $0 }
+    }
+
+    /// Default call options with timeout.
+    public static var defaultCallOptions: GRPCCore.CallOptions {
+        var options = CallOptions.defaults
+        options.timeout = defaultRPCTimeout
+        return options
     }
 
     /// Container lifecycle operations.
@@ -130,5 +153,38 @@ public final class ArcBoxClient: Sendable {
     /// Container image icon lookups.
     public var icons: Arcbox_V1_IconService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
+    }
+
+    /// Kubernetes cluster lifecycle operations.
+    public var kubernetes: Arcbox_V1_KubernetesService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
+    // MARK: - Error Mapping
+
+    /// Map a gRPC or transport error to a user-friendly message.
+    public static func userMessage(for error: Error) -> String {
+        let desc = String(describing: error)
+
+        if desc.contains("unavailable") || desc.contains("UNAVAILABLE") {
+            return "Cannot reach ArcBox daemon. Is it running?"
+        }
+        if desc.contains("deadline") || desc.contains("DEADLINE_EXCEEDED") {
+            return "Operation timed out. The daemon may be busy."
+        }
+        if desc.contains("not found") || desc.contains("NOT_FOUND") {
+            return "Resource not found. It may have been removed."
+        }
+        if desc.contains("already exists") || desc.contains("ALREADY_EXISTS") {
+            return "A resource with that name already exists."
+        }
+        if desc.contains("permission") || desc.contains("PERMISSION_DENIED") {
+            return "Permission denied. Check daemon privileges."
+        }
+        if desc.contains("ECONNREFUSED") || desc.contains("Connection refused") {
+            return "Connection refused. Is the ArcBox daemon running?"
+        }
+
+        return error.localizedDescription
     }
 }
