@@ -237,10 +237,18 @@ public struct KubeConfig: Sendable {
 
         let pipe = Pipe()
         process.standardOutput = pipe
-        process.standardError = Pipe() // discard stderr
+        process.standardError = FileHandle.nullDevice
 
         try process.run()
-        process.waitUntilExit()
+        // Timeout after 15 seconds to prevent UI hang if plugin stalls.
+        let deadline = Date().addingTimeInterval(15)
+        while process.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        if process.isRunning {
+            process.terminate()
+            throw KubeConfigError.execPluginFailed("exec plugin timed out after 15s")
+        }
 
         guard process.terminationStatus == 0 else {
             throw KubeConfigError.execPluginFailed(

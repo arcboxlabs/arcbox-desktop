@@ -55,7 +55,7 @@ class KubernetesState {
             }
         } catch {
             startError = error.localizedDescription
-            Log.pods.error("Error starting Kubernetes: \(error)")
+            Log.pods.error("Error starting Kubernetes: \(error.localizedDescription, privacy: .public)")
             self.enabled = false
         }
         isStarting = false

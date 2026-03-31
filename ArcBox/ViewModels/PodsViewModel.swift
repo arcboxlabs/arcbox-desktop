@@ -60,7 +60,7 @@ class PodsViewModel {
             self.pods = podList.items.compactMap { Self.mapPod($0) }
             return true
         } catch {
-            Log.pods.error("Error loading pods: \(error)")
+            Log.pods.error("Error loading pods: \(error.localizedDescription, privacy: .public)")
             self.pods = []
             self.k8sClient = nil
             return false
