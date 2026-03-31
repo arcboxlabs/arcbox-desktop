@@ -35,17 +35,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    // Lightweight init — no network calls until view appears
     @State private var appVM = AppViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var daemonManager = DaemonManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
+    // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
     @State private var startupOrchestrator: StartupOrchestrator?
 
     // Shared ViewModels used by both main window and menu bar
+    // Lightweight init — no network calls until view appears
     @State private var containersVM = ContainersViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var imagesVM = ImagesViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var networksVM = NetworksViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var volumesVM = VolumesViewModel()
 
     private let updaterDelegate = UpdaterDelegate()
@@ -140,6 +147,7 @@ struct ArcBoxDesktopApp: App {
                 // All ListViews use .task(id: docker != nil) to trigger their initial data load.
                 // Creating DockerClient earlier (e.g., in initClientsAndReturn) causes those tasks
                 // to fire before the Docker socket is ready, resulting in empty lists. (ABXD-76 / #169)
+                .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         if dockerClient == nil {
@@ -204,6 +212,19 @@ struct ArcBoxDesktopApp: App {
         appDelegate.arcboxClient = client
         appDelegate.connectionTask = task
         return client
+    }
+
+    /// Handle incoming `arcbox://` deep links.
+    /// TODO(ABXD-62): Register URL scheme in Info.plist or project build settings
+    /// (INFOPLIST_KEY_LSApplicationCategoryType / CFBundleURLTypes) once scheme routing is finalized.
+    private func handleDeepLink(_ url: URL) {
+        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .public)")
+        guard url.scheme == "arcbox" else {
+            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .public)")
+            return
+        }
+        // TODO(ABXD-62): Route deep link to appropriate view based on host/path.
+        // e.g. arcbox://containers/<id>, arcbox://settings, etc.
     }
 }
 
