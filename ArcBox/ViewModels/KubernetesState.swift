@@ -9,6 +9,7 @@ class KubernetesState {
     var enabled: Bool = false
     var isStarting: Bool = false
     var isStopping: Bool = false
+    var startError: String?
 
     /// Check current K8s cluster status via gRPC.
     func checkStatus(client: ArcBoxClient?) async {
@@ -25,6 +26,7 @@ class KubernetesState {
     func start(client: ArcBoxClient?) async {
         guard let client, !isStarting else { return }
         isStarting = true
+        startError = nil
         do {
             let response: Arcbox_V1_KubernetesStartResponse = try await client.kubernetes.start(.init(), options: ArcBoxClient.defaultCallOptions)
             Log.pods.info("Kubernetes start: running=\(response.running) apiReady=\(response.apiReady) endpoint=\(response.endpoint)")
@@ -48,9 +50,11 @@ class KubernetesState {
             }
             self.enabled = false
             if !interrupted {
+                startError = "Kubernetes failed to start within 60 seconds"
                 Log.pods.warning("Kubernetes start timed out after 60s")
             }
         } catch {
+            startError = error.localizedDescription
             Log.pods.error("Error starting Kubernetes: \(error)")
             self.enabled = false
         }

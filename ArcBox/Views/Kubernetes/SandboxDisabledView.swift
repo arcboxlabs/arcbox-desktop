@@ -3,6 +3,7 @@ import SwiftUI
 /// Empty state shown when the Kubernetes feature is disabled
 struct KubernetesDisabledView: View {
     var isStarting: Bool
+    var startError: String?
     var onTurnOn: () -> Void
 
     var body: some View {
@@ -21,8 +22,15 @@ struct KubernetesDisabledView: View {
                 ProgressView()
                     .controlSize(.regular)
             } else {
+                if let error = startError {
+                    Text(error)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
                 Button(action: onTurnOn) {
-                    Text("Turn On")
+                    Text(startError != nil ? "Retry" : "Turn On")
                         .font(.system(size: 13))
                 }
                 .buttonStyle(.borderedProminent)

@@ -399,11 +399,17 @@ public struct DockerClient: Sendable {
 
                     let response = try await httpClient.execute(request, timeout: .hours(24))
 
+                    let maxBufferSize = 10 * 1024 * 1024 // 10 MB
                     var buffer = Data()
                     for try await var chunk in response.body {
                         if Task.isCancelled { break }
                         if let bytes = chunk.readBytes(length: chunk.readableBytes) {
                             buffer.append(contentsOf: bytes)
+                        }
+                        // Prevent OOM from malformed data without newlines.
+                        if buffer.count > maxBufferSize {
+                            buffer.removeAll()
+                            continue
                         }
 
                         // Each event is a JSON object terminated by newline

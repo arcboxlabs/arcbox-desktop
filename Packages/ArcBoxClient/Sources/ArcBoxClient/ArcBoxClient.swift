@@ -159,4 +159,32 @@ public final class ArcBoxClient: Sendable {
     public var kubernetes: Arcbox_V1_KubernetesService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
     }
+
+    // MARK: - Error Mapping
+
+    /// Map a gRPC or transport error to a user-friendly message.
+    public static func userMessage(for error: Error) -> String {
+        let desc = String(describing: error)
+
+        if desc.contains("unavailable") || desc.contains("UNAVAILABLE") {
+            return "Cannot reach ArcBox daemon. Is it running?"
+        }
+        if desc.contains("deadline") || desc.contains("DEADLINE_EXCEEDED") {
+            return "Operation timed out. The daemon may be busy."
+        }
+        if desc.contains("not found") || desc.contains("NOT_FOUND") {
+            return "Resource not found. It may have been removed."
+        }
+        if desc.contains("already exists") || desc.contains("ALREADY_EXISTS") {
+            return "A resource with that name already exists."
+        }
+        if desc.contains("permission") || desc.contains("PERMISSION_DENIED") {
+            return "Permission denied. Check daemon privileges."
+        }
+        if desc.contains("ECONNREFUSED") || desc.contains("Connection refused") {
+            return "Connection refused. Is the ArcBox daemon running?"
+        }
+
+        return error.localizedDescription
+    }
 }

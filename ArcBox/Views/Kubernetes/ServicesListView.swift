@@ -10,7 +10,7 @@ struct ServicesListView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !k8s.enabled {
-                KubernetesDisabledView(isStarting: k8s.isStarting) {
+                KubernetesDisabledView(isStarting: k8s.isStarting, startError: k8s.startError) {
                     Task {
                         if !k8s.enabled {
                             await k8s.start(client: arcboxClient)

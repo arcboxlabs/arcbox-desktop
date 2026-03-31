@@ -76,13 +76,17 @@ public struct KubeConfig: Sendable {
 
     /// Create a URLSession configured with appropriate auth from this kubeconfig.
     public func makeURLSession() throws -> URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 60
+
         switch authMode {
         case .certificate:
             let delegate = try KubeTLSDelegate(config: self)
-            return URLSession(configuration: .ephemeral, delegate: delegate, delegateQueue: nil)
+            return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
         case .bearerToken:
             let delegate = try KubeBearerTokenDelegate(caData: certificateAuthorityData)
-            return URLSession(configuration: .ephemeral, delegate: delegate, delegateQueue: nil)
+            return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
         }
     }
 
