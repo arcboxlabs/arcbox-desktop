@@ -136,7 +136,10 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
                 }
-                // When daemon transitions to running, create DockerClient and start event monitor.
+                // IMPORTANT: DockerClient MUST be created here — only after daemon is confirmed running.
+                // All ListViews use .task(id: docker != nil) to trigger their initial data load.
+                // Creating DockerClient earlier (e.g., in initClientsAndReturn) causes those tasks
+                // to fire before the Docker socket is ready, resulting in empty lists. (ABXD-76)
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         if dockerClient == nil {
@@ -173,8 +176,9 @@ struct ArcBoxDesktopApp: App {
     }
 
     /// Create gRPC client and return it for the orchestrator.
-    /// DockerClient is created later in onChange(of: daemonManager.state)
-    /// when the daemon is confirmed running.
+    /// WARNING: Do NOT create DockerClient here — it must be deferred to
+    /// onChange(of: daemonManager.state) so that .task(id: docker != nil)
+    /// in ListViews only fires after the daemon is confirmed running. (ABXD-76)
     private func initClientsAndReturn() throws -> ArcBoxClient {
         if let existing = arcboxClient {
             Log.startup.info("Reusing existing ArcBoxClient")
