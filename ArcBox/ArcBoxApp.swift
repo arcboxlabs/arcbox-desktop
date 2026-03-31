@@ -136,9 +136,12 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
                 }
-                // When daemon transitions to running, start event monitor.
+                // When daemon transitions to running, create DockerClient and start event monitor.
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
+                        if dockerClient == nil {
+                            dockerClient = DockerClient()
+                        }
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
                         }
@@ -169,12 +172,10 @@ struct ArcBoxDesktopApp: App {
         .menuBarExtraStyle(.window)
     }
 
-    /// Create clients and return the ArcBoxClient for the orchestrator.
+    /// Create gRPC client and return it for the orchestrator.
+    /// DockerClient is created later in onChange(of: daemonManager.state)
+    /// when the daemon is confirmed running.
     private func initClientsAndReturn() throws -> ArcBoxClient {
-        if dockerClient == nil {
-            dockerClient = DockerClient()
-        }
-
         if let existing = arcboxClient {
             Log.startup.info("Reusing existing ArcBoxClient")
             return existing
