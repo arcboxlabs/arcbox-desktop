@@ -155,20 +155,7 @@ extension NetworkViewModel {
     init?(fromDocker network: Components.Schemas.Network) {
         guard let id = network.Id, let name = network.Name else { return nil }
 
-        let createdAt: Date
-        if let created = network.Created {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let parsed = formatter.date(from: created) {
-                createdAt = parsed
-            } else {
-                // Retry without fractional seconds
-                formatter.formatOptions = [.withInternetDateTime]
-                createdAt = formatter.date(from: created) ?? .distantPast
-            }
-        } else {
-            createdAt = .distantPast
-        }
+        let createdAt = parseISO8601Date(network.Created)
 
         self.init(
             id: id,

@@ -10,6 +10,12 @@ import SwiftTerm
 @MainActor
 @Observable
 class DockerTerminalSession {
+    private enum Defaults {
+        static let cols = 80
+        static let rows = 24
+        static let bufferSize = 8192
+    }
+
     enum State: Equatable {
         case idle
         case connecting
@@ -92,8 +98,8 @@ class DockerTerminalSession {
 
         // Set initial terminal size from SwiftTerm (use sensible defaults if not yet laid out)
         let terminal = terminalView.getTerminal()
-        let cols = max(terminal.cols, 80)
-        let rows = max(terminal.rows, 24)
+        let cols = max(terminal.cols, Defaults.cols)
+        let rows = max(terminal.rows, Defaults.rows)
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
         winSize.ws_row = UInt16(rows)
@@ -117,12 +123,11 @@ class DockerTerminalSession {
 
         // Start reading from PTY master
         readTask = Task.detached { [weak self] in
-            let bufferSize = 8192
-            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: Defaults.bufferSize)
             defer { buffer.deallocate() }
 
             while !Task.isCancelled {
-                let bytesRead = read(masterForRead, buffer, bufferSize)
+                let bytesRead = read(masterForRead, buffer, Defaults.bufferSize)
                 if bytesRead <= 0 { break }
                 let data = Array(UnsafeBufferPointer(start: buffer, count: bytesRead))
                 await MainActor.run { [weak self] in

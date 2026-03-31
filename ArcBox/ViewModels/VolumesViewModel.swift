@@ -231,20 +231,7 @@ class VolumesViewModel {
 extension VolumeViewModel {
     /// Create a VolumeViewModel from a Docker Engine API Volume.
     init(fromDocker volume: Components.Schemas.Volume) {
-        let createdAt: Date
-        if let created = volume.CreatedAt {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let parsed = formatter.date(from: created) {
-                createdAt = parsed
-            } else {
-                // Retry without fractional seconds
-                formatter.formatOptions = [.withInternetDateTime]
-                createdAt = formatter.date(from: created) ?? .distantPast
-            }
-        } else {
-            createdAt = .distantPast
-        }
+        let createdAt = parseISO8601Date(volume.CreatedAt)
 
         let sizeBytes: UInt64?
         if let size = volume.UsageData?.Size, size >= 0 {
