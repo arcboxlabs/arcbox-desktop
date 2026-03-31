@@ -87,6 +87,8 @@ struct ImageRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 12)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(image.repository):\(image.tag), \(image.sizeDisplay)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
         .contextMenu {

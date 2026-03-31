@@ -48,6 +48,7 @@ struct NetworksListView: View {
                 Button(action: { vm.showNewNetworkSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("New network")
                 .keyboardShortcut("n", modifiers: .command)
             }
         }

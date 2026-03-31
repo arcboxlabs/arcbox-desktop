@@ -2,22 +2,7 @@ import SwiftUI
 
 struct VolumeEmptyState: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(AppColors.surfaceElevated)
-                    .frame(width: 64, height: 64)
-                Image(systemName: "internaldrive")
-                    .font(.system(size: 26))
-                    .foregroundStyle(AppColors.textMuted)
-            }
-
-            Text("No volumes yet")
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
-
+        EmptyStateView(icon: "internaldrive", title: "No volumes yet") {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Create a volume:")
                     .font(.system(size: 11))
@@ -32,15 +17,6 @@ struct VolumeEmptyState: View {
                     description: "Mount volume to container"
                 )
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(AppColors.surfaceElevated)
-            )
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(24)
     }
 }

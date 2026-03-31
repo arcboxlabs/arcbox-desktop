@@ -48,6 +48,7 @@ struct VolumesListView: View {
                 Button(action: { vm.showNewVolumeSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("New volume")
                 .keyboardShortcut("n", modifiers: .command)
             }
         }

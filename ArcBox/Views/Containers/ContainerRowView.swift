@@ -139,12 +139,14 @@ struct ContainerRowView: View {
                             action: onStartStop,
                             color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                         )
+                        .accessibilityLabel("Start/Stop container")
                     }
                     IconButton(
                         symbol: "trash.fill",
                         action: { showDeleteConfirm = true },
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
+                    .accessibilityLabel("Delete container")
                 }
             }
         }
@@ -162,6 +164,8 @@ struct ContainerRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 12)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(container.name), \(container.state.label)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             isHovered = hovering

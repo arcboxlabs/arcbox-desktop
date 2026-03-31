@@ -47,6 +47,8 @@ struct ServiceRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(service.name), \(service.type.rawValue)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
         .contextMenu {

@@ -52,6 +52,8 @@ struct PodRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(pod.name), \(pod.phase.rawValue)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
         .contextMenu {

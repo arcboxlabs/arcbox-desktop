@@ -61,6 +61,7 @@ struct MachinesView: View {
                 Button(action: {}) {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("New machine")
             }
         }
         .onAppear {

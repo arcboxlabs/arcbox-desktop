@@ -10,7 +10,7 @@ struct ContentView: View {
     @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(NetworksViewModel.self) private var networksVM
 
-    // Feature ViewModels – local to main window
+    // Feature ViewModels -- local to main window
     @State private var k8sState = KubernetesState()
     @State private var podsVM = PodsViewModel()
     @State private var servicesVM = ServicesViewModel()
@@ -24,36 +24,8 @@ struct ContentView: View {
         @Bindable var vm = appVM
 
         NavigationSplitView {
-            List(selection: $vm.currentNav) {
-                Section("Docker") {
-                    ForEach(NavItem.Section.docker.items) { item in
-                        Label(item.label, systemImage: item.sfSymbol)
-                            .tag(item)
-                    }
-                }
-                Section("Kubernetes") {
-                    ForEach(NavItem.Section.kubernetes.items) { item in
-                        Label(item.label, systemImage: item.sfSymbol)
-                            .tag(item)
-                    }
-                }
-                Section("Linux") {
-                    ForEach(NavItem.Section.linux.items) { item in
-                        Label(item.label, systemImage: item.sfSymbol)
-                            .tag(item)
-                    }
-                }
-                Section("Sandbox") {
-                    ForEach(NavItem.Section.sandbox.items) { item in
-                        Label(item.label, systemImage: item.sfSymbol)
-                            .tag(item)
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(180)
+            sidebar
         } content: {
-            // Sandbox section: collapse content column, full view goes to detail
             if isSandboxSection {
                 Color.clear
                     .navigationSplitViewColumnWidth(0)
@@ -64,7 +36,7 @@ struct ContentView: View {
                     .navigationSplitViewColumnWidth(min: 150, ideal: 320, max: 600)
             }
         } detail: {
-            detailColumn
+            detailPanel
                 .background(AppColors.sidebar)
         }
         .onChange(of: appVM.currentNav) { _, newNav in
@@ -76,6 +48,41 @@ struct ContentView: View {
                 lastValidNav = newNav
             }
         }
+    }
+
+    // MARK: - Sidebar
+
+    private var sidebar: some View {
+        @Bindable var vm = appVM
+
+        return List(selection: $vm.currentNav) {
+            Section("Docker") {
+                ForEach(NavItem.Section.docker.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .tag(item)
+                }
+            }
+            Section("Kubernetes") {
+                ForEach(NavItem.Section.kubernetes.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .tag(item)
+                }
+            }
+            Section("Linux") {
+                ForEach(NavItem.Section.linux.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .tag(item)
+                }
+            }
+            Section("Sandbox") {
+                ForEach(NavItem.Section.sandbox.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .tag(item)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationSplitViewColumnWidth(180)
     }
 
     private var isSandboxSection: Bool {
@@ -119,10 +126,10 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Detail column
+    // MARK: - Detail panel
 
     @ViewBuilder
-    private var detailColumn: some View {
+    private var detailPanel: some View {
         switch appVM.currentNav {
         case .containers:
             ContainerDetailView()

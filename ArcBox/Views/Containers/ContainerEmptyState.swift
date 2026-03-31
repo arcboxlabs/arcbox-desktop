@@ -3,22 +3,7 @@ import SwiftUI
 /// "No containers yet" + quick start commands
 struct ContainerEmptyState: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(AppColors.surfaceElevated)
-                    .frame(width: 64, height: 64)
-                Image(systemName: "cube")
-                    .font(.system(size: 26))
-                    .foregroundStyle(AppColors.textMuted)
-            }
-
-            Text("No containers yet")
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
-
+        EmptyStateView(icon: "cube", title: "No containers yet") {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Quick start:")
                     .font(.system(size: 11))
@@ -37,15 +22,6 @@ struct ContainerEmptyState: View {
                     description: "Start compose project"
                 )
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(AppColors.surfaceElevated)
-            )
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(24)
     }
 }

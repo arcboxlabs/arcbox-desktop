@@ -49,6 +49,7 @@ struct ImagesListView: View {
                 Button(action: { vm.showPullImageSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("Pull image")
                 .keyboardShortcut("n", modifiers: .command)
             }
         }

@@ -58,6 +58,8 @@ struct VolumeRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 12)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(volume.name), \(volume.sizeDisplay)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
         .contextMenu {
