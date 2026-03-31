@@ -4,7 +4,7 @@ set -euo pipefail
 # Embed arcbox binaries into the Xcode app bundle.
 #
 # This build phase script:
-#   1. Builds Rust binaries via `make build-rust` (incremental, ~0.3s no-op)
+#   1. Builds Rust binaries via `make build-rust` in the arcbox repo (incremental, ~0.3s no-op)
 #   2. Copies binaries into the app bundle (incremental, skips unchanged)
 #   3. Signs CLI/helper (daemon is already signed by make sign-daemon with Developer ID)
 #
@@ -26,9 +26,18 @@ DAEMON_NAME="com.arcboxlabs.desktop.daemon"
 ARCBOX_VERSION=$(tr -d '[:space:]' < "${PROJECT_DIR}/arcbox.version")
 CACHE_DIR="${PROJECT_DIR}/.build/arcbox-binaries/${ARCBOX_VERSION}"
 
-ARCBOX_REPO="${PROJECT_DIR}/../arcbox"
-LOCAL_DIR="${ARCBOX_REPO}/target/release"
-LOCAL_AGENT_DIR="${ARCBOX_REPO}/target/aarch64-unknown-linux-musl/release"
+# Support ARCBOX_DIR override (e.g., CI checks out at ${PROJECT_DIR}/arcbox).
+if [ -n "${ARCBOX_DIR:-}" ]; then
+    ARCBOX_REPO="${ARCBOX_DIR}"
+elif [ -d "${PROJECT_DIR}/arcbox" ]; then
+    ARCBOX_REPO="${PROJECT_DIR}/arcbox"
+elif [ -d "${PROJECT_DIR}/../arcbox" ]; then
+    ARCBOX_REPO="${PROJECT_DIR}/../arcbox"
+else
+    ARCBOX_REPO=""
+fi
+LOCAL_DIR="${ARCBOX_REPO:+${ARCBOX_REPO}/target/release}"
+LOCAL_AGENT_DIR="${ARCBOX_REPO:+${ARCBOX_REPO}/target/aarch64-unknown-linux-musl/release}"
 
 is_macho() { [ -f "$1" ] && head -c4 "$1" | xxd -p | grep -qE '^(cffaedfe|cafebabe)'; }
 
@@ -43,17 +52,41 @@ sync_binary() {
     return 1
 }
 
+# Verify a binary's code signature is valid.
+# Usage: verify_signature <binary> [--check-entitlements]
+verify_signature() {
+    local binary="$1"
+    local check_entitlements="${2:-}"
+    if ! codesign --verify --strict "$binary" 2>/dev/null; then
+        echo "warning: $binary has invalid or missing code signature"
+        return 1
+    fi
+    if [ "$check_entitlements" = "--check-entitlements" ]; then
+        local entitlements
+        entitlements=$(codesign -d --entitlements - "$binary" 2>/dev/null || true)
+        if ! echo "$entitlements" | grep -q "com.apple.security.virtualization"; then
+            echo "error: $binary is missing com.apple.security.virtualization entitlement" >&2
+            return 1
+        fi
+        if ! echo "$entitlements" | grep -q "com.apple.security.hypervisor"; then
+            echo "error: $binary is missing com.apple.security.hypervisor entitlement" >&2
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # ── Build ────────────────────────────────────────────────
 # If the arcbox repo is available, build everything (incremental, ~0.3s no-op).
 # Calls arcbox-desktop's `make build-rust`, which delegates to arcbox repo:
 #   build-cli, build-helper, sign-daemon (Developer ID), build-agent (soft-fail)
-if [ -f "${ARCBOX_REPO}/Makefile" ]; then
+if [ -n "${ARCBOX_REPO}" ] && [ -f "${ARCBOX_REPO}/Makefile" ]; then
     echo "note: Building arcbox binaries (incremental)..."
     make -C "${PROJECT_DIR}" build-rust ARCBOX_DIR="${ARCBOX_REPO}"
 fi
 
 # ── Resolve source ───────────────────────────────────────
-if [ -f "${LOCAL_DIR}/abctl" ] && [ -f "${LOCAL_DIR}/arcbox-daemon" ]; then
+if [ -n "${LOCAL_DIR}" ] && [ -f "${LOCAL_DIR}/abctl" ] && [ -f "${LOCAL_DIR}/arcbox-daemon" ]; then
     if ! is_macho "${LOCAL_DIR}/arcbox-daemon"; then
         echo "error: ${LOCAL_DIR}/arcbox-daemon is not a valid Mach-O binary" >&2
         exit 1
@@ -95,6 +128,13 @@ else
     echo "note: Daemon binary unchanged, skipping copy"
 fi
 
+# Verify daemon signature and required entitlements.
+if ! verify_signature "${HELPERS_DIR}/${DAEMON_NAME}" --check-entitlements; then
+    echo "error: Daemon at ${HELPERS_DIR}/${DAEMON_NAME} must be signed with virtualization/hypervisor entitlements." >&2
+    echo "  Run: make -C $(dirname ${ARCBOX_REPO:-../arcbox}) sign-daemon" >&2
+    exit 1
+fi
+
 # ── Embed abctl → Contents/MacOS/bin/ ────────────────────
 CLI_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin"
 mkdir -p "${CLI_DIR}"
@@ -115,6 +155,10 @@ if sync_binary "${SRC_DIR}/abctl" "${CLI_DIR}/abctl"; then
     fi
     echo "note: Embedded and signed abctl → MacOS/bin/abctl"
 else
+    # Binary unchanged; verify existing signature is still valid.
+    if ! verify_signature "${CLI_DIR}/abctl"; then
+        echo "warning: abctl signature invalid, consider cleaning build"
+    fi
     echo "note: abctl unchanged, skipping copy"
 fi
 
@@ -137,6 +181,10 @@ if [ -f "${HELPER_SRC}" ]; then
         fi
         echo "note: Embedded and signed arcbox-helper → MacOS/bin/arcbox-helper"
     else
+        # Binary unchanged; verify existing signature is still valid.
+        if ! verify_signature "${CLI_DIR}/arcbox-helper"; then
+            echo "warning: arcbox-helper signature invalid, consider cleaning build"
+        fi
         echo "note: arcbox-helper unchanged, skipping copy"
     fi
 else

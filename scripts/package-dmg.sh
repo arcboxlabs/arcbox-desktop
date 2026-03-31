@@ -339,6 +339,12 @@ if [ -n "$SIGN_IDENTITY" ]; then
     DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
     DAEMON_ENTITLEMENTS="$ARCBOX_DIR/bundle/arcbox.entitlements"
 
+    if [ ! -f "$DAEMON_ENTITLEMENTS" ]; then
+        echo "error: Daemon entitlements not found at $DAEMON_ENTITLEMENTS" >&2
+        echo "  Ensure ARCBOX_DIR points to the arcbox checkout (current: $ARCBOX_DIR)" >&2
+        exit 1
+    fi
+
     # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
     codesign --force --deep --options runtime \
         --sign "$SIGN_IDENTITY" --timestamp \
