@@ -47,9 +47,9 @@ build-rust:
 		echo "  Set ARCBOX_DIR=/path/to/arcbox" >&2; \
 		exit 1; \
 	fi
-	cd "$(ARCBOX_DIR)" && cargo build --release -p arcbox-cli -p arcbox-daemon -p arcbox-helper
-	cd "$(ARCBOX_DIR)" && make build-agent
-	cd "$(ARCBOX_DIR)" && make sign-daemon PROFILE=release
+	$(MAKE) -C "$(ARCBOX_DIR)" build-cli build-helper PROFILE=release
+	$(MAKE) -C "$(ARCBOX_DIR)" sign-daemon PROFILE=release
+	-$(MAKE) -C "$(ARCBOX_DIR)" build-agent
 
 prefetch:
 	@if [ "$(SKIP_BUILD)" != "1" ]; then \

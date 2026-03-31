@@ -337,7 +337,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
 
     DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
-    DAEMON_ENTITLEMENTS="$DESKTOP_REPO/ArcBox/DaemonEntitlements.entitlements"
+    DAEMON_ENTITLEMENTS="$ARCBOX_DIR/bundle/arcbox.entitlements"
 
     # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
     codesign --force --deep --options runtime \
