@@ -145,12 +145,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "ArcBox" */;
 			buildPhases = (
-				AB0D00032F60000000000001 /* Build Rust Binaries */,
+				AB0D00032F60000000000001 /* Embed Arcbox Binaries */,
 				657F65772F3A2ADB00C7005A /* Sources */,
 				657F65782F3A2ADB00C7005A /* Frameworks */,
 				657F65792F3A2ADB00C7005A /* Resources */,
 				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
-				AB0D00052F60000000000001 /* Sign Rust Binaries */,
 			);
 			buildRules = (
 			);
@@ -246,7 +245,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		AB0D00032F60000000000001 /* Build Rust Binaries */ = {
+		AB0D00032F60000000000001 /* Embed Arcbox Binaries */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -254,27 +253,12 @@
 			);
 			inputPaths = (
 			);
-			name = "Build Rust Binaries";
+			name = "Embed Arcbox Binaries";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "exec \"${PROJECT_DIR}/scripts/fetch-arcbox-binaries.sh\"\n";
-		};
-		AB0D00052F60000000000001 /* Sign Rust Binaries */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Sign Rust Binaries";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/bash;
-			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/com.arcboxlabs.desktop.daemon\"\nCLI_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin/abctl\"\nENTITLEMENTS=\"${PROJECT_DIR}/ArcBox/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ ! -f \"${CLI_PATH}\" ]; then\n    echo \"error: CLI binary not found at ${CLI_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.abctl\" \"${CLI_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --sign - \"${CLI_PATH}\"\nfi\n";
+			shellScript = "exec \"${PROJECT_DIR}/scripts/embed-arcbox-binaries.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
