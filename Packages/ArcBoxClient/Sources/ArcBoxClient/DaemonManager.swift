@@ -74,6 +74,13 @@ public final class DaemonManager {
 
     private var watchTask: Task<Void, Never>?
 
+    /// Guards `enableDaemon()` against concurrent (re-entrant) calls.
+    /// Even though `@MainActor` serializes synchronous access, `await`
+    /// suspension points allow a second call to interleave.  This flag
+    /// is checked at entry and cleared at exit to ensure only one
+    /// enable operation is in flight at a time.
+    private var isEnabling: Bool = false
+
     public init() {}
 
     // MARK: - Helper Lifecycle
@@ -147,6 +154,17 @@ public final class DaemonManager {
     /// Register the daemon with launchd. Does not wait for reachability —
     /// that is handled by ``connectAndWatch(client:)``.
     public func enableDaemon() async {
+        // ABXD-22: Prevent concurrent enable operations.  Even though we
+        // are @MainActor, the `await` suspension points (unregister/register)
+        // allow a second SwiftUI .task call to interleave and start a
+        // duplicate enable cycle.
+        guard !isEnabling else {
+            ClientLog.daemon.info("enableDaemon() already in progress, skipping duplicate call")
+            return
+        }
+        isEnabling = true
+        defer { isEnabling = false }
+
         errorMessage = nil
         state = .starting
 
@@ -154,6 +172,9 @@ public final class DaemonManager {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         try? FileManager.default.createDirectory(
             atPath: "\(home)/.arcbox/run", withIntermediateDirectories: true)
+
+        // ABXD-54: Verify daemon binary code signature before registration.
+        verifyDaemonSignature()
 
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
@@ -341,6 +362,46 @@ public final class DaemonManager {
     public func stopWatching() {
         watchTask?.cancel()
         watchTask = nil
+    }
+
+    // MARK: - Binary Verification
+
+    /// Verify the daemon binary's code signature before launching.
+    ///
+    /// Runs `codesign --verify --strict` on the bundled daemon binary.
+    /// Logs a warning on failure but does **not** block startup — dev
+    /// builds may use ad-hoc signatures that fail strict verification.
+    private nonisolated func verifyDaemonSignature() {
+        let bundle = Bundle.main.bundleURL
+        let daemonPath = bundle.appendingPathComponent("Contents/Helpers/com.arcboxlabs.desktop.daemon").path
+
+        guard FileManager.default.fileExists(atPath: daemonPath) else {
+            ClientLog.daemon.warning("Daemon binary not found at expected path, skipping signature check")
+            return
+        }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        process.arguments = ["--verify", "--strict", daemonPath]
+        process.standardOutput = FileHandle.nullDevice
+        let errPipe = Pipe()
+        process.standardError = errPipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            if process.terminationStatus != 0 {
+                let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+                let errStr = String(data: errData, encoding: .utf8) ?? "(unknown)"
+                ClientLog.daemon.warning(
+                    "Daemon binary signature verification failed (status \(process.terminationStatus)): \(errStr, privacy: .public)")
+            } else {
+                ClientLog.daemon.info("Daemon binary signature verified OK")
+            }
+        } catch {
+            ClientLog.daemon.warning(
+                "Could not run codesign verification: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     // MARK: - Internal
