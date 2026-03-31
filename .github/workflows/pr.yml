@@ -36,6 +36,21 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Verify protobuf generated code is up-to-date
+        run: |
+          # Install protoc via Homebrew
+          brew install protobuf
+
+          # Generate Swift code from proto definitions
+          cd Packages/ArcBoxClient
+          ./generate.sh --remote
+
+          # Fail if generated files differ from checked-in versions
+          if ! git diff --exit-code Sources/ArcBoxClient/Generated/; then
+            echo "::error::Protobuf generated Swift files are out of date. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit the result."
+            exit 1
+          fi
+
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox
 

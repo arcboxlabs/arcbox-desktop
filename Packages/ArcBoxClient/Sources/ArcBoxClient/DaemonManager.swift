@@ -135,7 +135,7 @@ public final class DaemonManager {
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&error)
                 if let error {
-                    ClientLog.daemon.warning("Helper install failed: \(error, privacy: .public)")
+                    ClientLog.daemon.warning("Helper install failed: \(error, privacy: .private)")
                     return false
                 }
                 return true
@@ -199,7 +199,7 @@ public final class DaemonManager {
             ClientLog.daemon.info("Service registered successfully")
             state = .registered
         } catch {
-            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
         }
@@ -223,7 +223,7 @@ public final class DaemonManager {
             ClientLog.daemon.info("Service registered successfully")
             state = .registered
         } catch {
-            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
         }
@@ -255,7 +255,7 @@ public final class DaemonManager {
             ClientLog.daemon.info("Force re-register completed")
             state = .registered
         } catch {
-            ClientLog.daemon.error("Force re-register failed: \(error.localizedDescription, privacy: .public)")
+            ClientLog.daemon.error("Force re-register failed: \(error.localizedDescription, privacy: .private)")
             errorMessage = error.localizedDescription
             state = .error("Force re-register failed: \(error.localizedDescription)")
         }
@@ -314,7 +314,7 @@ public final class DaemonManager {
                             }
                         }
                     } catch {
-                        ClientLog.daemon.warning("WatchSetupStatus stream error: \(error.localizedDescription, privacy: .public)")
+                        ClientLog.daemon.warning("WatchSetupStatus stream error: \(error.localizedDescription, privacy: .private)")
                     }
                     continuation.finish()
                 }

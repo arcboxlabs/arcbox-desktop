@@ -104,7 +104,7 @@ class ImagesViewModel {
                         let url = response.url.isEmpty ? nil : response.url
                         return (repo, url, true)
                     } catch {
-                        Log.image.debug("Icon fetch failed for \(repo, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.image.debug("Icon fetch failed for \(repo, privacy: .private): \(error.localizedDescription, privacy: .public)")
                         return (repo, nil, false)
                     }
                 }
@@ -141,7 +141,7 @@ class ImagesViewModel {
             Log.image.info("Loaded \(self.images.count, privacy: .public) images")
             await fetchIcons(client: iconClient)
         } catch {
-            Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
+            Log.image.error("Error loading images: \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -178,11 +178,11 @@ class ImagesViewModel {
                 query: .init(fromImage: parsed.fromImage, tag: parsed.tag, platform: platform)
             )
             _ = try response.ok
-            Log.image.info("Pulled image \(reference, privacy: .public)")
+            Log.image.info("Pulled image \(reference, privacy: .private)")
             await loadImages(docker: docker)
             return true
         } catch {
-            Log.image.error("Error pulling image \(reference, privacy: .public): \(String(describing: error), privacy: .public)")
+            Log.image.error("Error pulling image \(reference, privacy: .private): \(String(describing: error), privacy: .private)")
             return false
         }
     }
@@ -196,11 +196,11 @@ class ImagesViewModel {
                 body: .application_x_hyphen_tar(HTTPBody(data))
             )
             _ = try response.ok
-            Log.image.info("Imported image from \(tarURL.lastPathComponent, privacy: .public)")
+            Log.image.info("Imported image from \(tarURL.lastPathComponent, privacy: .private)")
             await loadImages(docker: docker)
             return true
         } catch {
-            Log.image.error("Error importing image: \(String(describing: error), privacy: .public)")
+            Log.image.error("Error importing image: \(String(describing: error), privacy: .private)")
             return false
         }
     }
@@ -212,9 +212,9 @@ class ImagesViewModel {
         do {
             let response = try await docker.api.ImageDelete(path: .init(name: dockerId), query: .init(force: true))
             _ = try response.ok
-            Log.image.info("Removed image \(dockerId, privacy: .public)")
+            Log.image.info("Removed image \(dockerId, privacy: .private)")
         } catch {
-            Log.image.error("Error removing image \(dockerId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.image.error("Error removing image \(dockerId, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         await loadImages(docker: docker)

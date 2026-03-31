@@ -197,7 +197,7 @@ struct ArcBoxDesktopApp: App {
                 try await client.runConnections()
                 Log.startup.info("runConnections ended")
             } catch {
-                Log.startup.error("runConnections failed: \(error.localizedDescription, privacy: .public)")
+                Log.startup.error("runConnections failed: \(error.localizedDescription, privacy: .private)")
             }
         }
         arcboxClient = client

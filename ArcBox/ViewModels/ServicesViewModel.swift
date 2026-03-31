@@ -57,7 +57,7 @@ class ServicesViewModel {
             self.services = serviceList.items.compactMap { Self.mapService($0) }
             return true
         } catch {
-            Log.services.error("Error loading services: \(error.localizedDescription, privacy: .public)")
+            Log.services.error("Error loading services: \(error.localizedDescription, privacy: .private)")
             self.services = []
             self.k8sClient = nil
             return false
