@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.18.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.17.0...v1.18.0) (2026-04-01)
+
+
+### Features
+
+* Kubernetes integration + release readiness audit fixes ([#101](https://github.com/arcboxlabs/arcbox-desktop/issues/101)) ([8e788de](https://github.com/arcboxlabs/arcbox-desktop/commit/8e788de76a66d2815f6a55bd74d14c4a96cb32a7))
+
+
+### Bug Fixes
+
+* **startup:** defer DockerClient creation until daemon is running ([#170](https://github.com/arcboxlabs/arcbox-desktop/issues/170)) ([75ace01](https://github.com/arcboxlabs/arcbox-desktop/commit/75ace01551471df135c1cb0515d1d0c79e5ba567))
+
+
+### Refactoring
+
+* unify Rust binary build+embed into single Xcode phase ([#167](https://github.com/arcboxlabs/arcbox-desktop/issues/167)) ([2a899a7](https://github.com/arcboxlabs/arcbox-desktop/commit/2a899a725927e64b3e90c63dbfdb58b34dd5b4ff))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.18 ([#171](https://github.com/arcboxlabs/arcbox-desktop/issues/171)) ([6dafded](https://github.com/arcboxlabs/arcbox-desktop/commit/6dafded4ea1f4e5485454f2b1ac31dda1b8fe1df))
+
+
+### Documentation
+
+* **startup:** add anti-regression comments for DockerClient creation timing (ABXD-76) ([a2024a3](https://github.com/arcboxlabs/arcbox-desktop/commit/a2024a3df8404ec90eeca04c90cd2ae022d17cbc))
+* **startup:** add GitHub issue ref to anti-regression comments (ABXD-76 / [#169](https://github.com/arcboxlabs/arcbox-desktop/issues/169)) ([9559ed3](https://github.com/arcboxlabs/arcbox-desktop/commit/9559ed32789aa47ad4dbbd47a6b81fd1e7891a00))
+
 ## [1.17.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.16.0...v1.17.0) (2026-03-30)
 
 
