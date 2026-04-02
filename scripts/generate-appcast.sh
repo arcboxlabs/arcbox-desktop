@@ -49,13 +49,21 @@ DISPLAY_VERSION="${VERSION#v}"
 # BSD/GNU-compatible UTC date
 PUB_DATE=$(date -u '+%a, %d %b %Y %H:%M:%S +0000')
 
-# Build the <item> block
+# Build the <item> block.
+# Sparkle 2.x: items WITHOUT <sparkle:channel> are visible to all users
+# (the default / stable channel).  Items WITH a channel are opt-in only.
+# So we only emit the channel element for non-stable channels.
+CHANNEL_ELEMENT=""
+if [ "$CHANNEL" != "stable" ]; then
+    CHANNEL_ELEMENT="
+        <sparkle:channel>$CHANNEL</sparkle:channel>"
+fi
+
 ITEM=$(cat <<ITEM_EOF
       <item>
         <title>ArcBox $DISPLAY_VERSION</title>
         <pubDate>$PUB_DATE</pubDate>
-        <sparkle:version>$DISPLAY_VERSION</sparkle:version>
-        <sparkle:channel>$CHANNEL</sparkle:channel>
+        <sparkle:version>$DISPLAY_VERSION</sparkle:version>$CHANNEL_ELEMENT
         <sparkle:minimumSystemVersion>$MIN_MACOS</sparkle:minimumSystemVersion>
         <enclosure
           url="$DMG_URL"
@@ -85,6 +93,11 @@ item = '''$ITEM'''
 # Remove existing item block for the same version
 pattern = r'\s*<item>.*?<sparkle:version>' + re.escape(version) + r'</sparkle:version>.*?</item>'
 content = re.sub(pattern, '', content, flags=re.DOTALL)
+
+# Strip <sparkle:channel>stable</sparkle:channel> from legacy items.
+# Sparkle 2.x treats items WITHOUT a channel element as the default (stable)
+# channel visible to all users; items WITH a channel require explicit opt-in.
+content = re.sub(r'\n\s*<sparkle:channel>stable</sparkle:channel>', '', content)
 
 # Insert new item before </channel>
 content = content.replace('    </channel>', item + '\n    </channel>')
