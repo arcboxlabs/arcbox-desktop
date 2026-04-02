@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.2...v1.18.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **release:** embed provisioning profile for AMFI restricted entitlements ([4d558a9](https://github.com/arcboxlabs/arcbox-desktop/commit/4d558a91c90733d7bb12d4e51637e1f6824aa7c8))
+
 ## [1.18.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.1...v1.18.2) (2026-04-02)
 
 
