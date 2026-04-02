@@ -126,6 +126,18 @@ jobs:
             --issuer "$NOTARY_ISSUER"
           rm "$RUNNER_TEMP/private_keys/AuthKey.p8"
 
+      - name: Decode provisioning profile
+        env:
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: |
+          if [ -z "$APPLE_PROVISIONING_PROFILE" ]; then
+            echo "::error::APPLE_PROVISIONING_PROFILE secret is not set"
+            exit 1
+          fi
+          echo "$APPLE_PROVISIONING_PROFILE" | base64 --decode > "$RUNNER_TEMP/embedded.provisionprofile"
+          echo "Decoded provisioning profile to $RUNNER_TEMP/embedded.provisionprofile"
+          security cms -D -i "$RUNNER_TEMP/embedded.provisionprofile" | head -5
+
       - name: Download pre-built arcbox binaries
         id: prebuilt
         continue-on-error: true
@@ -273,7 +285,8 @@ jobs:
             SIGN_IDENTITY="${{ secrets.APPLE_SIGNING_IDENTITY }}" \
             VERSION="${{ steps.version.outputs.version }}" \
             SPARKLE_FEED_URL="https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml" \
-            NOTARIZE=1
+            NOTARIZE=1 \
+            PROVISIONING_PROFILE="$RUNNER_TEMP/embedded.provisionprofile"
           DMG_PATH=$(ls "${{ github.workspace }}/arcbox-core/target/ArcBox-"*.dmg | head -1)
           DMG_NAME=$(basename "$DMG_PATH")
           echo "dmg=$DMG_NAME" >> "$GITHUB_OUTPUT"

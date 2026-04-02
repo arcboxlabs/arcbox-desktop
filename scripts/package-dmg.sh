@@ -2,7 +2,7 @@
 # Build ArcBox.app and package it into a signed/notarized DMG.
 #
 # Usage:
-#   scripts/package-dmg.sh [--sign <identity>] [--notarize]
+#   scripts/package-dmg.sh [--sign <identity>] [--notarize] [--provisioning-profile <path>]
 #
 # Environment variables:
 #   DESKTOP_REPO   - Path to arcbox-desktop checkout (default: script dir/..)
@@ -40,10 +40,12 @@ DESKTOP_REPO="${DESKTOP_REPO:-"$(cd "$SCRIPT_DIR/.." && pwd)"}"
 # Parse arguments
 SIGN_IDENTITY=""
 NOTARIZE=false
+PROVISIONING_PROFILE=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --sign) SIGN_IDENTITY="$2"; shift 2 ;;
         --notarize) NOTARIZE=true; shift ;;
+        --provisioning-profile) PROVISIONING_PROFILE="$2"; shift 2 ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
@@ -331,7 +333,24 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Re-sign the entire app bundle
+# 8. Embed provisioning profile → Contents/embedded.provisionprofile
+# ---------------------------------------------------------------------------
+# Restricted entitlements (e.g. com.apple.vm.networking) require a provisioning
+# profile even for Developer ID distribution. AMFI validates this at runtime.
+if [ -n "$PROVISIONING_PROFILE" ]; then
+    if [ ! -f "$PROVISIONING_PROFILE" ]; then
+        echo "error: provisioning profile not found at $PROVISIONING_PROFILE" >&2
+        exit 1
+    fi
+    echo "--- Embedding provisioning profile ---"
+    cp "$PROVISIONING_PROFILE" "$APP_BUNDLE/Contents/embedded.provisionprofile"
+    echo "  Embedded $(basename "$PROVISIONING_PROFILE") → Contents/embedded.provisionprofile"
+elif [ -n "$SIGN_IDENTITY" ]; then
+    echo "warning: no --provisioning-profile specified; restricted entitlements (com.apple.vm.networking) may fail AMFI validation"
+fi
+
+# ---------------------------------------------------------------------------
+# 9. Re-sign the entire app bundle
 # ---------------------------------------------------------------------------
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
@@ -376,7 +395,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Create DMG
+# 10. Create DMG
 # ---------------------------------------------------------------------------
 echo "--- Creating DMG ---"
 rm -f "$DMG_PATH"
@@ -400,7 +419,7 @@ if [ ! -f "$DMG_PATH" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 10. Sign DMG
+# 11. Sign DMG
 # ---------------------------------------------------------------------------
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing DMG ---"
@@ -408,7 +427,7 @@ if [ -n "$SIGN_IDENTITY" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 11. Notarize
+# 12. Notarize
 # ---------------------------------------------------------------------------
 if [ "$NOTARIZE" = true ] && [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Notarizing DMG ---"

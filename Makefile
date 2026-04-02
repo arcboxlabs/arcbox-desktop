@@ -19,6 +19,7 @@ SKIP_BUILD ?= 0
 NOTARIZE ?= 0
 VERSION ?=
 SPARKLE_FEED_URL ?=
+PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
@@ -88,7 +89,8 @@ dmg-signed: prefetch
 	ARCBOX_DIR="$(ARCBOX_DIR)" \
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
-	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)"
+	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)" \
+		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
 
 # Signed + notarized DMG for CI release.
 dmg-release: prefetch
@@ -99,7 +101,9 @@ dmg-release: prefetch
 	ARCBOX_DIR="$(ARCBOX_DIR)" \
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
-	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)" $(if $(filter 1,$(NOTARIZE)),--notarize)
+	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)" \
+		$(if $(filter 1,$(NOTARIZE)),--notarize) \
+		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
 
 ## ── Cleanup ───────────────────────────────────────────
 
