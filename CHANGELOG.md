@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.1...v1.18.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* remove sparkle:channel from stable appcast items ([5ab014b](https://github.com/arcboxlabs/arcbox-desktop/commit/5ab014b08d00f1dd95e949368d85c5778eea7d21))
+
 ## [1.18.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.0...v1.18.1) (2026-04-01)
 
 
