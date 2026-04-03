@@ -41,13 +41,17 @@ jobs:
           # Install protoc via Homebrew
           brew install protobuf
 
-          # Generate Swift code from proto definitions
+          # Generate Swift code from local proto definitions (avoid depending on remote main branch)
           cd Packages/ArcBoxClient
-          ./generate.sh --remote
+          ./generate.sh
 
-          # Fail if generated files differ from checked-in versions
+          # Fail if generated files differ from checked-in versions (including untracked files)
           if ! git diff --exit-code Sources/ArcBoxClient/Generated/; then
             echo "::error::Protobuf generated Swift files are out of date. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit the result."
+            exit 1
+          fi
+          if [ -n "$(git ls-files --others --exclude-standard Sources/ArcBoxClient/Generated/)" ]; then
+            echo "::error::Untracked generated files detected. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit all generated files."
             exit 1
           fi
 

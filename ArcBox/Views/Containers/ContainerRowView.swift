@@ -164,7 +164,7 @@ struct ContainerRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 12)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(container.name), \(container.state.label)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in

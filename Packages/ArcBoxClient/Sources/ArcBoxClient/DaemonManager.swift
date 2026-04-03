@@ -174,7 +174,10 @@ public final class DaemonManager {
             atPath: "\(home)/.arcbox/run", withIntermediateDirectories: true)
 
         // ABXD-54: Verify daemon binary code signature before registration.
-        verifyDaemonSignature()
+        // Run off MainActor to avoid blocking UI during codesign --verify.
+        await Task.detached { [self] in
+            self.verifyDaemonSignature()
+        }.value
 
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
@@ -394,13 +397,13 @@ public final class DaemonManager {
                 let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
                 let errStr = String(data: errData, encoding: .utf8) ?? "(unknown)"
                 ClientLog.daemon.warning(
-                    "Daemon binary signature verification failed (status \(process.terminationStatus)): \(errStr, privacy: .public)")
+                    "Daemon binary signature verification failed (status \(process.terminationStatus)): \(errStr, privacy: .private)")
             } else {
                 ClientLog.daemon.info("Daemon binary signature verified OK")
             }
         } catch {
             ClientLog.daemon.warning(
-                "Could not run codesign verification: \(error.localizedDescription, privacy: .public)")
+                "Could not run codesign verification: \(error.localizedDescription, privacy: .private)")
         }
     }
 

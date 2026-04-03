@@ -218,9 +218,9 @@ struct ArcBoxDesktopApp: App {
     /// TODO(ABXD-62): Register URL scheme in Info.plist or project build settings
     /// (INFOPLIST_KEY_LSApplicationCategoryType / CFBundleURLTypes) once scheme routing is finalized.
     private func handleDeepLink(_ url: URL) {
-        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .public)")
+        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
         guard url.scheme == "arcbox" else {
-            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .public)")
+            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .private)")
             return
         }
         // TODO(ABXD-62): Route deep link to appropriate view based on host/path.

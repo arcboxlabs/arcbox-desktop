@@ -261,7 +261,7 @@ class ContainersViewModel {
                         // (image, url, succeeded) — cache empty url as "no icon available"
                         return (image, url, true)
                     } catch {
-                        Log.container.debug("Icon fetch failed for \(image, privacy: .private): \(error.localizedDescription, privacy: .public)")
+                        Log.container.debug("Icon fetch failed for \(image, privacy: .private): \(error.localizedDescription, privacy: .private)")
                         // Mark as failed so we don't cache the negative result
                         return (image, nil, false)
                     }

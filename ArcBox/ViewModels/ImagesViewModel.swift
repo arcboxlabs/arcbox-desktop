@@ -104,7 +104,7 @@ class ImagesViewModel {
                         let url = response.url.isEmpty ? nil : response.url
                         return (repo, url, true)
                     } catch {
-                        Log.image.debug("Icon fetch failed for \(repo, privacy: .private): \(error.localizedDescription, privacy: .public)")
+                        Log.image.debug("Icon fetch failed for \(repo, privacy: .private): \(error.localizedDescription, privacy: .private)")
                         return (repo, nil, false)
                     }
                 }

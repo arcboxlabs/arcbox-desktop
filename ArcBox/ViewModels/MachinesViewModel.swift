@@ -46,13 +46,13 @@ class MachinesViewModel {
 
     // TODO: Implement when machine lifecycle is connected to gRPC
     func startMachine(_ id: String) {
-        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .public)")
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
     }
     func stopMachine(_ id: String) {
-        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .public)")
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
     }
     func deleteMachine(_ id: String) {
-        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .public)")
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
     }
 
     func loadSampleData() {
