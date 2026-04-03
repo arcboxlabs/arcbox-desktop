@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.18.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.3...v1.18.4) (2026-04-03)
+
+
+### Bug Fixes
+
+* **sparkle:** use build number for sparkle:version to fix update detection ([c120cd9](https://github.com/arcboxlabs/arcbox-desktop/commit/c120cd9bd4d6071e85c1ba0521c53861b7fdd1e3))
+
+
+### Miscellaneous
+
+* add AGENTS.md and validate arcbox repo path with Cargo.toml check ([9fbf714](https://github.com/arcboxlabs/arcbox-desktop/commit/9fbf714f855eb9555849ccb464902bd9a72618b9))
+
 ## [1.18.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.2...v1.18.3) (2026-04-02)
 
 
