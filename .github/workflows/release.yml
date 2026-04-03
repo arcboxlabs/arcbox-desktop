@@ -31,6 +31,7 @@ jobs:
       dmg: ${{ steps.dmg.outputs.dmg }}
       ed_signature: ${{ steps.sparkle_sign.outputs.ed_signature }}
       dmg_length: ${{ steps.sparkle_sign.outputs.dmg_length }}
+      build_number: ${{ steps.dmg.outputs.build_number }}
 
     steps:
       - name: Checkout arcbox-desktop
@@ -289,8 +290,10 @@ jobs:
             PROVISIONING_PROFILE="$RUNNER_TEMP/embedded.provisionprofile"
           DMG_PATH=$(ls "${{ github.workspace }}/arcbox-core/target/ArcBox-"*.dmg | head -1)
           DMG_NAME=$(basename "$DMG_PATH")
+          BUILD_NUMBER=$(git rev-list --count HEAD)
           echo "dmg=$DMG_NAME" >> "$GITHUB_OUTPUT"
           echo "dmg_path=$DMG_PATH" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Generate checksum
         run: |
@@ -495,6 +498,7 @@ jobs:
 
           APPCAST_ARGS=(
             --version "$VERSION"
+            --build-number "${{ needs.build-dmg.outputs.build_number }}"
             --dmg-url "$DMG_URL"
             --dmg-length "${{ needs.build-dmg.outputs.dmg_length }}"
             --ed-signature "${{ needs.build-dmg.outputs.ed_signature }}"
