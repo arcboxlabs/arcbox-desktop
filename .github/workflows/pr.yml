@@ -36,14 +36,22 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Checkout arcbox proto definitions
+        uses: actions/checkout@v4
+        with:
+          repository: arcboxlabs/arcbox
+          path: ../arcbox
+          sparse-checkout: rpc/arcbox-protocol/proto
+          sparse-checkout-cone-mode: false
+
       - name: Verify protobuf generated code is up-to-date
         run: |
           # Install protoc via Homebrew
           brew install protobuf
 
-          # Generate Swift code from local proto definitions (avoid depending on remote main branch)
+          # Generate Swift code from local proto definitions
           cd Packages/ArcBoxClient
-          ./generate.sh
+          ./generate.sh --local
 
           # Fail if generated files differ from checked-in versions (including untracked files)
           if ! git diff --exit-code Sources/ArcBoxClient/Generated/; then
