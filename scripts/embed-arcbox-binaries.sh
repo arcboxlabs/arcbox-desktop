@@ -29,9 +29,9 @@ CACHE_DIR="${PROJECT_DIR}/.build/arcbox-binaries/${ARCBOX_VERSION}"
 # Support ARCBOX_DIR override (e.g., CI checks out at ${PROJECT_DIR}/arcbox).
 if [ -n "${ARCBOX_DIR:-}" ]; then
     ARCBOX_REPO="${ARCBOX_DIR}"
-elif [ -d "${PROJECT_DIR}/arcbox" ]; then
+elif [ -d "${PROJECT_DIR}/arcbox" ] && [ -f "${PROJECT_DIR}/arcbox/Cargo.toml" ]; then
     ARCBOX_REPO="${PROJECT_DIR}/arcbox"
-elif [ -d "${PROJECT_DIR}/../arcbox" ]; then
+elif [ -d "${PROJECT_DIR}/../arcbox" ] && [ -f "${PROJECT_DIR}/../arcbox/Cargo.toml" ]; then
     ARCBOX_REPO="${PROJECT_DIR}/../arcbox"
 else
     ARCBOX_REPO=""
