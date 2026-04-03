@@ -156,6 +156,66 @@ final class ContainersViewModelTests: XCTestCase {
         XCTAssertEqual(vm.composeGroups.count, 1)
     }
 
+    // MARK: - DNS Domains
+
+    func testHostDomainPlainContainer() {
+        let c = makeContainer(id: "1", name: "nginx")
+        XCTAssertEqual(c.hostDomain(useDNS: true), "nginx.arcbox.local")
+        XCTAssertEqual(c.hostDomain(useDNS: false), "localhost")
+    }
+
+    func testHostDomainComposeContainer() {
+        let c = makeContainer(
+            id: "1", name: "myapp-web-1",
+            composeProject: "myapp", composeService: "web"
+        )
+        XCTAssertEqual(c.hostDomain(useDNS: true), "web.myapp.arcbox.local")
+        XCTAssertEqual(c.hostDomain(useDNS: false), "localhost")
+    }
+
+    func testAllDomainsPlainContainer() {
+        let c = makeContainer(id: "1", name: "redis")
+        let domains = c.allDomains(useDNS: true)
+        XCTAssertEqual(domains, ["redis.arcbox.local"])
+    }
+
+    func testAllDomainsComposeContainer() {
+        let c = makeContainer(
+            id: "1", name: "myapp-web-1",
+            composeProject: "myapp", composeService: "web"
+        )
+        let domains = c.allDomains(useDNS: true)
+        XCTAssertEqual(domains, [
+            "web.myapp.arcbox.local",
+            "myapp-web-1.arcbox.local",
+        ])
+    }
+
+    func testAllDomainsDNSDisabled() {
+        let c = makeContainer(
+            id: "1", name: "myapp-web-1",
+            composeProject: "myapp", composeService: "web"
+        )
+        XCTAssertEqual(c.allDomains(useDNS: false), ["localhost"])
+    }
+
+    func testIsComposeFlag() {
+        let plain = makeContainer(id: "1", name: "nginx")
+        XCTAssertFalse(plain.isCompose)
+
+        let compose = makeContainer(
+            id: "2", name: "myapp-web-1",
+            composeProject: "myapp", composeService: "web"
+        )
+        XCTAssertTrue(compose.isCompose)
+
+        let partialProject = makeContainer(id: "3", name: "x", composeProject: "proj")
+        XCTAssertFalse(partialProject.isCompose)
+
+        let partialService = makeContainer(id: "4", name: "x", composeService: "svc")
+        XCTAssertFalse(partialService.isCompose)
+    }
+
     // MARK: - Last Error
 
     func testLastErrorClearing() {
@@ -171,7 +231,8 @@ final class ContainersViewModelTests: XCTestCase {
         name: String,
         image: String = "nginx:latest",
         state: ContainerState = .stopped,
-        composeProject: String? = nil
+        composeProject: String? = nil,
+        composeService: String? = nil
     ) -> ContainerViewModel {
         ContainerViewModel(
             id: id,
@@ -181,6 +242,7 @@ final class ContainersViewModelTests: XCTestCase {
             ports: [],
             createdAt: Date(),
             composeProject: composeProject,
+            composeService: composeService,
             labels: [:],
             cpuPercent: 0,
             memoryMB: 0,

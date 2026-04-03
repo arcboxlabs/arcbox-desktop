@@ -43,6 +43,16 @@ struct ContainerInfoTab: View {
                                 value: container.hostDomain(useDNS: useDNS),
                                 link: container.domainURL(useDNS: useDNS)
                             )
+                            // Show flat alias for compose containers
+                            if useDNS, container.isCompose {
+                                let domains = container.allDomains(useDNS: true)
+                                if domains.count > 1 {
+                                    InfoRow(
+                                        label: "Alias",
+                                        value: domains[1]
+                                    )
+                                }
+                            }
                         } else if let domain = container.domain {
                             InfoRow(label: "Domain", value: domain)
                         }

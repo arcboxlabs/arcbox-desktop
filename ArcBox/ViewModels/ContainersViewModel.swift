@@ -710,6 +710,7 @@ extension ContainerViewModel {
         }
 
         let composeProject = summary.labels["com.docker.compose.project"]
+        let composeService = summary.labels["com.docker.compose.service"]
         let rootfsMountPath = ContainerViewModel.inferRootFSMountPath(
             explicitPath: nil,
             labels: summary.labels,
@@ -724,6 +725,7 @@ extension ContainerViewModel {
             ports: ports,
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.created)),
             composeProject: composeProject,
+            composeService: composeService,
             labels: summary.labels,
             cpuPercent: 0,
             memoryMB: 0,
@@ -757,6 +759,7 @@ extension ContainerViewModel {
 
         let labels = summary.Labels?.additionalProperties ?? [:]
         let composeProject = labels["com.docker.compose.project"]
+        let composeService = labels["com.docker.compose.service"]
         let mounts = (summary.Mounts ?? []).compactMap { mount -> ContainerMount? in
             guard let destination = ContainersViewModel.normalized(mount.Destination) else { return nil }
             let source = ContainersViewModel.normalized(mount.Source) ?? "-"
@@ -781,6 +784,7 @@ extension ContainerViewModel {
             ports: ports,
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created ?? 0)),
             composeProject: composeProject,
+            composeService: composeService,
             labels: labels,
             cpuPercent: 0,
             memoryMB: 0,

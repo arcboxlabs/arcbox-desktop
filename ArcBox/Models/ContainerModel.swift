@@ -52,6 +52,7 @@ struct ContainerViewModel: Identifiable, Hashable {
     let ports: [PortMapping]
     let createdAt: Date
     let composeProject: String?
+    let composeService: String?
     let labels: [String: String]
     var cpuPercent: Double
     var memoryMB: Double
@@ -159,9 +160,31 @@ struct ContainerViewModel: Identifiable, Hashable {
 
     // MARK: - DNS domain helpers
 
-    /// The display domain for this container given the current DNS state.
+    /// Whether this container belongs to a compose project with known service name.
+    var isCompose: Bool { composeProject != nil && composeService != nil }
+
+    /// The primary display domain for this container given the current DNS state.
+    /// Compose containers use the hierarchical format: `<service>.<project>.arcbox.local`.
+    /// Plain containers use the flat format: `<name>.arcbox.local`.
     func hostDomain(useDNS: Bool) -> String {
-        useDNS ? "\(name).arcbox.local" : "localhost"
+        guard useDNS else { return "localhost" }
+        if let service = composeService, let project = composeProject {
+            return "\(service).\(project).arcbox.local"
+        }
+        return "\(name).arcbox.local"
+    }
+
+    /// All resolvable domains for this container.
+    /// Compose containers have both the hierarchical and flat names.
+    func allDomains(useDNS: Bool) -> [String] {
+        guard useDNS else { return ["localhost"] }
+        if let service = composeService, let project = composeProject {
+            return [
+                "\(service).\(project).arcbox.local",
+                "\(name).arcbox.local",
+            ]
+        }
+        return ["\(name).arcbox.local"]
     }
 
     /// Build a URL for the container's primary port, respecting DNS mode.
