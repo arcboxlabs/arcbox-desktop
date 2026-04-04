@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: arcboxlabs/arcbox
-          path: ../arcbox
+          path: arcbox
           sparse-checkout: rpc/arcbox-protocol/proto
           sparse-checkout-cone-mode: false
 
@@ -48,6 +48,9 @@ jobs:
         run: |
           # Install protoc via Homebrew
           brew install protobuf
+
+          # Symlink so generate.sh --local can find proto at expected relative path
+          ln -sf "$GITHUB_WORKSPACE/arcbox" "$GITHUB_WORKSPACE/../arcbox"
 
           # Generate Swift code from local proto definitions
           cd Packages/ArcBoxClient
