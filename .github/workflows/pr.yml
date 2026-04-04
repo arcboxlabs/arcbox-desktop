@@ -49,8 +49,11 @@ jobs:
           # Install protoc via Homebrew
           brew install protobuf
 
-          # Symlink so generate.sh --local can find proto at expected relative path
-          ln -sf "$GITHUB_WORKSPACE/arcbox" "$GITHUB_WORKSPACE/../arcbox"
+          # Recreate the sibling arcbox path as a symlink so generate.sh --local
+          # can find proto at the expected relative path even if cache restore
+          # previously created ../arcbox as a real directory.
+          rm -rf "$GITHUB_WORKSPACE/../arcbox"
+          ln -s "$GITHUB_WORKSPACE/arcbox" "$GITHUB_WORKSPACE/../arcbox"
 
           # Generate Swift code from local proto definitions
           cd Packages/ArcBoxClient

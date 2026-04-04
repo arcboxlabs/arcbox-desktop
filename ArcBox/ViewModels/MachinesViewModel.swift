@@ -1,4 +1,3 @@
-import OSLog
 import SwiftUI
 
 /// Detail tab options for machines (matches container pattern)

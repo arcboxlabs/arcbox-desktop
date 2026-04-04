@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Reusable empty state component with icon, title, description area, and optional action button.
+/// Reusable empty state component with icon, title, and an optional custom content area.
 struct EmptyStateView<Content: View>: View {
     let icon: String
     let title: String

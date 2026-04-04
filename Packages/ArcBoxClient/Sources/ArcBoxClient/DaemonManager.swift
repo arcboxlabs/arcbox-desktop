@@ -175,8 +175,11 @@ public final class DaemonManager {
 
         // ABXD-54: Verify daemon binary code signature before registration.
         // Run off MainActor to avoid blocking UI during codesign --verify.
-        await Task.detached { [self] in
-            self.verifyDaemonSignature()
+        // Compute the path here to avoid capturing non-Sendable self.
+        let daemonPath = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Helpers/com.arcboxlabs.desktop.daemon").path
+        await Task.detached {
+            Self.verifyDaemonSignature(at: daemonPath)
         }.value
 
         let status = daemonService.status
@@ -371,13 +374,12 @@ public final class DaemonManager {
 
     /// Verify the daemon binary's code signature before launching.
     ///
-    /// Runs `codesign --verify --strict` on the bundled daemon binary.
+    /// Runs `codesign --verify --strict` on the daemon binary at `path`.
     /// Logs a warning on failure but does **not** block startup — dev
     /// builds may use ad-hoc signatures that fail strict verification.
-    private nonisolated func verifyDaemonSignature() {
-        let bundle = Bundle.main.bundleURL
-        let daemonPath = bundle.appendingPathComponent("Contents/Helpers/com.arcboxlabs.desktop.daemon").path
-
+    ///
+    /// Static so it can be called from a detached task without capturing self.
+    private static func verifyDaemonSignature(at daemonPath: String) {
         guard FileManager.default.fileExists(atPath: daemonPath) else {
             ClientLog.daemon.warning("Daemon binary not found at expected path, skipping signature check")
             return
@@ -387,17 +389,24 @@ public final class DaemonManager {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
         process.arguments = ["--verify", "--strict", daemonPath]
         process.standardOutput = FileHandle.nullDevice
-        let errPipe = Pipe()
-        process.standardError = errPipe
+        // Redirect stderr to null to avoid pipe-buffer deadlock.
+        // codesign output is not actionable beyond the exit code.
+        process.standardError = FileHandle.nullDevice
 
         do {
             try process.run()
-            process.waitUntilExit()
+            // Bounded wait: terminate if codesign hangs for more than 10 seconds.
+            let deadline = DispatchTime.now() + .seconds(10)
+            let done = DispatchSemaphore(value: 0)
+            process.terminationHandler = { _ in done.signal() }
+            if done.wait(timeout: deadline) == .timedOut {
+                process.terminate()
+                ClientLog.daemon.warning("Daemon signature verification timed out, killed codesign process")
+                return
+            }
             if process.terminationStatus != 0 {
-                let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-                let errStr = String(data: errData, encoding: .utf8) ?? "(unknown)"
                 ClientLog.daemon.warning(
-                    "Daemon binary signature verification failed (status \(process.terminationStatus)): \(errStr, privacy: .private)")
+                    "Daemon binary signature verification failed (status \(process.terminationStatus))")
             } else {
                 ClientLog.daemon.info("Daemon binary signature verified OK")
             }
