@@ -132,6 +132,18 @@ public enum Arcbox_V1_AgentService {
                 method: "GetKubeconfig"
             )
         }
+        /// Namespace for "Shutdown" metadata.
+        public enum Shutdown {
+            /// Request type for "Shutdown".
+            public typealias Input = Arcbox_V1_ShutdownRequest
+            /// Response type for "Shutdown".
+            public typealias Output = Arcbox_V1_ShutdownResponse
+            /// Descriptor for "Shutdown".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "Shutdown"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.AgentService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Ping.descriptor,
@@ -142,7 +154,8 @@ public enum Arcbox_V1_AgentService {
             StopKubernetes.descriptor,
             DeleteKubernetes.descriptor,
             GetKubernetesStatus.descriptor,
-            GetKubeconfig.descriptor
+            GetKubeconfig.descriptor,
+            Shutdown.descriptor
         ]
     }
 }
@@ -333,6 +346,25 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_KubernetesKubeconfigRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesKubeconfigResponse>
+
+        /// Handle the "Shutdown" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Requests graceful guest shutdown. The agent responds immediately,
+        /// > then performs orderly process teardown and powers off the VM.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ShutdownRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ShutdownResponse` messages.
+        func shutdown(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ShutdownRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ShutdownResponse>
     }
 
     /// Service protocol for the "arcbox.v1.AgentService" service.
@@ -508,6 +540,25 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.ServerRequest<Arcbox_V1_KubernetesKubeconfigRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesKubeconfigResponse>
+
+        /// Handle the "Shutdown" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Requests graceful guest shutdown. The agent responds immediately,
+        /// > then performs orderly process teardown and powers off the VM.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ShutdownRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ShutdownResponse` message.
+        func shutdown(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ShutdownRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ShutdownResponse>
     }
 
     /// Simple service protocol for the "arcbox.v1.AgentService" service.
@@ -681,6 +732,25 @@ extension Arcbox_V1_AgentService {
             request: Arcbox_V1_KubernetesKubeconfigRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_KubernetesKubeconfigResponse
+
+        /// Handle the "Shutdown" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Requests graceful guest shutdown. The agent responds immediately,
+        /// > then performs orderly process teardown and powers off the VM.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ShutdownRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ShutdownResponse` to respond with.
+        func shutdown(
+            request: Arcbox_V1_ShutdownRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ShutdownResponse
     }
 }
 
@@ -787,6 +857,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.Shutdown.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ShutdownRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ShutdownResponse>(),
+            handler: { request, context in
+                try await self.shutdown(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -886,6 +967,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesKubeconfigResponse> {
         let response = try await self.getKubeconfig(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func shutdown(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ShutdownRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ShutdownResponse> {
+        let response = try await self.shutdown(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1006,6 +1098,19 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesKubeconfigResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_KubernetesKubeconfigResponse>(
             message: try await self.getKubeconfig(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func shutdown(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ShutdownRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ShutdownResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ShutdownResponse>(
+            message: try await self.shutdown(
                 request: request.message,
                 context: context
             ),
@@ -1232,6 +1337,30 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_KubernetesKubeconfigResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesKubeconfigResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Shutdown" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Requests graceful guest shutdown. The agent responds immediately,
+        /// > then performs orderly process teardown and powers off the VM.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ShutdownRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ShutdownRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ShutdownResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func shutdown<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ShutdownRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ShutdownRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ShutdownResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ShutdownResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -1560,6 +1689,41 @@ extension Arcbox_V1_AgentService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "Shutdown" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Requests graceful guest shutdown. The agent responds immediately,
+        /// > then performs orderly process teardown and powers off the VM.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ShutdownRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ShutdownRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ShutdownResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func shutdown<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ShutdownRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ShutdownRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ShutdownResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ShutdownResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.Shutdown.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -1822,6 +1986,36 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_KubernetesKubeconfigRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_KubernetesKubeconfigResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Shutdown" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Requests graceful guest shutdown. The agent responds immediately,
+    /// > then performs orderly process teardown and powers off the VM.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ShutdownRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func shutdown<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ShutdownRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ShutdownResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.shutdown(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ShutdownRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ShutdownResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2122,6 +2316,40 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.getKubeconfig(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Shutdown" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Requests graceful guest shutdown. The agent responds immediately,
+    /// > then performs orderly process teardown and powers off the VM.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func shutdown<Result>(
+        _ message: Arcbox_V1_ShutdownRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ShutdownResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ShutdownRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.shutdown(
             request: request,
             options: options,
             onResponse: handleResponse
