@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.19.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.4...v1.19.0) (2026-04-05)
+
+
+### Features
+
+* bundle daemon as .app for AMFI provisioning profile support ([196357d](https://github.com/arcboxlabs/arcbox-desktop/commit/196357d6c47589adb01318fe6e64cfe7a48b5caf))
+* **dns:** support hierarchical compose DNS format ([2f92ffd](https://github.com/arcboxlabs/arcbox-desktop/commit/2f92ffdbfa5ca77016e78f1ffc59597464c2dc97))
+
+
+### Bug Fixes
+
+* **deps:** raise SPM minimum versions to prevent dependency downgrade ([ded9956](https://github.com/arcboxlabs/arcbox-desktop/commit/ded9956c137954e73b9b2f5bffb6087d469e39c0))
+
+
+### Miscellaneous
+
+* re-sort Xcode project entries ([c16c650](https://github.com/arcboxlabs/arcbox-desktop/commit/c16c650aa6a137dfca6583bd848d1a4e7d365d59))
+
 ## [1.18.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.3...v1.18.4) (2026-04-03)
 
 
