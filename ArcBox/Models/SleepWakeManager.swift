@@ -20,6 +20,9 @@ final class SleepWakeManager {
     @ObservationIgnored weak var dockerClientRef: DockerClient?
 
     func start() {
+        // Ensure idempotency — avoid duplicate observers on repeated calls
+        if sleepObserver != nil { return }
+
         let workspace = NSWorkspace.shared.notificationCenter
         sleepObserver = workspace.addObserver(
             forName: NSWorkspace.willSleepNotification, object: nil, queue: .main

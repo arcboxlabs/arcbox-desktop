@@ -24,26 +24,30 @@ enum DockerContextManager {
     static func switchToArcBox() {
         guard UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") else { return }
 
-        do {
-            let config = try readConfig()
+        Task.detached {
+            do {
+                guard let config = try readConfig() else {
+                    logger.error("Failed to parse ~/.docker/config.json, skipping context switch to avoid data loss")
+                    return
+                }
 
-            // Save previous currentContext (if any)
-            if let previousContext = config["currentContext"] as? String, previousContext != "arcbox" {
-                UserDefaults.standard.set(previousContext, forKey: previousContextKey)
+                // Save previous currentContext (if any)
+                if let previousContext = config["currentContext"] as? String, previousContext != "arcbox" {
+                    UserDefaults.standard.set(previousContext, forKey: previousContextKey)
+                }
+
+                // Ensure the arcbox context exists in Docker's context store
+                createArcBoxContext()
+
+                // Set the current context
+                var updatedConfig = config
+                updatedConfig["currentContext"] = "arcbox"
+                try writeConfig(updatedConfig)
+
+                logger.info("Switched Docker context to arcbox")
+            } catch {
+                logger.error("Failed to switch Docker context: \(error.localizedDescription)")
             }
-
-            // Write DOCKER_HOST-based context by setting currentContext to "arcbox"
-            // First, ensure the arcbox context exists in Docker's context store
-            createArcBoxContext()
-
-            // Set the current context
-            var updatedConfig = config
-            updatedConfig["currentContext"] = "arcbox"
-            try writeConfig(updatedConfig)
-
-            logger.info("Switched Docker context to arcbox")
-        } catch {
-            logger.error("Failed to switch Docker context: \(error.localizedDescription)")
         }
     }
 
@@ -52,7 +56,10 @@ enum DockerContextManager {
         guard UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") else { return }
 
         do {
-            var config = try readConfig()
+            guard var config = try readConfig() else {
+                logger.error("Failed to parse ~/.docker/config.json, skipping context restore to avoid data loss")
+                return
+            }
             if let previousContext = UserDefaults.standard.string(forKey: previousContextKey) {
                 config["currentContext"] = previousContext
                 UserDefaults.standard.removeObject(forKey: previousContextKey)
@@ -68,7 +75,6 @@ enum DockerContextManager {
 
     /// Creates the arcbox context in Docker's context meta store.
     private static func createArcBoxContext() {
-        // Use docker CLI to create the context instead of manual file manipulation
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         proc.arguments = [
@@ -78,7 +84,6 @@ enum DockerContextManager {
         ]
         proc.standardOutput = FileHandle.nullDevice
         proc.standardError = FileHandle.nullDevice
-        // Silence errors if context already exists
         do {
             try proc.run()
             proc.waitUntilExit()
@@ -89,14 +94,17 @@ enum DockerContextManager {
 
     // MARK: - Config File I/O
 
-    private static func readConfig() throws -> [String: Any] {
+    /// Read and parse ~/.docker/config.json.
+    /// Returns nil if the file exists but cannot be parsed as a JSON object (to prevent clobbering).
+    /// Returns an empty dictionary if the file does not exist.
+    private static func readConfig() throws -> [String: Any]? {
         let url = URL(fileURLWithPath: configPath)
         guard FileManager.default.fileExists(atPath: configPath) else {
             return [:]
         }
         let data = try Data(contentsOf: url)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return [:]
+            return nil
         }
         return json
     }

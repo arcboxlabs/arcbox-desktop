@@ -51,7 +51,7 @@ struct StorageSettingsView: View {
                         .disabled(true) // Requires backend support
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Hide OrbStack volume from Finder & Desktop")
+                        Text("Hide ArcBox volume from Finder & Desktop")
                         Text("This volume makes it easy to access files in containers and machines.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -114,16 +114,18 @@ struct StorageSettingsView: View {
 
     private func updateTimeMachineExclusion(include: Bool) {
         let path = Self.arcboxDataPath
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/bin/tmutil")
-        proc.arguments = include ? ["removeexclusion", path] : ["addexclusion", path]
-        proc.standardOutput = FileHandle.nullDevice
-        proc.standardError = FileHandle.nullDevice
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch {
-            // tmutil may require admin privileges — silently fail
+        Task.detached {
+            let proc = Process()
+            proc.executableURL = URL(fileURLWithPath: "/usr/bin/tmutil")
+            proc.arguments = include ? ["removeexclusion", path] : ["addexclusion", path]
+            proc.standardOutput = FileHandle.nullDevice
+            proc.standardError = FileHandle.nullDevice
+            do {
+                try proc.run()
+                proc.waitUntilExit()
+            } catch {
+                // tmutil may require admin privileges — silently fail
+            }
         }
     }
 
@@ -144,12 +146,17 @@ struct StorageSettingsView: View {
             }
 
             // Prune everything: containers, images, volumes, networks
-            _ = try? await docker.api.ContainerPrune()
-            _ = try? await docker.api.ImagePrune()
-            _ = try? await docker.api.NetworkPrune()
-            _ = try? await docker.api.VolumePrune()
+            var errors: [String] = []
+            do { _ = try await docker.api.ContainerPrune() } catch { errors.append("containers") }
+            do { _ = try await docker.api.ImagePrune() } catch { errors.append("images") }
+            do { _ = try await docker.api.NetworkPrune() } catch { errors.append("networks") }
+            do { _ = try await docker.api.VolumePrune() } catch { errors.append("volumes") }
 
-            resetResultMessage = "Docker data has been reset successfully."
+            if errors.isEmpty {
+                resetResultMessage = "Docker data has been reset successfully."
+            } else {
+                resetResultMessage = "Reset partially failed: could not prune \(errors.joined(separator: ", "))."
+            }
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
             resetResultMessage = "Reset failed: \(error.localizedDescription)"

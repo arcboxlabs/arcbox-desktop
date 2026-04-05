@@ -19,9 +19,9 @@ enum ExternalTerminalLauncher {
     static func open(preference: String, containerID: String? = nil, shell: String = "/bin/sh") {
         let command: String
         if let containerID {
-            command = "export DOCKER_HOST=\(dockerHost) && docker exec -it \(containerID) \(shell)"
+            command = "export DOCKER_HOST=\(shellEscape(dockerHost)) && docker exec -it \(shellEscape(containerID)) \(shellEscape(shell))"
         } else {
-            command = "export DOCKER_HOST=\(dockerHost)"
+            command = "export DOCKER_HOST=\(shellEscape(dockerHost))"
         }
 
         switch preference {
@@ -70,6 +70,11 @@ enum ExternalTerminalLauncher {
     }
 
     // MARK: - Helpers
+
+    /// Wrap a value in single quotes for safe shell interpolation.
+    private static func shellEscape(_ string: String) -> String {
+        "'" + string.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
 
     private static func escapeForAppleScript(_ string: String) -> String {
         string.replacingOccurrences(of: "\\", with: "\\\\")
