@@ -8,6 +8,7 @@ import SwiftTerm
 struct SwiftTermView: NSViewRepresentable {
     let delegate: any TerminalViewDelegate
     let onTerminalCreated: (TerminalView) -> Void
+    var theme: String = "system"
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -33,8 +34,8 @@ struct SwiftTermView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: TerminalView, context: Context) {
-        // Reconfigure colors when system appearance changes
-        TerminalAppearance.configure(nsView)
+        // Reconfigure colors when system appearance or theme preference changes
+        TerminalAppearance.configure(nsView, theme: theme)
     }
 
     class Coordinator {

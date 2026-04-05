@@ -75,7 +75,7 @@ struct SystemSettingsView: View {
                 //     }
                 // }
 
-                Toggle("Switch Docker & Kubernetes context automatically", isOn: $switchContextAutomatically)
+                Toggle("Switch Docker context automatically", isOn: $switchContextAutomatically)
             }
 
             Section {

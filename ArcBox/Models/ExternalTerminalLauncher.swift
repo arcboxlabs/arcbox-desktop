@@ -82,14 +82,17 @@ enum ExternalTerminalLauncher {
     }
 
     private static func runAppleScript(_ source: String) {
-        guard let script = NSAppleScript(source: source) else {
-            logger.error("Failed to create AppleScript")
-            return
-        }
-        var error: NSDictionary?
-        script.executeAndReturnError(&error)
-        if let error {
-            logger.error("AppleScript error: \(error)")
+        let scriptSource = source
+        Task.detached {
+            guard let script = NSAppleScript(source: scriptSource) else {
+                logger.error("Failed to create AppleScript")
+                return
+            }
+            var error: NSDictionary?
+            script.executeAndReturnError(&error)
+            if let error {
+                logger.error("AppleScript error: \(error)")
+            }
         }
     }
 }

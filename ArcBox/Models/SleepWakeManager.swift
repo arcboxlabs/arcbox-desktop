@@ -70,13 +70,13 @@ final class SleepWakeManager {
                     _ = try await docker.api.ContainerPause(path: .init(id: id))
                     paused.append(id)
                 } catch {
-                    logger.error("Failed to pause container \(id): \(error.localizedDescription)")
+                    logger.error("Failed to pause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 }
             }
             pausedByUs = Set(paused)
             logger.info("Paused \(paused.count) containers for sleep")
         } catch {
-            logger.error("Failed to list containers for sleep pause: \(error.localizedDescription)")
+            logger.error("Failed to list containers for sleep pause: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -93,7 +93,7 @@ final class SleepWakeManager {
                 _ = try await docker.api.ContainerUnpause(path: .init(id: id))
                 unpaused += 1
             } catch {
-                logger.error("Failed to unpause container \(id): \(error.localizedDescription)")
+                logger.error("Failed to unpause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
         logger.info("Unpaused \(unpaused)/\(self.pausedByUs.count) containers after wake")

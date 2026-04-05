@@ -37,7 +37,10 @@ enum DockerContextManager {
                 }
 
                 // Ensure the arcbox context exists in Docker's context store
-                createArcBoxContext()
+                guard createArcBoxContext() else {
+                    logger.error("Skipping context switch — failed to create arcbox context")
+                    return
+                }
 
                 // Set the current context
                 var updatedConfig = config
@@ -74,7 +77,9 @@ enum DockerContextManager {
     }
 
     /// Creates the arcbox context in Docker's context meta store.
-    private static func createArcBoxContext() {
+    /// Returns true if the context exists (created or already present), false on failure.
+    @discardableResult
+    private static func createArcBoxContext() -> Bool {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         proc.arguments = [
@@ -83,13 +88,22 @@ enum DockerContextManager {
             "--description", "ArcBox Desktop",
         ]
         proc.standardOutput = FileHandle.nullDevice
-        proc.standardError = FileHandle.nullDevice
+        let errPipe = Pipe()
+        proc.standardError = errPipe
         do {
             try proc.run()
             proc.waitUntilExit()
         } catch {
-            // Context may already exist — that's fine
+            logger.error("Failed to launch docker context create: \(error.localizedDescription, privacy: .public)")
+            return false
         }
+        // Exit 0 = created, non-zero with "already exists" = OK, otherwise fail
+        if proc.terminationStatus == 0 { return true }
+        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+        let errMsg = String(data: errData, encoding: .utf8) ?? ""
+        if errMsg.contains("already exists") { return true }
+        logger.error("docker context create failed (status \(proc.terminationStatus)): \(errMsg, privacy: .public)")
+        return false
     }
 
     // MARK: - Config File I/O

@@ -31,7 +31,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 // MARK: - Settings View
 
 struct SettingsView: View {
-    @State private var selectedTab: SettingsTab = .general
+    @State private var selectedTab: SettingsTab? = .general
 
     var body: some View {
         NavigationSplitView {
@@ -43,7 +43,7 @@ struct SettingsView: View {
             .navigationSplitViewColumnWidth(min: 150, ideal: 180, max: 220)
         } detail: {
             settingsContent
-                .navigationTitle(selectedTab.rawValue)
+                .navigationTitle(selectedTab?.rawValue ?? "")
         }
         .toolbar(removing: .sidebarToggle)
         .frame(width: 700, height: 580)
@@ -61,6 +61,8 @@ struct SettingsView: View {
         //     NetworkSettingsView()
         case .storage:
             StorageSettingsView()
+        case nil:
+            EmptyView()
         }
     }
 }

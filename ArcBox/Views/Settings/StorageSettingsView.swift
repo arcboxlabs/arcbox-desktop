@@ -42,6 +42,10 @@ struct StorageSettingsView: View {
                     .onChange(of: includeTimeMachine) { _, include in
                         updateTimeMachineExclusion(include: include)
                     }
+                    .onAppear {
+                        // Ensure exclusion state matches toggle on first appearance
+                        updateTimeMachineExclusion(include: includeTimeMachine)
+                    }
             }
 
             Section("Integration") {
@@ -140,9 +144,14 @@ struct StorageSettingsView: View {
             // Stop all running containers first
             let listResponse = try await docker.api.ContainerList(query: .init(all: false))
             let running = try listResponse.ok.body.json
+            var stopFailures: [String] = []
             for container in running {
                 guard let id = container.Id else { continue }
-                _ = try? await docker.api.ContainerStop(path: .init(id: id))
+                do {
+                    _ = try await docker.api.ContainerStop(path: .init(id: id))
+                } catch {
+                    stopFailures.append(String(id.prefix(12)))
+                }
             }
 
             // Prune everything: containers, images, volumes, networks
@@ -152,10 +161,17 @@ struct StorageSettingsView: View {
             do { _ = try await docker.api.NetworkPrune() } catch { errors.append("networks") }
             do { _ = try await docker.api.VolumePrune() } catch { errors.append("volumes") }
 
-            if errors.isEmpty {
+            if stopFailures.isEmpty && errors.isEmpty {
                 resetResultMessage = "Docker data has been reset successfully."
             } else {
-                resetResultMessage = "Reset partially failed: could not prune \(errors.joined(separator: ", "))."
+                var issues: [String] = []
+                if !stopFailures.isEmpty {
+                    issues.append("could not stop containers: \(stopFailures.joined(separator: ", "))")
+                }
+                if !errors.isEmpty {
+                    issues.append("could not prune \(errors.joined(separator: ", "))")
+                }
+                resetResultMessage = "Reset partially failed: \(issues.joined(separator: "; "))."
             }
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {

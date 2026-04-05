@@ -10,11 +10,14 @@ struct GeneralSettingsView: View {
     @AppStorage("terminalTheme") private var terminalTheme = "system"
     @AppStorage("externalTerminal") private var externalTerminal = "lastUsed"
 
+    @State private var isSyncingLoginItem = false
+
     var body: some View {
         Form {
             Section {
                 Toggle("Start at login", isOn: $startAtLogin)
                     .onChange(of: startAtLogin) { _, newValue in
+                        guard !isSyncingLoginItem else { return }
                         updateLoginItem(enabled: newValue)
                     }
                 Toggle("Show in menu bar", isOn: $showInMenuBar)
@@ -22,7 +25,7 @@ struct GeneralSettingsView: View {
             }
 
             Section("Updates") {
-                Toggle("Automatically download updates", isOn: $autoUpdate)
+                Toggle("Automatically check for updates", isOn: $autoUpdate)
                 Picker("Update channel", selection: $updateChannel) {
                     Text("Stable").tag("stable")
                     Text("Beta").tag("beta")
@@ -63,7 +66,9 @@ struct GeneralSettingsView: View {
     // MARK: - Login Item
 
     private func syncLoginItemState() {
+        isSyncingLoginItem = true
         startAtLogin = SMAppService.mainApp.status == .enabled
+        isSyncingLoginItem = false
     }
 
     private func updateLoginItem(enabled: Bool) {
