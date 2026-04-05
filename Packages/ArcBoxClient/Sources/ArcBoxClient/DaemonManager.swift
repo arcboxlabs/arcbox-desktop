@@ -112,6 +112,7 @@ public final class DaemonManager {
         if let iv = installedVersion, let bv = bundledVersion, iv == bv {
             helperInstalled = true
             ClientLog.daemon.info("Helper \(iv, privacy: .public) already installed")
+            await installShellIntegration(abctl: abctl)
             return
         }
 
@@ -139,7 +140,32 @@ public final class DaemonManager {
         helperInstalled = result
         if result {
             ClientLog.daemon.info("Helper installed successfully")
+            await installShellIntegration(abctl: abctl)
         }
+    }
+
+    /// Run `abctl setup install` as the current user to set up shell
+    /// integration (PATH symlinks, completions, profile injection).
+    /// Non-critical — failures are logged but do not block startup.
+    private func installShellIntegration(abctl: String) async {
+        await Task.detached { @Sendable in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: abctl)
+            process.arguments = ["setup", "install"]
+            do {
+                try process.run()
+                process.waitUntilExit()
+                if process.terminationStatus == 0 {
+                    ClientLog.daemon.info("Shell integration installed via abctl setup install")
+                } else {
+                    ClientLog.daemon.warning(
+                        "abctl setup install exited with status \(process.terminationStatus)")
+                }
+            } catch {
+                ClientLog.daemon.warning(
+                    "Failed to run abctl setup install: \(error, privacy: .public)")
+            }
+        }.value
     }
 
     // MARK: - Daemon Lifecycle
