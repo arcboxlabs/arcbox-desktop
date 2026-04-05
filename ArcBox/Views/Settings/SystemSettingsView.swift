@@ -77,6 +77,13 @@ struct SystemSettingsView: View {
 
                 // TODO: Implement Kubernetes context auto-switch (ABXD-86)
                 Toggle("Switch Docker & Kubernetes context automatically", isOn: $switchContextAutomatically)
+                    .onChange(of: switchContextAutomatically) { _, newValue in
+                        if newValue {
+                            DockerContextManager.switchToArcBox()
+                        } else {
+                            DockerContextManager.restorePreviousContext()
+                        }
+                    }
             }
 
             Section {

@@ -6,6 +6,9 @@ struct StorageSettingsView: View {
 
     @State private var storageLocation = "default"
     @AppStorage("includeTimeMachine") private var includeTimeMachine = false
+    /// Tracks whether the Time Machine exclusion has been applied this session, to avoid
+    /// spawning tmutil on every onAppear.
+    @State private var timeMachineExclusionApplied = false
     @State private var hideArcBoxVolume = false
 
     // Reset state
@@ -43,7 +46,8 @@ struct StorageSettingsView: View {
                         updateTimeMachineExclusion(include: include)
                     }
                     .onAppear {
-                        // Ensure exclusion state matches toggle on first appearance
+                        guard !timeMachineExclusionApplied else { return }
+                        timeMachineExclusionApplied = true
                         updateTimeMachineExclusion(include: includeTimeMachine)
                     }
             }
@@ -119,6 +123,12 @@ struct StorageSettingsView: View {
     private func updateTimeMachineExclusion(include: Bool) {
         let path = Self.arcboxDataPath
         Task.detached {
+            let fm = FileManager.default
+            // Ensure the directory exists before calling tmutil
+            if !fm.fileExists(atPath: path) {
+                try? fm.createDirectory(atPath: path, withIntermediateDirectories: true)
+            }
+
             let proc = Process()
             proc.executableURL = URL(fileURLWithPath: "/usr/bin/tmutil")
             proc.arguments = include ? ["removeexclusion", path] : ["addexclusion", path]
@@ -127,8 +137,12 @@ struct StorageSettingsView: View {
             do {
                 try proc.run()
                 proc.waitUntilExit()
+                if proc.terminationStatus != 0 {
+                    // Revert toggle on failure
+                    await MainActor.run { includeTimeMachine = !include }
+                }
             } catch {
-                // tmutil may require admin privileges — silently fail
+                await MainActor.run { includeTimeMachine = !include }
             }
         }
     }

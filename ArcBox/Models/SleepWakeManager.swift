@@ -87,16 +87,19 @@ final class SleepWakeManager {
         }
 
         var unpaused = 0
+        var failed: Set<String> = []
         for id in pausedByUs {
             do {
                 _ = try await docker.api.ContainerUnpause(path: .init(id: id))
                 unpaused += 1
             } catch {
+                failed.insert(id)
                 logger.error("Failed to unpause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
         logger.info("Unpaused \(unpaused)/\(self.pausedByUs.count) containers after wake")
-        pausedByUs.removeAll()
+        // Retain failed IDs so they can be retried on next wake cycle
+        pausedByUs = failed
     }
 
     deinit {
