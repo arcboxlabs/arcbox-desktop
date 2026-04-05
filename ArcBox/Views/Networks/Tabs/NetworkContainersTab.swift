@@ -87,7 +87,7 @@ struct NetworkContainersSection: View {
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
-            Log.network.error("Error loading containers for network \(network.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.network.error("Error loading containers for network \(network.id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             containers = []
         }
     }

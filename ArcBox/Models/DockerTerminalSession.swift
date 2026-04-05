@@ -1,5 +1,6 @@
 import ArcBoxClient
 import Foundation
+import os
 import SwiftTerm
 
 /// Manages an interactive docker exec session using PTY + Process.
@@ -9,6 +10,12 @@ import SwiftTerm
 @MainActor
 @Observable
 class DockerTerminalSession {
+    private enum Defaults {
+        static let cols = 80
+        static let rows = 24
+        static let bufferSize = 8192
+    }
+
     enum State: Equatable {
         case idle
         case connecting
@@ -20,7 +27,12 @@ class DockerTerminalSession {
     var state: State = .idle
 
     @ObservationIgnored private var process: Process?
-    @ObservationIgnored private var masterFD: Int32 = -1
+    /// ABXD-17: File descriptor protected by a lock to prevent close races.
+    /// `teardownProcess()` atomically swaps the FD to -1 under the lock,
+    /// then closes the old FD outside the lock.  Readers (`send`, `resize`)
+    /// take the lock to read a snapshot, guaranteeing they never operate on
+    /// a closed or reused FD.
+    @ObservationIgnored private let masterFDLock = OSAllocatedUnfairLock<Int32>(initialState: -1)
     @ObservationIgnored private var readTask: Task<Void, Never>?
     @ObservationIgnored private weak var terminalView: TerminalView?
     /// Monotonically increasing counter to distinguish sessions.
@@ -82,12 +94,12 @@ class DockerTerminalSession {
             state = .error("Failed to create PTY")
             return
         }
-        masterFD = master
+        masterFDLock.withLock { $0 = master }
 
         // Set initial terminal size from SwiftTerm (use sensible defaults if not yet laid out)
         let terminal = terminalView.getTerminal()
-        let cols = max(terminal.cols, 80)
-        let rows = max(terminal.rows, 24)
+        let cols = max(terminal.cols, Defaults.cols)
+        let rows = max(terminal.rows, Defaults.rows)
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
         winSize.ws_row = UInt16(rows)
@@ -111,12 +123,11 @@ class DockerTerminalSession {
 
         // Start reading from PTY master
         readTask = Task.detached { [weak self] in
-            let bufferSize = 8192
-            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: Defaults.bufferSize)
             defer { buffer.deallocate() }
 
             while !Task.isCancelled {
-                let bytesRead = read(masterForRead, buffer, bufferSize)
+                let bytesRead = read(masterForRead, buffer, Defaults.bufferSize)
                 if bytesRead <= 0 { break }
                 let data = Array(UnsafeBufferPointer(start: buffer, count: bytesRead))
                 await MainActor.run { [weak self] in
@@ -151,27 +162,29 @@ class DockerTerminalSession {
         } catch {
             close(slave)
             close(master)
-            masterFD = -1
+            masterFDLock.withLock { $0 = -1 }
             state = .error(error.localizedDescription)
         }
     }
 
     /// Send data from the terminal to the docker exec process stdin.
     func send(_ data: Data) {
-        guard masterFD >= 0 else { return }
+        let fd = masterFDLock.withLock { $0 }
+        guard fd >= 0 else { return }
         data.withUnsafeBytes { rawBuffer in
             guard let ptr = rawBuffer.baseAddress else { return }
-            _ = write(masterFD, ptr, rawBuffer.count)
+            _ = write(fd, ptr, rawBuffer.count)
         }
     }
 
     /// Update the PTY window size (called when terminal view resizes).
     func resize(cols: Int, rows: Int) {
-        guard masterFD >= 0, cols > 0, rows > 0 else { return }
+        let fd = masterFDLock.withLock { $0 }
+        guard fd >= 0, cols > 0, rows > 0 else { return }
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
         winSize.ws_row = UInt16(rows)
-        _ = ioctl(masterFD, TIOCSWINSZ, &winSize)
+        _ = ioctl(fd, TIOCSWINSZ, &winSize)
     }
 
     /// Disconnect and clean up the session.
@@ -191,9 +204,16 @@ class DockerTerminalSession {
 
         // Capture references before nilling them out
         let dyingProcess = process
-        let oldMasterFD = masterFD
         process = nil
-        masterFD = -1
+
+        // ABXD-17: Atomically swap the FD to -1 under the lock so that
+        // concurrent `send()` / `resize()` calls see -1 immediately and
+        // never operate on the FD after it has been closed.
+        let oldMasterFD = masterFDLock.withLock { fd -> Int32 in
+            let prev = fd
+            fd = -1
+            return prev
+        }
 
         // Move kill + close + dealloc entirely off the main thread.
         // Foundation's Process deallocation uses Mach ports that can

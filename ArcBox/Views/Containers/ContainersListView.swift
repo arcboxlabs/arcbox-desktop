@@ -84,6 +84,7 @@ struct ContainersListView: View {
                 Button(action: { vm.showNewContainerSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("New container")
                 .keyboardShortcut("n", modifiers: .command)
             }
         }

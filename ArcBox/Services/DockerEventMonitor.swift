@@ -69,7 +69,7 @@ final class DockerEventMonitor {
                     }
                 } catch {
                     if Task.isCancelled || isStopped { break }
-                    Log.docker.warning("Event stream error, reconnecting in 2s: \(error.localizedDescription, privacy: .public)")
+                    Log.docker.warning("Event stream error, reconnecting in 2s: \(error.localizedDescription, privacy: .private)")
                 }
 
                 guard !Task.isCancelled, !isStopped else { break }

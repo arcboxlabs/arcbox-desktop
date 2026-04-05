@@ -43,10 +43,16 @@ class MachinesViewModel {
         selectedID = id
     }
 
-    // Mock actions
-    func startMachine(_ id: String) {}
-    func stopMachine(_ id: String) {}
-    func deleteMachine(_ id: String) {}
+    // TODO: Implement when machine lifecycle is connected to gRPC
+    func startMachine(_ id: String) {
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
+    }
+    func stopMachine(_ id: String) {
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
+    }
+    func deleteMachine(_ id: String) {
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
+    }
 
     func loadSampleData() {
         machines = SampleData.machines

@@ -382,6 +382,35 @@ public struct Arcbox_V1_KubernetesKubeconfigResponse: Sendable {
   public init() {}
 }
 
+/// Graceful shutdown request from host.
+public struct Arcbox_V1_ShutdownRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Grace period in seconds for processes to exit after SIGTERM.
+  /// 0 means use the agent's default (currently 25 seconds).
+  public var timeoutSeconds: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Shutdown acknowledgement. Sent before the agent begins teardown.
+public struct Arcbox_V1_ShutdownResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Always true when the agent accepts the request.
+  public var accepted: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "arcbox.v1"
@@ -1075,6 +1104,66 @@ extension Arcbox_V1_KubernetesKubeconfigResponse: SwiftProtobuf.Message, SwiftPr
     if lhs.kubeconfig != rhs.kubeconfig {return false}
     if lhs.contextName != rhs.contextName {return false}
     if lhs.endpoint != rhs.endpoint {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ShutdownRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ShutdownRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}timeout_seconds\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.timeoutSeconds) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.timeoutSeconds != 0 {
+      try visitor.visitSingularUInt32Field(value: self.timeoutSeconds, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ShutdownRequest, rhs: Arcbox_V1_ShutdownRequest) -> Bool {
+    if lhs.timeoutSeconds != rhs.timeoutSeconds {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ShutdownResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ShutdownResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}accepted\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.accepted) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.accepted != false {
+      try visitor.visitSingularBoolField(value: self.accepted, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ShutdownResponse, rhs: Arcbox_V1_ShutdownResponse) -> Bool {
+    if lhs.accepted != rhs.accepted {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

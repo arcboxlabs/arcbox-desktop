@@ -261,7 +261,7 @@ class ContainersViewModel {
                         // (image, url, succeeded) — cache empty url as "no icon available"
                         return (image, url, true)
                     } catch {
-                        Log.container.debug("Icon fetch failed for \(image, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.debug("Icon fetch failed for \(image, privacy: .private): \(error.localizedDescription, privacy: .private)")
                         // Mark as failed so we don't cache the negative result
                         return (image, nil, false)
                     }
@@ -313,7 +313,7 @@ class ContainersViewModel {
                 await loadContainerDetails(selectedID, client: client)
             }
         } catch {
-            Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .private)")
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_grpc", key: "container_op")
             }
@@ -330,7 +330,7 @@ class ContainersViewModel {
             _ = try await client.containers.start(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: true)
         } catch {
-            Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -347,7 +347,7 @@ class ContainersViewModel {
             _ = try await client.containers.stop(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: false)
         } catch {
-            Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -406,23 +406,23 @@ class ContainersViewModel {
                 switch created.body {
                 case .json(let body):
                     let id = body.Id
-                    Log.container.info("Created container \(id, privacy: .public)")
+                    Log.container.info("Created container \(id, privacy: .private)")
                     await loadContainersFromDocker(docker: docker)
                     return id
                 }
             case .badRequest(let err):
-                Log.container.error("Bad request creating container: \(String(describing: err), privacy: .public)")
+                Log.container.error("Bad request creating container: \(String(describing: err), privacy: .private)")
             case .notFound(let err):
-                Log.container.error("Image not found: \(String(describing: err), privacy: .public)")
+                Log.container.error("Image not found: \(String(describing: err), privacy: .private)")
             case .conflict(let err):
-                Log.container.error("Container name conflict: \(String(describing: err), privacy: .public)")
+                Log.container.error("Container name conflict: \(String(describing: err), privacy: .private)")
             case .internalServerError(let err):
-                Log.container.error("Server error creating container: \(String(describing: err), privacy: .public)")
+                Log.container.error("Server error creating container: \(String(describing: err), privacy: .private)")
             case .undocumented(let statusCode, _):
                 Log.container.error("Unexpected status \(statusCode, privacy: .public) creating container")
             }
         } catch {
-            Log.container.error("Error creating container: \(String(describing: error), privacy: .public)")
+            Log.container.error("Error creating container: \(String(describing: error), privacy: .private)")
         }
         return nil
     }
@@ -437,7 +437,7 @@ class ContainersViewModel {
             _ = try await client.containers.remove(request, options: ArcBoxClient.defaultCallOptions)
             removeContainerLocally(id)
         } catch {
-            Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         await loadContainers(client: client)
@@ -465,7 +465,7 @@ class ContainersViewModel {
                 }
             )
         } catch {
-            Log.container.error("Error inspecting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error inspecting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -492,14 +492,14 @@ class ContainersViewModel {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
-            Log.container.info("Loaded \(self.containers.count, privacy: .public) containers")
+            Log.container.info("Loaded \(self.containers.count, privacy: .public) containers via Docker")
             applyExpandedGroups(from: containers)
             await fetchIcons(client: iconClient)
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }
         } catch {
-            Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .private)")
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_docker", key: "container_op")
             }
@@ -515,7 +515,7 @@ class ContainersViewModel {
             _ = try await docker.api.ContainerStart(path: .init(id: id))
             setContainerRunningState(id, isRunning: true)
         } catch {
-            Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -530,7 +530,7 @@ class ContainersViewModel {
             _ = try await docker.api.ContainerStop(path: .init(id: id))
             setContainerRunningState(id, isRunning: false)
         } catch {
-            Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -545,7 +545,7 @@ class ContainersViewModel {
             removeContainerLocally(id)
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
-            Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         await loadContainersFromDocker(docker: docker)
@@ -576,10 +576,10 @@ class ContainersViewModel {
                 rootfsMountPath: Self.normalized(snapshot.rootfsMountPath)
             )
             Log.container.debug(
-                "Inspect snapshot for \(id, privacy: .public): domain=\(Self.normalized(snapshot.domainname) ?? "-", privacy: .public), ip=\(Self.normalized(snapshot.ipAddress) ?? "-", privacy: .public), mounts=\(mounts.count, privacy: .public), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-", privacy: .public)"
+                "Inspect snapshot for \(id, privacy: .private): domain=\(Self.normalized(snapshot.domainname) ?? "-", privacy: .private), ip=\(Self.normalized(snapshot.ipAddress) ?? "-", privacy: .private), mounts=\(mounts.count, privacy: .public), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-", privacy: .private)"
             )
         } catch {
-            Log.container.error("Inspect snapshot failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Inspect snapshot failed for \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             do {
                 // Fallback to generated inspect model if raw path fails unexpectedly.
                 let response = try await docker.api.ContainerInspect(path: .init(id: id))
@@ -603,10 +603,10 @@ class ContainersViewModel {
                     mounts: mounts
                 )
                 Log.container.debug(
-                    "Inspect fallback for \(id, privacy: .public): domain=\(Self.normalized(details.Config?.Domainname) ?? "-", privacy: .public), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-", privacy: .public), mounts=\(mounts.count, privacy: .public)"
+                    "Inspect fallback for \(id, privacy: .private): domain=\(Self.normalized(details.Config?.Domainname) ?? "-", privacy: .private), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-", privacy: .private), mounts=\(mounts.count, privacy: .public)"
                 )
             } catch {
-                Log.container.error("Inspect fallback failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                Log.container.error("Inspect fallback failed for \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             }
         }
     }
@@ -626,7 +626,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStart(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: true)
                     } catch {
-                        Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.error("Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
                     }
                 }
             }
@@ -648,7 +648,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStop(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: false)
                     } catch {
-                        Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.error("Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
                     }
                 }
             }
@@ -667,7 +667,7 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
                         await self?.removeContainerLocally(id)
                     } catch {
-                        Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.error("Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
                     }
                 }
             }

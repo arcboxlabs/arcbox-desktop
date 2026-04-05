@@ -101,7 +101,7 @@ struct UnixSocketTransport: ClientTransport {
     ) async throws -> (HTTPResponse, HTTPBody?) {
         // Retry transient connection errors (socket not ready, connection reset).
         let maxRetries = 2
-        var lastError: Error?
+        var lastError: Error = URLError(.unknown)
         for attempt in 0...maxRetries {
             if attempt > 0 {
                 try? await Task.sleep(for: .milliseconds(500 * attempt))
@@ -116,7 +116,7 @@ struct UnixSocketTransport: ClientTransport {
                 guard isTransient, attempt < maxRetries else { break }
             }
         }
-        throw lastError!
+        throw lastError
     }
 
     private func sendOnce(

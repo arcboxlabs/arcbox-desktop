@@ -36,6 +36,39 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Checkout arcbox proto definitions
+        uses: actions/checkout@v4
+        with:
+          repository: arcboxlabs/arcbox
+          path: arcbox
+          sparse-checkout: rpc/arcbox-protocol/proto
+          sparse-checkout-cone-mode: false
+
+      - name: Verify protobuf generated code is up-to-date
+        run: |
+          # Install protoc via Homebrew
+          brew install protobuf
+
+          # Recreate the sibling arcbox path as a symlink so generate.sh --local
+          # can find proto at the expected relative path even if cache restore
+          # previously created ../arcbox as a real directory.
+          rm -rf "$GITHUB_WORKSPACE/../arcbox"
+          ln -s "$GITHUB_WORKSPACE/arcbox" "$GITHUB_WORKSPACE/../arcbox"
+
+          # Generate Swift code from local proto definitions
+          cd Packages/ArcBoxClient
+          ./generate.sh --local
+
+          # Fail if generated files differ from checked-in versions (including untracked files)
+          if ! git diff --exit-code Sources/ArcBoxClient/Generated/; then
+            echo "::error::Protobuf generated Swift files are out of date. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit the result."
+            exit 1
+          fi
+          if [ -n "$(git ls-files --others --exclude-standard Sources/ArcBoxClient/Generated/)" ]; then
+            echo "::error::Untracked generated files detected. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit all generated files."
+            exit 1
+          fi
+
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox
 

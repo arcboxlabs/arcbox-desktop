@@ -2,22 +2,7 @@ import SwiftUI
 
 struct ImageEmptyState: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(AppColors.surfaceElevated)
-                    .frame(width: 64, height: 64)
-                Image(systemName: "circle.circle")
-                    .font(.system(size: 26))
-                    .foregroundStyle(AppColors.textMuted)
-            }
-
-            Text("No images yet")
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
-
+        EmptyStateView(icon: "circle.circle", title: "No images yet") {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Pull an image:")
                     .font(.system(size: 11))
@@ -36,15 +21,6 @@ struct ImageEmptyState: View {
                     description: "Redis with Alpine Linux"
                 )
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(AppColors.surfaceElevated)
-            )
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(24)
     }
 }

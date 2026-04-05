@@ -74,6 +74,13 @@ public final class DaemonManager {
 
     private var watchTask: Task<Void, Never>?
 
+    /// Guards `enableDaemon()` against concurrent (re-entrant) calls.
+    /// Even though `@MainActor` serializes synchronous access, `await`
+    /// suspension points allow a second call to interleave.  This flag
+    /// is checked at entry and cleared at exit to ensure only one
+    /// enable operation is in flight at a time.
+    private var isEnabling: Bool = false
+
     public init() {}
 
     // MARK: - Helper Lifecycle
@@ -129,7 +136,7 @@ public final class DaemonManager {
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&error)
                 if let error {
-                    ClientLog.daemon.warning("Helper install failed: \(error, privacy: .public)")
+                    ClientLog.daemon.warning("Helper install failed: \(error, privacy: .private)")
                     return false
                 }
                 return true
@@ -173,6 +180,17 @@ public final class DaemonManager {
     /// Register the daemon with launchd. Does not wait for reachability —
     /// that is handled by ``connectAndWatch(client:)``.
     public func enableDaemon() async {
+        // ABXD-22: Prevent concurrent enable operations.  Even though we
+        // are @MainActor, the `await` suspension points (unregister/register)
+        // allow a second SwiftUI .task call to interleave and start a
+        // duplicate enable cycle.
+        guard !isEnabling else {
+            ClientLog.daemon.info("enableDaemon() already in progress, skipping duplicate call")
+            return
+        }
+        isEnabling = true
+        defer { isEnabling = false }
+
         errorMessage = nil
         state = .starting
 
@@ -180,6 +198,15 @@ public final class DaemonManager {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         try? FileManager.default.createDirectory(
             atPath: "\(home)/.arcbox/run", withIntermediateDirectories: true)
+
+        // ABXD-54: Verify daemon binary code signature before registration.
+        // Run off MainActor to avoid blocking UI during codesign --verify.
+        // Compute the path here to avoid capturing non-Sendable self.
+        let daemonPath = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Helpers/com.arcboxlabs.desktop.daemon").path
+        await Task.detached {
+            Self.verifyDaemonSignature(at: daemonPath)
+        }.value
 
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
@@ -204,7 +231,7 @@ public final class DaemonManager {
             ClientLog.daemon.info("Service registered successfully")
             state = .registered
         } catch {
-            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
         }
@@ -228,7 +255,7 @@ public final class DaemonManager {
             ClientLog.daemon.info("Service registered successfully")
             state = .registered
         } catch {
-            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .public)")
+            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
             errorMessage = error.localizedDescription
             state = .error("Failed to register daemon: \(error.localizedDescription)")
         }
@@ -260,7 +287,7 @@ public final class DaemonManager {
             ClientLog.daemon.info("Force re-register completed")
             state = .registered
         } catch {
-            ClientLog.daemon.error("Force re-register failed: \(error.localizedDescription, privacy: .public)")
+            ClientLog.daemon.error("Force re-register failed: \(error.localizedDescription, privacy: .private)")
             errorMessage = error.localizedDescription
             state = .error("Force re-register failed: \(error.localizedDescription)")
         }
@@ -319,7 +346,7 @@ public final class DaemonManager {
                             }
                         }
                     } catch {
-                        ClientLog.daemon.warning("WatchSetupStatus stream error: \(error.localizedDescription, privacy: .public)")
+                        ClientLog.daemon.warning("WatchSetupStatus stream error: \(error.localizedDescription, privacy: .private)")
                     }
                     continuation.finish()
                 }
@@ -367,6 +394,52 @@ public final class DaemonManager {
     public func stopWatching() {
         watchTask?.cancel()
         watchTask = nil
+    }
+
+    // MARK: - Binary Verification
+
+    /// Verify the daemon binary's code signature before launching.
+    ///
+    /// Runs `codesign --verify --strict` on the daemon binary at `path`.
+    /// Logs a warning on failure but does **not** block startup — dev
+    /// builds may use ad-hoc signatures that fail strict verification.
+    ///
+    /// Static so it can be called from a detached task without capturing self.
+    private static func verifyDaemonSignature(at daemonPath: String) {
+        guard FileManager.default.fileExists(atPath: daemonPath) else {
+            ClientLog.daemon.warning("Daemon binary not found at expected path, skipping signature check")
+            return
+        }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        process.arguments = ["--verify", "--strict", daemonPath]
+        process.standardOutput = FileHandle.nullDevice
+        // Redirect stderr to null to avoid pipe-buffer deadlock.
+        // codesign output is not actionable beyond the exit code.
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            // Bounded wait: terminate if codesign hangs for more than 10 seconds.
+            let deadline = DispatchTime.now() + .seconds(10)
+            let done = DispatchSemaphore(value: 0)
+            process.terminationHandler = { _ in done.signal() }
+            if done.wait(timeout: deadline) == .timedOut {
+                process.terminate()
+                ClientLog.daemon.warning("Daemon signature verification timed out, killed codesign process")
+                return
+            }
+            if process.terminationStatus != 0 {
+                ClientLog.daemon.warning(
+                    "Daemon binary signature verification failed (status \(process.terminationStatus))")
+            } else {
+                ClientLog.daemon.info("Daemon binary signature verified OK")
+            }
+        } catch {
+            ClientLog.daemon.warning(
+                "Could not run codesign verification: \(error.localizedDescription, privacy: .private)")
+        }
     }
 
     // MARK: - Internal

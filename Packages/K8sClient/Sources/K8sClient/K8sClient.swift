@@ -47,10 +47,14 @@ public final class K8sClient: Sendable {
 
     // MARK: - Watch (TODO: implement streaming watch with reconnection)
     //
+    // Design documented (ABXD-43). Current 10s polling is sufficient for the desktop UI;
+    // Watch API is a future optimization when real-time updates justify the complexity.
+    //
     // Future: implement watch using chunked HTTP response with:
     // - resourceVersion tracking from list metadata
     // - Automatic reconnection with exponential backoff
     // - ADDED/MODIFIED/DELETED event types
+    // - 410 Gone handling: re-list to obtain a fresh resourceVersion
     // See: https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes
 
     // MARK: - Private
