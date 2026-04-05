@@ -3,6 +3,8 @@ import Foundation
 /// Image view model for UI display
 struct ImageViewModel: Identifiable, Hashable {
     let id: String
+    /// Raw Docker image ID (sha256:…) for API calls
+    let dockerId: String
     let repository: String
     let tag: String
     let sizeBytes: UInt64

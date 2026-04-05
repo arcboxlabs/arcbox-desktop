@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single image row
@@ -8,6 +9,7 @@ struct ImageRowView: View {
     let onDelete: () -> Void
 
     @State private var isHovered: Bool = false
+    @State private var showDeleteConfirm = false
 
     /// Generate a consistent color based on repository name
     private var imageColor: Color {
@@ -28,8 +30,8 @@ struct ImageRowView: View {
                 iconURL: image.iconURL,
                 size: 32,
                 symbolFontSize: 14,
-                foregroundColor: isSelected ? AppColors.onAccent : imageColor,
-                backgroundColor: isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated
+                foregroundColor: imageColor,
+                backgroundColor: AppColors.iconBackground
             )
 
             // Name, size, and age
@@ -66,13 +68,13 @@ struct ImageRowView: View {
             // Delete button
             if isHovered || isSelected {
                 IconButton(
-                    symbol: "trash",
-                    action: onDelete,
+                    symbol: "trash.fill",
+                    action: { showDeleteConfirm = true },
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .frame(height: 44)
         .background(
             RoundedRectangle(cornerRadius: 6)
@@ -83,9 +85,29 @@ struct ImageRowView: View {
                 )
         )
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString("\(image.repository):\(image.tag)", forType: .string)
+            }
+            Button("Copy ID") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(image.dockerId, forType: .string)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                showDeleteConfirm = true
+            }
+        }
+        .confirmationDialog("Delete Image", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete \"\(image.repository):\(image.tag)\"? This action cannot be undone.")
+        }
     }
 }

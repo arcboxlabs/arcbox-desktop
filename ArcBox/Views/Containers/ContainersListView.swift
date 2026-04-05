@@ -42,11 +42,19 @@ struct ContainersListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
+            } else if !vm.hasCompletedInitialLoad {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.containers.isEmpty {
                 ContainerEmptyState()
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Running section
+                        if hasRunningContent {
+                            sectionHeader("In Use")
+                        }
+
                         // Active compose groups (has running containers)
                         composeGroupRows(for: activeComposeGroups)
 
@@ -60,7 +68,7 @@ struct ContainersListView: View {
                             standaloneRows(for: stoppedStandaloneContainers)
                         }
                     }
-                    .padding(.top, hasRunningContent ? 6 : 0)
+                    .padding(.top, 6)
                 }
             }
         }
@@ -76,6 +84,7 @@ struct ContainersListView: View {
                 Button(action: { vm.showNewContainerSheet = true }) {
                     Image(systemName: "plus")
                 }
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .task(id: docker != nil) {
@@ -87,6 +96,7 @@ struct ContainersListView: View {
         .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
             NewContainerSheet()
         }
+        .errorToast(message: Bindable(vm).lastError)
     }
 
     @ViewBuilder

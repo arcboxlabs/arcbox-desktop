@@ -5,6 +5,15 @@ struct ImageEmptyState: View {
         VStack(spacing: 16) {
             Spacer()
 
+            ZStack {
+                Circle()
+                    .fill(AppColors.surfaceElevated)
+                    .frame(width: 64, height: 64)
+                Image(systemName: "circle.circle")
+                    .font(.system(size: 26))
+                    .foregroundStyle(AppColors.textMuted)
+            }
+
             Text("No images yet")
                 .font(.system(size: 13))
                 .foregroundStyle(AppColors.textSecondary)

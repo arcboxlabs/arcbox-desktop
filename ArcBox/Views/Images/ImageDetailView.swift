@@ -17,7 +17,7 @@ struct ImageDetailView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 16) {
                                 VStack(spacing: 0) {
-                                    InfoRow(label: "ID", value: image.id)
+                                    InfoRow(label: "ID", value: image.dockerId)
                                     InfoRow(label: "Tag", value: "\(image.repository):\(image.tag)")
                                     InfoRow(label: "Created", value: image.createdAgo)
                                     InfoRow(label: "Size", value: image.sizeDisplay)
@@ -66,9 +66,14 @@ struct ImageDetailView: View {
                 }
             } else {
                 Spacer()
-                Text("No Selection")
-                    .foregroundStyle(AppColors.textSecondary)
-                    .font(.system(size: 15))
+                VStack(spacing: 12) {
+                    Image(systemName: "circle.circle")
+                        .font(.system(size: 32))
+                        .foregroundStyle(AppColors.textMuted)
+                    Text("No Selection")
+                        .foregroundStyle(AppColors.textSecondary)
+                        .font(.system(size: 15))
+                }
                 Spacer()
             }
         }

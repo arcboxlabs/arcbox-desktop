@@ -1,3 +1,5 @@
+import AppKit
+import ArcBoxClient
 import SwiftUI
 
 /// Single container row in list
@@ -9,7 +11,9 @@ struct ContainerRowView: View {
     let onStartStop: () -> Void
     let onDelete: () -> Void
 
+    @Environment(DaemonManager.self) private var daemonManager
     @State private var isHovered: Bool = false
+    @State private var showDeleteConfirm = false
 
     private var isStopped: Bool { !container.isRunning && !container.isTransitioning }
 
@@ -25,8 +29,12 @@ struct ContainerRowView: View {
         return colors[abs(hash) % colors.count]
     }
 
-    private func openLocalhost(port: UInt16) {
-        if let url = URL(string: "http://localhost:\(port)") {
+    private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
+
+    private var hostDomain: String { container.hostDomain(useDNS: useDNS) }
+
+    private func openPort(_ port: PortMapping) {
+        if let url = container.portURL(port, useDNS: useDNS) {
             NSWorkspace.shared.open(url)
         }
     }
@@ -38,12 +46,8 @@ struct ContainerRowView: View {
                 RemoteIconView(
                     iconURL: container.iconURL,
                     size: 32,
-                    foregroundColor: isSelected
-                        ? AppColors.onAccent
-                        : (isStopped ? AppColors.textMuted : containerColor),
-                    backgroundColor: isSelected
-                        ? Color.white.opacity(0.12)
-                        : AppColors.surfaceElevated
+                    foregroundColor: isStopped ? AppColors.textMuted : containerColor,
+                    backgroundColor: AppColors.iconBackground
                 )
 
                 // Status dot
@@ -73,16 +77,14 @@ struct ContainerRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                     .foregroundStyle(
-                        isSelected
-                            ? AppColors.onAccent
-                            : (isStopped ? AppColors.textSecondary : AppColors.text)
+                        isSelected ? AppColors.onAccent : AppColors.text
                     )
                 Text(container.image)
                     .font(.system(size: 11))
                     .foregroundStyle(
                         isSelected
                             ? Color.white.opacity(0.67)
-                            : (isStopped ? AppColors.textMuted : AppColors.textSecondary)
+                            : AppColors.textSecondary
                     )
                     .lineLimit(1)
             }
@@ -92,20 +94,25 @@ struct ContainerRowView: View {
             if isHovered || isSelected {
                 HStack(spacing: 4) {
                     // Link button for containers with port mappings
-                    if !container.hostPorts.isEmpty {
-                        if container.hostPorts.count == 1,
-                           let port = container.hostPorts.first
+                    let activePorts = useDNS ? container.ports : container.ports.filter { $0.hostPort > 0 }
+                    if !activePorts.isEmpty {
+                        if activePorts.count == 1,
+                            let port = activePorts.first
                         {
                             IconButton(
                                 symbol: "link",
-                                action: { openLocalhost(port: port) },
+                                action: { openPort(port) },
                                 color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                             )
                         } else {
                             Menu {
-                                ForEach(container.hostPorts, id: \.self) { port in
-                                    Button("localhost:\(port)") {
-                                        openLocalhost(port: port)
+                                ForEach(activePorts) { port in
+                                    let displayPort = useDNS ? port.containerPort : port.hostPort
+                                    let title = (useDNS && displayPort == 80)
+                                        ? hostDomain
+                                        : "\(hostDomain):\(displayPort)"
+                                    Button(title) {
+                                        openPort(port)
                                     }
                                 }
                             } label: {
@@ -134,8 +141,8 @@ struct ContainerRowView: View {
                         )
                     }
                     IconButton(
-                        symbol: "trash",
-                        action: onDelete,
+                        symbol: "trash.fill",
+                        action: { showDeleteConfirm = true },
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
                 }
@@ -158,6 +165,31 @@ struct ContainerRowView: View {
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             isHovered = hovering
+        }
+        .contextMenu {
+            Button(container.isRunning ? "Stop" : "Start") {
+                onStartStop()
+            }
+            .disabled(container.isTransitioning)
+            Divider()
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(container.name, forType: .string)
+            }
+            Button("Copy ID") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(container.id, forType: .string)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                showDeleteConfirm = true
+            }
+        }
+        .confirmationDialog("Delete Container", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete \"\(container.name)\"? This action cannot be undone.")
         }
     }
 }

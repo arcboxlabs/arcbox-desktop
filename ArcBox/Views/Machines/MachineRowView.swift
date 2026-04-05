@@ -29,20 +29,12 @@ struct MachineRowView: View {
             // Machine icon with status dot
             ZStack(alignment: .bottomTrailing) {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(
-                        isSelected
-                            ? Color.white.opacity(0.12)
-                            : AppColors.surfaceElevated
-                    )
+                    .fill(AppColors.iconBackground)
                     .frame(width: 32, height: 32)
                     .overlay {
                         Image(systemName: "desktopcomputer")
                             .font(.system(size: 16))
-                            .foregroundStyle(
-                                isSelected
-                                    ? AppColors.onAccent
-                                    : (isStopped ? AppColors.textMuted : distroColor)
-                            )
+                            .foregroundStyle(isStopped ? AppColors.textMuted : distroColor)
                     }
 
                 // Status dot
@@ -65,16 +57,14 @@ struct MachineRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                     .foregroundStyle(
-                        isSelected
-                            ? AppColors.onAccent
-                            : (isStopped ? AppColors.textSecondary : AppColors.text)
+                        isSelected ? AppColors.onAccent : AppColors.text
                     )
                 Text("\(machine.distro.version), \(machine.cpuCores) cores")
                     .font(.system(size: 11))
                     .foregroundStyle(
                         isSelected
                             ? Color.white.opacity(0.67)
-                            : (isStopped ? AppColors.textMuted : AppColors.textSecondary)
+                            : AppColors.textSecondary
                     )
                     .lineLimit(1)
             }
@@ -89,7 +79,7 @@ struct MachineRowView: View {
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
                     IconButton(
-                        symbol: "trash",
+                        symbol: "trash.fill",
                         action: onDelete,
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )

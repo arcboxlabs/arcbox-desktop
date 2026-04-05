@@ -171,21 +171,56 @@ public final class StartupOrchestrator {
         }
 
         // Step 3: Connect gRPC and start watching setup status.
+        //
+        // Two-phase approach:
+        //   Phase 1 — normal poll (30 s): gives the daemon its full startup window.
+        //   Phase 2 — recovery:  force unregister+register, then poll again (30 s).
+        //
+        // Phase 2 exists because Xcode "Replace" sends SIGKILL, so
+        // `applicationShouldTerminate` / `disableDaemon()` never runs.  The
+        // daemon stays `.enabled` in launchd but the actual process may be
+        // dead or stuck in a throttled restart cycle.
+        //
+        // ⚠️ REGRESSION GUARD — the recovery MUST happen only AFTER the full
+        // phase-1 timeout.  Moving the force-reregister into `enableDaemon()`
+        // or running it earlier would regress a known bug where SwiftUI
+        // `.task` re-entrancy triggers multiple `enableDaemon()` calls that
+        // each kill the daemon before it finishes initializing.
         let connectOK = await runStep(.connectAndWatch) {
             let client = try self.onClientsNeeded()
             self.daemonManager.connectAndWatch(client: client)
 
-            // Wait for the first status message (daemon is alive).
+            // Phase 1: normal poll — daemon may be starting up; give it the
+            // full timeout before assuming it's dead.
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                if self.daemonManager.state.isRunning { break }
                 try await Task.sleep(for: StartupConstants.daemonPollInterval)
-                if self.daemonManager.state.isRunning {
-                    break
-                }
+            }
+
+            if self.daemonManager.state.isRunning { return }
+
+            // Phase 2: recovery — daemon is registered but confirmed
+            // unreachable after the full poll window.  Force re-register to
+            // get launchd to spawn a fresh daemon process, then poll again.
+            ClientLog.startup.warning(
+                "Daemon unreachable after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s, attempting force re-register recovery")
+            await self.daemonManager.forceReregisterDaemon()
+
+            if case .error = self.daemonManager.state {
+                throw StartupError.stepFailed("Force re-register failed")
+            }
+
+            self.daemonManager.connectAndWatch(client: client)
+
+            for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                if self.daemonManager.state.isRunning { break }
+                try await Task.sleep(for: StartupConstants.daemonPollInterval)
             }
 
             if !self.daemonManager.state.isRunning {
+                let totalSeconds = Int(StartupConstants.daemonPollTimeout.components.seconds) * 2
                 throw StartupError.stepFailed(
-                    "Daemon registered but gRPC stream not connected after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s")
+                    "Daemon unreachable after force re-register recovery (\(totalSeconds)s total)")
             }
         }
 

@@ -64,14 +64,6 @@ struct ContainerFilesTab: View {
             .buttonStyle(.plain)
             .help("Refresh")
 
-//            Button(action: openSelected) {
-//                Image(systemName: "arrow.up.forward.app")
-//                    .font(.system(size: 12))
-//            }
-//            .buttonStyle(.plain)
-//            .disabled(selectedURL == nil)
-//            .help("Open selected")
-
             Button(action: revealSelectedInFinder) {
                 Image(systemName: "finder")
                     .font(.system(size: 12))
@@ -162,11 +154,6 @@ struct ContainerFilesTab: View {
         }
 
         isLoadingRoot = false
-    }
-
-    private func openSelected() {
-        guard let url = selectedURL else { return }
-        _ = NSWorkspace.shared.open(url)
     }
 
     private func revealSelectedInFinder() {

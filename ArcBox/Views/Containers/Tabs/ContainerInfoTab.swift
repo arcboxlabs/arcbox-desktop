@@ -1,8 +1,19 @@
+import ArcBoxClient
 import SwiftUI
+
+/// A label key-value pair for use in InfoTableView
+private struct LabelEntry: Identifiable {
+    let key: String
+    let value: String
+    var id: String { key }
+}
 
 /// Info tab content showing container details
 struct ContainerInfoTab: View {
     let container: ContainerViewModel
+    @Environment(DaemonManager.self) private var daemonManager
+
+    private var useDNS: Bool { daemonManager.dnsResolverInstalled && daemonManager.routeInstalled }
 
     var body: some View {
         ScrollView {
@@ -15,23 +26,33 @@ struct ContainerInfoTab: View {
                     InfoRow(
                         label: "Status",
                         value: container.isRunning
-                            ? "Up \(container.createdAgo)"
+                            ? "Up \(container.uptimeDisplay)"
                             : "Stopped"
                     )
                 }
                 .infoSectionStyle()
 
                 // Domain & IP section
-                if !container.hostPorts.isEmpty || container.domain != nil
-                    || container.ipAddress != nil
+                if useDNS || !container.hostPorts.isEmpty
+                    || container.domain != nil || container.ipAddress != nil
                 {
                     VStack(spacing: 0) {
-                        if !container.hostPorts.isEmpty {
+                        if useDNS || !container.hostPorts.isEmpty {
                             InfoRow(
                                 label: "Domain",
-                                value: "localhost",
-                                link: URL(string: "http://localhost:\(container.hostPorts[0])")
+                                value: container.hostDomain(useDNS: useDNS),
+                                link: container.domainURL(useDNS: useDNS)
                             )
+                            // Show flat alias for compose containers
+                            if useDNS, container.isCompose {
+                                let domains = container.allDomains(useDNS: true)
+                                if domains.count > 1 {
+                                    InfoRow(
+                                        label: "Alias",
+                                        value: domains[1]
+                                    )
+                                }
+                            }
                         } else if let domain = container.domain {
                             InfoRow(label: "Domain", value: domain)
                         }
@@ -44,151 +65,63 @@ struct ContainerInfoTab: View {
 
                 // Port Forwards section
                 if !container.ports.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Port Forwards")
-                            .font(.system(size: 13, weight: .semibold))
-
-                        VStack(spacing: 0) {
-                            // Table header
-                            HStack {
-                                Text("Host Port")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("Container Port")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("Protocol")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppColors.textSecondary)
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 8)
-                            .background(AppColors.surfaceElevated)
-
-                            // Table rows
-                            ForEach(container.ports) { port in
-                                HStack {
-                                    Text("\(port.hostPort)")
-                                        .foregroundStyle(AppColors.accent)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(port.containerPort)")
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(port.protocol.uppercased())
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .font(.system(size: 13))
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 8)
-                                .overlay(alignment: .bottom) {
-                                    Divider().opacity(0.3)
-                                }
-                            }
+                    InfoTableView(
+                        title: "Port Forwards",
+                        columns: ["Host Port", "Container Port", "Protocol"],
+                        items: container.ports
+                    ) { port in
+                        HStack {
+                            Text(verbatim: "\(port.hostPort)")
+                                .foregroundStyle(AppColors.accent)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(verbatim: "\(port.containerPort)")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(port.protocol.uppercased())
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .background(AppColors.background)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(AppColors.border, lineWidth: 0.5)
-                        )
                     }
                 }
 
                 // Mounts section
                 if !container.mounts.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Mounts")
-                            .font(.system(size: 13, weight: .semibold))
-
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Source")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("Destination")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppColors.textSecondary)
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 8)
-                            .background(AppColors.surfaceElevated)
-
-                            ForEach(container.mounts) { mount in
-                                HStack(alignment: .top) {
-                                    Text(mount.source)
-                                        .foregroundStyle(AppColors.accent)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                    Text(mount.destination)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                }
-                                .font(.system(size: 13))
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 8)
-                                .overlay(alignment: .bottom) {
-                                    Divider().opacity(0.3)
-                                }
-                                .textSelection(.enabled)
-                            }
+                    InfoTableView(
+                        title: "Mounts",
+                        columns: ["Source", "Destination"],
+                        items: container.mounts
+                    ) { mount in
+                        HStack(alignment: .top) {
+                            Text(mount.source)
+                                .foregroundStyle(AppColors.accent)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Text(mount.destination)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                         }
-                        .background(AppColors.background)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(AppColors.border, lineWidth: 0.5)
-                        )
+                        .textSelection(.enabled)
                     }
                 }
 
                 // Labels section
                 if !container.labels.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Labels")
-                            .font(.system(size: 13, weight: .semibold))
-
-                        VStack(spacing: 0) {
-                            // Table header
-                            HStack {
-                                Text("Key")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("Value")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppColors.textSecondary)
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 8)
-                            .background(AppColors.surfaceElevated)
-
-                            // Table rows
-                            ForEach(
-                                container.labels.sorted(by: { $0.key < $1.key }),
-                                id: \.key
-                            ) { key, value in
-                                HStack(alignment: .top) {
-                                    Text(key)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(value)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .lineLimit(1)
-                                        .truncationMode(.tail)
-                                }
-                                .font(.system(size: 13))
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 8)
-                                .overlay(alignment: .bottom) {
-                                    Divider().opacity(0.3)
-                                }
-                                .textSelection(.enabled)
-                            }
+                    InfoTableView(
+                        title: "Labels",
+                        columns: ["Key", "Value"],
+                        items: container.labels.sorted(by: { $0.key < $1.key }).map {
+                            LabelEntry(key: $0.key, value: $0.value)
                         }
-                        .background(AppColors.background)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(AppColors.border, lineWidth: 0.5)
-                        )
+                    ) { entry in
+                        HStack(alignment: .top) {
+                            Text(entry.key)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(entry.value)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        .textSelection(.enabled)
                     }
                 }
             }

@@ -12,6 +12,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var eventMonitor: DockerEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
+    var arcboxClient: ArcBoxClient?
+    var connectionTask: Task<Void, Never>?
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let keepRunning = UserDefaults.standard.bool(forKey: "keepRunning")
@@ -27,6 +29,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         eventMonitor?.stop()
         DockerContextManager.restorePreviousContext()
+        arcboxClient?.close()
+        connectionTask?.cancel()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -135,6 +139,8 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
+                    guard startupOrchestrator == nil else { return }
+
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
 
@@ -146,9 +152,15 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
                 }
-                // When daemon transitions to running, start event monitor.
+                // IMPORTANT: DockerClient MUST be created here — only after daemon is confirmed running.
+                // All ListViews use .task(id: docker != nil) to trigger their initial data load.
+                // Creating DockerClient earlier (e.g., in initClientsAndReturn) causes those tasks
+                // to fire before the Docker socket is ready, resulting in empty lists. (ABXD-76 / #169)
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
+                        if dockerClient == nil {
+                            dockerClient = DockerClient()
+                        }
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
                             sleepWakeManager.dockerClientRef = dockerClient
@@ -192,25 +204,30 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(networksVM)
                 .environment(volumesVM)
+                .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.startupOrchestrator, startupOrchestrator)
         }
         .menuBarExtraStyle(.window)
     }
 
-    /// Create clients and return the ArcBoxClient for the orchestrator.
+    /// Create gRPC client and return it for the orchestrator.
+    /// WARNING: Do NOT create DockerClient here — it must be deferred to
+    /// onChange(of: daemonManager.state) so that .task(id: docker != nil)
+    /// in ListViews only fires after the daemon is confirmed running. (ABXD-76 / #169)
     private func initClientsAndReturn() throws -> ArcBoxClient {
-        if dockerClient == nil {
-            dockerClient = DockerClient()
-        }
-
         if let existing = arcboxClient {
             Log.startup.info("Reusing existing ArcBoxClient")
             return existing
         }
 
+        // Close any previous client that wasn't cleaned up (e.g. after a failed startup).
+        appDelegate.arcboxClient?.close()
+        appDelegate.connectionTask?.cancel()
+
         Log.startup.info("Creating new ArcBoxClient at \(ArcBoxClient.defaultSocketPath, privacy: .public)")
         let client = try ArcBoxClient()
-        Task {
+        let task = Task {
             do {
                 Log.startup.info("runConnections starting")
                 try await client.runConnections()
@@ -220,6 +237,8 @@ struct ArcBoxDesktopApp: App {
             }
         }
         arcboxClient = client
+        appDelegate.arcboxClient = client
+        appDelegate.connectionTask = task
         return client
     }
 }

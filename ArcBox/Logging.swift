@@ -1,6 +1,6 @@
 import OSLog
 
-enum Log {
+nonisolated enum Log {
     private static let subsystem = "com.arcboxlabs.desktop"
     static let startup   = Logger(subsystem: subsystem, category: "startup")
     static let daemon    = Logger(subsystem: subsystem, category: "daemon")
@@ -10,4 +10,6 @@ enum Log {
     static let image     = Logger(subsystem: subsystem, category: "image")
     static let volume    = Logger(subsystem: subsystem, category: "volume")
     static let network   = Logger(subsystem: subsystem, category: "network")
+    static let pods      = Logger(subsystem: subsystem, category: "pods")
+    static let services  = Logger(subsystem: subsystem, category: "services")
 }

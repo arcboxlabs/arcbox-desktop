@@ -38,6 +38,7 @@ class ContainersViewModel {
     }
 
     var containers: [ContainerViewModel] = []
+    var hasCompletedInitialLoad: Bool = false
     var selectedID: String? = nil
     var activeTab: ContainerDetailTab = .info
     var expandedGroups: Set<String> = []
@@ -47,6 +48,7 @@ class ContainersViewModel {
     var showNewContainerSheet: Bool = false
     var sortBy: ContainerSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var runningCount: Int {
         containers.filter(\.isRunning).count
@@ -248,23 +250,31 @@ class ContainersViewModel {
         let uncached = Set(containers.map(\.image)).subtracting(iconsByImage.keys)
         guard !uncached.isEmpty else { return }
 
-        await withTaskGroup(of: (String, String?).self) { group in
+        await withTaskGroup(of: (String, String?, Bool).self) { group in
             for image in uncached {
                 group.addTask {
                     do {
                         var request = Arcbox_V1_GetImageIconRequest()
                         request.fqin = image
-                        let response = try await client.icons.getImageIcon(request)
+                        let response = try await client.icons.getImageIcon(request, options: ArcBoxClient.defaultCallOptions)
                         let url = response.url.isEmpty ? nil : response.url
-                        return (image, url)
+                        // (image, url, succeeded) — cache empty url as "no icon available"
+                        return (image, url, true)
                     } catch {
                         Log.container.debug("Icon fetch failed for \(image, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        return (image, nil)
+                        // Mark as failed so we don't cache the negative result
+                        return (image, nil, false)
                     }
                 }
             }
-            for await (image, url) in group {
-                iconsByImage[image] = url ?? ""
+            for await (image, url, succeeded) in group {
+                if let url {
+                    iconsByImage[image] = url
+                } else if succeeded {
+                    // RPC succeeded but no icon available — cache to avoid repeated lookups
+                    iconsByImage[image] = ""
+                }
+                // If RPC failed, leave uncached so next load retries
             }
         }
 
@@ -287,7 +297,7 @@ class ContainersViewModel {
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
-            let response = try await client.containers.list(request)
+            let response = try await client.containers.list(request, options: ArcBoxClient.defaultCallOptions)
             var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)
             }
@@ -311,45 +321,124 @@ class ContainersViewModel {
     }
 
     func startContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         setTransitioning(id, true)
         var request = Arcbox_V1_StartContainerRequest()
         request.id = id
         do {
-            _ = try await client.containers.start(request)
+            _ = try await client.containers.start(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: true)
         } catch {
             Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
     func stopContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         setTransitioning(id, true)
         var request = Arcbox_V1_StopContainerRequest()
         request.id = id
         do {
-            _ = try await client.containers.stop(request)
+            _ = try await client.containers.stop(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: false)
         } catch {
             Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
+    /// Creates a new container via Docker API and returns its ID, or nil on failure.
+    func createContainer(
+        image: String,
+        name: String,
+        platform: String?,
+        command: String,
+        entrypoint: String,
+        workingDir: String,
+        autoRemove: Bool,
+        restartPolicy: String,
+        privileged: Bool,
+        readOnlyRootfs: Bool,
+        dockerInit: Bool,
+        docker: DockerClient?
+    ) async -> String? {
+        guard let docker else { return nil }
+        var config = Components.Schemas.ContainerConfig()
+        config.Image = image
+        let cmdParts = command.split(separator: " ").map(String.init)
+        if !cmdParts.isEmpty { config.Cmd = cmdParts }
+        let entrypointParts = entrypoint.split(separator: " ").map(String.init)
+        if !entrypointParts.isEmpty { config.Entrypoint = entrypointParts }
+        if !workingDir.isEmpty { config.WorkingDir = workingDir }
+
+        let policyName: Components.Schemas.RestartPolicy.NamePayload = switch restartPolicy {
+        case "always": .always
+        case "unless-stopped": .unless_hyphen_stopped
+        case "on-failure": .on_hyphen_failure
+        default: .no
+        }
+        var resources = Components.Schemas.Resources()
+        if dockerInit { resources.Init = true }
+        let hostConfig = Components.Schemas.HostConfig(
+            value1: resources,
+            value2: .init(
+                RestartPolicy: .init(Name: policyName),
+                AutoRemove: autoRemove,
+                Privileged: privileged,
+                ReadonlyRootfs: readOnlyRootfs
+            )
+        )
+
+        do {
+            let response = try await docker.api.ContainerCreate(
+                query: .init(name: name.isEmpty ? nil : name, platform: platform),
+                body: .json(.init(value1: config, value2: .init(HostConfig: hostConfig)))
+            )
+            switch response {
+            case .created(let created):
+                switch created.body {
+                case .json(let body):
+                    let id = body.Id
+                    Log.container.info("Created container \(id, privacy: .public)")
+                    await loadContainersFromDocker(docker: docker)
+                    return id
+                }
+            case .badRequest(let err):
+                Log.container.error("Bad request creating container: \(String(describing: err), privacy: .public)")
+            case .notFound(let err):
+                Log.container.error("Image not found: \(String(describing: err), privacy: .public)")
+            case .conflict(let err):
+                Log.container.error("Container name conflict: \(String(describing: err), privacy: .public)")
+            case .internalServerError(let err):
+                Log.container.error("Server error creating container: \(String(describing: err), privacy: .public)")
+            case .undocumented(let statusCode, _):
+                Log.container.error("Unexpected status \(statusCode, privacy: .public) creating container")
+            }
+        } catch {
+            Log.container.error("Error creating container: \(String(describing: error), privacy: .public)")
+        }
+        return nil
+    }
+
     func removeContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         var request = Arcbox_V1_RemoveContainerRequest()
         request.id = id
         request.force = true
         do {
-            _ = try await client.containers.remove(request)
+            _ = try await client.containers.remove(request, options: ArcBoxClient.defaultCallOptions)
             removeContainerLocally(id)
         } catch {
             Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadContainers(client: client)
     }
@@ -361,7 +450,7 @@ class ContainersViewModel {
         request.id = id
 
         do {
-            let details = try await client.containers.inspect(request)
+            let details = try await client.containers.inspect(request, options: ArcBoxClient.defaultCallOptions)
             setContainerDetails(
                 id,
                 domain: Self.normalized(details.config.domainname),
@@ -386,6 +475,7 @@ class ContainersViewModel {
     func loadContainersFromDocker(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
             Log.container.debug("No docker client available")
+            hasCompletedInitialLoad = true
             return
         }
 
@@ -414,9 +504,11 @@ class ContainersViewModel {
                 scope.setTag(value: "list_docker", key: "container_op")
             }
         }
+        hasCompletedInitialLoad = true
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         setTransitioning(id, true)
         do {
@@ -424,12 +516,14 @@ class ContainersViewModel {
             setContainerRunningState(id, isRunning: true)
         } catch {
             Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func stopContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         setTransitioning(id, true)
         do {
@@ -437,12 +531,14 @@ class ContainersViewModel {
             setContainerRunningState(id, isRunning: false)
         } catch {
             Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func removeContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         do {
             _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
@@ -450,6 +546,7 @@ class ContainersViewModel {
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
             Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            lastError = error.localizedDescription
         }
         await loadContainersFromDocker(docker: docker)
     }
@@ -613,6 +710,7 @@ extension ContainerViewModel {
         }
 
         let composeProject = summary.labels["com.docker.compose.project"]
+        let composeService = summary.labels["com.docker.compose.service"]
         let rootfsMountPath = ContainerViewModel.inferRootFSMountPath(
             explicitPath: nil,
             labels: summary.labels,
@@ -627,6 +725,7 @@ extension ContainerViewModel {
             ports: ports,
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.created)),
             composeProject: composeProject,
+            composeService: composeService,
             labels: summary.labels,
             cpuPercent: 0,
             memoryMB: 0,
@@ -660,6 +759,7 @@ extension ContainerViewModel {
 
         let labels = summary.Labels?.additionalProperties ?? [:]
         let composeProject = labels["com.docker.compose.project"]
+        let composeService = labels["com.docker.compose.service"]
         let mounts = (summary.Mounts ?? []).compactMap { mount -> ContainerMount? in
             guard let destination = ContainersViewModel.normalized(mount.Destination) else { return nil }
             let source = ContainersViewModel.normalized(mount.Source) ?? "-"
@@ -684,6 +784,7 @@ extension ContainerViewModel {
             ports: ports,
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created ?? 0)),
             composeProject: composeProject,
+            composeService: composeService,
             labels: labels,
             cpuPercent: 0,
             memoryMB: 0,

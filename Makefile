@@ -1,4 +1,4 @@
-# ArcBox Desktop Makefile
+# ArcBox Makefile
 #
 # Used by both local dev and CI (release.yml). All build/sign/package logic
 # lives here; the workflow only handles CI-specific concerns (secrets,
@@ -19,13 +19,14 @@ SKIP_BUILD ?= 0
 NOTARIZE ?= 0
 VERSION ?=
 SPARKLE_FEED_URL ?=
+PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
 .PHONY: build-rust prefetch build-app dmg dmg-signed dmg-release clean help
 
 help:
-	@echo "ArcBox Desktop build targets:"
+	@echo "ArcBox build targets:"
 	@echo ""
 	@echo "  make build-rust     Build arcbox binaries (release)"
 	@echo "  make prefetch       Download boot assets + Docker tools"
@@ -47,9 +48,9 @@ build-rust:
 		echo "  Set ARCBOX_DIR=/path/to/arcbox" >&2; \
 		exit 1; \
 	fi
-	cd "$(ARCBOX_DIR)" && cargo build --release -p arcbox-cli -p arcbox-daemon -p arcbox-helper
-	cd "$(ARCBOX_DIR)" && make build-agent
-	cd "$(ARCBOX_DIR)" && make sign-daemon PROFILE=release
+	$(MAKE) -C "$(ARCBOX_DIR)" build-cli build-helper PROFILE=release
+	$(MAKE) -C "$(ARCBOX_DIR)" sign-daemon PROFILE=release
+	-$(MAKE) -C "$(ARCBOX_DIR)" build-agent
 
 prefetch:
 	@if [ "$(SKIP_BUILD)" != "1" ]; then \
@@ -77,7 +78,7 @@ build-app:
 
 # Unsigned DMG for local testing.
 dmg: prefetch
-	ARCBOX_DIR="$(ARCBOX_DIR)" scripts/package-dmg.sh
+	ARCBOX_DIR="$(ARCBOX_DIR)" scripts/package-dmg.py
 
 # Signed DMG for local distribution.
 dmg-signed: prefetch
@@ -88,7 +89,8 @@ dmg-signed: prefetch
 	ARCBOX_DIR="$(ARCBOX_DIR)" \
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
-	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)"
+	scripts/package-dmg.py --sign "$(SIGN_IDENTITY)" \
+		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
 
 # Signed + notarized DMG for CI release.
 dmg-release: prefetch
@@ -99,12 +101,14 @@ dmg-release: prefetch
 	ARCBOX_DIR="$(ARCBOX_DIR)" \
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
-	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)" $(if $(filter 1,$(NOTARIZE)),--notarize)
+	scripts/package-dmg.py --sign "$(SIGN_IDENTITY)" \
+		$(if $(filter 1,$(NOTARIZE)),--notarize) \
+		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
 
 ## ── Cleanup ───────────────────────────────────────────
 
 clean:
 	rm -rf .build/DerivedData
 	@if [ -n "$(ARCBOX_DIR)" ] && [ -d "$(ARCBOX_DIR)" ]; then \
-		cd "$(ARCBOX_DIR)" && rm -rf target/dmg-build target/ArcBox-*.dmg; \
+		cd "$(ARCBOX_DIR)" && rm -rf target/dmg-build target/ArcBox*.dmg; \
 	fi

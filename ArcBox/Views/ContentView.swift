@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(NetworksViewModel.self) private var networksVM
 
     // Feature ViewModels – local to main window
+    @State private var k8sState = KubernetesState()
     @State private var podsVM = PodsViewModel()
     @State private var servicesVM = ServicesViewModel()
     @State private var machinesVM = MachinesViewModel()
@@ -59,10 +60,12 @@ struct ContentView: View {
                     .navigationTitle(appVM.currentNav == .templates ? "Templates" : "Sandboxes")
             } else {
                 contentColumn
-                    .navigationSplitViewColumnWidth(min: 150, ideal: 280, max: 600)
+                    .background(AppColors.background)
+                    .navigationSplitViewColumnWidth(min: 150, ideal: 320, max: 600)
             }
         } detail: {
             detailColumn
+                .background(AppColors.sidebar)
         }
         .onChange(of: appVM.currentNav) { _, newNav in
             guard let newNav else { return }
@@ -98,9 +101,11 @@ struct ContentView: View {
                 .environment(networksVM)
         case .pods:
             PodsListView()
+                .environment(k8sState)
                 .environment(podsVM)
         case .services:
             ServicesListView()
+                .environment(k8sState)
                 .environment(servicesVM)
         case .machines:
             MachinesView()
@@ -134,9 +139,11 @@ struct ContentView: View {
                 .environment(containersVM)
         case .pods:
             PodDetailView()
+                .environment(k8sState)
                 .environment(podsVM)
         case .services:
             ServiceDetailView()
+                .environment(k8sState)
                 .environment(servicesVM)
         case .machines:
             MachineDetailView()
@@ -158,11 +165,16 @@ struct ContentView: View {
 /// Placeholder shown when no detail is available (e.g. Machines)
 struct DetailPlaceholderView: View {
     var body: some View {
-        Text("No Selection")
-            .foregroundStyle(AppColors.textSecondary)
-            .font(.system(size: 15))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppColors.background)
+        VStack(spacing: 12) {
+            Image(systemName: "square.dashed")
+                .font(.system(size: 32))
+                .foregroundStyle(AppColors.textMuted)
+            Text("No Selection")
+                .foregroundStyle(AppColors.textSecondary)
+                .font(.system(size: 15))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background)
     }
 }
 

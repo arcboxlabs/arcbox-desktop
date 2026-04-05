@@ -17,7 +17,7 @@ func showComingSoonPanel() {
 
     let panel = ComingSoonPanel(
         contentRect: NSRect(x: 0, y: 0, width: 280, height: 260),
-        styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
+        styleMask: [.titled, .fullSizeContentView],
         backing: .buffered,
         defer: false
     )
@@ -27,6 +27,8 @@ func showComingSoonPanel() {
     panel.isOpaque = false
     panel.backgroundColor = .clear
     panel.hasShadow = true
+    panel.level = .floating
+    panel.hidesOnDeactivate = true
     panel.center()
 
     let hostingView = NSHostingView(

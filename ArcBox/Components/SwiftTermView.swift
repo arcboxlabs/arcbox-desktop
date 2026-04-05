@@ -9,6 +9,8 @@ struct SwiftTermView: NSViewRepresentable {
     let delegate: any TerminalViewDelegate
     let onTerminalCreated: (TerminalView) -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
@@ -30,7 +32,10 @@ struct SwiftTermView: NSViewRepresentable {
         return tv
     }
 
-    func updateNSView(_ nsView: TerminalView, context: Context) {}
+    func updateNSView(_ nsView: TerminalView, context: Context) {
+        // Reconfigure colors when system appearance changes
+        TerminalAppearance.configure(nsView)
+    }
 
     class Coordinator {
         var delegate: (any TerminalViewDelegate)?

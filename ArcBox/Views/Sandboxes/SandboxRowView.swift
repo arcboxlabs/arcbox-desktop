@@ -20,14 +20,12 @@ struct SandboxRowView: View {
         HStack(spacing: 12) {
             // Sandbox icon
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.white.opacity(0.18) : AppColors.surfaceElevated)
+                .fill(AppColors.iconBackground)
                 .frame(width: 32, height: 32)
                 .overlay {
                     Image(systemName: "square.stack.3d.up")
                         .font(.system(size: 14))
-                        .foregroundStyle(
-                            isSelected ? AppColors.onAccent : stateColor
-                        )
+                        .foregroundStyle(stateColor)
                 }
 
             // Name and template
@@ -52,7 +50,7 @@ struct SandboxRowView: View {
             // Action buttons
             if isHovered || isSelected {
                 IconButton(
-                    symbol: sandbox.isRunning ? "stop.fill" : "trash",
+                    symbol: sandbox.isRunning ? "stop.fill" : "trash.fill",
                     action: {},
                     color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                 )
