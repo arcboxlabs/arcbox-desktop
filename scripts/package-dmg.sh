@@ -347,8 +347,11 @@ echo "--- Bundling daemon ---"
 DAEMON_SRC=""
 DAEMON_ALREADY_BUNDLED="$APP_BUNDLE/Contents/Frameworks/com.arcboxlabs.desktop.daemon.app/Contents/MacOS/com.arcboxlabs.desktop.daemon"
 if [ -f "$DAEMON_ALREADY_BUNDLED" ]; then
-    # Xcode already created the bundle; extract the binary to re-bundle with profile.
-    DAEMON_SRC="$DAEMON_ALREADY_BUNDLED"
+    # Xcode already created the bundle. Copy the binary out first because
+    # bundle-daemon.py deletes the existing .app before rebuilding it.
+    DAEMON_TMP="$(mktemp)"
+    cp "$DAEMON_ALREADY_BUNDLED" "$DAEMON_TMP"
+    DAEMON_SRC="$DAEMON_TMP"
 elif [ -f "$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon" ]; then
     DAEMON_SRC="$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
 elif [ -f "$ARCBOX_DIR/target/release/arcbox-daemon" ]; then
@@ -378,6 +381,9 @@ if [ -n "$SIGN_IDENTITY" ]; then
 fi
 
 /usr/bin/python3 "$DESKTOP_REPO/scripts/bundle-daemon.py" "${BUNDLE_DAEMON_ARGS[@]}"
+
+# Clean up temp file if we extracted the binary from an existing bundle.
+[ -n "${DAEMON_TMP:-}" ] && rm -f "$DAEMON_TMP"
 
 # Remove legacy bare binary if Xcode put it in Helpers/.
 rm -f "$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
