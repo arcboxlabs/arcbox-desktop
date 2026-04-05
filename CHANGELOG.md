@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.1...v1.19.2) (2026-04-05)
+
+
+### Bug Fixes
+
+* pass signing identity to bundle-daemon.py in Xcode builds ([d59486f](https://github.com/arcboxlabs/arcbox-desktop/commit/d59486f7bf09a6e3fbb9209b89608ffdf8f6c1ca))
+
 ## [1.19.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.0...v1.19.1) (2026-04-05)
 
 
