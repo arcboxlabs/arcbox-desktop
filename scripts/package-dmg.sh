@@ -22,8 +22,8 @@
 #   │       ├── docker-buildx
 #   │       ├── docker-compose
 #   │       └── docker-credential-osxkeychain
-#   ├── Helpers/
-#   │   └── com.arcboxlabs.desktop.daemon
+#   ├── Frameworks/
+#   │   └── com.arcboxlabs.desktop.daemon.app/  # Daemon .app bundle (with embedded.provisionprofile)
 #   ├── Resources/
 #   │   ├── assets.lock
 #   │   ├── assets/{version}/       # Boot assets (kernel, rootfs, manifest)
@@ -333,21 +333,55 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Embed provisioning profile → Contents/embedded.provisionprofile
+# 8. Bundle daemon into .app with provisioning profile
 # ---------------------------------------------------------------------------
-# Restricted entitlements (e.g. com.apple.vm.networking) require a provisioning
-# profile even for Developer ID distribution. AMFI validates this at runtime.
+# The daemon is wrapped in a .app bundle so it carries its own
+# embedded.provisionprofile. This lets AMFI validate restricted entitlements
+# (com.apple.vm.networking) on the user's machine.
+echo "--- Bundling daemon ---"
+
+# Locate the daemon binary. Multiple possible locations:
+#   1. Xcode build already bundled it via embed-arcbox-binaries.sh
+#   2. Legacy Helpers/ location (older builds)
+#   3. Raw binary from arcbox release artifacts (CI)
+DAEMON_SRC=""
+DAEMON_ALREADY_BUNDLED="$APP_BUNDLE/Contents/Frameworks/com.arcboxlabs.desktop.daemon.app/Contents/MacOS/com.arcboxlabs.desktop.daemon"
+if [ -f "$DAEMON_ALREADY_BUNDLED" ]; then
+    # Xcode already created the bundle; extract the binary to re-bundle with profile.
+    DAEMON_SRC="$DAEMON_ALREADY_BUNDLED"
+elif [ -f "$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon" ]; then
+    DAEMON_SRC="$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
+elif [ -f "$ARCBOX_DIR/target/release/arcbox-daemon" ]; then
+    DAEMON_SRC="$ARCBOX_DIR/target/release/arcbox-daemon"
+else
+    echo "error: cannot locate arcbox-daemon binary" >&2
+    exit 1
+fi
+
+BUNDLE_DAEMON_ARGS=(
+    "$DAEMON_SRC"
+    "$APP_BUNDLE/Contents/Frameworks"
+    --version "$VERSION"
+)
 if [ -n "$PROVISIONING_PROFILE" ]; then
     if [ ! -f "$PROVISIONING_PROFILE" ]; then
         echo "error: provisioning profile not found at $PROVISIONING_PROFILE" >&2
         exit 1
     fi
-    echo "--- Embedding provisioning profile ---"
-    cp "$PROVISIONING_PROFILE" "$APP_BUNDLE/Contents/embedded.provisionprofile"
-    echo "  Embedded $(basename "$PROVISIONING_PROFILE") → Contents/embedded.provisionprofile"
-elif [ -n "$SIGN_IDENTITY" ]; then
-    echo "warning: no --provisioning-profile specified; restricted entitlements (com.apple.vm.networking) may fail AMFI validation"
+    BUNDLE_DAEMON_ARGS+=(--provisioning-profile "$PROVISIONING_PROFILE")
 fi
+if [ -n "$SIGN_IDENTITY" ]; then
+    BUNDLE_DAEMON_ARGS+=(
+        --sign "$SIGN_IDENTITY"
+        --entitlements "$ARCBOX_DIR/bundle/arcbox.entitlements"
+    )
+fi
+
+/usr/bin/python3 "$DESKTOP_REPO/scripts/bundle-daemon.py" "${BUNDLE_DAEMON_ARGS[@]}"
+
+# Remove legacy bare binary if Xcode put it in Helpers/.
+rm -f "$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
+rmdir "$APP_BUNDLE/Contents/Helpers" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 9. Re-sign the entire app bundle
@@ -355,26 +389,28 @@ fi
 if [ -n "$SIGN_IDENTITY" ]; then
     echo "--- Signing app bundle ---"
 
-    DAEMON_PATH="$APP_BUNDLE/Contents/Helpers/com.arcboxlabs.desktop.daemon"
-    DAEMON_ENTITLEMENTS="$ARCBOX_DIR/bundle/arcbox.entitlements"
+    DAEMON_BUNDLE="$APP_BUNDLE/Contents/Frameworks/com.arcboxlabs.desktop.daemon.app"
 
-    if [ ! -f "$DAEMON_ENTITLEMENTS" ]; then
-        echo "error: Daemon entitlements not found at $DAEMON_ENTITLEMENTS" >&2
-        echo "  Ensure ARCBOX_DIR points to the arcbox checkout (current: $ARCBOX_DIR)" >&2
-        exit 1
+    # Temporarily move the daemon bundle out before deep-signing.
+    # The daemon is already signed by bundle-daemon.py with its own
+    # entitlements and provisioning profile. Deep-signing would overwrite that.
+    DAEMON_STASH=""
+    if [ -d "$DAEMON_BUNDLE" ]; then
+        DAEMON_STASH="$(mktemp -d)"
+        mv "$DAEMON_BUNDLE" "$DAEMON_STASH/"
+        echo "  Stashed daemon bundle to preserve signature + profile"
     fi
 
-    # Deep-sign the entire bundle first (covers frameworks, dylibs, etc.).
+    # Deep-sign the entire app bundle (covers frameworks, dylibs, etc.).
     codesign --force --deep --options runtime \
         --sign "$SIGN_IDENTITY" --timestamp \
         "$APP_BUNDLE"
 
-    # Re-sign the daemon helper WITH its entitlements (--deep strips them).
-    if [ -f "$DAEMON_PATH" ]; then
-        sign_binary "$DAEMON_PATH" \
-            --identifier "com.arcboxlabs.desktop.daemon" \
-            --entitlements "$DAEMON_ENTITLEMENTS"
-        echo "  Signed daemon with virtualization entitlement"
+    # Restore the pre-signed daemon bundle.
+    if [ -n "$DAEMON_STASH" ]; then
+        mv "$DAEMON_STASH/com.arcboxlabs.desktop.daemon.app" "$APP_BUNDLE/Contents/Frameworks/"
+        rm -rf "$DAEMON_STASH"
+        echo "  Restored pre-signed daemon bundle"
     fi
 
     # Re-sign ArcBoxHelper (privileged helper for root-level operations).

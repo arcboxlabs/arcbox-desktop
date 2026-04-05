@@ -32,7 +32,7 @@ public enum DaemonSetupPhase: Sendable, Equatable {
 /// Manages the arcbox daemon lifecycle via SMAppService (LaunchAgent) and
 /// observes readiness via gRPC `WatchSetupStatus` stream.
 ///
-/// The daemon binary is bundled in the app at `Contents/Helpers/com.arcboxlabs.desktop.daemon`
+/// The daemon is bundled as `Contents/Frameworks/com.arcboxlabs.desktop.daemon.app`
 /// and managed by launchd. `KeepAlive` in the plist ensures automatic restart on crash.
 @Observable
 @MainActor

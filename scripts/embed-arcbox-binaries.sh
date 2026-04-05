@@ -23,6 +23,7 @@ if [ "${SKIP_RUST_BUILD:-0}" = "1" ]; then
 fi
 
 DAEMON_NAME="com.arcboxlabs.desktop.daemon"
+SCRIPT_DIR="${PROJECT_DIR}/scripts"
 ARCBOX_VERSION=$(tr -d '[:space:]' < "${PROJECT_DIR}/arcbox.version")
 CACHE_DIR="${PROJECT_DIR}/.build/arcbox-binaries/${ARCBOX_VERSION}"
 
@@ -117,22 +118,45 @@ else
     exit 1
 fi
 
-# ── Embed daemon → Contents/Helpers/ ─────────────────────
-# The daemon is already signed by `make sign-daemon` with Developer ID +
-# virtualization/hypervisor entitlements. Do NOT re-sign here.
-HELPERS_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers"
-mkdir -p "${HELPERS_DIR}"
-if sync_binary "${SRC_DIR}/arcbox-daemon" "${HELPERS_DIR}/${DAEMON_NAME}"; then
-    echo "note: Daemon binary updated (already signed with Developer ID)"
+# ── Embed daemon → Contents/Frameworks/*.app ─────────────
+# The daemon is wrapped in a minimal .app bundle so it can carry its own
+# embedded.provisionprofile. This lets AMFI validate restricted entitlements
+# (com.apple.vm.networking) on the user's machine.
+FRAMEWORKS_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Frameworks"
+DAEMON_BUNDLE="${FRAMEWORKS_DIR}/${DAEMON_NAME}.app"
+DAEMON_BINARY="${DAEMON_BUNDLE}/Contents/MacOS/${DAEMON_NAME}"
+
+# Rebuild bundle if the source binary changed.
+if [ ! -f "${DAEMON_BINARY}" ] || ! cmp -s "${SRC_DIR}/arcbox-daemon" "${DAEMON_BINARY}"; then
+    echo "note: Building daemon .app bundle..."
+    /usr/bin/python3 "${SCRIPT_DIR}/bundle-daemon.py" \
+        "${SRC_DIR}/arcbox-daemon" \
+        "${FRAMEWORKS_DIR}" \
+        --version "${ARCBOX_VERSION}"
+    echo "note: Daemon bundle created at ${DAEMON_BUNDLE}"
 else
-    echo "note: Daemon binary unchanged, skipping copy"
+    echo "note: Daemon bundle unchanged, skipping rebuild"
 fi
 
 # Verify daemon signature and required entitlements.
-if ! verify_signature "${HELPERS_DIR}/${DAEMON_NAME}" --check-entitlements; then
-    echo "error: Daemon at ${HELPERS_DIR}/${DAEMON_NAME} must be signed with virtualization/hypervisor entitlements." >&2
-    echo "  Run: make -C $(dirname ${ARCBOX_REPO:-../arcbox}) sign-daemon" >&2
-    exit 1
+# In dev builds with ad-hoc signing (CODE_SIGN_IDENTITY=-), the bundle-daemon.py
+# re-signs with ad-hoc which strips entitlements. Only check entitlements when
+# a real signing identity is available.
+if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ] && [ "${EXPANDED_CODE_SIGN_IDENTITY}" != "-" ]; then
+    if ! verify_signature "${DAEMON_BINARY}" --check-entitlements; then
+        echo "error: Daemon at ${DAEMON_BINARY} must be signed with virtualization/hypervisor entitlements." >&2
+        echo "  Run: make -C $(dirname ${ARCBOX_REPO:-../arcbox}) sign-daemon" >&2
+        exit 1
+    fi
+elif ! verify_signature "${DAEMON_BINARY}"; then
+    echo "warning: Daemon signature invalid (ad-hoc builds skip entitlement check)"
+fi
+
+# Clean up legacy Helpers/ location if present (migration from bare binary).
+LEGACY_DAEMON="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/${DAEMON_NAME}"
+if [ -f "${LEGACY_DAEMON}" ]; then
+    rm -f "${LEGACY_DAEMON}"
+    echo "note: Removed legacy daemon at Helpers/${DAEMON_NAME}"
 fi
 
 # ── Embed abctl → Contents/MacOS/bin/ ────────────────────
