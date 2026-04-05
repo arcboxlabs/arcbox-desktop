@@ -512,7 +512,7 @@ jobs:
           fi
 
           mkdir -p cdn-staging/desktop/appcast
-          bash scripts/generate-appcast.sh "${APPCAST_ARGS[@]}"
+          scripts/generate-appcast.py "${APPCAST_ARGS[@]}"
 
       - name: Update latest.json
         run: |
@@ -529,7 +529,7 @@ jobs:
             LATEST_ARGS+=(--existing existing/latest.json)
           fi
 
-          bash scripts/update-latest-json.sh "${LATEST_ARGS[@]}"
+          scripts/update-latest-json.py "${LATEST_ARGS[@]}"
 
       - name: Prepare staging directory
         run: |

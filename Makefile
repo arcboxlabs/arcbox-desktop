@@ -78,7 +78,7 @@ build-app:
 
 # Unsigned DMG for local testing.
 dmg: prefetch
-	ARCBOX_DIR="$(ARCBOX_DIR)" scripts/package-dmg.sh
+	ARCBOX_DIR="$(ARCBOX_DIR)" scripts/package-dmg.py
 
 # Signed DMG for local distribution.
 dmg-signed: prefetch
@@ -89,7 +89,7 @@ dmg-signed: prefetch
 	ARCBOX_DIR="$(ARCBOX_DIR)" \
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
-	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)" \
+	scripts/package-dmg.py --sign "$(SIGN_IDENTITY)" \
 		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
 
 # Signed + notarized DMG for CI release.
@@ -101,7 +101,7 @@ dmg-release: prefetch
 	ARCBOX_DIR="$(ARCBOX_DIR)" \
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
-	scripts/package-dmg.sh --sign "$(SIGN_IDENTITY)" \
+	scripts/package-dmg.py --sign "$(SIGN_IDENTITY)" \
 		$(if $(filter 1,$(NOTARIZE)),--notarize) \
 		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
 
