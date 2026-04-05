@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.19.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.3...v1.19.4) (2026-04-05)
+
+
+### Bug Fixes
+
+* auto-run shell integration on app launch ([b4b3fa4](https://github.com/arcboxlabs/arcbox-desktop/commit/b4b3fa4ab4f07259eb53dd4d7587bdbfb930fa34))
+
+
+### Refactoring
+
+* remove replaced shell scripts ([93629d7](https://github.com/arcboxlabs/arcbox-desktop/commit/93629d79518486b65238a9ac39fd99a24d423864))
+* rewrite packaging scripts as Python ([871fc29](https://github.com/arcboxlabs/arcbox-desktop/commit/871fc299b70190e0bd530dc6695f42fbf69a99eb))
+
 ## [1.19.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.2...v1.19.3) (2026-04-05)
 
 
