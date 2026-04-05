@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.2...v1.19.3) (2026-04-05)
+
+
+### Bug Fixes
+
+* extract daemon binary before re-bundling in package-dmg ([f74db23](https://github.com/arcboxlabs/arcbox-desktop/commit/f74db23051dd564bbe10bfb195aad526a1fd81e5))
+
 ## [1.19.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.1...v1.19.2) (2026-04-05)
 
 
