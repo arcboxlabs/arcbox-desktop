@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.0...v1.19.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* preserve app entitlements when re-signing outer bundle ([5dd3d60](https://github.com/arcboxlabs/arcbox-desktop/commit/5dd3d606429d350c724d63541442eebc6ce2442e))
+
 ## [1.19.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.4...v1.19.0) (2026-04-05)
 
 
