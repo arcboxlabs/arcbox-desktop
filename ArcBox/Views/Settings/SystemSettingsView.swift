@@ -75,7 +75,8 @@ struct SystemSettingsView: View {
                 //     }
                 // }
 
-                Toggle("Switch Docker context automatically", isOn: $switchContextAutomatically)
+                // TODO: Implement Kubernetes context auto-switch (ABXD-86)
+                Toggle("Switch Docker & Kubernetes context automatically", isOn: $switchContextAutomatically)
             }
 
             Section {
