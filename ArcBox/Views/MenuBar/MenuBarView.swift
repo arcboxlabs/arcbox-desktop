@@ -273,6 +273,7 @@ struct MenuBarView: View {
                 .padding(.vertical, 4)
 
             MenuBarHoverButton {
+                (NSApp.delegate as? AppDelegate)?.forceQuit = true
                 NSApp.terminate(nil)
             } label: {
                 Label("Quit", systemImage: "power")

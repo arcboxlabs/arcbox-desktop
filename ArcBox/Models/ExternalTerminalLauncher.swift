@@ -1,9 +1,8 @@
 import AppKit
-import OSLog
 
 /// Launches an external terminal app with Docker environment pre-configured.
 enum ExternalTerminalLauncher {
-    private static let logger = Logger(subsystem: "com.arcbox.desktop", category: "ExternalTerminal")
+    private static let logger = Log.terminal
 
     /// The Docker socket environment variable value used by ArcBox.
     private static var dockerHost: String {
@@ -91,7 +90,8 @@ enum ExternalTerminalLauncher {
             var error: NSDictionary?
             script.executeAndReturnError(&error)
             if let error {
-                logger.error("AppleScript error: \(error)")
+                let errorMessage = (error[NSAppleScript.errorMessage] as? String) ?? "Unknown AppleScript error"
+                logger.error("AppleScript error: \(errorMessage, privacy: .public)")
             }
         }
     }

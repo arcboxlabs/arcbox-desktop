@@ -1,6 +1,5 @@
 import AppKit
 import DockerClient
-import OSLog
 
 /// Monitors macOS sleep/wake events and pauses/unpauses running containers accordingly.
 ///
@@ -9,7 +8,7 @@ import OSLog
 @MainActor
 @Observable
 final class SleepWakeManager {
-    private let logger = Logger(subsystem: "com.arcbox.desktop", category: "SleepWakeManager")
+    private let logger = Log.sleep
 
     /// IDs of containers that were paused by this manager (not manually paused by user).
     @ObservationIgnored private var pausedByUs: Set<String> = []

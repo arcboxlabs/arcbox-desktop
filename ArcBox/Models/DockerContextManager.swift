@@ -6,7 +6,7 @@ import OSLog
 /// When enabled, sets the Docker context on app startup and restores the
 /// previous context on shutdown by writing to `~/.docker/config.json`.
 enum DockerContextManager {
-    private static let logger = Logger(subsystem: "com.arcbox.desktop", category: "DockerContext")
+    private static let logger = Log.context
     private static let previousContextKey = "previousDockerContext"
 
     private static var configPath: String {
@@ -49,30 +49,37 @@ enum DockerContextManager {
 
                 logger.info("Switched Docker context to arcbox")
             } catch {
-                logger.error("Failed to switch Docker context: \(error.localizedDescription)")
+                logger.error("Failed to switch Docker context: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
 
     /// Restore the Docker CLI context to what it was before ArcBox started.
+    /// Always restores if a previous context was saved, regardless of the current toggle state,
+    /// to avoid leaving the user's Docker CLI pointing at a dead socket.
     static func restorePreviousContext() {
-        guard UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") else { return }
-
         do {
             guard var config = try readConfig() else {
                 logger.error("Failed to parse ~/.docker/config.json, skipping context restore to avoid data loss")
                 return
             }
+
+            // Always restore if we previously saved a context — even if the toggle was turned off since.
             if let previousContext = UserDefaults.standard.string(forKey: previousContextKey) {
                 config["currentContext"] = previousContext
+                try writeConfig(config)
                 UserDefaults.standard.removeObject(forKey: previousContextKey)
-            } else {
-                config.removeValue(forKey: "currentContext")
+                logger.info("Restored previous Docker context")
+                return
             }
+
+            // No saved context — only clean up currentContext if the feature is still enabled
+            guard UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") else { return }
+            config.removeValue(forKey: "currentContext")
             try writeConfig(config)
-            logger.info("Restored previous Docker context")
+            logger.info("Cleared Docker context")
         } catch {
-            logger.error("Failed to restore Docker context: \(error.localizedDescription)")
+            logger.error("Failed to restore Docker context: \(error.localizedDescription, privacy: .public)")
         }
     }
 

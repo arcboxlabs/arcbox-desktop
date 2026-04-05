@@ -12,4 +12,7 @@ nonisolated enum Log {
     static let network   = Logger(subsystem: subsystem, category: "network")
     static let pods      = Logger(subsystem: subsystem, category: "pods")
     static let services  = Logger(subsystem: subsystem, category: "services")
+    static let context   = Logger(subsystem: subsystem, category: "context")
+    static let sleep     = Logger(subsystem: subsystem, category: "sleep")
+    static let terminal  = Logger(subsystem: subsystem, category: "terminal")
 }

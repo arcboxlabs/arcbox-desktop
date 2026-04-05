@@ -6,7 +6,7 @@ struct StorageSettingsView: View {
 
     @State private var storageLocation = "default"
     @AppStorage("includeTimeMachine") private var includeTimeMachine = false
-    @State private var hideOrbStackVolume = false
+    @State private var hideArcBoxVolume = false
 
     // Reset state
     @State private var showResetDockerAlert = false
@@ -50,7 +50,7 @@ struct StorageSettingsView: View {
 
             Section("Integration") {
                 LabeledContent {
-                    Toggle("", isOn: $hideOrbStackVolume)
+                    Toggle("", isOn: $hideArcBoxVolume)
                         .labelsHidden()
                         .disabled(true) // Requires backend support
                 } label: {
