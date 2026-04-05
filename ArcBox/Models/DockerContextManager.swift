@@ -31,8 +31,9 @@ enum DockerContextManager {
                     return
                 }
 
-                // Save previous currentContext (if any)
-                if let previousContext = config["currentContext"] as? String, previousContext != "arcbox" {
+                // Always save the current context so we can restore it on quit,
+                // even if it's already "arcbox" (user may have set it intentionally).
+                if let previousContext = config["currentContext"] as? String {
                     UserDefaults.standard.set(previousContext, forKey: previousContextKey)
                 }
 
@@ -65,19 +66,14 @@ enum DockerContextManager {
             }
 
             // Always restore if we previously saved a context — even if the toggle was turned off since.
-            if let previousContext = UserDefaults.standard.string(forKey: previousContextKey) {
-                config["currentContext"] = previousContext
-                try writeConfig(config)
-                UserDefaults.standard.removeObject(forKey: previousContextKey)
-                logger.info("Restored previous Docker context")
+            guard let previousContext = UserDefaults.standard.string(forKey: previousContextKey) else {
+                // No saved context — nothing to restore.
                 return
             }
-
-            // No saved context — only clean up currentContext if the feature is still enabled
-            guard UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") else { return }
-            config.removeValue(forKey: "currentContext")
+            config["currentContext"] = previousContext
             try writeConfig(config)
-            logger.info("Cleared Docker context")
+            UserDefaults.standard.removeObject(forKey: previousContextKey)
+            logger.info("Restored previous Docker context")
         } catch {
             logger.error("Failed to restore Docker context: \(error.localizedDescription, privacy: .public)")
         }
