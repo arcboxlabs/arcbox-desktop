@@ -5,11 +5,13 @@ import SwiftUI
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case system = "System"
-    case network = "Network"
+    // TODO: Implement network settings (ABXD-88)
+    // case network = "Network"
     case storage = "Storage"
-    case machines = "Machines"
-    case docker = "Docker"
-    case kubernetes = "Kubernetes"
+    // TODO: Implement machines/docker/kubernetes tabs (ABXD-86)
+    // case machines = "Machines"
+    // case docker = "Docker"
+    // case kubernetes = "Kubernetes"
 
     var id: String { rawValue }
 
@@ -17,11 +19,11 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "gearshape"
         case .system: return "square.grid.2x2"
-        case .network: return "globe"
+        // case .network: return "globe"
         case .storage: return "externaldrive"
-        case .machines: return "desktopcomputer"
-        case .docker: return "shippingbox"
-        case .kubernetes: return "helm"
+        // case .machines: return "desktopcomputer"
+        // case .docker: return "shippingbox"
+        // case .kubernetes: return "helm"
         }
     }
 }
@@ -54,15 +56,11 @@ struct SettingsView: View {
             GeneralSettingsView()
         case .system:
             SystemSettingsView()
-        case .network:
-            NetworkSettingsView()
+        // TODO: Implement network settings (ABXD-88)
+        // case .network:
+        //     NetworkSettingsView()
         case .storage:
             StorageSettingsView()
-        default:
-            Text(selectedTab.rawValue)
-                .font(.title2)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

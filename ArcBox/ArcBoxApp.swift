@@ -177,15 +177,12 @@ struct ArcBoxDesktopApp: App {
             CommandGroup(after: .appInfo) {
                 CheckForUpdatesView(updater: updaterController.updater)
             }
-            SettingsCommands()
         }
 
-        Window("", id: "settings") {
+        Settings {
             SettingsView()
                 .environment(\.dockerClient, dockerClient)
         }
-        .windowResizability(.contentSize)
-        .defaultLaunchBehavior(.suppressed)
 
         MenuBarExtra("ArcBox", systemImage: "shippingbox", isInserted: $showInMenuBar) {
             MenuBarView()
@@ -224,22 +221,6 @@ struct ArcBoxDesktopApp: App {
         }
         arcboxClient = client
         return client
-    }
-}
-
-// MARK: - Settings Menu Command
-
-struct SettingsCommands: Commands {
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some Commands {
-        CommandGroup(replacing: .appSettings) {
-            Button("Settings...") {
-                openWindow(id: "settings")
-                NSApp.activate(ignoringOtherApps: true)
-            }
-            .keyboardShortcut(",")
-        }
     }
 }
 

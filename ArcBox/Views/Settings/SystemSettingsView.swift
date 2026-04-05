@@ -1,92 +1,96 @@
 import SwiftUI
 
 struct SystemSettingsView: View {
-    @State private var memoryLimit: Double = 9
-    @State private var cpuLimit: Double = 17 // 17 = "None" (beyond max)
-    @State private var useAdminPrivileges = true
+    // TODO: Implement resource controls (CPU/Memory) and environment
+    // toggles (Admin/Rosetta) when backend gRPC APIs are available (ABXD-87)
+    // @State private var memoryLimit: Double = 9
+    // @State private var cpuLimit: Double = 17 // 17 = "None" (beyond max)
+    // @State private var useAdminPrivileges = true
     @AppStorage("switchDockerContextAutomatically") private var switchContextAutomatically = true
-    @State private var useRosetta = true
+    // @State private var useRosetta = true
     @AppStorage("pauseContainersWhileSleeping") private var pauseContainersWhileSleeping = true
 
-    private let memoryRange: ClosedRange<Double> = 1...14
-    private let cpuSteps: [String] = ["100%", ""] // display only
+    // private let memoryRange: ClosedRange<Double> = 1...14
 
     var body: some View {
         Form {
-            Section {
-                Text("Resources are only used as needed. These are limits, not reservations. [Learn more](#)")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                LabeledContent {
-                    HStack {
-                        Text("1 GiB")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Slider(value: $memoryLimit, in: memoryRange, step: 1)
-                        Text("14 GiB")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Memory limit")
-                        Text("\(Int(memoryLimit)) GiB")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                LabeledContent {
-                    HStack {
-                        Text("100%")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Slider(value: $cpuLimit, in: 1...17, step: 1)
-                        Text("None")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("CPU limit")
-                        Text(cpuLimitLabel)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } header: {
-                Text("Resources")
-            }
+            // TODO: Implement resource controls when backend gRPC APIs are available (ABXD-87)
+            // Section {
+            //     Text("Resources are only used as needed. These are limits, not reservations. [Learn more](#)")
+            //         .font(.callout)
+            //         .foregroundStyle(.secondary)
+            //
+            //     LabeledContent {
+            //         HStack {
+            //             Text("1 GiB")
+            //                 .font(.caption)
+            //                 .foregroundStyle(.secondary)
+            //             Slider(value: $memoryLimit, in: memoryRange, step: 1)
+            //             Text("14 GiB")
+            //                 .font(.caption)
+            //                 .foregroundStyle(.secondary)
+            //         }
+            //     } label: {
+            //         VStack(alignment: .leading, spacing: 2) {
+            //             Text("Memory limit")
+            //             Text("\(Int(memoryLimit)) GiB")
+            //                 .font(.caption)
+            //                 .foregroundStyle(.secondary)
+            //         }
+            //     }
+            //
+            //     LabeledContent {
+            //         HStack {
+            //             Text("100%")
+            //                 .font(.caption)
+            //                 .foregroundStyle(.secondary)
+            //             Slider(value: $cpuLimit, in: 1...17, step: 1)
+            //             Text("None")
+            //                 .font(.caption)
+            //                 .foregroundStyle(.secondary)
+            //         }
+            //     } label: {
+            //         VStack(alignment: .leading, spacing: 2) {
+            //             Text("CPU limit")
+            //             Text(cpuLimitLabel)
+            //                 .font(.caption)
+            //                 .foregroundStyle(.secondary)
+            //         }
+            //     }
+            // } header: {
+            //     Text("Resources")
+            // }
 
             Section("Environment") {
-                LabeledContent {
-                    Toggle("", isOn: $useAdminPrivileges)
-                        .labelsHidden()
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Use admin privileges for enhanced features")
-                        Text("This can improve performance and compatibility. [Learn more](#)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                // TODO: Implement admin privileges toggle (ABXD-87)
+                // LabeledContent {
+                //     Toggle("", isOn: $useAdminPrivileges)
+                //         .labelsHidden()
+                // } label: {
+                //     VStack(alignment: .leading, spacing: 2) {
+                //         Text("Use admin privileges for enhanced features")
+                //         Text("This can improve performance and compatibility. [Learn more](#)")
+                //             .font(.caption)
+                //             .foregroundStyle(.secondary)
+                //     }
+                // }
 
                 Toggle("Switch Docker & Kubernetes context automatically", isOn: $switchContextAutomatically)
             }
 
             Section {
-                LabeledContent {
-                    Toggle("", isOn: $useRosetta)
-                        .labelsHidden()
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Use Rosetta to run Intel code")
-                        Text("Faster. Only disable if you get errors.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                // TODO: Implement Rosetta toggle (ABXD-87)
+                // LabeledContent {
+                //     Toggle("", isOn: $useRosetta)
+                //         .labelsHidden()
+                // } label: {
+                //     VStack(alignment: .leading, spacing: 2) {
+                //         Text("Use Rosetta to run Intel code")
+                //         Text("Faster. Only disable if you get errors.")
+                //             .font(.caption)
+                //             .foregroundStyle(.secondary)
+                //     }
+                // }
 
                 LabeledContent {
                     Toggle("", isOn: $pauseContainersWhileSleeping)
@@ -108,26 +112,28 @@ struct SystemSettingsView: View {
                 }
             }
 
-            Section {
-                HStack {
-                    Spacer()
-                    Button("Apply and Restart") {}
-                        .disabled(true)
-                    Spacer()
-                }
-            }
-            .listRowBackground(Color.clear)
+            // TODO: Implement Apply and Restart (ABXD-87)
+            // Section {
+            //     HStack {
+            //         Spacer()
+            //         Button("Apply and Restart") {}
+            //             .disabled(true)
+            //         Spacer()
+            //     }
+            // }
+            // .listRowBackground(Color.clear)
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
     }
 
-    private var cpuLimitLabel: String {
-        if cpuLimit >= 17 {
-            return "None"
-        }
-        return "\(Int(cpuLimit * 100 / 16))%"
-    }
+    // TODO: Uncomment when CPU limit slider is enabled (ABXD-87)
+    // private var cpuLimitLabel: String {
+    //     if cpuLimit >= 17 {
+    //         return "None"
+    //     }
+    //     return "\(Int(cpuLimit * 100 / 16))%"
+    // }
 }
 
 #Preview {
