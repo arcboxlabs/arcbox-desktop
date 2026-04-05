@@ -424,7 +424,8 @@ if [ -n "$SIGN_IDENTITY" ]; then
     fi
 
     # Re-sign the outer app (nested code changed, so the seal must be refreshed).
-    sign_binary "$APP_BUNDLE"
+    sign_binary "$APP_BUNDLE" \
+        --entitlements "$DESKTOP_REPO/ArcBox/ArcBox.entitlements"
 
     codesign --verify --deep --strict "$APP_BUNDLE"
     echo "  Signed and verified"
