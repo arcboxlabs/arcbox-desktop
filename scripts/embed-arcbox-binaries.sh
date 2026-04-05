@@ -129,10 +129,23 @@ DAEMON_BINARY="${DAEMON_BUNDLE}/Contents/MacOS/${DAEMON_NAME}"
 # Rebuild bundle if the source binary changed.
 if [ ! -f "${DAEMON_BINARY}" ] || ! cmp -s "${SRC_DIR}/arcbox-daemon" "${DAEMON_BINARY}"; then
     echo "note: Building daemon .app bundle..."
-    /usr/bin/python3 "${SCRIPT_DIR}/bundle-daemon.py" \
-        "${SRC_DIR}/arcbox-daemon" \
-        "${FRAMEWORKS_DIR}" \
+    BUNDLE_ARGS=(
+        "${SRC_DIR}/arcbox-daemon"
+        "${FRAMEWORKS_DIR}"
         --version "${ARCBOX_VERSION}"
+    )
+    # When a real signing identity is available, sign the daemon bundle with
+    # entitlements so AMFI can validate restricted entitlements at runtime.
+    if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ] && [ "${EXPANDED_CODE_SIGN_IDENTITY}" != "-" ]; then
+        DAEMON_ENTITLEMENTS="${ARCBOX_REPO}/bundle/arcbox.entitlements"
+        if [ -f "${DAEMON_ENTITLEMENTS}" ]; then
+            BUNDLE_ARGS+=(
+                --sign "${EXPANDED_CODE_SIGN_IDENTITY}"
+                --entitlements "${DAEMON_ENTITLEMENTS}"
+            )
+        fi
+    fi
+    /usr/bin/python3 "${SCRIPT_DIR}/bundle-daemon.py" "${BUNDLE_ARGS[@]}"
     echo "note: Daemon bundle created at ${DAEMON_BUNDLE}"
 else
     echo "note: Daemon bundle unchanged, skipping rebuild"
