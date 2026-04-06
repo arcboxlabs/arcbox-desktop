@@ -10,7 +10,7 @@ import SwiftTerm
 @MainActor
 @Observable
 class DockerTerminalSession {
-    private enum Defaults {
+    nonisolated private enum Defaults {
         static let cols = 80
         static let rows = 24
         static let bufferSize = 8192
@@ -94,7 +94,8 @@ class DockerTerminalSession {
             state = .error("Failed to create PTY")
             return
         }
-        masterFDLock.withLock { $0 = master }
+        let masterFD = master
+        masterFDLock.withLock { $0 = masterFD }
 
         // Set initial terminal size from SwiftTerm (use sensible defaults if not yet laid out)
         let terminal = terminalView.getTerminal()
@@ -105,15 +106,24 @@ class DockerTerminalSession {
         winSize.ws_row = UInt16(rows)
         _ = ioctl(master, TIOCSWINSZ, &winSize)
 
-        // Configure process
+        // Configure process — use pstramp when available for proper
+        // session isolation and controlling-terminal setup.
         let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: dockerPath)
-        proc.arguments = arguments
-        // Ensure docker CLI connects to the ArcBox daemon socket
-        var env = ProcessInfo.processInfo.environment
+        var env = Self.sanitizedEnvironment()
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         env["DOCKER_HOST"] = "unix://\(home)/.arcbox/run/docker.sock"
+        env["TERM"] = "xterm-256color"
         proc.environment = env
+
+        if let pstrampPath = Self.findPstramp() {
+            // -setctty: new session + PTY slave becomes controlling terminal
+            // -disclaim: relinquish macOS responsibility claims
+            proc.executableURL = URL(fileURLWithPath: pstrampPath)
+            proc.arguments = ["-setctty", "-disclaim", "--", dockerPath] + arguments
+        } else {
+            proc.executableURL = URL(fileURLWithPath: dockerPath)
+            proc.arguments = arguments
+        }
         proc.standardInput = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
         proc.standardOutput = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
         proc.standardError = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
@@ -231,6 +241,34 @@ class DockerTerminalSession {
                 // allowing Foundation to deallocate on this background thread.
             }
         }
+    }
+
+    // MARK: - Environment & Trampoline
+
+    /// GUI-specific keys stripped before spawning child processes.
+    /// `__CFBundleIdentifier` causes macOS to attribute the child to the
+    /// desktop app; the others leak irrelevant GUI metadata into the session.
+    nonisolated private static let envKeysToStrip: Set<String> = [
+        "__CFBundleIdentifier",
+        "Apple_PubSub_Socket_Render",
+        "SECURITYSESSIONID",
+    ]
+
+    nonisolated private static func sanitizedEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        for key in envKeysToStrip {
+            env.removeValue(forKey: key)
+        }
+        return env
+    }
+
+    /// Locate pstramp in the app bundle (Contents/MacOS/pstramp).
+    nonisolated private static func findPstramp() -> String? {
+        guard let macosDir = Bundle.main.executableURL?.deletingLastPathComponent() else {
+            return nil
+        }
+        let path = macosDir.appendingPathComponent("pstramp").path
+        return FileManager.default.isExecutableFile(atPath: path) ? path : nil
     }
 
     // MARK: - Docker CLI Discovery
