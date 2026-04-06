@@ -39,7 +39,7 @@ class ContainersViewModel {
 
     var containers: [ContainerViewModel] = []
     var hasCompletedInitialLoad: Bool = false
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: ContainerDetailTab = .info
     var expandedGroups: Set<String> = []
     var listWidth: CGFloat = 320

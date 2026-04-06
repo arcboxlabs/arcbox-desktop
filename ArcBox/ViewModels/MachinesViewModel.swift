@@ -16,7 +16,7 @@ enum MachineDetailTab: String, CaseIterable, Identifiable {
 @Observable
 class MachinesViewModel {
     var machines: [MachineViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: MachineDetailTab = .info
     var searchText: String = ""
     var isSearching: Bool = false

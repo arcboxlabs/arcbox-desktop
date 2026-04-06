@@ -56,12 +56,15 @@ struct NewContainerSheet: View {
                 Text("New Container")
                     .font(.system(size: 13, weight: .semibold))
                 Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppColors.textSecondary)
-                        .frame(width: 24, height: 24)
-                }
+                Button(
+                    action: { dismiss() },
+                    label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .frame(width: 24, height: 24)
+                    }
+                )
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)

@@ -89,14 +89,17 @@ struct NewNetworkSheet: View {
             Spacer(minLength: 0)
 
             HStack(spacing: 10) {
-                Button(action: {}) {
-                    Image(systemName: "questionmark")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(AppColors.textSecondary)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(AppColors.surface))
-                        .overlay(Circle().stroke(AppColors.border))
-                }
+                Button(
+                    action: {},
+                    label: {
+                        Image(systemName: "questionmark")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(AppColors.surface))
+                            .overlay(Circle().stroke(AppColors.border))
+                    }
+                )
                 .buttonStyle(.plain)
 
                 Spacer()

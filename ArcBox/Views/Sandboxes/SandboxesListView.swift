@@ -49,13 +49,17 @@ struct SandboxesListView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.pageTab == .list {
                     SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                    Button(action: {}) {
-                        Image(systemName: "magnifyingglass")
-                    }
+                    Button(
+                        action: {},
+                        label: {
+                            Image(systemName: "magnifyingglass")
+                        })
                 }
-                Button(action: {}) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: {},
+                    label: {
+                        Image(systemName: "plus")
+                    })
             }
         }
         .onAppear {

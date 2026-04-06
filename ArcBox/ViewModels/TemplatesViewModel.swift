@@ -19,7 +19,7 @@ enum TemplateSortField: String, CaseIterable {
 @Observable
 class TemplatesViewModel {
     var templates: [TemplateViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: TemplateDetailTab = .info
     var listWidth: CGFloat = 320
     var sortBy: TemplateSortField = .name

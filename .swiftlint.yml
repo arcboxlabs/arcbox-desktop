@@ -1,5 +1,6 @@
 included:
   - ArcBox
+  - ArcBoxTests
   - Packages
 
 excluded:
@@ -22,6 +23,9 @@ disabled_rules:
   - type_name
   - force_cast
   - trailing_comma
+  - todo
+  - opening_brace
+  - closure_parameter_position
 
 opt_in_rules:
   - empty_count

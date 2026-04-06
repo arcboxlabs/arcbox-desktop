@@ -77,7 +77,7 @@ jobs:
       - name: SwiftLint
         run: |
           brew install swiftlint
-          swiftlint lint --config .swiftlint.yml
+          swiftlint lint --strict --config .swiftlint.yml
 
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox

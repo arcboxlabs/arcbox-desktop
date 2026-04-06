@@ -45,9 +45,12 @@ struct VolumesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showNewVolumeSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showNewVolumeSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
                 .accessibilityLabel("New volume")
                 .keyboardShortcut("n", modifiers: .command)
             }

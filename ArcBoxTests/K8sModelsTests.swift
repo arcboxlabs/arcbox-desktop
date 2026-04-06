@@ -7,7 +7,8 @@ final class K8sModelsTests: XCTestCase {
     // MARK: - Pod Decoding
 
     func testDecodePodList() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "12345"},
                 "items": [
@@ -33,7 +34,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 ]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         XCTAssertEqual(podList.metadata?.resourceVersion, "12345")
@@ -54,21 +55,23 @@ final class K8sModelsTests: XCTestCase {
     }
 
     func testDecodePodListEmpty() throws {
-        let json = """
+        let json = Data(
+            """
             {"metadata": {"resourceVersion": "1"}, "items": []}
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         XCTAssertTrue(podList.items.isEmpty)
     }
 
     func testDecodePodMinimalMetadata() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{"metadata": {"name": "test"}}]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         XCTAssertEqual(podList.items.first?.metadata?.name, "test")
@@ -79,7 +82,8 @@ final class K8sModelsTests: XCTestCase {
     // MARK: - Service Decoding
 
     func testDecodeServiceList() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "67890"},
                 "items": [
@@ -99,7 +103,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 ]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let serviceList = try JSONDecoder.kubernetes.decode(ServiceList.self, from: json)
         XCTAssertEqual(serviceList.metadata?.resourceVersion, "67890")
@@ -123,9 +127,10 @@ final class K8sModelsTests: XCTestCase {
     // MARK: - TargetPort
 
     func testDecodeTargetPortInt() throws {
-        let json = """
+        let json = Data(
+            """
             {"name": "http", "port": 80, "targetPort": 8080, "protocol": "TCP"}
-            """.data(using: .utf8)!
+            """.utf8)
 
         let port = try JSONDecoder().decode(ServicePort.self, from: json)
         if case .int(let tp) = port.targetPort {
@@ -136,9 +141,10 @@ final class K8sModelsTests: XCTestCase {
     }
 
     func testDecodeTargetPortString() throws {
-        let json = """
+        let json = Data(
+            """
             {"name": "http", "port": 80, "targetPort": "http-web", "protocol": "TCP"}
-            """.data(using: .utf8)!
+            """.utf8)
 
         let port = try JSONDecoder().decode(ServicePort.self, from: json)
         if case .string(let tp) = port.targetPort {
@@ -149,9 +155,10 @@ final class K8sModelsTests: XCTestCase {
     }
 
     func testDecodeTargetPortAbsent() throws {
-        let json = """
+        let json = Data(
+            """
             {"name": "http", "port": 80, "protocol": "TCP"}
-            """.data(using: .utf8)!
+            """.utf8)
 
         let port = try JSONDecoder().decode(ServicePort.self, from: json)
         XCTAssertNil(port.targetPort)
@@ -160,7 +167,8 @@ final class K8sModelsTests: XCTestCase {
     // MARK: - Date Handling
 
     func testDecodeDateWithFractionalSeconds() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{
@@ -170,14 +178,15 @@ final class K8sModelsTests: XCTestCase {
                     }
                 }]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         XCTAssertNotNil(podList.items.first?.metadata?.creationTimestamp)
     }
 
     func testDecodeDateWithoutFractionalSeconds() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{
@@ -187,7 +196,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 }]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         XCTAssertNotNil(podList.items.first?.metadata?.creationTimestamp)
@@ -196,7 +205,8 @@ final class K8sModelsTests: XCTestCase {
     // MARK: - Container State
 
     func testDecodeContainerStateRunning() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{
@@ -215,7 +225,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 }]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         let status = podList.items.first?.status?.containerStatuses?.first
@@ -226,7 +236,8 @@ final class K8sModelsTests: XCTestCase {
     }
 
     func testDecodeContainerStateWaiting() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{
@@ -244,7 +255,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 }]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         let state = podList.items.first?.status?.containerStatuses?.first?.state
@@ -253,7 +264,8 @@ final class K8sModelsTests: XCTestCase {
     }
 
     func testDecodeContainerStateTerminated() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{
@@ -271,7 +283,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 }]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let podList = try JSONDecoder.kubernetes.decode(PodList.self, from: json)
         let state = podList.items.first?.status?.containerStatuses?.first?.state
@@ -283,7 +295,8 @@ final class K8sModelsTests: XCTestCase {
     // MARK: - Service with selector
 
     func testDecodeServiceWithSelector() throws {
-        let json = """
+        let json = Data(
+            """
             {
                 "metadata": {"resourceVersion": "1"},
                 "items": [{
@@ -296,7 +309,7 @@ final class K8sModelsTests: XCTestCase {
                     }
                 }]
             }
-            """.data(using: .utf8)!
+            """.utf8)
 
         let serviceList = try JSONDecoder.kubernetes.decode(ServiceList.self, from: json)
         let svc = serviceList.items.first

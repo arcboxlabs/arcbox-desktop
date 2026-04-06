@@ -81,9 +81,12 @@ struct ContainersListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showNewContainerSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showNewContainerSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
                 .accessibilityLabel("New container")
                 .keyboardShortcut("n", modifiers: .command)
             }
