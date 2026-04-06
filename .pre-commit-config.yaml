@@ -10,5 +10,5 @@ repos:
       - id: swiftlint
         name: swiftlint
         language: system
-        entry: swiftlint lint --config .swiftlint.yml
+        entry: swiftlint lint --strict --config .swiftlint.yml
         types: [swift]
