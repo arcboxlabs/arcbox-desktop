@@ -27,6 +27,16 @@ public enum DaemonSetupPhase: Sendable, Equatable {
     case ready
     case degraded
     case cleaningUp
+
+    /// Whether the Docker API socket (`~/.arcbox/run/docker.sock`) is expected
+    /// to be available at this phase. This is true once the daemon has finished
+    /// its full setup or is running in a degraded state.
+    ///
+    /// Note: this is distinct from `dockerSocketLinked`, which tracks the CLI
+    /// convenience symlink at `/var/run/docker.sock`.
+    public var isDockerReady: Bool {
+        self == .ready || self == .degraded
+    }
 }
 
 /// Manages the arcbox daemon lifecycle via SMAppService (LaunchAgent) and

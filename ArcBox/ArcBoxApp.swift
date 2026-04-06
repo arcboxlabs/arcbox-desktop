@@ -163,9 +163,9 @@ struct ArcBoxDesktopApp: App {
                     await orchestrator.start()
                 }
                 // DockerClient is created when daemon state becomes running.
-                // ListViews gate their initial load on daemonManager.dockerSocketLinked
+                // ListViews gate their initial load on setupPhase.isDockerReady
                 // (reported via the gRPC WatchSetupStatus stream) to avoid hitting the
-                // Docker API before the socket is ready.
+                // Docker API before the daemon has finished initialization.
                 .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
@@ -225,7 +225,7 @@ struct ArcBoxDesktopApp: App {
 
     /// Create gRPC client and return it for the orchestrator.
     /// DockerClient is created separately in onChange(of: daemonManager.state).
-    /// ListViews gate data loading on daemonManager.dockerSocketLinked.
+    /// ListViews gate data loading on setupPhase.isDockerReady.
     private func initClientsAndReturn() throws -> ArcBoxClient {
         if let existing = arcboxClient {
             Log.startup.info("Reusing existing ArcBoxClient")
