@@ -152,7 +152,10 @@ public final class DaemonManager {
     }
 
     /// Run `abctl setup install` as the current user to set up shell
-    /// integration (PATH symlinks, completions, profile injection).
+    /// integration (PATH symlinks, completions, profile injection),
+    /// then copy all bundled completions from the app bundle into
+    /// `~/.arcbox/completions/` so that Docker completions etc. are
+    /// available alongside `_abctl`.
     /// Non-critical — failures are logged but do not block startup.
     private func installShellIntegration(abctl: String) async {
         await Task.detached { @Sendable in
@@ -171,6 +174,59 @@ public final class DaemonManager {
             } catch {
                 ClientLog.daemon.warning(
                     "Failed to run abctl setup install: \(error, privacy: .public)")
+            }
+        }.value
+
+        await installBundledCompletions()
+    }
+
+    /// Copy all shell completions bundled in
+    /// `Contents/Resources/completions/{bash,zsh,fish}/` into the
+    /// user's `~/.arcbox/completions/` directory, preserving any
+    /// files already installed by `abctl setup install`.
+    private func installBundledCompletions() async {
+        let bundleURL = Bundle.main.bundleURL
+        await Task.detached { @Sendable in
+            let fm = FileManager.default
+            let bundledCompletions =
+                bundleURL
+                .appendingPathComponent("Contents/Resources/completions")
+            guard fm.fileExists(atPath: bundledCompletions.path) else {
+                ClientLog.daemon.info("No bundled completions directory found, skipping")
+                return
+            }
+
+            let userCompletions = fm.homeDirectoryForCurrentUser
+                .appendingPathComponent(".arcbox/completions")
+
+            for shell in ["bash", "zsh", "fish"] {
+                let srcDir = bundledCompletions.appendingPathComponent(shell)
+                guard let files = try? fm.contentsOfDirectory(atPath: srcDir.path) else {
+                    continue
+                }
+                let destDir = userCompletions.appendingPathComponent(shell)
+                do {
+                    try fm.createDirectory(at: destDir, withIntermediateDirectories: true)
+                } catch {
+                    ClientLog.daemon.warning(
+                        "Failed to create completions dir \(destDir.path): \(error, privacy: .public)")
+                    continue
+                }
+                for file in files {
+                    let src = srcDir.appendingPathComponent(file)
+                    let dest = destDir.appendingPathComponent(file)
+                    do {
+                        // Overwrite with the bundled version so updates propagate.
+                        if fm.fileExists(atPath: dest.path) {
+                            try fm.removeItem(at: dest)
+                        }
+                        try fm.copyItem(at: src, to: dest)
+                    } catch {
+                        ClientLog.daemon.warning(
+                            "Failed to copy completion \(file): \(error, privacy: .public)")
+                    }
+                }
+                ClientLog.daemon.info("Installed bundled \(shell) completions")
             }
         }.value
     }
