@@ -496,7 +496,7 @@ class ContainersViewModel {
             return
         }
 
-        if loadState == .waiting {
+        if loadState != .loaded {
             loadState = .loading
         }
 

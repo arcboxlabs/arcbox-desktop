@@ -414,6 +414,9 @@ public final class DaemonManager {
         }.value
     }
 
+    /// Timeout for individual codesign invocations during verification.
+    nonisolated private static let codesignTimeout: TimeInterval = 10
+
     nonisolated private static func performDaemonVerification(at path: String) -> String? {
         guard FileManager.default.fileExists(atPath: path) else {
             ClientLog.daemon.error("Daemon binary not found at \(path, privacy: .public)")
@@ -428,7 +431,9 @@ public final class DaemonManager {
         verify.standardError = FileHandle.nullDevice
         do {
             try verify.run()
-            verify.waitUntilExit()
+            if !waitForProcess(verify, timeout: codesignTimeout) {
+                return "Daemon signature verification timed out."
+            }
             if verify.terminationStatus != 0 {
                 ClientLog.daemon.error("Daemon signature verification failed (status \(verify.terminationStatus))")
                 return "Daemon binary has an invalid code signature (codesign status \(verify.terminationStatus))."
@@ -439,6 +444,8 @@ public final class DaemonManager {
         }
 
         // Step 2: check required entitlements
+        // Read pipe data BEFORE waitUntilExit to avoid deadlock when
+        // codesign output exceeds the pipe buffer capacity.
         let entProc = Process()
         entProc.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
         entProc.arguments = ["-d", "--entitlements", "-", "--xml", path]
@@ -447,8 +454,10 @@ public final class DaemonManager {
         entProc.standardError = FileHandle.nullDevice
         do {
             try entProc.run()
-            entProc.waitUntilExit()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if !waitForProcess(entProc, timeout: codesignTimeout) {
+                return "Daemon entitlements check timed out."
+            }
             let output = String(data: data, encoding: .utf8) ?? ""
 
             let required = [
@@ -470,6 +479,19 @@ public final class DaemonManager {
 
         ClientLog.daemon.info("Daemon binary verified OK (signature + entitlements)")
         return nil
+    }
+
+    /// Wait for a process to exit within a timeout. Kills the process and returns
+    /// false if the deadline is exceeded.
+    nonisolated private static func waitForProcess(_ process: Process, timeout: TimeInterval) -> Bool {
+        let sem = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in sem.signal() }
+        if sem.wait(timeout: .now() + timeout) == .timedOut {
+            process.terminate()
+            ClientLog.daemon.warning("codesign process timed out after \(timeout)s, killed")
+            return false
+        }
+        return true
     }
 
     // MARK: - Internal
