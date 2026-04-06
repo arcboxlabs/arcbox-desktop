@@ -53,7 +53,13 @@ struct AboutView: View {
             .padding(24)
         }
         .task {
-            releases = ChangelogParser.loadFromBundle(limit: 5)
+            let loadedReleases = await Task.detached(priority: .utility) {
+                ChangelogParser.loadFromBundle(limit: 3)
+            }.value
+
+            await MainActor.run {
+                releases = loadedReleases
+            }
         }
     }
 
@@ -240,7 +246,8 @@ struct AboutView: View {
             }
             .buttonStyle(.plain)
             .font(.system(size: 11))
-            .foregroundStyle(AppColors.accent)
+            .foregroundStyle(AppColors.textMuted)
+            .disabled(true)
         }
         .padding(.top, 8)
     }
