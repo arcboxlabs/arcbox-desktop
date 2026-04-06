@@ -69,6 +69,16 @@ jobs:
             exit 1
           fi
 
+      - name: Swift format check
+        run: |
+          brew install swift-format
+          swift-format lint -r --strict ArcBox/ Packages/
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint lint --config .swiftlint.yml
+
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox
 
