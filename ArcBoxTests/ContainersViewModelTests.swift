@@ -18,7 +18,7 @@ final class ContainersViewModelTests: XCTestCase {
         XCTAssertTrue(vm.containers.isEmpty)
         XCTAssertNil(vm.selectedID)
         XCTAssertEqual(vm.runningCount, 0)
-        XCTAssertFalse(vm.hasCompletedInitialLoad)
+        XCTAssertEqual(vm.loadState, .waiting)
         XCTAssertNil(vm.lastError)
     }
 

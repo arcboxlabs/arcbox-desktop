@@ -42,8 +42,12 @@ struct ContainersListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !vm.hasCompletedInitialLoad {
-                ProgressView()
+            } else if case .failed(let message) = vm.loadState {
+                ContainerLoadErrorView(message: message) {
+                    Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
+                }
+            } else if vm.loadState != .loaded {
+                ProgressView(daemonManager.dockerSocketLinked ? "Loading containers…" : "Starting Docker engine…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.containers.isEmpty {
                 ContainerEmptyState()
@@ -91,7 +95,8 @@ struct ContainersListView: View {
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
-        .task(id: docker != nil) {
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
             await vm.loadContainersFromDocker(docker: docker, iconClient: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in

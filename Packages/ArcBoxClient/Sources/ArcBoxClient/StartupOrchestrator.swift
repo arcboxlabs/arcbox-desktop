@@ -58,6 +58,8 @@ public enum StartupPhase: Sendable, Equatable {
     case running(step: StartupStep)
     case completed
     case failed(step: StartupStep, message: String)
+    /// Non-recoverable error (e.g. missing entitlements). User must quit.
+    case fatalError(message: String)
 }
 
 // MARK: - Internal Errors
@@ -155,6 +157,29 @@ public final class StartupOrchestrator {
         // Non-critical: daemon works without it, just no DNS/socket integration.
         await runStep(.installHelper) {
             await self.daemonManager.installHelper()
+        }
+
+        // Pre-check: verify daemon binary signature and entitlements.
+        //
+        // The daemon requires Developer ID signing — restricted entitlements
+        // (com.apple.security.virtualization, com.apple.security.hypervisor,
+        // com.apple.vm.networking) are only accepted by AMFI when signed with
+        // Developer ID, not Apple Development. Without these, launchd refuses
+        // to exec with OS_REASON_EXEC and the daemon silently crash-loops.
+        //
+        // This applies to ALL builds including Debug. The embed script
+        // (embed-arcbox-binaries.py) resolves the Developer ID certificate
+        // independently of Xcode's CODE_SIGN_IDENTITY for this reason.
+        //
+        // Strict verification is intentional — if this blocks your local
+        // build, ensure the daemon is signed with Developer ID:
+        //   make -C ../arcbox sign-daemon
+        if let verifyError = await daemonManager.verifyDaemonBinary() {
+            ClientLog.startup.error("Daemon binary verification failed: \(verifyError, privacy: .private)")
+            phase = .fatalError(message: verifyError)
+            stepStatuses[.enableDaemon] = .failed(verifyError)
+            stepStatuses[.connectAndWatch] = .skipped
+            return
         }
 
         // Step 2: Register daemon with launchd.

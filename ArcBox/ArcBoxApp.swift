@@ -162,10 +162,10 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
                 }
-                // IMPORTANT: DockerClient MUST be created here — only after daemon is confirmed running.
-                // All ListViews use .task(id: docker != nil) to trigger their initial data load.
-                // Creating DockerClient earlier (e.g., in initClientsAndReturn) causes those tasks
-                // to fire before the Docker socket is ready, resulting in empty lists. (ABXD-76 / #169)
+                // DockerClient is created when daemon state becomes running.
+                // ListViews gate their initial load on daemonManager.dockerSocketLinked
+                // (reported via the gRPC WatchSetupStatus stream) to avoid hitting the
+                // Docker API before the socket is ready.
                 .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
@@ -224,9 +224,8 @@ struct ArcBoxDesktopApp: App {
     }
 
     /// Create gRPC client and return it for the orchestrator.
-    /// WARNING: Do NOT create DockerClient here — it must be deferred to
-    /// onChange(of: daemonManager.state) so that .task(id: docker != nil)
-    /// in ListViews only fires after the daemon is confirmed running. (ABXD-76 / #169)
+    /// DockerClient is created separately in onChange(of: daemonManager.state).
+    /// ListViews gate data loading on daemonManager.dockerSocketLinked.
     private func initClientsAndReturn() throws -> ArcBoxClient {
         if let existing = arcboxClient {
             Log.startup.info("Reusing existing ArcBoxClient")

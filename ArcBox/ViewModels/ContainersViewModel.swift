@@ -26,6 +26,14 @@ enum ContainerSortField: String, CaseIterable {
     case status = "Status"
 }
 
+/// Container list loading state
+enum ContainerLoadState: Equatable {
+    case waiting  // Waiting for docker client
+    case loading  // Fetching from Docker API
+    case loaded  // Fetch completed (containers may be empty)
+    case failed(String)  // Fetch failed with error message
+}
+
 /// Container list state, selection, tabs, grouping
 @MainActor
 @Observable
@@ -38,7 +46,7 @@ class ContainersViewModel {
     }
 
     var containers: [ContainerViewModel] = []
-    var hasCompletedInitialLoad: Bool = false
+    var loadState: ContainerLoadState = .waiting
     var selectedID: String?
     var activeTab: ContainerDetailTab = .info
     var expandedGroups: Set<String> = []
@@ -485,8 +493,11 @@ class ContainersViewModel {
     func loadContainersFromDocker(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
             Log.container.debug("No docker client available")
-            hasCompletedInitialLoad = true
             return
+        }
+
+        if loadState != .loaded {
+            loadState = .loading
         }
 
         let currentTransitioning = transitioningIDs
@@ -497,7 +508,6 @@ class ContainersViewModel {
             var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
             applyCachedDetails(cachedDetails, to: &viewModels)
             applyCachedIcons(to: &viewModels)
-            // Preserve transitioning state across reload
             for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
             }
@@ -508,13 +518,19 @@ class ContainersViewModel {
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }
+            loadState = .loaded
         } catch {
             Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .private)")
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_docker", key: "container_op")
             }
+            if containers.isEmpty {
+                loadState = .failed(error.localizedDescription)
+            } else {
+                loadState = .loaded
+                lastError = error.localizedDescription
+            }
         }
-        hasCompletedInitialLoad = true
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {

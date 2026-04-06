@@ -258,7 +258,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "exec \"${PROJECT_DIR}/scripts/embed-arcbox-binaries.sh\"\n";
+			shellScript = "exec \"${PROJECT_DIR}/scripts/embed-arcbox-binaries.py\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
