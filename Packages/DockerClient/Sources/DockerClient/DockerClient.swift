@@ -4,9 +4,9 @@ import HTTPTypes
 import NIOCore
 import NIOHTTP1
 import NIOPosix
+import OSLog
 import OpenAPIAsyncHTTPClient
 import OpenAPIRuntime
-import OSLog
 
 @available(macOS 15.0, *)
 public struct ContainerInspectMountSnapshot: Sendable {
@@ -111,7 +111,8 @@ struct UnixSocketTransport: ClientTransport {
             } catch {
                 lastError = error
                 let nsError = error as NSError
-                let isTransient = nsError.domain == NSPOSIXErrorDomain
+                let isTransient =
+                    nsError.domain == NSPOSIXErrorDomain
                     && [ECONNREFUSED, ECONNRESET, ENOTCONN, ENETDOWN].contains(Int32(nsError.code))
                 guard isTransient, attempt < maxRetries else { break }
             }
@@ -399,7 +400,7 @@ public struct DockerClient: Sendable {
 
                     let response = try await httpClient.execute(request, timeout: .hours(24))
 
-                    let maxBufferSize = 10 * 1024 * 1024 // 10 MB
+                    let maxBufferSize = 10 * 1024 * 1024  // 10 MB
                     var buffer = Data()
                     for try await var chunk in response.body {
                         if Task.isCancelled { break }

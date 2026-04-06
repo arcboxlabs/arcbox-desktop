@@ -1,6 +1,6 @@
-import SwiftUI
 import AppKit
 import DockerClient
+import SwiftUI
 
 /// Files tab showing image layer filesystem browser
 struct ImageFilesTab: View {

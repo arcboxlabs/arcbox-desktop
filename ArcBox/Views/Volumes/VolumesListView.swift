@@ -1,6 +1,6 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 /// Column 2: volumes list with toolbar
 struct VolumesListView: View {

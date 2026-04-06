@@ -4,7 +4,8 @@ import Sparkle
 final class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
     @objc func feedURLString(for updater: SPUUpdater) -> String? {
         guard let baseURL = Bundle.main.infoDictionary?["SUFeedURL"] as? String,
-              let url = URL(string: baseURL) else {
+            let url = URL(string: baseURL)
+        else {
             return nil
         }
         let channel = UserDefaults.standard.string(forKey: "updateChannel") ?? "stable"

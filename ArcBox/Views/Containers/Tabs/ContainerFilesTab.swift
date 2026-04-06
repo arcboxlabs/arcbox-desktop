@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 /// Files tab backed by an already-mounted local rootfs directory.
 struct ContainerFilesTab: View {

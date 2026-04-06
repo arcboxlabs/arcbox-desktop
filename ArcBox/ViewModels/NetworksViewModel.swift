@@ -1,6 +1,6 @@
-import SwiftUI
 import DockerClient
 import OSLog
+import SwiftUI
 
 /// Sort field for networks
 enum NetworkSortField: String, CaseIterable {
@@ -85,7 +85,8 @@ class NetworksViewModel {
             _ = try response.noContent
             Log.network.info("Removed network \(id, privacy: .private)")
         } catch {
-            Log.network.error("Error removing network \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            Log.network.error(
+                "Error removing network \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         await loadNetworks(docker: docker)
@@ -126,7 +127,9 @@ class NetworksViewModel {
                 return "Unexpected response status: \(status)."
             }
         } catch {
-            Log.network.error("Error creating network \(trimmedName, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            Log.network.error(
+                "Error creating network \(trimmedName, privacy: .private): \(error.localizedDescription, privacy: .private)"
+            )
             return error.localizedDescription
         }
     }

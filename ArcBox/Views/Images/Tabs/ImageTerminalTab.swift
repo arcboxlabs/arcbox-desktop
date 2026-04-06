@@ -83,23 +83,25 @@ struct ImageTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalBridge(session: session), onTerminalCreated: { terminalView in
-            configureTerminalAppearance(terminalView)
+        SwiftTermView(
+            delegate: TerminalBridge(session: session),
+            onTerminalCreated: { terminalView in
+                configureTerminalAppearance(terminalView)
 
-            // Store terminal view reference (don't connect here — runs during makeNSView)
-            // Connection is deferred to onChange(of: isActive)
-            session.setTerminalView(terminalView)
+                // Store terminal view reference (don't connect here — runs during makeNSView)
+                // Connection is deferred to onChange(of: isActive)
+                session.setTerminalView(terminalView)
 
-            // If the terminal tab is already active, connect on next run loop
-            let active = isActive
-            let img = image
-            let shell = selectedShell
-            DispatchQueue.main.async {
-                guard active else { return }
-                connectedImageID = img.id
-                session.connectImage(imageName: img.fullName, shell: shell)
-            }
-        }, theme: terminalTheme)
+                // If the terminal tab is already active, connect on next run loop
+                let active = isActive
+                let img = image
+                let shell = selectedShell
+                DispatchQueue.main.async {
+                    guard active else { return }
+                    connectedImageID = img.id
+                    session.connectImage(imageName: img.fullName, shell: shell)
+                }
+            }, theme: terminalTheme)
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {

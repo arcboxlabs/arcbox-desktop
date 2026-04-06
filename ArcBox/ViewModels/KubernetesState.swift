@@ -15,7 +15,8 @@ class KubernetesState {
     func checkStatus(client: ArcBoxClient?) async {
         guard let client else { return }
         do {
-            let status: Arcbox_V1_KubernetesStatusResponse = try await client.kubernetes.status(.init(), options: ArcBoxClient.defaultCallOptions)
+            let status: Arcbox_V1_KubernetesStatusResponse = try await client.kubernetes.status(
+                .init(), options: ArcBoxClient.defaultCallOptions)
             self.enabled = status.running && status.apiReady
         } catch {
             self.enabled = false
@@ -28,8 +29,11 @@ class KubernetesState {
         isStarting = true
         startError = nil
         do {
-            let response: Arcbox_V1_KubernetesStartResponse = try await client.kubernetes.start(.init(), options: ArcBoxClient.defaultCallOptions)
-            Log.pods.info("Kubernetes start: running=\(response.running) apiReady=\(response.apiReady) endpoint=\(response.endpoint)")
+            let response: Arcbox_V1_KubernetesStartResponse = try await client.kubernetes.start(
+                .init(), options: ArcBoxClient.defaultCallOptions)
+            Log.pods.info(
+                "Kubernetes start: running=\(response.running) apiReady=\(response.apiReady) endpoint=\(response.endpoint)"
+            )
 
             // Poll until API is fully ready or timeout (~60s).
             var interrupted = false
@@ -41,7 +45,8 @@ class KubernetesState {
                 if attempt > 0 {
                     try await Task.sleep(for: .seconds(2))
                 }
-                let status: Arcbox_V1_KubernetesStatusResponse = try await client.kubernetes.status(.init(), options: ArcBoxClient.defaultCallOptions)
+                let status: Arcbox_V1_KubernetesStatusResponse = try await client.kubernetes.status(
+                    .init(), options: ArcBoxClient.defaultCallOptions)
                 if status.running && status.apiReady {
                     self.enabled = true
                     isStarting = false
@@ -66,7 +71,8 @@ class KubernetesState {
         guard let client, !isStopping else { return }
         isStopping = true
         do {
-            let _: Arcbox_V1_KubernetesStopResponse = try await client.kubernetes.stop(.init(), options: ArcBoxClient.defaultCallOptions)
+            let _: Arcbox_V1_KubernetesStopResponse = try await client.kubernetes.stop(
+                .init(), options: ArcBoxClient.defaultCallOptions)
             self.enabled = false
         } catch {
             Log.pods.error("Error stopping Kubernetes: \(error)")

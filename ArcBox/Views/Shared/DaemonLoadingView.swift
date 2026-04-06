@@ -1,5 +1,5 @@
-import SwiftUI
 import ArcBoxClient
+import SwiftUI
 
 /// Loading indicator shown while the arcbox daemon is starting or stopping.
 struct DaemonLoadingView: View {

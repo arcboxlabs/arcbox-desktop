@@ -102,16 +102,18 @@ struct ContainerTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalBridge(session: session), onTerminalCreated: { terminalView in
-            configureTerminalAppearance(terminalView)
+        SwiftTermView(
+            delegate: TerminalBridge(session: session),
+            onTerminalCreated: { terminalView in
+                configureTerminalAppearance(terminalView)
 
-            // Connect session
-            session.connect(
-                containerID: container.id,
-                shell: selectedShell,
-                terminalView: terminalView
-            )
-        }, theme: terminalTheme)
+                // Connect session
+                session.connect(
+                    containerID: container.id,
+                    shell: selectedShell,
+                    terminalView: terminalView
+                )
+            }, theme: terminalTheme)
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {

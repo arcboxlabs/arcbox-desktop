@@ -38,7 +38,7 @@ struct StorageSettingsView: View {
                     }
                     .labelsHidden()
                     .frame(width: 120)
-                    .disabled(true) // Requires backend support for data migration
+                    .disabled(true)  // Requires backend support for data migration
                 }
 
                 Toggle("Include data in Time Machine backups", isOn: $includeTimeMachine)
@@ -56,7 +56,7 @@ struct StorageSettingsView: View {
                 LabeledContent {
                     Toggle("", isOn: $hideArcBoxVolume)
                         .labelsHidden()
-                        .disabled(true) // Requires backend support
+                        .disabled(true)  // Requires backend support
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Hide ArcBox volume from Finder & Desktop")
@@ -74,7 +74,7 @@ struct StorageSettingsView: View {
                 .disabled(isResetting || docker == nil)
 
                 Button("Reset Kubernetes Cluster") {}
-                    .disabled(true) // Requires K8s backend
+                    .disabled(true)  // Requires K8s backend
 
                 Button("Reset All Data") {
                     showResetAllAlert = true
@@ -114,7 +114,9 @@ struct StorageSettingsView: View {
                 Task { await resetAllData() }
             }
         } message: {
-            Text("This will stop all containers and remove all Docker data including images, volumes, and networks. This action cannot be undone.")
+            Text(
+                "This will stop all containers and remove all Docker data including images, volumes, and networks. This action cannot be undone."
+            )
         }
     }
 

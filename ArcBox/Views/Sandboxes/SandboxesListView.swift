@@ -60,7 +60,7 @@ struct SandboxesListView: View {
         }
         .onAppear {
             #if DEBUG
-            vm.loadSampleData()
+                vm.loadSampleData()
             #endif
         }
     }

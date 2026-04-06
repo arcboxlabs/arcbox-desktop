@@ -115,9 +115,11 @@ struct NewContainerSheet: View {
                     Toggle(isOn: $useDockerInit) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Use docker-init")
-                            Text("Run the container payload under a docker-init process. (--init) — currently unavailable")
-                                .font(.system(size: 11))
-                                .foregroundStyle(AppColors.textSecondary)
+                            Text(
+                                "Run the container payload under a docker-init process. (--init) — currently unavailable"
+                            )
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppColors.textSecondary)
                         }
                     }
                     .disabled(true)

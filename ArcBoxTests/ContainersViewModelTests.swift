@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import ArcBox
 
 @MainActor
@@ -118,7 +119,7 @@ final class ContainersViewModelTests: XCTestCase {
 
     func testSearchIsCaseInsensitive() {
         vm.containers = [
-            makeContainer(id: "1", name: "NGINX"),
+            makeContainer(id: "1", name: "NGINX")
         ]
         vm.searchText = "nginx"
         XCTAssertEqual(vm.standaloneContainers.count, 1)
@@ -150,7 +151,7 @@ final class ContainersViewModelTests: XCTestCase {
 
     func testSearchByComposeProject() {
         vm.containers = [
-            makeContainer(id: "1", name: "svc", composeProject: "myproject"),
+            makeContainer(id: "1", name: "svc", composeProject: "myproject")
         ]
         vm.searchText = "myproject"
         XCTAssertEqual(vm.composeGroups.count, 1)
@@ -185,10 +186,12 @@ final class ContainersViewModelTests: XCTestCase {
             composeProject: "myapp", composeService: "web"
         )
         let domains = c.allDomains(useDNS: true)
-        XCTAssertEqual(domains, [
-            "web.myapp.arcbox.local",
-            "myapp-web-1.arcbox.local",
-        ])
+        XCTAssertEqual(
+            domains,
+            [
+                "web.myapp.arcbox.local",
+                "myapp-web-1.arcbox.local",
+            ])
     }
 
     func testAllDomainsDNSDisabled() {

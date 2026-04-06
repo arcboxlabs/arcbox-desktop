@@ -108,7 +108,8 @@ struct ContainerRowView: View {
                             Menu {
                                 ForEach(activePorts) { port in
                                     let displayPort = useDNS ? port.containerPort : port.hostPort
-                                    let title = (useDNS && displayPort == 80)
+                                    let title =
+                                        (useDNS && displayPort == 80)
                                         ? hostDomain
                                         : "\(hostDomain):\(displayPort)"
                                     Button(title) {

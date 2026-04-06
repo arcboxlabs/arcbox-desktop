@@ -99,7 +99,9 @@ struct ContainerGroupView: View {
                 Button("Delete All (\(containers.count))", role: .destructive) { onDeleteAll(allContainerIDs) }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Are you sure you want to delete all \(containers.count) containers in \"\(project)\"? This action cannot be undone.")
+                Text(
+                    "Are you sure you want to delete all \(containers.count) containers in \"\(project)\"? This action cannot be undone."
+                )
             }
 
             // Container rows (if expanded)

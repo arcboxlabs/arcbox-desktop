@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import ArcBox
 
 @MainActor
@@ -60,7 +61,7 @@ final class ImagesViewModelTests: XCTestCase {
 
     func testTotalSizeGB() {
         vm.images = [
-            makeImage(id: "1", repository: "a", tag: "1", sizeBytes: 2_500_000_000),
+            makeImage(id: "1", repository: "a", tag: "1", sizeBytes: 2_500_000_000)
         ]
         XCTAssertEqual(vm.totalSize, "2.50 GB total")
     }
@@ -125,7 +126,7 @@ final class ImagesViewModelTests: XCTestCase {
 
     func testSearchIsCaseInsensitive() {
         vm.images = [
-            makeImage(id: "1", repository: "Nginx", tag: "latest"),
+            makeImage(id: "1", repository: "Nginx", tag: "latest")
         ]
         vm.searchText = "nginx"
         XCTAssertEqual(vm.sortedImages.count, 1)

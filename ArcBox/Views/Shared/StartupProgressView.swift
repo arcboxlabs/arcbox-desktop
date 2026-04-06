@@ -1,5 +1,5 @@
-import SwiftUI
 import ArcBoxClient
+import SwiftUI
 
 /// Progress view shown during the startup sequence.
 /// Replaces DaemonLoadingView for the initial startup phase.

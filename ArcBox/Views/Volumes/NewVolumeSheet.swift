@@ -18,10 +18,12 @@ struct NewVolumeSheet: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("New Volume")
                     .font(.system(size: 13, weight: .semibold))
-                Text("Volumes are for sharing data between containers. Unlike bind mounts, they are stored on a native Linux file system, making them faster and more reliable.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(AppColors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Volumes are for sharing data between containers. Unlike bind mounts, they are stored on a native Linux file system, making them faster and more reliable."
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

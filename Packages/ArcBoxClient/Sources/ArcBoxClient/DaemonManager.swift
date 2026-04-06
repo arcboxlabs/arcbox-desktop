@@ -1,15 +1,15 @@
 import Foundation
-import Observation
 import OSLog
+import Observation
 import ServiceManagement
 
 /// Daemon connection state derived from SMAppService registration + gRPC stream.
 public enum DaemonState: Sendable, Equatable {
-    case stopped        // Not registered with launchd
-    case starting       // Enable in progress
-    case stopping       // Disable in progress
-    case registered     // Registered but gRPC stream not connected yet
-    case running        // gRPC stream connected, daemon alive
+    case stopped  // Not registered with launchd
+    case starting  // Enable in progress
+    case stopping  // Disable in progress
+    case registered  // Registered but gRPC stream not connected yet
+    case running  // gRPC stream connected, daemon alive
     case error(String)
 
     public var isRunning: Bool { self == .running }
@@ -212,53 +212,53 @@ public final class DaemonManager {
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
 
         #if DEBUG
-        // In development, ALWAYS force unregister+register.
-        //
-        // Every Xcode build re-signs the daemon binary via `codesign --force`,
-        // which generates a new CDHash even for identical content.  SMAppService
-        // stores the CDHash from registration time.  If the daemon exits after a
-        // rebuild, launchd validates the (now different) CDHash, gets a mismatch,
-        // and refuses to spawn with EX_CONFIG (78).  Force re-register ensures
-        // the registered CDHash always matches the current binary.
-        //
-        // This is safe because enableDaemon() is only called once per app launch
-        // (guarded by StartupOrchestrator.isStarting + the `.task` nil check in
-        // ArcBoxApp), so the SwiftUI .task re-entrancy concern does not apply.
-        ClientLog.daemon.info("DEBUG: force re-registering daemon to sync CDHash")
-        do {
-            try? await daemonService.unregister()
-            try daemonService.register()
-            ClientLog.daemon.info("Service registered successfully")
-            state = .registered
-        } catch {
-            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
-            errorMessage = error.localizedDescription
-            state = .error("Failed to register daemon: \(error.localizedDescription)")
-        }
-        #else
-        // In production, skip the destructive unregister+register cycle if the
-        // daemon is already enabled.  This avoids killing a healthy daemon when
-        // enableDaemon() is called redundantly (e.g. SwiftUI .task re-entrancy).
-        if status == .enabled {
-            ClientLog.daemon.info("Daemon already registered, skipping re-register")
-            if state != .running {
+            // In development, ALWAYS force unregister+register.
+            //
+            // Every Xcode build re-signs the daemon binary via `codesign --force`,
+            // which generates a new CDHash even for identical content.  SMAppService
+            // stores the CDHash from registration time.  If the daemon exits after a
+            // rebuild, launchd validates the (now different) CDHash, gets a mismatch,
+            // and refuses to spawn with EX_CONFIG (78).  Force re-register ensures
+            // the registered CDHash always matches the current binary.
+            //
+            // This is safe because enableDaemon() is only called once per app launch
+            // (guarded by StartupOrchestrator.isStarting + the `.task` nil check in
+            // ArcBoxApp), so the SwiftUI .task re-entrancy concern does not apply.
+            ClientLog.daemon.info("DEBUG: force re-registering daemon to sync CDHash")
+            do {
+                try? await daemonService.unregister()
+                try daemonService.register()
+                ClientLog.daemon.info("Service registered successfully")
                 state = .registered
+            } catch {
+                ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
+                errorMessage = error.localizedDescription
+                state = .error("Failed to register daemon: \(error.localizedDescription)")
             }
-            return
-        }
+        #else
+            // In production, skip the destructive unregister+register cycle if the
+            // daemon is already enabled.  This avoids killing a healthy daemon when
+            // enableDaemon() is called redundantly (e.g. SwiftUI .task re-entrancy).
+            if status == .enabled {
+                ClientLog.daemon.info("Daemon already registered, skipping re-register")
+                if state != .running {
+                    state = .registered
+                }
+                return
+            }
 
-        do {
-            // Force re-register to ensure BundleProgram resolves against the current
-            // app bundle path.
-            try? await daemonService.unregister()
-            try daemonService.register()
-            ClientLog.daemon.info("Service registered successfully")
-            state = .registered
-        } catch {
-            ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
-            errorMessage = error.localizedDescription
-            state = .error("Failed to register daemon: \(error.localizedDescription)")
-        }
+            do {
+                // Force re-register to ensure BundleProgram resolves against the current
+                // app bundle path.
+                try? await daemonService.unregister()
+                try daemonService.register()
+                ClientLog.daemon.info("Service registered successfully")
+                state = .registered
+            } catch {
+                ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
+                errorMessage = error.localizedDescription
+                state = .error("Failed to register daemon: \(error.localizedDescription)")
+            }
         #endif
     }
 
@@ -346,7 +346,8 @@ public final class DaemonManager {
                             }
                         }
                     } catch {
-                        ClientLog.daemon.warning("WatchSetupStatus stream error: \(error.localizedDescription, privacy: .private)")
+                        ClientLog.daemon.warning(
+                            "WatchSetupStatus stream error: \(error.localizedDescription, privacy: .private)")
                     }
                     continuation.finish()
                 }
@@ -380,7 +381,8 @@ public final class DaemonManager {
                     self?.setupPhase = .unknown
                     if graceExceeded {
                         ClientLog.daemon.warning(
-                            "Daemon unreachable after \(failedAttemptsSinceLastMessage) reconnect attempts, state → .registered")
+                            "Daemon unreachable after \(failedAttemptsSinceLastMessage) reconnect attempts, state → .registered"
+                        )
                     }
                 }
 
@@ -454,16 +456,16 @@ public final class DaemonManager {
         setupMessage = status.message
 
         switch status.phase {
-        case .unspecified:  setupPhase = .unknown
+        case .unspecified: setupPhase = .unknown
         case .initializing: setupPhase = .initializing
         case .downloadingAssets: setupPhase = .downloadingAssets
-        case .assetsReady:  setupPhase = .assetsReady
-        case .vmStarting:   setupPhase = .vmStarting
-        case .vmReady:      setupPhase = .vmReady
+        case .assetsReady: setupPhase = .assetsReady
+        case .vmStarting: setupPhase = .vmStarting
+        case .vmReady: setupPhase = .vmReady
         case .networkReady: setupPhase = .networkReady
-        case .ready:        setupPhase = .ready
-        case .degraded:     setupPhase = .degraded
-        case .cleaningUp:   setupPhase = .cleaningUp
+        case .ready: setupPhase = .ready
+        case .degraded: setupPhase = .degraded
+        case .cleaningUp: setupPhase = .cleaningUp
         case .UNRECOGNIZED: setupPhase = .unknown
         }
 

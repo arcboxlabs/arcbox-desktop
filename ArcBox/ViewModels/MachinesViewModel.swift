@@ -1,5 +1,5 @@
-import os
 import SwiftUI
+import os
 
 /// Detail tab options for machines (matches container pattern)
 enum MachineDetailTab: String, CaseIterable, Identifiable {
@@ -25,7 +25,7 @@ class MachinesViewModel {
         guard !searchText.isEmpty else { return machines }
         return machines.filter {
             $0.name.localizedCaseInsensitiveContains(searchText)
-            || $0.distro.displayName.localizedCaseInsensitiveContains(searchText)
+                || $0.distro.displayName.localizedCaseInsensitiveContains(searchText)
         }
     }
 

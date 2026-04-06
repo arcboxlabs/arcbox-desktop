@@ -1,7 +1,7 @@
 import ArcBoxClient
 import Foundation
-import os
 import SwiftTerm
+import os
 
 /// Manages an interactive docker exec session using PTY + Process.
 ///

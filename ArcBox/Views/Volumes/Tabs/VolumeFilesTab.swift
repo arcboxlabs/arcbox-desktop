@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 /// Files tab showing volume filesystem browser
 struct VolumeFilesTab: View {

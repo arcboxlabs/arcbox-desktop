@@ -1,6 +1,6 @@
 import Foundation
-import Observation
 import OSLog
+import Observation
 @preconcurrency import Sentry
 
 // MARK: - Startup Constants
@@ -32,8 +32,8 @@ public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
     /// Human-readable label shown in the progress UI.
     public var label: String {
         switch self {
-        case .installHelper:   return "Installing helper service"
-        case .enableDaemon:    return "Starting daemon"
+        case .installHelper: return "Installing helper service"
+        case .enableDaemon: return "Starting daemon"
         case .connectAndWatch: return "Connecting to daemon"
         }
     }
@@ -203,7 +203,8 @@ public final class StartupOrchestrator {
             // unreachable after the full poll window.  Force re-register to
             // get launchd to spawn a fresh daemon process, then poll again.
             ClientLog.startup.warning(
-                "Daemon unreachable after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s, attempting force re-register recovery")
+                "Daemon unreachable after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s, attempting force re-register recovery"
+            )
             await self.daemonManager.forceReregisterDaemon()
 
             if case .error = self.daemonManager.state {
@@ -261,7 +262,8 @@ public final class StartupOrchestrator {
             let elapsedMs = Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
             let message = error.localizedDescription
             ClientLog.startup.error(
-                "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .private)")
+                "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .private)"
+            )
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: step.label, key: "startup_step")
             }

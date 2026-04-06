@@ -47,19 +47,21 @@ struct PodsListView: View {
         .navigationSubtitle(k8s.enabled ? "\(vm.podCount) total" : "Disabled")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Toggle(isOn: Binding(
-                    get: { k8s.enabled || k8s.isStarting },
-                    set: { newValue in
-                        Task {
-                            if newValue {
-                                await k8s.start(client: arcboxClient)
-                                await loadPodsUntilReady()
-                            } else {
-                                await k8s.stop(client: arcboxClient)
+                Toggle(
+                    isOn: Binding(
+                        get: { k8s.enabled || k8s.isStarting },
+                        set: { newValue in
+                            Task {
+                                if newValue {
+                                    await k8s.start(client: arcboxClient)
+                                    await loadPodsUntilReady()
+                                } else {
+                                    await k8s.stop(client: arcboxClient)
+                                }
                             }
                         }
-                    }
-                )) {
+                    )
+                ) {
                     EmptyView()
                 }
                 .toggleStyle(.switch)
