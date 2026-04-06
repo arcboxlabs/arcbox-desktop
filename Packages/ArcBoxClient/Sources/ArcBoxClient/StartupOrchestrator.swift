@@ -160,8 +160,20 @@ public final class StartupOrchestrator {
         }
 
         // Pre-check: verify daemon binary signature and entitlements.
-        // This catches misconfigured builds (ad-hoc signing that strips
-        // entitlements) early, before launchd silently refuses to exec.
+        //
+        // The daemon requires Developer ID signing — restricted entitlements
+        // (com.apple.security.virtualization, com.apple.security.hypervisor,
+        // com.apple.vm.networking) are only accepted by AMFI when signed with
+        // Developer ID, not Apple Development. Without these, launchd refuses
+        // to exec with OS_REASON_EXEC and the daemon silently crash-loops.
+        //
+        // This applies to ALL builds including Debug. The embed script
+        // (embed-arcbox-binaries.py) resolves the Developer ID certificate
+        // independently of Xcode's CODE_SIGN_IDENTITY for this reason.
+        //
+        // Strict verification is intentional — if this blocks your local
+        // build, ensure the daemon is signed with Developer ID:
+        //   make -C ../arcbox sign-daemon
         if let verifyError = await daemonManager.verifyDaemonBinary() {
             ClientLog.startup.error("Daemon binary verification failed: \(verifyError, privacy: .private)")
             phase = .fatalError(message: verifyError)
