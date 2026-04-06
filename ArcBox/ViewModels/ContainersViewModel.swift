@@ -309,8 +309,9 @@ class ContainersViewModel {
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
+            let listRequest = request
             let response = try await Perf.measure("container.list_grpc") {
-                try await client.containers.list(request, options: ArcBoxClient.defaultCallOptions)
+                try await client.containers.list(listRequest, options: ArcBoxClient.defaultCallOptions)
             }
             var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)

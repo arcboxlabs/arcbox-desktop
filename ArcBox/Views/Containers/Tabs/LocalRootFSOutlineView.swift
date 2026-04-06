@@ -52,7 +52,7 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
         }
 
         private var parent: LocalRootFSOutlineView
-        private let fileService = LocalRootFSService()
+        private typealias FS = LocalRootFSService
         private var rootNodes: [Node] = []
         private weak var scrollView: NSScrollView?
         private var outlineView: ContextOutlineView?
@@ -216,10 +216,10 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             outlineView?.reloadData()
             parent.selectedPath = nil
 
-            DispatchQueue.global(qos: .userInitiated).async { [fileService] in
+            DispatchQueue.global(qos: .userInitiated).async {
                 let entries: [LocalFileEntry]
                 do {
-                    entries = try fileService.listDirectory(at: rootURL, showHiddenFiles: showHidden)
+                    entries = try FS.listDirectory(at: rootURL, showHiddenFiles: showHidden)
                 } catch {
                     entries = []
                 }
@@ -243,10 +243,10 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             let currentGeneration = generation
             let showHidden = parent.showHiddenFiles
 
-            DispatchQueue.global(qos: .userInitiated).async { [fileService] in
+            DispatchQueue.global(qos: .userInitiated).async {
                 let children: [LocalFileEntry]
                 do {
-                    children = try fileService.listDirectory(at: node.entry.url, showHiddenFiles: showHidden)
+                    children = try FS.listDirectory(at: node.entry.url, showHiddenFiles: showHidden)
                 } catch {
                     children = []
                 }

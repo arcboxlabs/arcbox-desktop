@@ -23,7 +23,7 @@ struct ChangelogRelease: Identifiable, Sendable {
 enum ChangelogParser {
     /// Load and parse CHANGELOG.md from the app bundle.
     /// Returns the most recent `limit` releases.
-    static func loadFromBundle(limit: Int = 5) -> [ChangelogRelease] {
+    nonisolated static func loadFromBundle(limit: Int = 5) -> [ChangelogRelease] {
         guard let url = Bundle.main.url(forResource: "CHANGELOG", withExtension: "md"),
             let content = try? String(contentsOf: url, encoding: .utf8)
         else {
@@ -37,7 +37,7 @@ enum ChangelogParser {
     ///   - text: Raw markdown content of CHANGELOG.md
     ///   - limit: Maximum number of releases to return
     /// - Returns: Array of parsed releases, newest first
-    static func parse(_ text: String, limit: Int = 5) -> [ChangelogRelease] {
+    nonisolated static func parse(_ text: String, limit: Int = 5) -> [ChangelogRelease] {
         let versionPattern = /^## \[(.+?)\](?:\(.+?\))?\s+\((\d{4}-\d{2}-\d{2})\)/
         let sectionPattern = /^### (.+)/
 
@@ -99,7 +99,7 @@ enum ChangelogParser {
     /// - Removes commit hash links: ([abc1234](url))
     /// - Converts issue links: ([#123](url)) → #123
     /// - Removes bold scope markers: **scope:** → scope:
-    private static func cleanItem(_ text: String) -> String {
+    nonisolated private static func cleanItem(_ text: String) -> String {
         var result = text
         // Remove commit hash links: ([a771d71](https://...))
         result = result.replacingOccurrences(

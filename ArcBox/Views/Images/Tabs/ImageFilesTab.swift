@@ -32,8 +32,6 @@ struct ImageFilesTab: View {
     @State private var refreshToken = UUID()
     @State private var showHiddenFiles = LocalRootFSService.finderDefaultShowHiddenFiles()
 
-    private let fileService = LocalRootFSService()
-
     private var resolveTaskID: String {
         "\(image.id)|\(refreshToken.uuidString)"
     }
@@ -175,7 +173,7 @@ struct ImageFilesTab: View {
         do {
             let mountPoint = try await resolveImageRootFSMountPath()
             resolvedRootFSMountPath = mountPoint
-            rootURL = try fileService.resolveRootURL(path: mountPoint)
+            rootURL = try LocalRootFSService.resolveRootURL(path: mountPoint)
         } catch let error as ImageFilesTabError {
             resolvedRootFSMountPath = nil
             errorMessage = error.localizedDescription

@@ -12,8 +12,6 @@ struct VolumeFilesTab: View {
     @State private var refreshToken = UUID()
     @State private var showHiddenFiles = LocalRootFSService.finderDefaultShowHiddenFiles()
 
-    private let fileService = LocalRootFSService()
-
     private var outlineReloadID: String {
         "\(volume.id)|\(volume.mountPoint)|\(showHiddenFiles)|\(refreshToken.uuidString)"
     }
@@ -156,7 +154,7 @@ struct VolumeFilesTab: View {
         }
 
         do {
-            rootURL = try fileService.resolveRootURL(path: mountPoint)
+            rootURL = try LocalRootFSService.resolveRootURL(path: mountPoint)
         } catch let error as LocalRootFSService.RootFSError {
             rootURL = nil
             switch error {

@@ -62,7 +62,7 @@ struct LocalRootFSService {
         .nameKey,
     ]
 
-    func resolveRootURL(path: String?) throws -> URL {
+    static func resolveRootURL(path: String?) throws -> URL {
         guard let rawPath = path?.trimmingCharacters(in: .whitespacesAndNewlines), !rawPath.isEmpty else {
             throw RootFSError.missingRootPath
         }
@@ -79,7 +79,7 @@ struct LocalRootFSService {
         return rootURL.standardizedFileURL
     }
 
-    func listDirectory(at directoryURL: URL, showHiddenFiles: Bool) throws -> [LocalFileEntry] {
+    static func listDirectory(at directoryURL: URL, showHiddenFiles: Bool) throws -> [LocalFileEntry] {
         var coordinatorError: NSError?
         var capturedError: Error?
         var entries: [LocalFileEntry] = []

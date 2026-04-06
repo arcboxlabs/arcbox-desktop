@@ -12,8 +12,6 @@ struct ContainerFilesTab: View {
     @State private var refreshToken = UUID()
     @State private var showHiddenFiles = LocalRootFSService.finderDefaultShowHiddenFiles()
 
-    private let fileService = LocalRootFSService()
-
     private var outlineReloadID: String {
         "\(container.id)|\(container.resolvedRootFSMountPath ?? "")|\(showHiddenFiles)|\(refreshToken.uuidString)"
     }
@@ -150,7 +148,7 @@ struct ContainerFilesTab: View {
         selectedPath = nil
 
         do {
-            rootURL = try fileService.resolveRootURL(path: container.resolvedRootFSMountPath)
+            rootURL = try LocalRootFSService.resolveRootURL(path: container.resolvedRootFSMountPath)
         } catch {
             rootURL = nil
             errorMessage = error.localizedDescription
