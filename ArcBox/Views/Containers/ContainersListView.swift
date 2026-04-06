@@ -47,7 +47,7 @@ struct ContainersListView: View {
                     Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
                 }
             } else if vm.loadState != .loaded {
-                ProgressView("Loading containers…")
+                ProgressView(daemonManager.dockerSocketLinked ? "Loading containers…" : "Starting Docker engine…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.containers.isEmpty {
                 ContainerEmptyState()
