@@ -1,4 +1,5 @@
 import ArcBoxClient
+import DockerClient
 import OSLog
 import SwiftUI
 
@@ -12,8 +13,8 @@ enum SandboxDetailTab: String, CaseIterable, Identifiable {
 
 /// Top-level tab for sandboxes page
 enum SandboxPageTab: String, CaseIterable, Identifiable {
-    case monitoring = "Monitoring"
     case list = "List"
+    case monitoring = "Monitoring"
 
     var id: String { rawValue }
 }
@@ -31,7 +32,7 @@ class SandboxesViewModel {
     var sandboxes: [SandboxViewModel] = []
     var selectedID: String?
     var activeTab: SandboxDetailTab = .info
-    var pageTab: SandboxPageTab = .monitoring
+    var pageTab: SandboxPageTab = .list
     var listWidth: CGFloat = 320
     var sortBy: SandboxSortField = .name
     var sortAscending: Bool = true
@@ -44,6 +45,9 @@ class SandboxesViewModel {
     var startRatePerSecond: Double = 0.0
     var peakConcurrentSandboxes: Int = 0
     var concurrentLimit: Int = 20
+
+    // Sheet presentation
+    var showNewSandboxSheet: Bool = false
 
     // User-visible error from last failed operation
     var errorMessage: String? = nil
@@ -130,21 +134,64 @@ class SandboxesViewModel {
     func createSandbox(
         id: String = "",
         labels: [String: String] = [:],
+        image: String = "",
+        kernel: String = "",
+        rootfs: String = "",
+        bootArgs: String = "",
         vcpus: UInt32 = 0,
         memoryMiB: UInt64 = 0,
+        cmd: [String] = [],
+        env: [String: String] = [:],
+        workingDir: String = "",
+        user: String = "",
+        networkMode: String = "",
         ttlSeconds: UInt32 = 0,
-        client: ArcBoxClient?
+        sshPublicKey: String = "",
+        client: ArcBoxClient?,
+        docker: DockerClient? = nil
     ) async -> String? {
         guard let client else { return nil }
         let metadata = SandboxMetadata.forMachine(activeMachineID)
         var request = Sandbox_V1_CreateSandboxRequest()
         request.id = id
         request.labels = labels
+        request.kernel = kernel
+        request.bootArgs = bootArgs
         if vcpus > 0 || memoryMiB > 0 {
             request.limits.vcpus = vcpus
             request.limits.memoryMib = memoryMiB
         }
+        request.cmd = cmd
+        request.env = env
+        request.workingDir = workingDir
+        request.user = user
+        if !networkMode.isEmpty {
+            request.network.mode = networkMode
+        }
         request.ttlSeconds = ttlSeconds
+        if !sshPublicKey.isEmpty {
+            request.sshPublicKey = sshPublicKey
+        }
+
+        // Resolve Docker image to overlay2 layer path for rootfs
+        if !image.isEmpty, let docker {
+            do {
+                let layerPath = try await docker.resolveImageLayerPath(id: image)
+                request.rootfs = layerPath
+                Log.sandbox.info(
+                    "Resolved image \(image, privacy: .public) to layer path \(layerPath, privacy: .public)"
+                )
+            } catch {
+                Log.sandbox.error(
+                    "Failed to resolve image \(image, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
+                errorMessage = "Failed to resolve image: \(error.localizedDescription)"
+                return nil
+            }
+        } else if !rootfs.isEmpty {
+            request.rootfs = rootfs
+        }
+
         do {
             let response = try await client.sandboxes.create(request, metadata: metadata)
             Log.sandbox.info("Created sandbox \(response.id, privacy: .public)")

@@ -59,6 +59,7 @@ public enum DockerClientError: Error, Sendable {
     case invalidHTTPStatus(Int)
     case invalidResponseBody
     case invalidJSON
+    case missingField(String)
 }
 
 /// A single line from Docker container logs.
@@ -371,6 +372,53 @@ public struct DockerClient: Sendable {
             labels: labels,
             rootfsMountPath: rootfsMountPath
         )
+    }
+
+    /// Resolve a Docker image to its overlay2 chain-id directory path.
+    ///
+    /// Returns the parent of the UpperDir (i.e. strips the trailing `/diff`),
+    /// matching the format expected by the arcbox guest agent's `oci2rootfs`.
+    public func resolveImageLayerPath(id: String) async throws -> String {
+        let encodedSocket =
+            socketPath
+            .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? socketPath
+        let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let path = Self.defaultServerURL.path + "/images/\(encodedID)/json"
+        let urlString = "http+unix://\(encodedSocket)\(path)"
+
+        var request = HTTPClientRequest(url: urlString)
+        request.method = .GET
+        request.headers.add(name: "Accept", value: "application/json")
+
+        let response = try await httpClient.execute(request, timeout: timeout)
+        guard (200..<300).contains(response.status.code) else {
+            throw DockerClientError.invalidHTTPStatus(Int(response.status.code))
+        }
+
+        var data = Data()
+        for try await var chunk in response.body {
+            if let bytes = chunk.readBytes(length: chunk.readableBytes) {
+                data.append(contentsOf: bytes)
+            }
+        }
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw DockerClientError.invalidJSON
+        }
+
+        let graphDriver = json["GraphDriver"] as? [String: Any]
+        let graphDriverData = graphDriver?["Data"] as? [String: Any]
+
+        guard let upperDir = graphDriverData?["UpperDir"] as? String, !upperDir.isEmpty else {
+            throw DockerClientError.missingField("GraphDriver.Data.UpperDir")
+        }
+
+        // oci2rootfs expects the chain-id directory (contains diff/, link, lower),
+        // not the diff/ subdirectory itself.
+        if upperDir.hasSuffix("/diff") {
+            return String(upperDir.dropLast(5))
+        }
+        return upperDir
     }
 
     // MARK: - Docker Events

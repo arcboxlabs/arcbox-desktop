@@ -60,9 +60,7 @@ struct SandboxesListView: View {
                         })
                 }
                 Button(action: {
-                    Task {
-                        _ = await vm.createSandbox(client: client)
-                    }
+                    vm.showNewSandboxSheet = true
                 }) {
                     Image(systemName: "plus")
                 }
@@ -102,6 +100,9 @@ struct SandboxesListView: View {
             Button("OK") { vm.clearError() }
         } message: {
             Text(vm.errorMessage ?? "")
+        }
+        .sheet(isPresented: Bindable(vm).showNewSandboxSheet) {
+            NewSandboxSheet()
         }
     }
 
