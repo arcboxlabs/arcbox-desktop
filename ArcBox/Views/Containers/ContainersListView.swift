@@ -95,8 +95,8 @@ struct ContainersListView: View {
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
-        .task(id: daemonManager.setupPhase.isDockerReady) {
-            guard daemonManager.setupPhase.isDockerReady else { return }
+        .task(id: daemonManager.setupPhase.isDockerReady && docker != nil) {
+            guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
             await vm.loadContainersFromDocker(docker: docker, iconClient: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
