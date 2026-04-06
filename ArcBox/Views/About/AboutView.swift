@@ -186,6 +186,11 @@ struct AboutView: View {
                 .font(.headline)
                 .padding(.horizontal, 4)
 
+            // Short links managed via arcbox.link / git.new:
+            //   arcbox.link/docs      → https://docs.arcbox.dev
+            //   arcbox.link/dsup      → https://github.com/arcboxlabs/arcbox-desktop/issues
+            //   arcbox.link/dreleases → https://github.com/arcboxlabs/arcbox-desktop/releases
+            //   git.new/orbstack      → https://github.com/arcboxlabs/arcbox-desktop
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 linkButton(icon: "book", title: "Documentation", url: "https://arcbox.link/docs")
                 linkButton(
