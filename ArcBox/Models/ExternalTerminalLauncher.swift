@@ -2,7 +2,7 @@ import AppKit
 import os
 
 /// Launches an external terminal app with Docker environment pre-configured.
-nonisolated enum ExternalTerminalLauncher {
+enum ExternalTerminalLauncher {
     private static let logger = Log.terminal
 
     /// The Docker socket environment variable value used by ArcBox.
@@ -85,14 +85,14 @@ nonisolated enum ExternalTerminalLauncher {
         let scriptSource = source
         Task.detached {
             guard let script = NSAppleScript(source: scriptSource) else {
-                logger.error("Failed to create AppleScript")
+                await MainActor.run { logger.error("Failed to create AppleScript") }
                 return
             }
             var error: NSDictionary?
             script.executeAndReturnError(&error)
             if let error {
                 let errorMessage = (error[NSAppleScript.errorMessage] as? String) ?? "Unknown AppleScript error"
-                logger.error("AppleScript error: \(errorMessage, privacy: .public)")
+                await MainActor.run { logger.error("AppleScript error: \(errorMessage, privacy: .public)") }
             }
         }
     }
