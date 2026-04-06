@@ -198,7 +198,10 @@ struct ArcBoxDesktopApp: App {
         }
         .defaultSize(width: 1200, height: 800)
         .commands {
-            CommandGroup(after: .appInfo) {
+            CommandGroup(replacing: .appInfo) {
+                Button("About ArcBox") {
+                    showAboutWindow()
+                }
                 CheckForUpdatesView(updater: updaterController.updater)
             }
         }

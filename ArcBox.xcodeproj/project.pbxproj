@@ -19,6 +19,8 @@
 		UT0200012FA0000000000001 /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0200002FA0000000000001 /* ImagesViewModelTests.swift */; };
 		UT0300012FA0000000000001 /* K8sModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0300002FA0000000000001 /* K8sModelsTests.swift */; };
 		UT0400012FA0000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = UT0400002FA0000000000001 /* K8sClient */; };
+		RES100012FA0000000000001 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = RES100002FA0000000000001 /* CHANGELOG.md */; };
+		RES200012FA0000000000001 /* arcbox.version in Resources */ = {isa = PBXBuildFile; fileRef = RES200002FA0000000000001 /* arcbox.version */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +57,8 @@
 		UT0100002FA0000000000001 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
 		UT0200002FA0000000000001 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
 		UT0300002FA0000000000001 /* K8sModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sModelsTests.swift; sourceTree = "<group>"; };
+		RES100002FA0000000000001 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		RES200002FA0000000000001 /* arcbox.version */ = {isa = PBXFileReference; lastKnownFileType = text; path = arcbox.version; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -106,6 +110,8 @@
 			children = (
 				657F65A02F3A2ADB00C7005A /* Local.xcconfig */,
 				AB0F00012F80000000000001 /* Version.xcconfig */,
+				RES100002FA0000000000001 /* CHANGELOG.md */,
+				RES200002FA0000000000001 /* arcbox.version */,
 				657F657D2F3A2ADB00C7005A /* ArcBox */,
 				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
 				AB0D00062F60000000000001 /* LaunchDaemons */,
@@ -239,6 +245,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				RES100012FA0000000000001 /* CHANGELOG.md in Resources */,
+				RES200012FA0000000000001 /* arcbox.version in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
