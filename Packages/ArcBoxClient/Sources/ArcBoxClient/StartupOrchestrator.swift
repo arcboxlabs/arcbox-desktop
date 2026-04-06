@@ -58,6 +58,8 @@ public enum StartupPhase: Sendable, Equatable {
     case running(step: StartupStep)
     case completed
     case failed(step: StartupStep, message: String)
+    /// Non-recoverable error (e.g. missing entitlements). User must quit.
+    case fatalError(message: String)
 }
 
 // MARK: - Internal Errors
@@ -155,6 +157,17 @@ public final class StartupOrchestrator {
         // Non-critical: daemon works without it, just no DNS/socket integration.
         await runStep(.installHelper) {
             await self.daemonManager.installHelper()
+        }
+
+        // Pre-check: verify daemon binary signature and entitlements.
+        // This catches misconfigured builds (ad-hoc signing that strips
+        // entitlements) early, before launchd silently refuses to exec.
+        if let verifyError = await daemonManager.verifyDaemonBinary() {
+            ClientLog.startup.error("Daemon binary verification failed: \(verifyError, privacy: .private)")
+            phase = .fatalError(message: verifyError)
+            stepStatuses[.enableDaemon] = .failed(verifyError)
+            stepStatuses[.connectAndWatch] = .skipped
+            return
         }
 
         // Step 2: Register daemon with launchd.

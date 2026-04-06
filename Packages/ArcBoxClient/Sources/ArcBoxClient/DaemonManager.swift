@@ -199,14 +199,8 @@ public final class DaemonManager {
         try? FileManager.default.createDirectory(
             atPath: "\(home)/.arcbox/run", withIntermediateDirectories: true)
 
-        // ABXD-54: Verify daemon binary code signature before registration.
-        // Run off MainActor to avoid blocking UI during codesign --verify.
-        // Compute the path here to avoid capturing non-Sendable self.
-        let daemonPath = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Helpers/com.arcboxlabs.desktop.daemon").path
-        await Task.detached {
-            Self.verifyDaemonSignature(at: daemonPath)
-        }.value
+        // ABXD-54: Signature + entitlements are now verified by the orchestrator
+        // via verifyDaemonBinary() before enableDaemon() is called.
 
         let status = daemonService.status
         ClientLog.daemon.info("SMAppService status: \(String(describing: status), privacy: .public)")
@@ -400,48 +394,82 @@ public final class DaemonManager {
 
     // MARK: - Binary Verification
 
-    /// Verify the daemon binary's code signature before launching.
+    /// Path to the daemon binary inside the app bundle.
+    nonisolated private static var daemonBinaryPath: String {
+        Bundle.main.bundleURL
+            .appendingPathComponent(
+                "Contents/Frameworks/com.arcboxlabs.desktop.daemon.app/Contents/MacOS/com.arcboxlabs.desktop.daemon"
+            ).path
+    }
+
+    /// Verify the daemon binary exists, has a valid code signature, and
+    /// carries the required virtualization/hypervisor entitlements.
     ///
-    /// Runs `codesign --verify --strict` on the daemon binary at `path`.
-    /// Logs a warning on failure but does **not** block startup — dev
-    /// builds may use ad-hoc signatures that fail strict verification.
-    ///
-    /// Static so it can be called from a detached task without capturing self.
-    nonisolated private static func verifyDaemonSignature(at daemonPath: String) {
-        guard FileManager.default.fileExists(atPath: daemonPath) else {
-            ClientLog.daemon.warning("Daemon binary not found at expected path, skipping signature check")
-            return
+    /// Returns `nil` on success, or a human-readable error message on failure.
+    /// Heavy work (Process spawning) runs on a detached task to keep MainActor free.
+    public func verifyDaemonBinary() async -> String? {
+        let path = Self.daemonBinaryPath
+        return await Task.detached {
+            Self.performDaemonVerification(at: path)
+        }.value
+    }
+
+    nonisolated private static func performDaemonVerification(at path: String) -> String? {
+        guard FileManager.default.fileExists(atPath: path) else {
+            ClientLog.daemon.error("Daemon binary not found at \(path, privacy: .public)")
+            return "Daemon binary not found at expected path."
         }
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
-        process.arguments = ["--verify", "--strict", daemonPath]
-        process.standardOutput = FileHandle.nullDevice
-        // Redirect stderr to null to avoid pipe-buffer deadlock.
-        // codesign output is not actionable beyond the exit code.
-        process.standardError = FileHandle.nullDevice
-
+        // Step 1: verify code signature
+        let verify = Process()
+        verify.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        verify.arguments = ["--verify", "--strict", path]
+        verify.standardOutput = FileHandle.nullDevice
+        verify.standardError = FileHandle.nullDevice
         do {
-            try process.run()
-            // Bounded wait: terminate if codesign hangs for more than 10 seconds.
-            let deadline = DispatchTime.now() + .seconds(10)
-            let done = DispatchSemaphore(value: 0)
-            process.terminationHandler = { _ in done.signal() }
-            if done.wait(timeout: deadline) == .timedOut {
-                process.terminate()
-                ClientLog.daemon.warning("Daemon signature verification timed out, killed codesign process")
-                return
-            }
-            if process.terminationStatus != 0 {
-                ClientLog.daemon.warning(
-                    "Daemon binary signature verification failed (status \(process.terminationStatus))")
-            } else {
-                ClientLog.daemon.info("Daemon binary signature verified OK")
+            try verify.run()
+            verify.waitUntilExit()
+            if verify.terminationStatus != 0 {
+                ClientLog.daemon.error("Daemon signature verification failed (status \(verify.terminationStatus))")
+                return "Daemon binary has an invalid code signature (codesign status \(verify.terminationStatus))."
             }
         } catch {
-            ClientLog.daemon.warning(
-                "Could not run codesign verification: \(error.localizedDescription, privacy: .private)")
+            ClientLog.daemon.error("codesign verify failed: \(error.localizedDescription, privacy: .private)")
+            return "Failed to verify daemon signature: \(error.localizedDescription)"
         }
+
+        // Step 2: check required entitlements
+        let entProc = Process()
+        entProc.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        entProc.arguments = ["-d", "--entitlements", "-", "--xml", path]
+        let pipe = Pipe()
+        entProc.standardOutput = pipe
+        entProc.standardError = FileHandle.nullDevice
+        do {
+            try entProc.run()
+            entProc.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+
+            let required = [
+                "com.apple.security.virtualization",
+                "com.apple.security.hypervisor",
+            ]
+            let missing = required.filter { !output.contains($0) }
+            if !missing.isEmpty {
+                let list = missing.joined(separator: ", ")
+                ClientLog.daemon.error("Daemon missing entitlements: \(list, privacy: .public)")
+                return
+                    "Daemon binary is missing required entitlements: \(list).\nRe-sign with Developer ID and proper entitlements."
+            }
+        } catch {
+            ClientLog.daemon.error(
+                "codesign entitlements check failed: \(error.localizedDescription, privacy: .private)")
+            return "Failed to read daemon entitlements: \(error.localizedDescription)"
+        }
+
+        ClientLog.daemon.info("Daemon binary verified OK (signature + entitlements)")
+        return nil
     }
 
     // MARK: - Internal
