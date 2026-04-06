@@ -73,6 +73,7 @@ class NetworksViewModel {
             Log.network.info("Loaded \(self.networks.count, privacy: .public) networks")
         } catch {
             Log.network.error("Error loading networks: \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .network, operation: "list")
         }
     }
 
@@ -87,6 +88,7 @@ class NetworksViewModel {
         } catch {
             Log.network.error(
                 "Error removing network \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .network, operation: "remove")
             lastError = error.localizedDescription
         }
         await loadNetworks(docker: docker)
@@ -130,6 +132,7 @@ class NetworksViewModel {
             Log.network.error(
                 "Error creating network \(trimmedName, privacy: .private): \(error.localizedDescription, privacy: .private)"
             )
+            ErrorReporting.capture(error, domain: .network, operation: "create")
             return error.localizedDescription
         }
     }

@@ -11,6 +11,7 @@
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
 		65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 65D867EC2F5C228600DAAEE6 /* Sparkle */; };
 		AB0D00022F60000000000001 /* com.arcboxlabs.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */; };
+		BA8581652F83ADCC0013E298 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = PH0200012FA0000000000001 /* PostHog */; };
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
 		K8S100012F90000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = K8S100002F90000000000001 /* K8sClient */; };
@@ -19,6 +20,8 @@
 		UT0200012FA0000000000001 /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0200002FA0000000000001 /* ImagesViewModelTests.swift */; };
 		UT0300012FA0000000000001 /* K8sModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0300002FA0000000000001 /* K8sModelsTests.swift */; };
 		UT0400012FA0000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = UT0400002FA0000000000001 /* K8sClient */; };
+		RES100012FA0000000000001 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = RES100002FA0000000000001 /* CHANGELOG.md */; };
+		RES200012FA0000000000001 /* arcbox.version in Resources */ = {isa = PBXBuildFile; fileRef = RES200002FA0000000000001 /* arcbox.version */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +58,8 @@
 		UT0100002FA0000000000001 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
 		UT0200002FA0000000000001 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
 		UT0300002FA0000000000001 /* K8sModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sModelsTests.swift; sourceTree = "<group>"; };
+		RES100002FA0000000000001 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		RES200002FA0000000000001 /* arcbox.version */ = {isa = PBXFileReference; lastKnownFileType = text; path = arcbox.version; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -78,6 +83,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BA8581652F83ADCC0013E298 /* PostHog in Frameworks */,
 				657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */,
 				65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */,
 				DC0A11012F4E000000000001 /* DockerClient in Frameworks */,
@@ -106,6 +112,8 @@
 			children = (
 				657F65A02F3A2ADB00C7005A /* Local.xcconfig */,
 				AB0F00012F80000000000001 /* Version.xcconfig */,
+				RES100002FA0000000000001 /* CHANGELOG.md */,
+				RES200002FA0000000000001 /* arcbox.version */,
 				657F657D2F3A2ADB00C7005A /* ArcBox */,
 				336ADECAFDFE4B28898C3637 /* ArcBoxTests */,
 				AB0D00062F60000000000001 /* LaunchDaemons */,
@@ -166,6 +174,7 @@
 				DC0B11002F4E000000000001 /* SwiftTerm */,
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 				SE0200012F90000000000001 /* Sentry */,
+				PH0200012FA0000000000001 /* PostHog */,
 			);
 			productName = ArcBox;
 			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox.app */;
@@ -222,6 +231,7 @@
 				DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				PH0100012FA0000000000001 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 657F657C2F3A2ADB00C7005A /* Products */;
@@ -239,6 +249,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				RES100012FA0000000000001 /* CHANGELOG.md in Resources */,
+				RES200012FA0000000000001 /* arcbox.version in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,6 +468,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
+				INFOPLIST_KEY_PostHogAPIKey = "$(POSTHOG_API_KEY)";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -500,6 +513,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
+				INFOPLIST_KEY_PostHogAPIKey = "$(POSTHOG_API_KEY)";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -606,6 +620,14 @@
 				minimumVersion = 1.0.0;
 			};
 		};
+		PH0100012FA0000000000001 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
 		SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
@@ -638,6 +660,11 @@
 		K8S100002F90000000000001 /* K8sClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = K8sClient;
+		};
+		PH0200012FA0000000000001 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PH0100012FA0000000000001 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 		SE0200012F90000000000001 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;

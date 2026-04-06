@@ -59,6 +59,7 @@ class ServicesViewModel {
             return true
         } catch {
             Log.services.error("Error loading services: \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .service, operation: "list")
             self.services = []
             self.k8sClient = nil
             return false
