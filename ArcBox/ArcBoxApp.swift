@@ -203,13 +203,12 @@ struct ArcBoxDesktopApp: App {
                             properties: [
                                 "duration_ms": startupMs
                             ])
-                    } else if case .failed(let step, let message) = orchestrator.phase {
+                    } else if case .failed(let step, _) = orchestrator.phase {
                         Analytics.capture(
                             .startupFailed,
                             properties: [
                                 "duration_ms": startupMs,
                                 "step": step.label,
-                                "error": message,
                             ])
                     }
                 }

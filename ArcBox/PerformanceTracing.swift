@@ -1,3 +1,4 @@
+import Foundation
 @preconcurrency import Sentry
 
 /// Lightweight performance measurement wrapper.

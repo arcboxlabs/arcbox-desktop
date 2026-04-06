@@ -386,6 +386,7 @@ public final class DaemonManager {
     public func connectAndWatch(client: ArcBoxClient) {
         stopWatching()
         reconnectCount = 0
+        lastMessageTime = nil
         watchTask = Task { [weak self] in
             // Track consecutive failed reconnect attempts since the last
             // successful stream message.  Used to keep .running state for a

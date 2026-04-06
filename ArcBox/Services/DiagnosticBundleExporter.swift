@@ -1,16 +1,19 @@
+import AppKit
 import ArcBoxClient
 import Foundation
 import OSLog
+import UniformTypeIdentifiers
 
 /// Collects and exports a sanitized diagnostic report for troubleshooting.
 ///
 /// The bundle includes system information, daemon status, recent OSLog entries,
-/// and resource counts — but never container names, image names, IDs, or
-/// file paths that could identify the user.
+/// and resource counts. It avoids obvious user-identifying details where
+/// possible, but included log messages may still contain system-generated
+/// identifiers or file paths beyond the home directory.
 @MainActor
 final class DiagnosticBundleExporter {
 
-    /// Gather diagnostics and write a zip file to a user-chosen location.
+    /// Gather diagnostics and write a plain-text report to a user-chosen location.
     ///
     /// Shows an `NSSavePanel` so the user controls where the file goes.
     /// Returns the saved URL on success, or nil if the user cancelled.

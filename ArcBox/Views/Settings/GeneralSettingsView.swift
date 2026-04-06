@@ -55,11 +55,13 @@ struct GeneralSettingsView: View {
                     }
                 }
                 .onChange(of: telemetryEnabled) { _, newValue in
-                    if newValue {
-                        PostHogSDK.shared.optIn()
-                    } else {
-                        PostHogSDK.shared.optOut()
-                    }
+                    #if !DEBUG
+                        if newValue {
+                            PostHogSDK.shared.optIn()
+                        } else {
+                            PostHogSDK.shared.optOut()
+                        }
+                    #endif
                 }
             }
 
