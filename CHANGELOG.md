@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.20.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.5...v1.20.0) (2026-04-06)
+
+
+### Features
+
+* **settings:** wire up functional settings ([#92](https://github.com/arcboxlabs/arcbox-desktop/issues/92)) ([07f8695](https://github.com/arcboxlabs/arcbox-desktop/commit/07f86958fb5e0955364f4edb47db712695f00ba0))
+* **terminal:** use pstramp for PTY session isolation ([#199](https://github.com/arcboxlabs/arcbox-desktop/issues/199)) ([5c59975](https://github.com/arcboxlabs/arcbox-desktop/commit/5c59975d0387397d732556c06b5f6a23ab831ebe))
+
+
+### Bug Fixes
+
+* audit remaining issues — safety, privacy, accessibility, cleanup ([#181](https://github.com/arcboxlabs/arcbox-desktop/issues/181)) ([87e26e1](https://github.com/arcboxlabs/arcbox-desktop/commit/87e26e16a1d4fadc20032623b8db4985e54fbc8f))
+* enable SwiftLint strict mode with zero violations ([#200](https://github.com/arcboxlabs/arcbox-desktop/issues/200)) ([d9f57e8](https://github.com/arcboxlabs/arcbox-desktop/commit/d9f57e852010897dde36b899320d4dcfd33e68a2))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.21 ([#201](https://github.com/arcboxlabs/arcbox-desktop/issues/201)) ([24eff48](https://github.com/arcboxlabs/arcbox-desktop/commit/24eff4891478ab2ac000cfd6c68d9e559ccadf71))
+
 ## [1.19.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.4...v1.19.5) (2026-04-05)
 
 
