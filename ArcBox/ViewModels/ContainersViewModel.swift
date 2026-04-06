@@ -1,7 +1,6 @@
 import ArcBoxClient
 import DockerClient
 import OSLog
-@preconcurrency import Sentry
 import SwiftUI
 
 extension Notification.Name {
@@ -310,7 +309,9 @@ class ContainersViewModel {
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
-            let response = try await client.containers.list(request, options: ArcBoxClient.defaultCallOptions)
+            let response = try await Perf.measure("container.list_grpc") {
+                try await client.containers.list(request, options: ArcBoxClient.defaultCallOptions)
+            }
             var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)
             }
@@ -327,9 +328,7 @@ class ContainersViewModel {
             }
         } catch {
             Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .private)")
-            SentrySDK.capture(error: error) { scope in
-                scope.setTag(value: "list_grpc", key: "container_op")
-            }
+            ErrorReporting.capture(error, domain: .container, operation: "list_grpc")
         }
     }
 
@@ -345,6 +344,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "start")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -363,6 +363,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "stop")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -439,6 +440,7 @@ class ContainersViewModel {
             }
         } catch {
             Log.container.error("Error creating container: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "create")
         }
         return nil
     }
@@ -455,6 +457,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "remove")
             lastError = error.localizedDescription
         }
         await loadContainers(client: client)
@@ -484,6 +487,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error inspecting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "inspect_grpc")
         }
     }
 
@@ -503,8 +507,10 @@ class ContainersViewModel {
         let currentTransitioning = transitioningIDs
         let cachedDetails = containerDetailsCache()
         do {
-            let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
-            let containerList = try response.ok.body.json
+            let containerList = try await Perf.measure("container.list_docker") {
+                let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
+                return try response.ok.body.json
+            }
             var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
             applyCachedDetails(cachedDetails, to: &viewModels)
             applyCachedIcons(to: &viewModels)
@@ -521,9 +527,7 @@ class ContainersViewModel {
             loadState = .loaded
         } catch {
             Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .private)")
-            SentrySDK.capture(error: error) { scope in
-                scope.setTag(value: "list_docker", key: "container_op")
-            }
+            ErrorReporting.capture(error, domain: .container, operation: "list_docker")
             if containers.isEmpty {
                 loadState = .failed(error.localizedDescription)
             } else {
@@ -543,6 +547,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "start_docker")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -559,6 +564,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "stop_docker")
             lastError = error.localizedDescription
         }
         setTransitioning(id, false)
@@ -575,6 +581,7 @@ class ContainersViewModel {
         } catch {
             Log.container.error(
                 "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .container, operation: "remove_docker")
             lastError = error.localizedDescription
         }
         await loadContainersFromDocker(docker: docker)
@@ -640,6 +647,7 @@ class ContainersViewModel {
                 Log.container.error(
                     "Inspect fallback failed for \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
                 )
+                ErrorReporting.capture(error, domain: .container, operation: "inspect_docker")
             }
         }
     }
@@ -662,6 +670,7 @@ class ContainersViewModel {
                         Log.container.error(
                             "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
                         )
+                        ErrorReporting.capture(error, domain: .container, operation: "batch_start")
                     }
                 }
             }
@@ -686,6 +695,7 @@ class ContainersViewModel {
                         Log.container.error(
                             "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
                         )
+                        ErrorReporting.capture(error, domain: .container, operation: "batch_stop")
                     }
                 }
             }
@@ -707,6 +717,7 @@ class ContainersViewModel {
                         Log.container.error(
                             "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
                         )
+                        ErrorReporting.capture(error, domain: .container, operation: "batch_remove")
                     }
                 }
             }

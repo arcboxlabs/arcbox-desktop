@@ -57,11 +57,14 @@ class PodsViewModel {
             }
 
             guard let k8s = k8sClient else { return false }
-            let podList = try await k8s.listAllPods()
+            let podList = try await Perf.measure("pod.list") {
+                try await k8s.listAllPods()
+            }
             self.pods = podList.items.compactMap { Self.mapPod($0) }
             return true
         } catch {
             Log.pods.error("Error loading pods: \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .pod, operation: "list")
             self.pods = []
             self.k8sClient = nil
             return false

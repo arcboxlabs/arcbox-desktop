@@ -1,7 +1,13 @@
+import ArcBoxClient
+import PostHog
 import ServiceManagement
 import SwiftUI
 
 struct GeneralSettingsView: View {
+    @Environment(DaemonManager.self) private var daemonManager
+    @Environment(ContainersViewModel.self) private var containersVM
+    @Environment(ImagesViewModel.self) private var imagesVM
+
     @AppStorage("startAtLogin") private var startAtLogin = false
     @AppStorage("showInMenuBar") private var showInMenuBar = false
     @AppStorage("keepRunning") private var keepRunning = false
@@ -9,8 +15,10 @@ struct GeneralSettingsView: View {
     @AppStorage("updateChannel") private var updateChannel = "stable"
     @AppStorage("terminalTheme") private var terminalTheme = "system"
     @AppStorage("externalTerminal") private var externalTerminal = "lastUsed"
+    @AppStorage("telemetryEnabled") private var telemetryEnabled = true
 
     @State private var isSyncingLoginItem = false
+    @State private var isExportingDiagnostics = false
 
     var body: some View {
         Form {
@@ -32,6 +40,29 @@ struct GeneralSettingsView: View {
                 }
             }
 
+            Section("Privacy") {
+                LabeledContent {
+                    Toggle("", isOn: $telemetryEnabled)
+                        .labelsHidden()
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Share anonymous usage data")
+                        Text(
+                            "Help improve ArcBox by sharing feature usage statistics. No personal data is collected."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                .onChange(of: telemetryEnabled) { _, newValue in
+                    if newValue {
+                        PostHogSDK.shared.optIn()
+                    } else {
+                        PostHogSDK.shared.optOut()
+                    }
+                }
+            }
+
             Section("Terminal") {
                 Picker("Terminal theme", selection: $terminalTheme) {
                     Text("System").tag("system")
@@ -50,6 +81,30 @@ struct GeneralSettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("External terminal app")
                         Text("Used when opening terminal in a new window.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Section("Troubleshooting") {
+                Button("Export Diagnostic Report...") {
+                    isExportingDiagnostics = true
+                    Task {
+                        await DiagnosticBundleExporter.exportInteractively(
+                            daemonManager: daemonManager,
+                            containersVM: containersVM,
+                            imagesVM: imagesVM
+                        )
+                        isExportingDiagnostics = false
+                    }
+                }
+                .disabled(isExportingDiagnostics)
+
+                if isExportingDiagnostics {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text("Generating report...")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -87,5 +142,8 @@ struct GeneralSettingsView: View {
 
 #Preview {
     GeneralSettingsView()
+        .environment(DaemonManager())
+        .environment(ContainersViewModel())
+        .environment(ImagesViewModel())
         .frame(width: 500, height: 400)
 }

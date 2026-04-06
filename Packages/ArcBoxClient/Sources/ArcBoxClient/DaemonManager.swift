@@ -1,6 +1,7 @@
 import Foundation
 import OSLog
 import Observation
+@preconcurrency import Sentry
 import ServiceManagement
 
 /// Daemon connection state derived from SMAppService registration + gRPC stream.
@@ -73,6 +74,12 @@ public final class DaemonManager {
 
     /// Last error message from enable/disable operations.
     public private(set) var errorMessage: String?
+
+    /// Number of gRPC stream reconnect attempts since the last ``connectAndWatch(client:)`` call.
+    public private(set) var reconnectCount: Int = 0
+
+    /// Timestamp of the last message received from the gRPC setup status stream.
+    public private(set) var lastMessageTime: Date?
 
     nonisolated private static let daemonPlistName = "com.arcboxlabs.desktop.daemon.plist"
     nonisolated private var daemonService: SMAppService {
@@ -378,6 +385,7 @@ public final class DaemonManager {
     @available(macOS 15.0, *)
     public func connectAndWatch(client: ArcBoxClient) {
         stopWatching()
+        reconnectCount = 0
         watchTask = Task { [weak self] in
             // Track consecutive failed reconnect attempts since the last
             // successful stream message.  Used to keep .running state for a
@@ -434,7 +442,19 @@ public final class DaemonManager {
                 // that, the daemon is genuinely unreachable and the UI should
                 // reflect it.
                 failedAttemptsSinceLastMessage += 1
+                self?.reconnectCount += 1
                 let graceExceeded = failedAttemptsSinceLastMessage > 6
+
+                // Emit Sentry breadcrumb on stream reconnect for crash debugging.
+                SentrySDK.addBreadcrumb(
+                    {
+                        let b = Breadcrumb(
+                            level: graceExceeded ? .error : .warning,
+                            category: "grpc.stream")
+                        b.message =
+                            "reconnect #\(failedAttemptsSinceLastMessage)"
+                        return b
+                    }())
 
                 if self?.state.isRunning != true || graceExceeded {
                     self?.state = .registered
@@ -564,6 +584,9 @@ public final class DaemonManager {
 
     /// Apply a setup status update. Called from MainActor-isolated stream handlers.
     private func applySetupStatusSync(_ status: Arcbox_V1_SetupStatus) {
+        let oldPhase = setupPhase
+        lastMessageTime = Date()
+
         dnsResolverInstalled = status.dnsResolverInstalled
         dockerSocketLinked = status.dockerSocketLinked
         routeInstalled = status.routeInstalled
@@ -583,6 +606,13 @@ public final class DaemonManager {
         case .degraded: setupPhase = .degraded
         case .cleaningUp: setupPhase = .cleaningUp
         case .UNRECOGNIZED: setupPhase = .unknown
+        }
+
+        // Emit a Sentry breadcrumb on phase transitions for crash debugging.
+        if setupPhase != oldPhase {
+            let crumb = Breadcrumb(level: .info, category: "daemon.phase")
+            crumb.message = "\(oldPhase) → \(setupPhase)"
+            SentrySDK.addBreadcrumb(crumb)
         }
 
         // Any message from the stream means the daemon is alive.

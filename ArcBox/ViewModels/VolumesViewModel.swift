@@ -94,6 +94,7 @@ class VolumesViewModel {
             Log.volume.info("Loaded \(self.volumes.count, privacy: .public) volumes")
         } catch {
             Log.volume.error("Error loading volumes: \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "list")
         }
     }
 
@@ -110,6 +111,7 @@ class VolumesViewModel {
             return true
         } catch {
             Log.volume.error("Error creating volume: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "create")
             return false
         }
     }
@@ -140,6 +142,7 @@ class VolumesViewModel {
             volName = try response.created.body.json.Name
         } catch {
             Log.volume.error("Error creating volume for import: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "import_create")
             return false
         }
 
@@ -158,6 +161,7 @@ class VolumesViewModel {
             try await ensureImageExists("busybox:latest", docker: docker)
         } catch {
             Log.volume.error("Error pulling busybox for import: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "import_pull_helper")
             return false
         }
 
@@ -183,6 +187,7 @@ class VolumesViewModel {
         } catch {
             Log.volume.error(
                 "Error creating temp container for import: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "import_container")
             return false
         }
 
@@ -204,6 +209,7 @@ class VolumesViewModel {
             Log.volume.info("Imported tar into volume \(volName, privacy: .private)")
         } catch {
             Log.volume.error("Error importing tar into volume: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "import_upload")
             return false
         }
 
@@ -223,6 +229,7 @@ class VolumesViewModel {
         } catch {
             Log.volume.error(
                 "Error removing volume \(name, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .volume, operation: "remove")
             lastError = error.localizedDescription
         }
         await loadVolumes(docker: docker)

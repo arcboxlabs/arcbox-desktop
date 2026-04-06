@@ -1,6 +1,7 @@
 import DockerClient
 import Foundation
 import OSLog
+@preconcurrency import Sentry
 
 // MARK: - Fine-grained Notification Names
 
@@ -51,6 +52,8 @@ final class DockerEventMonitor {
 
     /// Per-type debounce work items.
     private var debounceWorkItems: [String: DispatchWorkItem] = [:]
+    /// Counts events coalesced per debounce window, keyed by resource type.
+    private var eventCountsByType: [String: Int] = [:]
     private static let debounceInterval: TimeInterval = 0.3
 
     // MARK: Lifecycle
@@ -79,6 +82,12 @@ final class DockerEventMonitor {
             Log.docker.info("Event monitor stopped")
         }
         Log.docker.info("Event monitor started")
+        SentrySDK.addBreadcrumb(
+            {
+                let b = Breadcrumb(level: .info, category: "docker.events")
+                b.message = "Event monitor started"
+                return b
+            }())
     }
 
     func stop() {
@@ -86,6 +95,12 @@ final class DockerEventMonitor {
         task?.cancel()
         task = nil
         cancelAllDebounce()
+        SentrySDK.addBreadcrumb(
+            {
+                let b = Breadcrumb(level: .info, category: "docker.events")
+                b.message = "Event monitor stopped"
+                return b
+            }())
     }
 
     // MARK: Event Dispatch
@@ -120,9 +135,17 @@ final class DockerEventMonitor {
     // MARK: Debounce
 
     private func debouncedPost(_ name: Notification.Name, type: String) {
+        eventCountsByType[type, default: 0] += 1
         debounceWorkItems[type]?.cancel()
-        let item = DispatchWorkItem {
+        let coalescedCount = eventCountsByType[type]!
+        let item = DispatchWorkItem { [weak self] in
             NotificationCenter.default.post(name: name, object: nil)
+            if coalescedCount > 1 {
+                Log.docker.debug(
+                    "Debounced \(coalescedCount, privacy: .public) \(type, privacy: .public) events into 1 notification"
+                )
+            }
+            self?.eventCountsByType[type] = 0
         }
         debounceWorkItems[type] = item
         DispatchQueue.main.asyncAfter(
