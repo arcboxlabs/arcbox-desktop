@@ -49,9 +49,11 @@ struct ServicesListView: View {
         .navigationSubtitle(k8s.enabled ? "\(vm.serviceCount) total" : "Disabled")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: {}) {
-                    Image(systemName: "magnifyingglass")
-                }
+                Button(
+                    action: {},
+                    label: {
+                        Image(systemName: "magnifyingglass")
+                    })
             }
         }
         .task {

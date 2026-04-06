@@ -64,8 +64,8 @@ public final class DaemonManager {
     /// Last error message from enable/disable operations.
     public private(set) var errorMessage: String?
 
-    private nonisolated static let daemonPlistName = "com.arcboxlabs.desktop.daemon.plist"
-    private nonisolated var daemonService: SMAppService {
+    nonisolated private static let daemonPlistName = "com.arcboxlabs.desktop.daemon.plist"
+    nonisolated private var daemonService: SMAppService {
         SMAppService.agent(plistName: Self.daemonPlistName)
     }
 
@@ -97,7 +97,7 @@ public final class DaemonManager {
     /// Skips silently if the installed helper version matches the bundled one.
     /// Only prompts for password on first install or upgrade.
     /// Installed helper binary path (must match arcbox-constants privileged::HELPER_BINARY).
-    private nonisolated static let installedHelperPath = "/usr/local/libexec/arcbox-helper"
+    nonisolated private static let installedHelperPath = "/usr/local/libexec/arcbox-helper"
 
     public func installHelper() async {
         // Find abctl and helper in the app bundle.

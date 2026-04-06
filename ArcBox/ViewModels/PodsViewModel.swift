@@ -17,7 +17,7 @@ enum PodDetailTab: String, CaseIterable, Identifiable {
 @Observable
 class PodsViewModel {
     var pods: [PodViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: PodDetailTab = .info
     var listWidth: CGFloat = 320
     var isLoading: Bool = false

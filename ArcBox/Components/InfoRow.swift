@@ -4,7 +4,7 @@ import SwiftUI
 struct InfoRow: View {
     let label: String
     let value: String
-    var link: URL? = nil
+    var link: URL?
 
     var body: some View {
         HStack(alignment: .top) {

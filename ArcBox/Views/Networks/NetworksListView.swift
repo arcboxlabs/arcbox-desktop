@@ -45,9 +45,12 @@ struct NetworksListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showNewNetworkSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showNewNetworkSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
                 .accessibilityLabel("New network")
                 .keyboardShortcut("n", modifiers: .command)
             }

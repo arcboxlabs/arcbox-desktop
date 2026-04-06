@@ -23,7 +23,7 @@ enum VolumeSortField: String, CaseIterable {
 @Observable
 class VolumesViewModel {
     var volumes: [VolumeViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: VolumeDetailTab = .info
     var listWidth: CGFloat = 320
     var showNewVolumeSheet: Bool = false

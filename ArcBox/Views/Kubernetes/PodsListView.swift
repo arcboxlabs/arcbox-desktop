@@ -67,9 +67,11 @@ struct PodsListView: View {
                 .toggleStyle(.switch)
                 .disabled(k8s.isStarting || k8s.isStopping)
 
-                Button(action: {}) {
-                    Image(systemName: "magnifyingglass")
-                }
+                Button(
+                    action: {},
+                    label: {
+                        Image(systemName: "magnifyingglass")
+                    })
             }
         }
         .task {

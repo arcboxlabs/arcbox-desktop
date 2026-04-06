@@ -25,7 +25,7 @@ enum ImageSortField: String, CaseIterable {
 @Observable
 class ImagesViewModel {
     var images: [ImageViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: ImageDetailTab = .info
     var listWidth: CGFloat = 320
     var showPullImageSheet: Bool = false

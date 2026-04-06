@@ -35,26 +35,32 @@ struct ContainerTerminalTab: View {
 
                     Spacer()
 
-                    Button(action: {
-                        ExternalTerminalLauncher.open(
-                            preference: externalTerminal,
-                            containerID: container.id,
-                            shell: selectedShell
-                        )
-                    }) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.system(size: 12))
-                            .foregroundStyle(AppColors.textSecondary)
-                    }
+                    Button(
+                        action: {
+                            ExternalTerminalLauncher.open(
+                                preference: externalTerminal,
+                                containerID: container.id,
+                                shell: selectedShell
+                            )
+                        },
+                        label: {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 12))
+                                .foregroundStyle(AppColors.textSecondary)
+                        }
+                    )
                     .buttonStyle(.plain)
                     .help("Open in external terminal")
 
                     if session.state == .connected {
-                        Button(action: { session.disconnect() }) {
-                            Image(systemName: "xmark.circle")
-                                .font(.system(size: 12))
-                                .foregroundStyle(AppColors.textSecondary)
-                        }
+                        Button(
+                            action: { session.disconnect() },
+                            label: {
+                                Image(systemName: "xmark.circle")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(AppColors.textSecondary)
+                            }
+                        )
                         .buttonStyle(.plain)
                         .help("Disconnect")
                     } else if session.state == .disconnected || session.state == .idle {

@@ -46,9 +46,12 @@ struct ImagesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showPullImageSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showPullImageSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
                 .accessibilityLabel("Pull image")
                 .keyboardShortcut("n", modifiers: .command)
             }

@@ -13,7 +13,7 @@ enum NetworkSortField: String, CaseIterable {
 @Observable
 class NetworksViewModel {
     var networks: [NetworkViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var listWidth: CGFloat = 320
     var showNewNetworkSheet: Bool = false
     var searchText: String = ""

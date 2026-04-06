@@ -32,7 +32,7 @@ class DockerTerminalSession {
     /// then closes the old FD outside the lock.  Readers (`send`, `resize`)
     /// take the lock to read a snapshot, guaranteeing they never operate on
     /// a closed or reused FD.
-    @ObservationIgnored private let masterFDLock = OSAllocatedUnfairLock<Int32>(initialState: -1)
+    @ObservationIgnored private let ptyFDLock = OSAllocatedUnfairLock<Int32>(initialState: -1)
     @ObservationIgnored private var readTask: Task<Void, Never>?
     @ObservationIgnored private weak var terminalView: TerminalView?
     /// Monotonically increasing counter to distinguish sessions.
@@ -88,14 +88,14 @@ class DockerTerminalSession {
         }
 
         // Create PTY pair
-        var master: Int32 = -1
-        var slave: Int32 = -1
-        guard openpty(&master, &slave, nil, nil, nil) == 0 else {
+        var primary: Int32 = -1
+        var replica: Int32 = -1
+        guard openpty(&primary, &replica, nil, nil, nil) == 0 else {
             state = .error("Failed to create PTY")
             return
         }
-        let masterFD = master
-        masterFDLock.withLock { $0 = masterFD }
+        let ptyFD = primary
+        ptyFDLock.withLock { $0 = ptyFD }
 
         // Set initial terminal size from SwiftTerm (use sensible defaults if not yet laid out)
         let terminal = terminalView.getTerminal()
@@ -104,7 +104,7 @@ class DockerTerminalSession {
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
         winSize.ws_row = UInt16(rows)
-        _ = ioctl(master, TIOCSWINSZ, &winSize)
+        _ = ioctl(primary, TIOCSWINSZ, &winSize)
 
         // Configure process — use pstramp when available for proper
         // session isolation and controlling-terminal setup.
@@ -116,7 +116,7 @@ class DockerTerminalSession {
         proc.environment = env
 
         if let pstrampPath = Self.findPstramp() {
-            // -setctty: new session + PTY slave becomes controlling terminal
+            // -setctty: new session + PTY replica becomes controlling terminal
             // -disclaim: relinquish macOS responsibility claims
             proc.executableURL = URL(fileURLWithPath: pstrampPath)
             proc.arguments = ["-setctty", "-disclaim", "--", dockerPath] + arguments
@@ -124,20 +124,20 @@ class DockerTerminalSession {
             proc.executableURL = URL(fileURLWithPath: dockerPath)
             proc.arguments = arguments
         }
-        proc.standardInput = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
-        proc.standardOutput = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
-        proc.standardError = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
+        proc.standardInput = FileHandle(fileDescriptor: replica, closeOnDealloc: false)
+        proc.standardOutput = FileHandle(fileDescriptor: replica, closeOnDealloc: false)
+        proc.standardError = FileHandle(fileDescriptor: replica, closeOnDealloc: false)
 
-        // Capture the master FD value for use in detached task
-        let masterForRead = master
+        // Capture the primary FD value for use in detached task
+        let ptyForRead = primary
 
-        // Start reading from PTY master
+        // Start reading from PTY primary
         readTask = Task.detached { [weak self] in
             let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: Defaults.bufferSize)
             defer { buffer.deallocate() }
 
             while !Task.isCancelled {
-                let bytesRead = read(masterForRead, buffer, Defaults.bufferSize)
+                let bytesRead = read(ptyForRead, buffer, Defaults.bufferSize)
                 if bytesRead <= 0 { break }
                 let data = Array(UnsafeBufferPointer(start: buffer, count: bytesRead))
                 await MainActor.run { [weak self] in
@@ -165,21 +165,21 @@ class DockerTerminalSession {
 
         do {
             try proc.run()
-            // Close slave FD in parent process — the child owns it now
-            close(slave)
+            // Close replica FD in parent process — the child owns it now
+            close(replica)
             process = proc
             state = .connected
         } catch {
-            close(slave)
-            close(master)
-            masterFDLock.withLock { $0 = -1 }
+            close(replica)
+            close(primary)
+            ptyFDLock.withLock { $0 = -1 }
             state = .error(error.localizedDescription)
         }
     }
 
     /// Send data from the terminal to the docker exec process stdin.
     func send(_ data: Data) {
-        let fd = masterFDLock.withLock { $0 }
+        let fd = ptyFDLock.withLock { $0 }
         guard fd >= 0 else { return }
         data.withUnsafeBytes { rawBuffer in
             guard let ptr = rawBuffer.baseAddress else { return }
@@ -189,7 +189,7 @@ class DockerTerminalSession {
 
     /// Update the PTY window size (called when terminal view resizes).
     func resize(cols: Int, rows: Int) {
-        let fd = masterFDLock.withLock { $0 }
+        let fd = ptyFDLock.withLock { $0 }
         guard fd >= 0, cols > 0, rows > 0 else { return }
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
@@ -219,7 +219,7 @@ class DockerTerminalSession {
         // ABXD-17: Atomically swap the FD to -1 under the lock so that
         // concurrent `send()` / `resize()` calls see -1 immediately and
         // never operate on the FD after it has been closed.
-        let oldMasterFD = masterFDLock.withLock { fd -> Int32 in
+        let oldPtyFD = ptyFDLock.withLock { fd -> Int32 in
             let prev = fd
             fd = -1
             return prev
@@ -229,13 +229,13 @@ class DockerTerminalSession {
         // Foundation's Process deallocation uses Mach ports that can
         // trigger "Unable to obtain a task name port right" errors
         // and potentially block the main thread.
-        if dyingProcess != nil || oldMasterFD >= 0 {
+        if dyingProcess != nil || oldPtyFD >= 0 {
             DispatchQueue.global(qos: .utility).async {
                 if let proc = dyingProcess {
                     kill(proc.processIdentifier, SIGKILL)
                 }
-                if oldMasterFD >= 0 {
-                    close(oldMasterFD)
+                if oldPtyFD >= 0 {
+                    close(oldPtyFD)
                 }
                 // dyingProcess is released here when the closure exits,
                 // allowing Foundation to deallocate on this background thread.
@@ -280,10 +280,8 @@ class DockerTerminalSession {
     ]
 
     nonisolated private static func findDockerCLI() -> String? {
-        for path in dockerSearchPaths {
-            if FileManager.default.isExecutableFile(atPath: path) {
-                return path
-            }
+        for path in dockerSearchPaths where FileManager.default.isExecutableFile(atPath: path) {
+            return path
         }
         // Fallback: check PATH
         let proc = Process()

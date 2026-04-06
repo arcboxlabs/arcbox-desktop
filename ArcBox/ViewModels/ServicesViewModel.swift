@@ -15,7 +15,7 @@ enum ServiceDetailTab: String, CaseIterable, Identifiable {
 @Observable
 class ServicesViewModel {
     var services: [ServiceViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: ServiceDetailTab = .info
     var listWidth: CGFloat = 320
     var isLoading: Bool = false

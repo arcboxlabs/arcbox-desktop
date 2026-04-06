@@ -73,7 +73,7 @@ struct NetworkContainersSection: View {
             let networkDetail = try response.ok.body.json
             let networkContainers = networkDetail.Containers?.additionalProperties ?? [:]
 
-            containers = networkContainers.map { (containerID, entry) in
+            containers = networkContainers.map { containerID, entry in
                 let isRunning =
                     containersVM.containers.first {
                         $0.id == containerID
