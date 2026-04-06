@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Metric card matching the E2B monitoring dashboard style
+/// Metric card matching the ArcBox monitoring dashboard style
 struct MetricCard: View {
     let title: String
     let value: String
@@ -46,7 +46,7 @@ struct MetricCard: View {
     }
 }
 
-/// Chart placeholder matching the E2B monitoring style
+/// Chart placeholder matching the ArcBox monitoring style
 struct MonitoringChart: View {
     let title: String
     let value: String

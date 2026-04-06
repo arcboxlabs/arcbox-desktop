@@ -9,11 +9,11 @@ struct TemplateEmptyState: View {
                     .foregroundStyle(AppColors.textSecondary)
 
                 CommandHint(
-                    command: "e2b template init",
+                    command: "arcbox template init",
                     description: "Initialize a new template"
                 )
                 CommandHint(
-                    command: "e2b template build",
+                    command: "arcbox template build",
                     description: "Build template from Dockerfile"
                 )
             }

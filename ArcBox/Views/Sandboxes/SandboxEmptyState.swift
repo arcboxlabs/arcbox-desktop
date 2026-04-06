@@ -9,11 +9,11 @@ struct SandboxEmptyState: View {
                     .foregroundStyle(AppColors.textSecondary)
 
                 CommandHint(
-                    command: "e2b sandbox create",
+                    command: "arcbox sandbox create",
                     description: "Create from default template"
                 )
                 CommandHint(
-                    command: "e2b sandbox create --template <id>",
+                    command: "arcbox sandbox create --template <id>",
                     description: "Create from specific template"
                 )
             }
