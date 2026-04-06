@@ -31,6 +31,7 @@ enum ContainerLoadState: Equatable {
     case waiting  // Waiting for docker client
     case loading  // Fetching from Docker API
     case loaded  // Fetch completed (containers may be empty)
+    case failed(String)  // Fetch failed with error message
 }
 
 /// Container list state, selection, tabs, grouping
@@ -518,13 +519,21 @@ class ContainersViewModel {
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }
+            loadState = .loaded
         } catch {
             Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .private)")
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_docker", key: "container_op")
             }
+            // Only transition to failed on initial load; subsequent refresh failures
+            // keep the existing container list visible via .loaded state.
+            if containers.isEmpty {
+                loadState = .failed(error.localizedDescription)
+            } else {
+                loadState = .loaded
+                lastError = error.localizedDescription
+            }
         }
-        loadState = .loaded
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {

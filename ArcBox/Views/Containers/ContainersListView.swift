@@ -42,6 +42,10 @@ struct ContainersListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
+            } else if case .failed(let message) = vm.loadState {
+                ContainerLoadErrorView(message: message) {
+                    Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
+                }
             } else if vm.loadState != .loaded {
                 ProgressView("Loading containers…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
