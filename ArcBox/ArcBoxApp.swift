@@ -14,9 +14,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var startupOrchestrator: StartupOrchestrator?
     var arcboxClient: ArcBoxClient?
     var connectionTask: Task<Void, Never>?
+    /// Set to true when the user explicitly requests a full quit (e.g. from menu bar).
+    var forceQuit = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let keepRunning = UserDefaults.standard.bool(forKey: "keepRunning")
+        let showInMenuBar = UserDefaults.standard.bool(forKey: "showInMenuBar")
+
+        // If "keep running" is enabled and menu bar is visible, hide the app instead of quitting
+        // — unless the user explicitly chose Quit from the menu bar.
+        if keepRunning && showInMenuBar && !forceQuit {
+            for window in NSApp.windows where window.isVisible {
+                window.close()
+            }
+            return .terminateCancel
+        }
+
         eventMonitor?.stop()
+        DockerContextManager.restorePreviousContext()
         arcboxClient?.close()
         connectionTask?.cancel()
         guard let daemonManager else { return .terminateNow }
@@ -43,7 +58,11 @@ struct ArcBoxDesktopApp: App {
     @State private var dockerClient: DockerClient?
     // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
+    @State private var sleepWakeManager = SleepWakeManager()
     @State private var startupOrchestrator: StartupOrchestrator?
+    @AppStorage("showInMenuBar") private var showInMenuBar = false
+    @AppStorage("autoUpdate") private var autoUpdate = false
+    @AppStorage("updateChannel") private var updateChannel = "stable"
 
     // Shared ViewModels used by both main window and menu bar
     // Lightweight init — no network calls until view appears
@@ -155,10 +174,26 @@ struct ArcBoxDesktopApp: App {
                         }
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
+                            sleepWakeManager.dockerClientRef = dockerClient
+                            sleepWakeManager.start()
                         }
+                        DockerContextManager.switchToArcBox()
                     } else {
                         eventMonitor.stop()
+                        sleepWakeManager.stop()
+                        DockerContextManager.restorePreviousContext()
                     }
+                }
+                .onAppear {
+                    // Sync auto-update preference to Sparkle
+                    updaterController.updater.automaticallyChecksForUpdates = autoUpdate
+                }
+                .onChange(of: autoUpdate) { _, newValue in
+                    updaterController.updater.automaticallyChecksForUpdates = newValue
+                }
+                .onChange(of: updateChannel) { _, _ in
+                    // Force Sparkle to re-fetch the feed URL (which reads updateChannel via UpdaterDelegate)
+                    updaterController.updater.resetUpdateCycle()
                 }
         }
         .defaultSize(width: 1200, height: 800)
@@ -168,7 +203,12 @@ struct ArcBoxDesktopApp: App {
             }
         }
 
-        MenuBarExtra("ArcBox", systemImage: "shippingbox") {
+        Settings {
+            SettingsView()
+                .environment(\.dockerClient, dockerClient)
+        }
+
+        MenuBarExtra("ArcBox", systemImage: "shippingbox", isInserted: $showInMenuBar) {
             MenuBarView()
                 .environment(appVM)
                 .environment(daemonManager)

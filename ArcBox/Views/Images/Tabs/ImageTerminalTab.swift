@@ -10,6 +10,7 @@ struct ImageTerminalTab: View {
     let image: ImageViewModel
     let isActive: Bool
 
+    @AppStorage("terminalTheme") private var terminalTheme = "system"
     @State private var session = DockerTerminalSession()
     @State private var selectedShell = "/bin/sh"
     @State private var connectedImageID: String = ""
@@ -82,7 +83,7 @@ struct ImageTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalBridge(session: session)) { terminalView in
+        SwiftTermView(delegate: TerminalBridge(session: session), theme: terminalTheme) { terminalView in
             configureTerminalAppearance(terminalView)
 
             // Store terminal view reference (don't connect here — runs during makeNSView)
@@ -102,7 +103,7 @@ struct ImageTerminalTab: View {
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {
-        TerminalAppearance.configure(terminalView)
+        TerminalAppearance.configure(terminalView, theme: terminalTheme)
     }
 
     private func connectToCurrentImage() {
