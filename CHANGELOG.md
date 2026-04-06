@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.21.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.20.2...v1.21.0) (2026-04-06)
+
+
+### Features
+
+* custom About window with version info, changelog, and support links ([#208](https://github.com/arcboxlabs/arcbox-desktop/issues/208)) ([6a3fe0c](https://github.com/arcboxlabs/arcbox-desktop/commit/6a3fe0cc84594931b83ebe52d9cf26f225aa97b9))
+
+
+### Bug Fixes
+
+* container view stuck on Starting Docker engine for new users ([#209](https://github.com/arcboxlabs/arcbox-desktop/issues/209)) ([bee5167](https://github.com/arcboxlabs/arcbox-desktop/commit/bee51672eb84d8c2a33826fb30d19544837e7c7f))
+
+
+### Documentation
+
+* **AGENTS:** add daemon signing and SwiftUI startup timing pitfalls ([b18e0ed](https://github.com/arcboxlabs/arcbox-desktop/commit/b18e0ed48f715289a2490d1654995e774f90c877))
+
 ## [1.20.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.20.1...v1.20.2) (2026-04-06)
 
 
