@@ -26,10 +26,10 @@ struct ContentView: View {
         NavigationSplitView {
             sidebar
         } content: {
-            if isSandboxSection {
+            if isTemplatesSection {
                 Color.clear
                     .navigationSplitViewColumnWidth(0)
-                    .navigationTitle(appVM.currentNav == .templates ? "Templates" : "Sandboxes")
+                    .navigationTitle("Templates")
             } else {
                 contentColumn
                     .background(AppColors.background)
@@ -85,7 +85,7 @@ struct ContentView: View {
         .navigationSplitViewColumnWidth(180)
     }
 
-    private var isSandboxSection: Bool {
+    private var isTemplatesSection: Bool {
         appVM.currentNav == .templates
     }
 

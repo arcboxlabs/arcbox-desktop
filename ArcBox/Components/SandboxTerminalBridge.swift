@@ -31,8 +31,8 @@ nonisolated class SandboxTerminalBridge: NSObject, TerminalViewDelegate {
     func setTerminalTitle(source: TerminalView, title: String) {}
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
     func clipboardCopy(source: TerminalView, content: Data) {
-        NSPasteboard.general.clearContents()
         if let string = String(data: content, encoding: .utf8) {
+            NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(string, forType: .string)
         }
     }

@@ -37,7 +37,7 @@ struct SandboxDetailView: View {
                             if let readyAt = sandbox.readyAt {
                                 InfoRow(label: "Ready At", value: relativeTime(from: readyAt))
                             }
-                            if sandbox.lastExitCode != 0 {
+                            if sandbox.lastExitedAt != nil {
                                 InfoRow(label: "Last Exit Code", value: "\(sandbox.lastExitCode)")
                             }
                             if !sandbox.error.isEmpty {

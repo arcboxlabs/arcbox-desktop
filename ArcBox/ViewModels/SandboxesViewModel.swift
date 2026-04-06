@@ -107,10 +107,12 @@ class SandboxesViewModel {
                 viewModels[i].isTransitioning = true
             }
             sandboxes = viewModels
+            errorMessage = nil
             updateMonitoringMetrics()
         } catch {
             Log.sandbox.error(
                 "Error loading sandboxes: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -128,6 +130,7 @@ class SandboxesViewModel {
             Log.sandbox.error(
                 "Error inspecting sandbox \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
+            errorMessage = "Failed to load details for sandbox \(id): \(error.localizedDescription)"
         }
     }
 
