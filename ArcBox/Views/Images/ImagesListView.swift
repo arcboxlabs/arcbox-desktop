@@ -60,8 +60,8 @@ struct ImagesListView: View {
             PullImageSheet()
         }
         .errorToast(message: Bindable(vm).lastError)
-        .task(id: daemonManager.dockerSocketLinked) {
-            guard daemonManager.dockerSocketLinked else { return }
+        .task(id: daemonManager.setupPhase.isDockerReady) {
+            guard daemonManager.setupPhase.isDockerReady else { return }
             await vm.loadImages(docker: docker, iconClient: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in

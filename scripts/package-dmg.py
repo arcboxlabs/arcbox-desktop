@@ -314,21 +314,41 @@ def embed_runtime(app_bundle: Path, arcbox_dir: Path, sign_identity: str) -> Non
 
 
 def embed_completions(app_bundle: Path) -> None:
-    """Embed Docker shell completions → Contents/Resources/completions/."""
-    print("--- Embedding Docker completions ---")
+    """Generate Docker shell completions from the embedded Docker CLI
+    and place them into Contents/Resources/completions/.
 
-    comp_src = Path.home() / ".arcbox" / "completions"
+    Completions are generated at build time so the app bundle is
+    self-contained and does not depend on the build machine having
+    pre-populated ~/.arcbox/completions/.
+    """
+    print("--- Generating and embedding Docker completions ---")
+
+    docker_bin = app_bundle / "Contents" / "MacOS" / "xbin" / "docker"
     comp_dest = app_bundle / "Contents" / "Resources" / "completions"
 
-    for shell in ["zsh", "bash", "fish"]:
-        src_dir = comp_src / shell
-        if src_dir.is_dir() and any(src_dir.iterdir()):
+    if not docker_bin.is_file():
+        warn("docker binary not found in app bundle, cannot generate completions")
+        return
+
+    # Map shell name → output filename.
+    shell_map: dict[str, str] = {
+        "bash": "docker",
+        "zsh": "_docker",
+        "fish": "docker.fish",
+    }
+
+    for shell, filename in shell_map.items():
+        result = subprocess.run(
+            [str(docker_bin), "completion", shell],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
             dest_dir = comp_dest / shell
             dest_dir.mkdir(parents=True, exist_ok=True)
-            for f in src_dir.iterdir():
-                if f.is_file():
-                    shutil.copy2(f, dest_dir / f.name)
-            print(f"  Copied {shell} completions")
+            (dest_dir / filename).write_text(result.stdout, encoding="utf-8")
+            print(f"  Generated {shell} completion → {filename}")
+        else:
+            warn(f"docker completion {shell} failed: {result.stderr.strip()}")
 
 
 def embed_pstramp(app_bundle: Path, arcbox_dir: Path, sign_identity: str) -> None:

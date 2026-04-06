@@ -59,8 +59,8 @@ struct VolumesListView: View {
             NewVolumeSheet()
         }
         .errorToast(message: Bindable(vm).lastError)
-        .task(id: daemonManager.dockerSocketLinked) {
-            guard daemonManager.dockerSocketLinked else { return }
+        .task(id: daemonManager.setupPhase.isDockerReady) {
+            guard daemonManager.setupPhase.isDockerReady else { return }
             await vm.loadVolumes(docker: docker)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
