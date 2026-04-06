@@ -13,10 +13,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var eventMonitor: DockerEventMonitor?
     var sandboxEventMonitor: SandboxEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
+    var arcboxClient: ArcBoxClient?
+    var connectionTask: Task<Void, Never>?
+    /// Set to true when the user explicitly requests a full quit (e.g. from menu bar).
+    var forceQuit = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let keepRunning = UserDefaults.standard.bool(forKey: "keepRunning")
+        let showInMenuBar = UserDefaults.standard.bool(forKey: "showInMenuBar")
+
+        // If "keep running" is enabled and menu bar is visible, hide the app instead of quitting
+        // — unless the user explicitly chose Quit from the menu bar.
+        if keepRunning && showInMenuBar && !forceQuit {
+            for window in NSApp.windows where window.isVisible {
+                window.close()
+            }
+            return .terminateCancel
+        }
+
         eventMonitor?.stop()
         sandboxEventMonitor?.stop()
+        DockerContextManager.restorePreviousContext()
+        arcboxClient?.close()
+        connectionTask?.cancel()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in
@@ -33,18 +52,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    // Lightweight init — no network calls until view appears
     @State private var appVM = AppViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var daemonManager = DaemonManager()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
+    // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
     @State private var sandboxEventMonitor = SandboxEventMonitor()
+    @State private var sleepWakeManager = SleepWakeManager()
     @State private var startupOrchestrator: StartupOrchestrator?
+    @AppStorage("showInMenuBar") private var showInMenuBar = false
+    @AppStorage("autoUpdate") private var autoUpdate = false
+    @AppStorage("updateChannel") private var updateChannel = "stable"
 
     // Shared ViewModels used by both main window and menu bar
+    // Lightweight init — no network calls until view appears
     @State private var containersVM = ContainersViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var imagesVM = ImagesViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var networksVM = NetworksViewModel()
+    // Lightweight init — no network calls until view appears
     @State private var volumesVM = VolumesViewModel()
 
     private let updaterDelegate = UpdaterDelegate()
@@ -64,7 +94,7 @@ struct ArcBoxDesktopApp: App {
     /// No-ops gracefully when DSN is empty or placeholder.
     private static func initSentry() {
         guard let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String,
-              !dsn.isEmpty, dsn != "YOUR_SENTRY_DSN_HERE", dsn != "$(SENTRY_DSN)"
+            !dsn.isEmpty, dsn != "YOUR_SENTRY_DSN_HERE", dsn != "$(SENTRY_DSN)"
         else {
             Log.startup.info("Sentry DSN not configured, crash reporting disabled")
             return
@@ -82,10 +112,10 @@ struct ArcBoxDesktopApp: App {
                 return event
             }
             #if DEBUG
-            options.debug = true
-            options.environment = "development"
+                options.debug = true
+                options.environment = "development"
             #else
-            options.environment = "production"
+                options.environment = "production"
             #endif
         }
 
@@ -122,6 +152,8 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
+                    guard startupOrchestrator == nil else { return }
+
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
                     appDelegate.sandboxEventMonitor = sandboxEventMonitor
@@ -134,20 +166,43 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
                 }
-                // When daemon transitions to running, start event monitor.
+                // DockerClient is created when daemon state becomes running.
+                // ListViews gate their initial load on daemonManager.dockerSocketLinked
+                // (reported via the gRPC WatchSetupStatus stream) to avoid hitting the
+                // Docker API before the socket is ready.
+                .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
+                        if dockerClient == nil {
+                            dockerClient = DockerClient()
+                        }
                         if let dockerClient {
                             eventMonitor.start(docker: dockerClient)
+                            sleepWakeManager.dockerClientRef = dockerClient
+                            sleepWakeManager.start()
                         }
                         if let arcboxClient {
                             sandboxEventMonitor.start(
                                 client: arcboxClient, machineID: "default")
                         }
+                        DockerContextManager.switchToArcBox()
                     } else {
                         eventMonitor.stop()
                         sandboxEventMonitor.stop()
+                        sleepWakeManager.stop()
+                        DockerContextManager.restorePreviousContext()
                     }
+                }
+                .onAppear {
+                    // Sync auto-update preference to Sparkle
+                    updaterController.updater.automaticallyChecksForUpdates = autoUpdate
+                }
+                .onChange(of: autoUpdate) { _, newValue in
+                    updaterController.updater.automaticallyChecksForUpdates = newValue
+                }
+                .onChange(of: updateChannel) { _, _ in
+                    // Force Sparkle to re-fetch the feed URL (which reads updateChannel via UpdaterDelegate)
+                    updaterController.updater.resetUpdateCycle()
                 }
         }
         .defaultSize(width: 1200, height: 800)
@@ -157,7 +212,12 @@ struct ArcBoxDesktopApp: App {
             }
         }
 
-        MenuBarExtra("ArcBox", systemImage: "shippingbox") {
+        Settings {
+            SettingsView()
+                .environment(\.dockerClient, dockerClient)
+        }
+
+        MenuBarExtra("ArcBox", systemImage: "shippingbox", isInserted: $showInMenuBar) {
             MenuBarView()
                 .environment(appVM)
                 .environment(daemonManager)
@@ -165,35 +225,54 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(networksVM)
                 .environment(volumesVM)
+                .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.startupOrchestrator, startupOrchestrator)
         }
         .menuBarExtraStyle(.window)
     }
 
-    /// Create clients and return the ArcBoxClient for the orchestrator.
+    /// Create gRPC client and return it for the orchestrator.
+    /// DockerClient is created separately in onChange(of: daemonManager.state).
+    /// ListViews gate data loading on daemonManager.dockerSocketLinked.
     private func initClientsAndReturn() throws -> ArcBoxClient {
-        if dockerClient == nil {
-            dockerClient = DockerClient()
-        }
-
         if let existing = arcboxClient {
             Log.startup.info("Reusing existing ArcBoxClient")
             return existing
         }
 
+        // Close any previous client that wasn't cleaned up (e.g. after a failed startup).
+        appDelegate.arcboxClient?.close()
+        appDelegate.connectionTask?.cancel()
+
         Log.startup.info("Creating new ArcBoxClient at \(ArcBoxClient.defaultSocketPath, privacy: .public)")
         let client = try ArcBoxClient()
-        Task {
+        let task = Task {
             do {
                 Log.startup.info("runConnections starting")
                 try await client.runConnections()
                 Log.startup.info("runConnections ended")
             } catch {
-                Log.startup.error("runConnections failed: \(error.localizedDescription, privacy: .public)")
+                Log.startup.error("runConnections failed: \(error.localizedDescription, privacy: .private)")
             }
         }
         arcboxClient = client
+        appDelegate.arcboxClient = client
+        appDelegate.connectionTask = task
         return client
+    }
+
+    /// Handle incoming `arcbox://` deep links.
+    /// TODO(ABXD-62): Register URL scheme in Info.plist or project build settings
+    /// (INFOPLIST_KEY_LSApplicationCategoryType / CFBundleURLTypes) once scheme routing is finalized.
+    private func handleDeepLink(_ url: URL) {
+        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
+        guard url.scheme == "arcbox" else {
+            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .private)")
+            return
+        }
+        // TODO(ABXD-62): Route deep link to appropriate view based on host/path.
+        // e.g. arcbox://containers/<id>, arcbox://settings, etc.
     }
 }
 

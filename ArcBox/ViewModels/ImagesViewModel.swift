@@ -1,7 +1,8 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
 import OSLog
+import OpenAPIRuntime
+import SwiftUI
 
 /// Detail tab for images
 enum ImageDetailTab: String, CaseIterable, Identifiable {
@@ -20,10 +21,11 @@ enum ImageSortField: String, CaseIterable {
 }
 
 /// Image list state
+@MainActor
 @Observable
 class ImagesViewModel {
     var images: [ImageViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: ImageDetailTab = .info
     var listWidth: CGFloat = 320
     var showPullImageSheet: Bool = false
@@ -31,6 +33,7 @@ class ImagesViewModel {
     var isSearching: Bool = false
     var sortBy: ImageSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
     private var iconsByImage: [String: String] = [:]
 
     var totalSize: String {
@@ -91,23 +94,30 @@ class ImagesViewModel {
             .subtracting(iconsByImage.keys)
         guard !uncached.isEmpty else { return }
 
-        await withTaskGroup(of: (String, String?).self) { group in
+        await withTaskGroup(of: (String, String?, Bool).self) { group in
             for repo in uncached {
                 group.addTask {
                     do {
                         var request = Arcbox_V1_GetImageIconRequest()
                         request.fqin = repo
-                        let response = try await client.icons.getImageIcon(request)
+                        let response = try await client.icons.getImageIcon(
+                            request, options: ArcBoxClient.defaultCallOptions)
                         let url = response.url.isEmpty ? nil : response.url
-                        return (repo, url)
+                        return (repo, url, true)
                     } catch {
-                        Log.image.debug("Icon fetch failed for \(repo, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        return (repo, nil)
+                        Log.image.debug(
+                            "Icon fetch failed for \(repo, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                        )
+                        return (repo, nil, false)
                     }
                 }
             }
-            for await (repo, url) in group {
-                iconsByImage[repo] = url ?? ""
+            for await (repo, url, succeeded) in group {
+                if let url {
+                    iconsByImage[repo] = url
+                } else if succeeded {
+                    iconsByImage[repo] = ""
+                }
             }
         }
 
@@ -134,19 +144,83 @@ class ImagesViewModel {
             Log.image.info("Loaded \(self.images.count, privacy: .public) images")
             await fetchIcons(client: iconClient)
         } catch {
-            Log.image.error("Error loading images: \(error.localizedDescription, privacy: .public)")
+            Log.image.error("Error loading images: \(error.localizedDescription, privacy: .private)")
+        }
+    }
+
+    /// Parse an image reference into (fromImage, tag), handling registry ports and digests.
+    /// e.g. "localhost:5000/repo:tag" → ("localhost:5000/repo", "tag")
+    ///      "repo@sha256:abc" → ("repo@sha256:abc", nil)
+    ///      "nginx:latest" → ("nginx", "latest")
+    private func parseImageReference(_ reference: String) -> (fromImage: String, tag: String?) {
+        if reference.contains("@") {
+            return (fromImage: reference, tag: nil)
+        }
+        // Only treat a colon after the last "/" as a tag separator
+        let searchStart: String.Index
+        if let lastSlash = reference.lastIndex(of: "/") {
+            searchStart = reference.index(after: lastSlash)
+        } else {
+            searchStart = reference.startIndex
+        }
+        if let colonIndex = reference[searchStart...].lastIndex(of: ":") {
+            let fromImage = String(reference[..<colonIndex])
+            let tag = String(reference[reference.index(after: colonIndex)...])
+            return (fromImage: fromImage, tag: tag.isEmpty ? nil : tag)
+        }
+        return (fromImage: reference, tag: nil)
+    }
+
+    /// Pull an image from a registry. Returns true on success.
+    func pullImage(_ reference: String, platform: String?, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+        let parsed = parseImageReference(reference)
+
+        do {
+            let response = try await docker.api.ImageCreate(
+                query: .init(fromImage: parsed.fromImage, tag: parsed.tag, platform: platform)
+            )
+            _ = try response.ok
+            Log.image.info("Pulled image \(reference, privacy: .private)")
+            await loadImages(docker: docker)
+            return true
+        } catch {
+            Log.image.error(
+                "Error pulling image \(reference, privacy: .private): \(String(describing: error), privacy: .private)")
+            return false
+        }
+    }
+
+    /// Import an image from a local tar archive (equivalent to `docker load`). Returns true on success.
+    func importImage(tarURL: URL, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+        do {
+            let data = try Data(contentsOf: tarURL, options: .mappedIfSafe)
+            let response = try await docker.api.ImageLoad(
+                body: .application_x_hyphen_tar(HTTPBody(data))
+            )
+            _ = try response.ok
+            Log.image.info("Imported image from \(tarURL.lastPathComponent, privacy: .private)")
+            await loadImages(docker: docker)
+            return true
+        } catch {
+            Log.image.error("Error importing image: \(String(describing: error), privacy: .private)")
+            return false
         }
     }
 
     func removeImage(_ id: String, dockerId: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         if selectedID == id { selectedID = nil }
         do {
             let response = try await docker.api.ImageDelete(path: .init(name: dockerId), query: .init(force: true))
             _ = try response.ok
-            Log.image.info("Removed image \(dockerId, privacy: .public)")
+            Log.image.info("Removed image \(dockerId, privacy: .private)")
         } catch {
-            Log.image.error("Error removing image \(dockerId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.image.error(
+                "Error removing image \(dockerId, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         await loadImages(docker: docker)
     }

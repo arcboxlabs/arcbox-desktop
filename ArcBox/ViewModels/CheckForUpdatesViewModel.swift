@@ -1,6 +1,7 @@
-import Sparkle
 import Combine
+import Sparkle
 
+@MainActor
 @Observable
 final class CheckForUpdatesViewModel {
     var canCheckForUpdates = false
@@ -10,6 +11,10 @@ final class CheckForUpdatesViewModel {
 
     init(updater: SPUUpdater) {
         cancellable = updater.publisher(for: \.canCheckForUpdates)
-            .assign(to: \.canCheckForUpdates, on: self)
+            .sink { [weak self] newValue in
+                Task { @MainActor in
+                    self?.canCheckForUpdates = newValue
+                }
+            }
     }
 }

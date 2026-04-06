@@ -2,13 +2,10 @@ import SwiftUI
 
 struct NetworkEmptyState: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Text("No networks yet")
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
-
+        EmptyStateView(
+            icon: "point.3.filled.connected.trianglepath.dotted",
+            title: "No networks yet"
+        ) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Create a network:")
                     .font(.system(size: 11))
@@ -23,15 +20,6 @@ struct NetworkEmptyState: View {
                     description: "Create overlay network"
                 )
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(AppColors.surfaceElevated)
-            )
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(24)
     }
 }

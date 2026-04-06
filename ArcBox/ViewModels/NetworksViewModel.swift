@@ -1,6 +1,6 @@
-import SwiftUI
 import DockerClient
 import OSLog
+import SwiftUI
 
 /// Sort field for networks
 enum NetworkSortField: String, CaseIterable {
@@ -9,16 +9,18 @@ enum NetworkSortField: String, CaseIterable {
 }
 
 /// Network list state
+@MainActor
 @Observable
 class NetworksViewModel {
     var networks: [NetworkViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var listWidth: CGFloat = 320
     var showNewNetworkSheet: Bool = false
     var searchText: String = ""
     var isSearching: Bool = false
     var sortBy: NetworkSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var networkCount: Int { networks.count }
 
@@ -70,19 +72,22 @@ class NetworksViewModel {
             networks = networkList.compactMap(NetworkViewModel.init(fromDocker:))
             Log.network.info("Loaded \(self.networks.count, privacy: .public) networks")
         } catch {
-            Log.network.error("Error loading networks: \(error.localizedDescription, privacy: .public)")
+            Log.network.error("Error loading networks: \(error.localizedDescription, privacy: .private)")
         }
     }
 
     func removeNetwork(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         if selectedID == id { selectedID = nil }
         do {
             let response = try await docker.api.NetworkDelete(path: .init(id: id))
             _ = try response.noContent
-            Log.network.info("Removed network \(id, privacy: .public)")
+            Log.network.info("Removed network \(id, privacy: .private)")
         } catch {
-            Log.network.error("Error removing network \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.network.error(
+                "Error removing network \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         await loadNetworks(docker: docker)
     }
@@ -107,7 +112,7 @@ class NetworksViewModel {
             let output = try await docker.api.NetworkCreate(body: .json(payload))
             switch output {
             case .created:
-                Log.network.info("Created network \(trimmedName, privacy: .public)")
+                Log.network.info("Created network \(trimmedName, privacy: .private)")
                 await loadNetworks(docker: docker)
                 return nil
             case let .badRequest(response):
@@ -122,7 +127,9 @@ class NetworksViewModel {
                 return "Unexpected response status: \(status)."
             }
         } catch {
-            Log.network.error("Error creating network \(trimmedName, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.network.error(
+                "Error creating network \(trimmedName, privacy: .private): \(error.localizedDescription, privacy: .private)"
+            )
             return error.localizedDescription
         }
     }
@@ -151,20 +158,7 @@ extension NetworkViewModel {
     init?(fromDocker network: Components.Schemas.Network) {
         guard let id = network.Id, let name = network.Name else { return nil }
 
-        let createdAt: Date
-        if let created = network.Created {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let parsed = formatter.date(from: created) {
-                createdAt = parsed
-            } else {
-                // Retry without fractional seconds
-                formatter.formatOptions = [.withInternetDateTime]
-                createdAt = formatter.date(from: created) ?? .distantPast
-            }
-        } else {
-            createdAt = .distantPast
-        }
+        let createdAt = parseISO8601Date(network.Created)
 
         self.init(
             id: id,

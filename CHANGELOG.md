@@ -1,5 +1,207 @@
 # Changelog
 
+## [1.20.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.20.0...v1.20.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* startup reliability — daemon signing, load state machine, Docker readiness gating ([#202](https://github.com/arcboxlabs/arcbox-desktop/issues/202)) ([a771d71](https://github.com/arcboxlabs/arcbox-desktop/commit/a771d71557ab4b1b5583cb3942479be4939be1d8))
+
+## [1.20.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.5...v1.20.0) (2026-04-06)
+
+
+### Features
+
+* **settings:** wire up functional settings ([#92](https://github.com/arcboxlabs/arcbox-desktop/issues/92)) ([07f8695](https://github.com/arcboxlabs/arcbox-desktop/commit/07f86958fb5e0955364f4edb47db712695f00ba0))
+* **terminal:** use pstramp for PTY session isolation ([#199](https://github.com/arcboxlabs/arcbox-desktop/issues/199)) ([5c59975](https://github.com/arcboxlabs/arcbox-desktop/commit/5c59975d0387397d732556c06b5f6a23ab831ebe))
+
+
+### Bug Fixes
+
+* audit remaining issues — safety, privacy, accessibility, cleanup ([#181](https://github.com/arcboxlabs/arcbox-desktop/issues/181)) ([87e26e1](https://github.com/arcboxlabs/arcbox-desktop/commit/87e26e16a1d4fadc20032623b8db4985e54fbc8f))
+* enable SwiftLint strict mode with zero violations ([#200](https://github.com/arcboxlabs/arcbox-desktop/issues/200)) ([d9f57e8](https://github.com/arcboxlabs/arcbox-desktop/commit/d9f57e852010897dde36b899320d4dcfd33e68a2))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.21 ([#201](https://github.com/arcboxlabs/arcbox-desktop/issues/201)) ([24eff48](https://github.com/arcboxlabs/arcbox-desktop/commit/24eff4891478ab2ac000cfd6c68d9e559ccadf71))
+
+## [1.19.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.4...v1.19.5) (2026-04-05)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.20 ([#192](https://github.com/arcboxlabs/arcbox-desktop/issues/192)) ([0520525](https://github.com/arcboxlabs/arcbox-desktop/commit/05205250d8519ed5455d36759eb5d580d0aa4e84))
+
+## [1.19.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.3...v1.19.4) (2026-04-05)
+
+
+### Bug Fixes
+
+* auto-run shell integration on app launch ([b4b3fa4](https://github.com/arcboxlabs/arcbox-desktop/commit/b4b3fa4ab4f07259eb53dd4d7587bdbfb930fa34))
+
+
+### Refactoring
+
+* remove replaced shell scripts ([93629d7](https://github.com/arcboxlabs/arcbox-desktop/commit/93629d79518486b65238a9ac39fd99a24d423864))
+* rewrite packaging scripts as Python ([871fc29](https://github.com/arcboxlabs/arcbox-desktop/commit/871fc299b70190e0bd530dc6695f42fbf69a99eb))
+
+## [1.19.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.2...v1.19.3) (2026-04-05)
+
+
+### Bug Fixes
+
+* extract daemon binary before re-bundling in package-dmg ([f74db23](https://github.com/arcboxlabs/arcbox-desktop/commit/f74db23051dd564bbe10bfb195aad526a1fd81e5))
+
+## [1.19.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.1...v1.19.2) (2026-04-05)
+
+
+### Bug Fixes
+
+* pass signing identity to bundle-daemon.py in Xcode builds ([d59486f](https://github.com/arcboxlabs/arcbox-desktop/commit/d59486f7bf09a6e3fbb9209b89608ffdf8f6c1ca))
+
+## [1.19.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.19.0...v1.19.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* preserve app entitlements when re-signing outer bundle ([5dd3d60](https://github.com/arcboxlabs/arcbox-desktop/commit/5dd3d606429d350c724d63541442eebc6ce2442e))
+
+## [1.19.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.4...v1.19.0) (2026-04-05)
+
+
+### Features
+
+* bundle daemon as .app for AMFI provisioning profile support ([196357d](https://github.com/arcboxlabs/arcbox-desktop/commit/196357d6c47589adb01318fe6e64cfe7a48b5caf))
+* **dns:** support hierarchical compose DNS format ([2f92ffd](https://github.com/arcboxlabs/arcbox-desktop/commit/2f92ffdbfa5ca77016e78f1ffc59597464c2dc97))
+
+
+### Bug Fixes
+
+* **deps:** raise SPM minimum versions to prevent dependency downgrade ([ded9956](https://github.com/arcboxlabs/arcbox-desktop/commit/ded9956c137954e73b9b2f5bffb6087d469e39c0))
+
+
+### Miscellaneous
+
+* re-sort Xcode project entries ([c16c650](https://github.com/arcboxlabs/arcbox-desktop/commit/c16c650aa6a137dfca6583bd848d1a4e7d365d59))
+
+## [1.18.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.3...v1.18.4) (2026-04-03)
+
+
+### Bug Fixes
+
+* **sparkle:** use build number for sparkle:version to fix update detection ([c120cd9](https://github.com/arcboxlabs/arcbox-desktop/commit/c120cd9bd4d6071e85c1ba0521c53861b7fdd1e3))
+
+
+### Miscellaneous
+
+* add AGENTS.md and validate arcbox repo path with Cargo.toml check ([9fbf714](https://github.com/arcboxlabs/arcbox-desktop/commit/9fbf714f855eb9555849ccb464902bd9a72618b9))
+
+## [1.18.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.2...v1.18.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **release:** embed provisioning profile for AMFI restricted entitlements ([4d558a9](https://github.com/arcboxlabs/arcbox-desktop/commit/4d558a91c90733d7bb12d4e51637e1f6824aa7c8))
+
+## [1.18.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.1...v1.18.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* remove sparkle:channel from stable appcast items ([5ab014b](https://github.com/arcboxlabs/arcbox-desktop/commit/5ab014b08d00f1dd95e949368d85c5778eea7d21))
+
+## [1.18.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.18.0...v1.18.1) (2026-04-01)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.19 ([#182](https://github.com/arcboxlabs/arcbox-desktop/issues/182)) ([b4853c2](https://github.com/arcboxlabs/arcbox-desktop/commit/b4853c2eb5cbe5df3dafce2bc994cb6d8d82fc5e))
+
+## [1.18.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.17.0...v1.18.0) (2026-04-01)
+
+
+### Features
+
+* Kubernetes integration + release readiness audit fixes ([#101](https://github.com/arcboxlabs/arcbox-desktop/issues/101)) ([8e788de](https://github.com/arcboxlabs/arcbox-desktop/commit/8e788de76a66d2815f6a55bd74d14c4a96cb32a7))
+
+
+### Bug Fixes
+
+* **startup:** defer DockerClient creation until daemon is running ([#170](https://github.com/arcboxlabs/arcbox-desktop/issues/170)) ([75ace01](https://github.com/arcboxlabs/arcbox-desktop/commit/75ace01551471df135c1cb0515d1d0c79e5ba567))
+
+
+### Refactoring
+
+* unify Rust binary build+embed into single Xcode phase ([#167](https://github.com/arcboxlabs/arcbox-desktop/issues/167)) ([2a899a7](https://github.com/arcboxlabs/arcbox-desktop/commit/2a899a725927e64b3e90c63dbfdb58b34dd5b4ff))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.18 ([#171](https://github.com/arcboxlabs/arcbox-desktop/issues/171)) ([6dafded](https://github.com/arcboxlabs/arcbox-desktop/commit/6dafded4ea1f4e5485454f2b1ac31dda1b8fe1df))
+
+
+### Documentation
+
+* **startup:** add anti-regression comments for DockerClient creation timing (ABXD-76) ([a2024a3](https://github.com/arcboxlabs/arcbox-desktop/commit/a2024a3df8404ec90eeca04c90cd2ae022d17cbc))
+* **startup:** add GitHub issue ref to anti-regression comments (ABXD-76 / [#169](https://github.com/arcboxlabs/arcbox-desktop/issues/169)) ([9559ed3](https://github.com/arcboxlabs/arcbox-desktop/commit/9559ed32789aa47ad4dbbd47a6b81fd1e7891a00))
+
+## [1.17.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.16.0...v1.17.0) (2026-03-30)
+
+
+### Features
+
+* show container DNS domain when resolver is installed ([#96](https://github.com/arcboxlabs/arcbox-desktop/issues/96)) ([49769d3](https://github.com/arcboxlabs/arcbox-desktop/commit/49769d38a37553428f5981ccb43a28e26052d9d8))
+
+
+### Bug Fixes
+
+* remaining UI polish — dead code cleanup, consistency fixes, InfoTableView refactor ([#98](https://github.com/arcboxlabs/arcbox-desktop/issues/98)) ([5566eb5](https://github.com/arcboxlabs/arcbox-desktop/commit/5566eb59254f64ad31c7924f9764e580b23c6e61))
+* remove traffic lights and keep coming soon panel floating ([#103](https://github.com/arcboxlabs/arcbox-desktop/issues/103)) ([255a472](https://github.com/arcboxlabs/arcbox-desktop/commit/255a472dc483788fea6d0d6d01437720420eb834))
+* **ui:** polish visual quality for pre-Liquid Glass macOS (ABXD-15) ([#102](https://github.com/arcboxlabs/arcbox-desktop/issues/102)) ([bb5ac55](https://github.com/arcboxlabs/arcbox-desktop/commit/bb5ac558a5ad3dff909bcd7cd8ec4c950d23e4e2))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.3.16 ([#104](https://github.com/arcboxlabs/arcbox-desktop/issues/104)) ([e194fd3](https://github.com/arcboxlabs/arcbox-desktop/commit/e194fd335c19a9a633ae727be68faab35900e901))
+* bump arcbox version to v0.3.17 ([#164](https://github.com/arcboxlabs/arcbox-desktop/issues/164)) ([cae95c5](https://github.com/arcboxlabs/arcbox-desktop/commit/cae95c54e6e2e6ccdd9896a2311353c8bf52b60a))
+
+
+### CI
+
+* **release:** auto-update Homebrew tap on stable releases ([#105](https://github.com/arcboxlabs/arcbox-desktop/issues/105)) ([cc29a66](https://github.com/arcboxlabs/arcbox-desktop/commit/cc29a66d610c244e3a546f98e85ef75f4951c23a))
+
+## [1.16.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.15.0...v1.16.0) (2026-03-27)
+
+
+### Features
+
+* implement create/import for containers, images, and volumes ([#90](https://github.com/arcboxlabs/arcbox-desktop/issues/90)) ([28b772d](https://github.com/arcboxlabs/arcbox-desktop/commit/28b772d199539b78118dc64d3baa7bf253cb7e89))
+* **ui:** add confirmation dialogs for all delete operations ([a9987d0](https://github.com/arcboxlabs/arcbox-desktop/commit/a9987d0b7e2ef7df80a39c53c45da72881841a04))
+* **ui:** add icons to empty states and "No Selection" placeholders ([0038df2](https://github.com/arcboxlabs/arcbox-desktop/commit/0038df2ecffd0479c6dec17c3266f6fd489b431b))
+* **ui:** implement "In Use" / "Unused" grouping in list views ([c45d119](https://github.com/arcboxlabs/arcbox-desktop/commit/c45d1196a3b7288a8585fef16bc84d158d7b5107))
+
+
+### Bug Fixes
+
+* clamp uptimeDisplay interval to &gt;= 0 for clock skew safety ([b6e69a0](https://github.com/arcboxlabs/arcbox-desktop/commit/b6e69a0ea0b0522d4715e4d8fe258bcba96a0c6f))
+* preserve .running state when enableDaemon is called redundantly ([f117e7e](https://github.com/arcboxlabs/arcbox-desktop/commit/f117e7e21d2387fd9ba70b15907f450411852a17))
+* prevent daemon from being killed and restarted during app startup ([0f1990d](https://github.com/arcboxlabs/arcbox-desktop/commit/0f1990d7d2e1eb1ebf7fb3be286d8cb814ac0a0a))
+* prevent locale thousands separator in port number display ([8afc9d4](https://github.com/arcboxlabs/arcbox-desktop/commit/8afc9d484f6de8b45910df8c66a3dfa1f14f3b82))
+* **ui:** use uptimeDisplay instead of createdAgo for running container status ([8ed68ab](https://github.com/arcboxlabs/arcbox-desktop/commit/8ed68ab0f196f031d60cdb3d996b52027c309504))
+
+
+### Miscellaneous
+
+* add MIT OR Apache-2.0 dual license ([6df90c0](https://github.com/arcboxlabs/arcbox-desktop/commit/6df90c0bbf790305254b8896392715a38fdc4728))
+
+## [1.15.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.2...v1.15.0) (2026-03-26)
+
+
+### Features
+
+* UI polish — icon backgrounds, image list fix, menu bar cleanup ([#67](https://github.com/arcboxlabs/arcbox-desktop/issues/67)) ([0e50974](https://github.com/arcboxlabs/arcbox-desktop/commit/0e50974f3c5a145d673203be9df30e490bf42886))
+
 ## [1.14.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.14.1...v1.14.2) (2026-03-26)
 
 

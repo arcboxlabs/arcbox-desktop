@@ -1,5 +1,5 @@
-import SwiftUI
 import DockerClient
+import SwiftUI
 
 /// New network dialog presented as a sheet
 struct NewNetworkSheet: View {
@@ -17,10 +17,12 @@ struct NewNetworkSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("New Network")
                     .font(.system(size: 20, weight: .semibold))
-                Text("Networks are groups of containers in the same subnet (IP range) that can communicate with each other. They are typically used by Compose, and don't need to be manually created or deleted.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(AppColors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Networks are groups of containers in the same subnet (IP range) that can communicate with each other. They are typically used by Compose, and don't need to be manually created or deleted."
+                )
+                .font(.system(size: 13))
+                .foregroundStyle(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.system(size: 12))
@@ -87,14 +89,17 @@ struct NewNetworkSheet: View {
             Spacer(minLength: 0)
 
             HStack(spacing: 10) {
-                Button(action: {}) {
-                    Image(systemName: "questionmark")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(AppColors.textSecondary)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(AppColors.surface))
-                        .overlay(Circle().stroke(AppColors.border))
-                }
+                Button(
+                    action: {},
+                    label: {
+                        Image(systemName: "questionmark")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(AppColors.surface))
+                            .overlay(Circle().stroke(AppColors.border))
+                    }
+                )
                 .buttonStyle(.plain)
 
                 Spacer()

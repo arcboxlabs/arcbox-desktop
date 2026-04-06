@@ -11,6 +11,8 @@ struct ContainerTerminalTab: View {
     @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
+    @AppStorage("terminalTheme") private var terminalTheme = "system"
+    @AppStorage("externalTerminal") private var externalTerminal = "lastUsed"
     @State private var session = DockerTerminalSession()
     @State private var selectedShell = "/bin/sh"
     @State private var terminalToken = UUID()
@@ -33,12 +35,32 @@ struct ContainerTerminalTab: View {
 
                     Spacer()
 
-                    if session.state == .connected {
-                        Button(action: { session.disconnect() }) {
-                            Image(systemName: "xmark.circle")
+                    Button(
+                        action: {
+                            ExternalTerminalLauncher.open(
+                                preference: externalTerminal,
+                                containerID: container.id,
+                                shell: selectedShell
+                            )
+                        },
+                        label: {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
                                 .font(.system(size: 12))
                                 .foregroundStyle(AppColors.textSecondary)
                         }
+                    )
+                    .buttonStyle(.plain)
+                    .help("Open in external terminal")
+
+                    if session.state == .connected {
+                        Button(
+                            action: { session.disconnect() },
+                            label: {
+                                Image(systemName: "xmark.circle")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(AppColors.textSecondary)
+                            }
+                        )
                         .buttonStyle(.plain)
                         .help("Disconnect")
                     } else if session.state == .disconnected || session.state == .idle {
@@ -86,20 +108,22 @@ struct ContainerTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalBridge(session: session)) { terminalView in
-            configureTerminalAppearance(terminalView)
+        SwiftTermView(
+            delegate: TerminalBridge(session: session),
+            onTerminalCreated: { terminalView in
+                configureTerminalAppearance(terminalView)
 
-            // Connect session
-            session.connect(
-                containerID: container.id,
-                shell: selectedShell,
-                terminalView: terminalView
-            )
-        }
+                // Connect session
+                session.connect(
+                    containerID: container.id,
+                    shell: selectedShell,
+                    terminalView: terminalView
+                )
+            }, theme: terminalTheme)
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {
-        TerminalAppearance.configure(terminalView)
+        TerminalAppearance.configure(terminalView, theme: terminalTheme)
     }
 
     private var notRunningView: some View {

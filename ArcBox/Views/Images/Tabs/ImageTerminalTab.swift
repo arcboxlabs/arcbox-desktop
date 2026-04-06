@@ -10,6 +10,7 @@ struct ImageTerminalTab: View {
     let image: ImageViewModel
     let isActive: Bool
 
+    @AppStorage("terminalTheme") private var terminalTheme = "system"
     @State private var session = DockerTerminalSession()
     @State private var selectedShell = "/bin/sh"
     @State private var connectedImageID: String = ""
@@ -32,11 +33,14 @@ struct ImageTerminalTab: View {
                 Spacer()
 
                 if session.state == .connected {
-                    Button(action: { session.disconnect() }) {
-                        Image(systemName: "xmark.circle")
-                            .font(.system(size: 12))
-                            .foregroundStyle(AppColors.textSecondary)
-                    }
+                    Button(
+                        action: { session.disconnect() },
+                        label: {
+                            Image(systemName: "xmark.circle")
+                                .font(.system(size: 12))
+                                .foregroundStyle(AppColors.textSecondary)
+                        }
+                    )
                     .buttonStyle(.plain)
                     .help("Disconnect")
                 } else if session.state == .disconnected || session.state == .idle {
@@ -82,27 +86,29 @@ struct ImageTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalBridge(session: session)) { terminalView in
-            configureTerminalAppearance(terminalView)
+        SwiftTermView(
+            delegate: TerminalBridge(session: session),
+            onTerminalCreated: { terminalView in
+                configureTerminalAppearance(terminalView)
 
-            // Store terminal view reference (don't connect here — runs during makeNSView)
-            // Connection is deferred to onChange(of: isActive)
-            session.setTerminalView(terminalView)
+                // Store terminal view reference (don't connect here — runs during makeNSView)
+                // Connection is deferred to onChange(of: isActive)
+                session.setTerminalView(terminalView)
 
-            // If the terminal tab is already active, connect on next run loop
-            let active = isActive
-            let img = image
-            let shell = selectedShell
-            DispatchQueue.main.async {
-                guard active else { return }
-                connectedImageID = img.id
-                session.connectImage(imageName: img.fullName, shell: shell)
-            }
-        }
+                // If the terminal tab is already active, connect on next run loop
+                let active = isActive
+                let img = image
+                let shell = selectedShell
+                DispatchQueue.main.async {
+                    guard active else { return }
+                    connectedImageID = img.id
+                    session.connectImage(imageName: img.fullName, shell: shell)
+                }
+            }, theme: terminalTheme)
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {
-        TerminalAppearance.configure(terminalView)
+        TerminalAppearance.configure(terminalView, theme: terminalTheme)
     }
 
     private func connectToCurrentImage() {

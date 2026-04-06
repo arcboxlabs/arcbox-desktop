@@ -14,12 +14,14 @@ nonisolated class TerminalBridge: NSObject, TerminalViewDelegate {
 
     func send(source: TerminalView, data: ArraySlice<UInt8>) {
         let sendData = Data(data)
+        let session = session
         Task { @MainActor in
             session.send(sendData)
         }
     }
 
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        let session = session
         Task { @MainActor in
             session.resize(cols: newCols, rows: newRows)
         }

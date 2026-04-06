@@ -14,6 +14,7 @@ struct ContainerGroupView: View {
     let onDeleteAll: ([String]) -> Void
 
     @State private var isHovered: Bool = false
+    @State private var showDeleteAllConfirm = false
 
     private var hasAnyRunning: Bool {
         containers.contains(where: \.isRunning)
@@ -76,7 +77,7 @@ struct ContainerGroupView: View {
                         }
                         IconButton(
                             symbol: "trash.fill",
-                            action: { onDeleteAll(allContainerIDs) },
+                            action: { showDeleteAllConfirm = true },
                             color: AppColors.textSecondary
                         )
                     }
@@ -93,6 +94,14 @@ struct ContainerGroupView: View {
             .onTapGesture(perform: onToggle)
             .onHover { hovering in
                 isHovered = hovering
+            }
+            .confirmationDialog("Delete All Containers", isPresented: $showDeleteAllConfirm) {
+                Button("Delete All (\(containers.count))", role: .destructive) { onDeleteAll(allContainerIDs) }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(
+                    "Are you sure you want to delete all \(containers.count) containers in \"\(project)\"? This action cannot be undone."
+                )
             }
 
             // Container rows (if expanded)

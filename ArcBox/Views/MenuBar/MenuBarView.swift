@@ -16,27 +16,27 @@ struct MenuBarView: View {
 
     var body: some View {
         mainPanel
-        .padding(6)
-        .animation(.easeInOut(duration: 0.2), value: containersExpanded)
-        .task(id: docker != nil && daemonManager.state.isRunning) {
-            guard docker != nil, daemonManager.state.isRunning else { return }
-            await loadAll()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-            Task { await containersVM.loadContainersFromDocker(docker: docker, iconClient: client) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
-            Task { await imagesVM.loadImages(docker: docker, iconClient: client) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
-            Task { await networksVM.loadNetworks(docker: docker) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
-            Task { await volumesVM.loadVolumes(docker: docker) }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
-            Task { await loadAll() }
-        }
+            .padding(6)
+            .animation(.easeInOut(duration: 0.2), value: containersExpanded)
+            .task(id: docker != nil && daemonManager.state.isRunning) {
+                guard docker != nil, daemonManager.state.isRunning else { return }
+                await loadAll()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
+                Task { await containersVM.loadContainersFromDocker(docker: docker, iconClient: client) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
+                Task { await imagesVM.loadImages(docker: docker, iconClient: client) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
+                Task { await networksVM.loadNetworks(docker: docker) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
+                Task { await volumesVM.loadVolumes(docker: docker) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
+                Task { await loadAll() }
+            }
     }
 
     // MARK: - Data
@@ -261,17 +261,19 @@ struct MenuBarView: View {
             }
 
             MenuBarHoverButton {
-                // TODO: open settings
+                // TODO: open settings when settings UI is implemented
             } label: {
                 Label("Settings", systemImage: "gearshape")
                     .padding(.horizontal, 6)
                     .padding(.vertical, 5)
             }
+            .disabled(true)
 
             Divider()
                 .padding(.vertical, 4)
 
             MenuBarHoverButton {
+                (NSApp.delegate as? AppDelegate)?.forceQuit = true
                 NSApp.terminate(nil)
             } label: {
                 Label("Quit", systemImage: "power")

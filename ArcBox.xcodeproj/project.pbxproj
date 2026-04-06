@@ -11,11 +11,14 @@
 		657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = 657F65912F3A2ADB00C7005A /* ArcBoxClient */; };
 		65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 65D867EC2F5C228600DAAEE6 /* Sparkle */; };
 		AB0D00022F60000000000001 /* com.arcboxlabs.desktop.daemon.plist in Copy LaunchDaemon Plist */ = {isa = PBXBuildFile; fileRef = AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */; };
-
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
+		K8S100012F90000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = K8S100002F90000000000001 /* K8sClient */; };
 		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
-		SE0300022F90000000000002 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200022F90000000000002 /* Sentry */; };
+		UT0100012FA0000000000001 /* ContainersViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0100002FA0000000000001 /* ContainersViewModelTests.swift */; };
+		UT0200012FA0000000000001 /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0200002FA0000000000001 /* ImagesViewModelTests.swift */; };
+		UT0300012FA0000000000001 /* K8sModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0300002FA0000000000001 /* K8sModelsTests.swift */; };
+		UT0400012FA0000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = UT0400002FA0000000000001 /* K8sClient */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,7 +29,6 @@
 			remoteGlobalIDString = 657F657A2F3A2ADB00C7005A;
 			remoteInfo = ArcBox;
 		};
-
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,14 +46,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		657F657B2F3A2ADB00C7005A /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcBox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		657F657B2F3A2ADB00C7005A /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArcBox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		657F65A02F3A2ADB00C7005A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
 		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
-
-
 		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		UT0100002FA0000000000001 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
+		UT0200002FA0000000000001 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
+		UT0300002FA0000000000001 /* K8sModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sModelsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -67,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				UT0400012FA0000000000001 /* K8sClient in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,19 +81,22 @@
 				657F65922F3A2ADB00C7005A /* ArcBoxClient in Frameworks */,
 				65D867ED2F5C228600DAAEE6 /* Sparkle in Frameworks */,
 				DC0A11012F4E000000000001 /* DockerClient in Frameworks */,
+				K8S100012F90000000000001 /* K8sClient in Frameworks */,
 				DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */,
 				SE0300012F90000000000001 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		336ADECAFDFE4B28898C3637 /* ArcBoxTests */ = {
 			isa = PBXGroup;
 			children = (
+				UT0100002FA0000000000001 /* ContainersViewModelTests.swift */,
 				8A48B567EBE74DA1A25D1D57 /* DockerEventMonitorTests.swift */,
+				UT0200002FA0000000000001 /* ImagesViewModelTests.swift */,
+				UT0300002FA0000000000001 /* K8sModelsTests.swift */,
 			);
 			path = ArcBoxTests;
 			sourceTree = "<group>";
@@ -112,7 +119,6 @@
 			children = (
 				8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */,
 				657F657B2F3A2ADB00C7005A /* ArcBox.app */,
-
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -121,7 +127,6 @@
 			isa = PBXGroup;
 			children = (
 				AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */,
-
 			);
 			path = LaunchDaemons;
 			sourceTree = "<group>";
@@ -140,14 +145,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 657F65862F3A2ADD00C7005A /* Build configuration list for PBXNativeTarget "ArcBox" */;
 			buildPhases = (
-				AB0D00032F60000000000001 /* Build Rust Binaries */,
+				AB0D00032F60000000000001 /* Embed Arcbox Binaries */,
 				657F65772F3A2ADB00C7005A /* Sources */,
 				657F65782F3A2ADB00C7005A /* Frameworks */,
 				657F65792F3A2ADB00C7005A /* Resources */,
 				AB0D00042F60000000000001 /* Copy LaunchDaemon Plist */,
-
-
-				AB0D00052F60000000000001 /* Sign Rust Binaries */,
 			);
 			buildRules = (
 			);
@@ -160,11 +162,12 @@
 			packageProductDependencies = (
 				657F65912F3A2ADB00C7005A /* ArcBoxClient */,
 				DC0A11002F4E000000000001 /* DockerClient */,
+				K8S100002F90000000000001 /* K8sClient */,
 				DC0B11002F4E000000000001 /* SwiftTerm */,
 				65D867EC2F5C228600DAAEE6 /* Sparkle */,
 				SE0200012F90000000000001 /* Sentry */,
 			);
-			productName = "ArcBox";
+			productName = ArcBox;
 			productReference = 657F657B2F3A2ADB00C7005A /* ArcBox.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -182,12 +185,12 @@
 			);
 			name = ArcBoxTests;
 			packageProductDependencies = (
+				UT0400002FA0000000000001 /* K8sClient */,
 			);
 			productName = ArcBoxTests;
 			productReference = 8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -196,12 +199,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					657F657A2F3A2ADB00C7005A = {
 						CreatedOnToolsVersion = 26.2;
 					};
-
 				};
 			};
 			buildConfigurationList = 657F65762F3A2ADB00C7005A /* Build configuration list for PBXProject "ArcBox" */;
@@ -216,6 +218,7 @@
 			packageReferences = (
 				657F65902F3A2ADB00C7005A /* XCLocalSwiftPackageReference "Packages/ArcBoxClient" */,
 				DC0A11022F4E000000000001 /* XCLocalSwiftPackageReference "Packages/DockerClient" */,
+				K8S100032F90000000000001 /* XCLocalSwiftPackageReference "Packages/K8sClient" */,
 				DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				65D867EB2F5C228600DAAEE6 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
@@ -227,7 +230,6 @@
 			targets = (
 				8DEF0B979A924DB2A2E788C5 /* ArcBoxTests */,
 				657F657A2F3A2ADB00C7005A /* ArcBox */,
-
 			);
 		};
 /* End PBXProject section */
@@ -243,7 +245,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		AB0D00032F60000000000001 /* Build Rust Binaries */ = {
+		AB0D00032F60000000000001 /* Embed Arcbox Binaries */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -251,29 +253,13 @@
 			);
 			inputPaths = (
 			);
-			name = "Build Rust Binaries";
+			name = "Embed Arcbox Binaries";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "exec \"${PROJECT_DIR}/scripts/fetch-arcbox-binaries.sh\"\n";
+			shellScript = "exec \"${PROJECT_DIR}/scripts/embed-arcbox-binaries.py\"\n";
 		};
-		AB0D00052F60000000000001 /* Sign Rust Binaries */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Sign Rust Binaries";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/bash;
-			shellScript = "#!/bin/bash\nset -euo pipefail\n\nDAEMON_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Helpers/com.arcboxlabs.desktop.daemon\"\nCLI_PATH=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/MacOS/bin/abctl\"\nENTITLEMENTS=\"${PROJECT_DIR}/ArcBox/DaemonEntitlements.entitlements\"\n\nif [ ! -f \"${DAEMON_PATH}\" ]; then\n    echo \"error: Daemon binary not found at ${DAEMON_PATH}\" >&2\n    exit 1\nfi\n\nif [ ! -f \"${CLI_PATH}\" ]; then\n    echo \"error: CLI binary not found at ${CLI_PATH}\" >&2\n    exit 1\nfi\n\nif [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.daemon\" \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --options runtime --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" \\\n        --timestamp --identifier \"com.arcboxlabs.desktop.abctl\" \"${CLI_PATH}\"\nelse\n    codesign --force --sign - \\\n        --entitlements \"${ENTITLEMENTS}\" \"${DAEMON_PATH}\"\n    codesign --force --sign - \"${CLI_PATH}\"\nfi\n";
-		};
-
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -282,6 +268,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				28A943735F87431C981A8744 /* DockerEventMonitorTests.swift in Sources */,
+				UT0100012FA0000000000001 /* ContainersViewModelTests.swift in Sources */,
+				UT0200012FA0000000000001 /* ImagesViewModelTests.swift in Sources */,
+				UT0300012FA0000000000001 /* K8sModelsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,7 +281,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -301,7 +289,6 @@
 			target = 657F657A2F3A2ADB00C7005A /* ArcBox */;
 			targetProxy = 3F2109C1D95B4A0C8F4BF1A4 /* PBXContainerItemProxy */;
 		};
-
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -311,6 +298,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -357,6 +345,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -377,11 +366,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -422,6 +412,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -436,10 +427,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -451,17 +443,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = ArcBox/ArcBox.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox";
-				INFOPLIST_KEY_CFBundleName = "ArcBox";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
+				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -469,7 +463,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = "ArcBox";
+				PRODUCT_NAME = ArcBox;
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -482,7 +476,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -493,17 +487,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = ArcBox/ArcBox.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "ArcBox";
-				INFOPLIST_KEY_CFBundleName = "ArcBox";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
+				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -511,7 +507,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = "ArcBox";
+				PRODUCT_NAME = ArcBox;
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -524,7 +520,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -534,6 +530,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 422ACSY6Y5;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -545,7 +542,6 @@
 			};
 			name = Release;
 		};
-
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -567,7 +563,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-
 		CFE1394D73AA400B8709AD73 /* Build configuration list for PBXNativeTarget "ArcBoxTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -587,6 +582,10 @@
 		DC0A11022F4E000000000001 /* XCLocalSwiftPackageReference "Packages/DockerClient" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/DockerClient;
+		};
+		K8S100032F90000000000001 /* XCLocalSwiftPackageReference "Packages/K8sClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/K8sClient;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -636,15 +635,18 @@
 			package = DC0B11022F4E000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
 			productName = SwiftTerm;
 		};
+		K8S100002F90000000000001 /* K8sClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = K8sClient;
+		};
 		SE0200012F90000000000001 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
 		};
-		SE0200022F90000000000002 /* Sentry */ = {
+		UT0400002FA0000000000001 /* K8sClient */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = SE0100012F90000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
-			productName = Sentry;
+			productName = K8sClient;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

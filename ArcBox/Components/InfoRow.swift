@@ -4,7 +4,7 @@ import SwiftUI
 struct InfoRow: View {
     let label: String
     let value: String
-    var link: URL? = nil
+    var link: URL?
 
     var body: some View {
         HStack(alignment: .top) {
@@ -23,6 +23,7 @@ struct InfoRow: View {
             } else {
                 Text(value)
                     .font(.system(size: 13))
+                    .foregroundStyle(AppColors.textSecondary)
                     .multilineTextAlignment(.trailing)
                     .textSelection(.enabled)
             }
@@ -41,6 +42,7 @@ extension View {
     /// Wraps content in a rounded-border card for InfoRow groups
     func infoSectionStyle() -> some View {
         self
+            .background(AppColors.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)

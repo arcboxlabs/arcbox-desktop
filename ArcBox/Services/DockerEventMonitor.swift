@@ -1,15 +1,15 @@
-import Foundation
 import DockerClient
+import Foundation
 import OSLog
 
 // MARK: - Fine-grained Notification Names
 
 extension Notification.Name {
     static let dockerContainerChanged = Notification.Name("dockerContainerChanged")
-    static let dockerImageChanged     = Notification.Name("dockerImageChanged")
-    static let dockerNetworkChanged   = Notification.Name("dockerNetworkChanged")
-    static let dockerVolumeChanged    = Notification.Name("dockerVolumeChanged")
-    static let sandboxChanged         = Notification.Name("sandboxChanged")
+    static let dockerImageChanged = Notification.Name("dockerImageChanged")
+    static let dockerNetworkChanged = Notification.Name("dockerNetworkChanged")
+    static let dockerVolumeChanged = Notification.Name("dockerVolumeChanged")
+    static let sandboxChanged = Notification.Name("sandboxChanged")
 }
 
 // MARK: - DockerEventMonitor
@@ -70,7 +70,8 @@ final class DockerEventMonitor {
                     }
                 } catch {
                     if Task.isCancelled || isStopped { break }
-                    Log.docker.warning("Event stream error, reconnecting in 2s: \(error.localizedDescription, privacy: .public)")
+                    Log.docker.warning(
+                        "Event stream error, reconnecting in 2s: \(error.localizedDescription, privacy: .private)")
                 }
 
                 guard !Task.isCancelled, !isStopped else { break }
@@ -113,7 +114,7 @@ final class DockerEventMonitor {
             debouncedPost(.dockerVolumeChanged, type: "volume")
 
         default:
-            break // Unknown type — silently ignore
+            break  // Unknown type — silently ignore
         }
     }
 

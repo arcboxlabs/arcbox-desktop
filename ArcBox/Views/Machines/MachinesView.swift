@@ -58,12 +58,20 @@ struct MachinesView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: {}) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: {},
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
+                .accessibilityLabel("New machine")
             }
         }
-        .onAppear { vm.loadSampleData() }
+        .onAppear {
+            #if DEBUG
+                vm.loadSampleData()
+            #endif
+        }
     }
 
     @ViewBuilder

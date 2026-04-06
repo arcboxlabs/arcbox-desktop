@@ -1,0 +1,105 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ../arcbox/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Checkout arcbox proto definitions
+        uses: actions/checkout@v4
+        with:
+          repository: arcboxlabs/arcbox
+          path: arcbox
+          sparse-checkout: rpc/arcbox-protocol/proto
+          sparse-checkout-cone-mode: false
+
+      - name: Verify protobuf generated code is up-to-date
+        run: |
+          # Install protoc via Homebrew
+          brew install protobuf
+
+          # Recreate the sibling arcbox path as a symlink so generate.sh --local
+          # can find proto at the expected relative path even if cache restore
+          # previously created ../arcbox as a real directory.
+          rm -rf "$GITHUB_WORKSPACE/../arcbox"
+          ln -s "$GITHUB_WORKSPACE/arcbox" "$GITHUB_WORKSPACE/../arcbox"
+
+          # Generate Swift code from local proto definitions
+          cd Packages/ArcBoxClient
+          ./generate.sh --local
+
+          # Fail if generated files differ from checked-in versions (including untracked files)
+          if ! git diff --exit-code Sources/ArcBoxClient/Generated/; then
+            echo "::error::Protobuf generated Swift files are out of date. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit the result."
+            exit 1
+          fi
+          if [ -n "$(git ls-files --others --exclude-standard Sources/ArcBoxClient/Generated/)" ]; then
+            echo "::error::Untracked generated files detected. Run 'cd Packages/ArcBoxClient && ./generate.sh' and commit all generated files."
+            exit 1
+          fi
+
+      - name: Swift format check
+        run: |
+          brew install swift-format
+          swift-format lint -r --strict ArcBox/ Packages/
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint lint --strict --config .swiftlint.yml
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox
+
+      - name: Build (Debug)
+        run: |
+          xcodebuild build \
+            -project ArcBox.xcodeproj \
+            -scheme ArcBox \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            SKIP_RUST_BUILD=1 \
+            | xcpretty --color
+
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -project ArcBox.xcodeproj \
+            -scheme ArcBox \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            SKIP_RUST_BUILD=1 \
+            | xcpretty --color

@@ -1,6 +1,6 @@
 import Foundation
-import Observation
 import OSLog
+import Observation
 @preconcurrency import Sentry
 
 // MARK: - Startup Constants
@@ -32,8 +32,8 @@ public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
     /// Human-readable label shown in the progress UI.
     public var label: String {
         switch self {
-        case .installHelper:   return "Installing helper service"
-        case .enableDaemon:    return "Starting daemon"
+        case .installHelper: return "Installing helper service"
+        case .enableDaemon: return "Starting daemon"
         case .connectAndWatch: return "Connecting to daemon"
         }
     }
@@ -58,6 +58,8 @@ public enum StartupPhase: Sendable, Equatable {
     case running(step: StartupStep)
     case completed
     case failed(step: StartupStep, message: String)
+    /// Non-recoverable error (e.g. missing entitlements). User must quit.
+    case fatalError(message: String)
 }
 
 // MARK: - Internal Errors
@@ -157,6 +159,29 @@ public final class StartupOrchestrator {
             await self.daemonManager.installHelper()
         }
 
+        // Pre-check: verify daemon binary signature and entitlements.
+        //
+        // The daemon requires Developer ID signing — restricted entitlements
+        // (com.apple.security.virtualization, com.apple.security.hypervisor,
+        // com.apple.vm.networking) are only accepted by AMFI when signed with
+        // Developer ID, not Apple Development. Without these, launchd refuses
+        // to exec with OS_REASON_EXEC and the daemon silently crash-loops.
+        //
+        // This applies to ALL builds including Debug. The embed script
+        // (embed-arcbox-binaries.py) resolves the Developer ID certificate
+        // independently of Xcode's CODE_SIGN_IDENTITY for this reason.
+        //
+        // Strict verification is intentional — if this blocks your local
+        // build, ensure the daemon is signed with Developer ID:
+        //   make -C ../arcbox sign-daemon
+        if let verifyError = await daemonManager.verifyDaemonBinary() {
+            ClientLog.startup.error("Daemon binary verification failed: \(verifyError, privacy: .private)")
+            phase = .fatalError(message: verifyError)
+            stepStatuses[.enableDaemon] = .failed(verifyError)
+            stepStatuses[.connectAndWatch] = .skipped
+            return
+        }
+
         // Step 2: Register daemon with launchd.
         let daemonOK = await runStep(.enableDaemon) {
             await self.daemonManager.enableDaemon()
@@ -171,21 +196,57 @@ public final class StartupOrchestrator {
         }
 
         // Step 3: Connect gRPC and start watching setup status.
+        //
+        // Two-phase approach:
+        //   Phase 1 — normal poll (30 s): gives the daemon its full startup window.
+        //   Phase 2 — recovery:  force unregister+register, then poll again (30 s).
+        //
+        // Phase 2 exists because Xcode "Replace" sends SIGKILL, so
+        // `applicationShouldTerminate` / `disableDaemon()` never runs.  The
+        // daemon stays `.enabled` in launchd but the actual process may be
+        // dead or stuck in a throttled restart cycle.
+        //
+        // ⚠️ REGRESSION GUARD — the recovery MUST happen only AFTER the full
+        // phase-1 timeout.  Moving the force-reregister into `enableDaemon()`
+        // or running it earlier would regress a known bug where SwiftUI
+        // `.task` re-entrancy triggers multiple `enableDaemon()` calls that
+        // each kill the daemon before it finishes initializing.
         let connectOK = await runStep(.connectAndWatch) {
             let client = try self.onClientsNeeded()
             self.daemonManager.connectAndWatch(client: client)
 
-            // Wait for the first status message (daemon is alive).
+            // Phase 1: normal poll — daemon may be starting up; give it the
+            // full timeout before assuming it's dead.
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                if self.daemonManager.state.isRunning { break }
                 try await Task.sleep(for: StartupConstants.daemonPollInterval)
-                if self.daemonManager.state.isRunning {
-                    break
-                }
+            }
+
+            if self.daemonManager.state.isRunning { return }
+
+            // Phase 2: recovery — daemon is registered but confirmed
+            // unreachable after the full poll window.  Force re-register to
+            // get launchd to spawn a fresh daemon process, then poll again.
+            ClientLog.startup.warning(
+                "Daemon unreachable after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s, attempting force re-register recovery"
+            )
+            await self.daemonManager.forceReregisterDaemon()
+
+            if case .error = self.daemonManager.state {
+                throw StartupError.stepFailed("Force re-register failed")
+            }
+
+            self.daemonManager.connectAndWatch(client: client)
+
+            for _ in 0..<StartupConstants.daemonPollMaxAttempts {
+                if self.daemonManager.state.isRunning { break }
+                try await Task.sleep(for: StartupConstants.daemonPollInterval)
             }
 
             if !self.daemonManager.state.isRunning {
+                let totalSeconds = Int(StartupConstants.daemonPollTimeout.components.seconds) * 2
                 throw StartupError.stepFailed(
-                    "Daemon registered but gRPC stream not connected after \(Int(StartupConstants.daemonPollTimeout.components.seconds))s")
+                    "Daemon unreachable after force re-register recovery (\(totalSeconds)s total)")
             }
         }
 
@@ -226,7 +287,8 @@ public final class StartupOrchestrator {
             let elapsedMs = Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
             let message = error.localizedDescription
             ClientLog.startup.error(
-                "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .public)")
+                "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .private)"
+            )
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: step.label, key: "startup_step")
             }

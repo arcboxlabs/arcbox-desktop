@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import DockerClient
+import SwiftUI
 
 /// Filter for log streams
 enum LogStreamFilter: String, CaseIterable, Identifiable {
@@ -32,7 +32,7 @@ struct ContainerLogsTab: View {
     @Environment(\.dockerClient) private var docker
 
     @State private var logEntries: [LogEntry] = []
-    @State private var searchText = "" 
+    @State private var searchText = ""
     @State private var streamFilter: LogStreamFilter = .all
     @State private var isFollowing = true
     @State private var isLoading = true
@@ -89,12 +89,12 @@ struct ContainerLogsTab: View {
 
                 // Follow toggle
                 Button(action: toggleFollow) {
-                    Image(systemName: isFollowing ? "arrow.down.to.line" : "pause")
+                    Image(systemName: isFollowing ? "pause" : "arrow.down.to.line")
                         .font(.system(size: 12))
                         .foregroundStyle(isFollowing ? AppColors.accent : AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .help(isFollowing ? "Following logs" : "Paused")
+                .help(isFollowing ? "Pause" : "Follow")
 
                 Button(action: copyLogs) {
                     Image(systemName: "doc.on.doc")
@@ -221,13 +221,13 @@ struct ContainerLogsTab: View {
         }
         // Fallback: extract time part if parsing fails
         guard let tIndex = ts.firstIndex(of: "T"),
-              let zIndex = ts.firstIndex(of: "Z") ?? ts.lastIndex(of: "+")
+            let zIndex = ts.firstIndex(of: "Z") ?? ts.lastIndex(of: "+")
         else {
             return ts
         }
-        let timePart = ts[ts.index(after: tIndex) ..< zIndex]
+        let timePart = ts[ts.index(after: tIndex)..<zIndex]
         if let dotIndex = timePart.firstIndex(of: ".") {
-            return String(timePart[timePart.startIndex ..< dotIndex])
+            return String(timePart[timePart.startIndex..<dotIndex])
         }
         return String(timePart)
     }

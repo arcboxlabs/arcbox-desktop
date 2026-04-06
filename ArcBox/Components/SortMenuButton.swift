@@ -2,8 +2,7 @@ import SwiftUI
 
 /// Generic sort menu button for toolbar usage
 struct SortMenuButton<Field: Hashable & CaseIterable & RawRepresentable>: View
-    where Field.RawValue == String, Field.AllCases: RandomAccessCollection
-{
+where Field.RawValue == String, Field.AllCases: RandomAccessCollection {
     @Binding var sortBy: Field
     @Binding var ascending: Bool
 

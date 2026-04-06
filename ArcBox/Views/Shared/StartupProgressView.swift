@@ -1,5 +1,6 @@
-import SwiftUI
+import AppKit
 import ArcBoxClient
+import SwiftUI
 
 /// Progress view shown during the startup sequence.
 /// Replaces DaemonLoadingView for the initial startup phase.
@@ -11,33 +12,62 @@ struct StartupProgressView: View {
         VStack(spacing: 16) {
             Spacer()
 
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(StartupStep.allCases) { step in
-                    stepRow(step)
-                }
-            }
-            .padding(.horizontal, 40)
-
-            if case .failed(_, let message) = orchestrator.phase {
-                VStack(spacing: 8) {
-                    Text(message)
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppColors.error)
-                        .multilineTextAlignment(.center)
-
-                    Button("Retry") {
-                        Task { await orchestrator.retry() }
+            if case .fatalError(let message) = orchestrator.phase {
+                fatalErrorView(message: message)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(StartupStep.allCases) { step in
+                        stepRow(step)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .disabled(!orchestrator.canRetry)
                 }
-                .padding(.top, 4)
+                .padding(.horizontal, 40)
+
+                if case .failed(_, let message) = orchestrator.phase {
+                    VStack(spacing: 8) {
+                        Text(message)
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColors.error)
+                            .multilineTextAlignment(.center)
+
+                        Button("Retry") {
+                            Task { await orchestrator.retry() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(!orchestrator.canRetry)
+                    }
+                    .padding(.top, 4)
+                }
             }
 
             Spacer()
         }
         .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func fatalErrorView(message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 36))
+                .foregroundStyle(AppColors.error)
+
+            Text("Daemon Cannot Start")
+                .font(.system(size: 14, weight: .semibold))
+
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
+            Button("Quit") {
+                NSApplication.shared.terminate(nil)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .controlSize(.regular)
+        }
     }
 
     @ViewBuilder

@@ -1,6 +1,6 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 /// Column 2: container list with toolbar
 struct ContainersListView: View {
@@ -42,11 +42,23 @@ struct ContainersListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
+            } else if case .failed(let message) = vm.loadState {
+                ContainerLoadErrorView(message: message) {
+                    Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
+                }
+            } else if vm.loadState != .loaded {
+                ProgressView(daemonManager.dockerSocketLinked ? "Loading containers…" : "Starting Docker engine…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.containers.isEmpty {
                 ContainerEmptyState()
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Running section
+                        if hasRunningContent {
+                            sectionHeader("In Use")
+                        }
+
                         // Active compose groups (has running containers)
                         composeGroupRows(for: activeComposeGroups)
 
@@ -60,7 +72,7 @@ struct ContainersListView: View {
                             standaloneRows(for: stoppedStandaloneContainers)
                         }
                     }
-                    .padding(.top, hasRunningContent ? 6 : 0)
+                    .padding(.top, 6)
                 }
             }
         }
@@ -73,12 +85,18 @@ struct ContainersListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showNewContainerSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showNewContainerSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
+                .accessibilityLabel("New container")
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
-        .task(id: docker != nil) {
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
             await vm.loadContainersFromDocker(docker: docker, iconClient: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
@@ -87,6 +105,7 @@ struct ContainersListView: View {
         .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
             NewContainerSheet()
         }
+        .errorToast(message: Bindable(vm).lastError)
     }
 
     @ViewBuilder
@@ -118,8 +137,11 @@ struct ContainersListView: View {
                 },
                 onStartStop: { id, running in
                     Task {
-                        if running { await vm.stopContainerDocker(id, docker: docker) }
-                        else { await vm.startContainerDocker(id, docker: docker) }
+                        if running {
+                            await vm.stopContainerDocker(id, docker: docker)
+                        } else {
+                            await vm.startContainerDocker(id, docker: docker)
+                        }
                     }
                 },
                 onDelete: { id in
@@ -157,8 +179,11 @@ struct ContainersListView: View {
                 },
                 onStartStop: {
                     Task {
-                        if container.isRunning { await vm.stopContainerDocker(container.id, docker: docker) }
-                        else { await vm.startContainerDocker(container.id, docker: docker) }
+                        if container.isRunning {
+                            await vm.stopContainerDocker(container.id, docker: docker)
+                        } else {
+                            await vm.startContainerDocker(container.id, docker: docker)
+                        }
                     }
                 },
                 onDelete: {

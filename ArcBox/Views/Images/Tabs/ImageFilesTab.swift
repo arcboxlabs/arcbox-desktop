@@ -1,6 +1,6 @@
-import SwiftUI
 import AppKit
 import DockerClient
+import SwiftUI
 
 /// Files tab showing image layer filesystem browser
 struct ImageFilesTab: View {
@@ -74,10 +74,13 @@ struct ImageFilesTab: View {
 
             Spacer()
 
-            Button(action: { showHiddenFiles.toggle() }) {
-                Image(systemName: showHiddenFiles ? "eye.slash" : "eye")
-                    .font(.system(size: 12))
-            }
+            Button(
+                action: { showHiddenFiles.toggle() },
+                label: {
+                    Image(systemName: showHiddenFiles ? "eye.slash" : "eye")
+                        .font(.system(size: 12))
+                }
+            )
             .buttonStyle(.plain)
             .help(showHiddenFiles ? "Hide hidden files" : "Show hidden files")
 

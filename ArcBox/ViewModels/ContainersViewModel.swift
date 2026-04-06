@@ -1,8 +1,8 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
 import OSLog
 @preconcurrency import Sentry
+import SwiftUI
 
 extension Notification.Name {
     /// Posted when Docker resources change (e.g. container deleted) so other sections can refresh.
@@ -26,6 +26,14 @@ enum ContainerSortField: String, CaseIterable {
     case status = "Status"
 }
 
+/// Container list loading state
+enum ContainerLoadState: Equatable {
+    case waiting  // Waiting for docker client
+    case loading  // Fetching from Docker API
+    case loaded  // Fetch completed (containers may be empty)
+    case failed(String)  // Fetch failed with error message
+}
+
 /// Container list state, selection, tabs, grouping
 @MainActor
 @Observable
@@ -38,7 +46,8 @@ class ContainersViewModel {
     }
 
     var containers: [ContainerViewModel] = []
-    var selectedID: String? = nil
+    var loadState: ContainerLoadState = .waiting
+    var selectedID: String?
     var activeTab: ContainerDetailTab = .info
     var expandedGroups: Set<String> = []
     var listWidth: CGFloat = 320
@@ -47,6 +56,7 @@ class ContainersViewModel {
     var showNewContainerSheet: Bool = false
     var sortBy: ContainerSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var runningCount: Int {
         containers.filter(\.isRunning).count
@@ -207,7 +217,9 @@ class ContainersViewModel {
         containers = snapshot
     }
 
-    private func containerDetailsCache() -> [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount], rootfsMountPath: String?)] {
+    private func containerDetailsCache() -> [String: (
+        domain: String?, ipAddress: String?, mounts: [ContainerMount], rootfsMountPath: String?
+    )] {
         Dictionary(
             uniqueKeysWithValues: detailsByID.map { id, details in
                 (
@@ -248,23 +260,34 @@ class ContainersViewModel {
         let uncached = Set(containers.map(\.image)).subtracting(iconsByImage.keys)
         guard !uncached.isEmpty else { return }
 
-        await withTaskGroup(of: (String, String?).self) { group in
+        await withTaskGroup(of: (String, String?, Bool).self) { group in
             for image in uncached {
                 group.addTask {
                     do {
                         var request = Arcbox_V1_GetImageIconRequest()
                         request.fqin = image
-                        let response = try await client.icons.getImageIcon(request)
+                        let response = try await client.icons.getImageIcon(
+                            request, options: ArcBoxClient.defaultCallOptions)
                         let url = response.url.isEmpty ? nil : response.url
-                        return (image, url)
+                        // (image, url, succeeded) — cache empty url as "no icon available"
+                        return (image, url, true)
                     } catch {
-                        Log.container.debug("Icon fetch failed for \(image, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        return (image, nil)
+                        Log.container.debug(
+                            "Icon fetch failed for \(image, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                        )
+                        // Mark as failed so we don't cache the negative result
+                        return (image, nil, false)
                     }
                 }
             }
-            for await (image, url) in group {
-                iconsByImage[image] = url ?? ""
+            for await (image, url, succeeded) in group {
+                if let url {
+                    iconsByImage[image] = url
+                } else if succeeded {
+                    // RPC succeeded but no icon available — cache to avoid repeated lookups
+                    iconsByImage[image] = ""
+                }
+                // If RPC failed, leave uncached so next load retries
             }
         }
 
@@ -287,7 +310,7 @@ class ContainersViewModel {
         do {
             var request = Arcbox_V1_ListContainersRequest()
             request.all = true
-            let response = try await client.containers.list(request)
+            let response = try await client.containers.list(request, options: ArcBoxClient.defaultCallOptions)
             var viewModels = response.containers.map { summary in
                 ContainerViewModel(from: summary)
             }
@@ -303,7 +326,7 @@ class ContainersViewModel {
                 await loadContainerDetails(selectedID, client: client)
             }
         } catch {
-            Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error loading containers via gRPC: \(error.localizedDescription, privacy: .private)")
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_grpc", key: "container_op")
             }
@@ -311,45 +334,128 @@ class ContainersViewModel {
     }
 
     func startContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         setTransitioning(id, true)
         var request = Arcbox_V1_StartContainerRequest()
         request.id = id
         do {
-            _ = try await client.containers.start(request)
+            _ = try await client.containers.start(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: true)
         } catch {
-            Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
     func stopContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         setTransitioning(id, true)
         var request = Arcbox_V1_StopContainerRequest()
         request.id = id
         do {
-            _ = try await client.containers.stop(request)
+            _ = try await client.containers.stop(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: false)
         } catch {
-            Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainers(client: client)
     }
 
+    /// Creates a new container via Docker API and returns its ID, or nil on failure.
+    func createContainer(
+        image: String,
+        name: String,
+        platform: String?,
+        command: String,
+        entrypoint: String,
+        workingDir: String,
+        autoRemove: Bool,
+        restartPolicy: String,
+        privileged: Bool,
+        readOnlyRootfs: Bool,
+        dockerInit: Bool,
+        docker: DockerClient?
+    ) async -> String? {
+        guard let docker else { return nil }
+        var config = Components.Schemas.ContainerConfig()
+        config.Image = image
+        let cmdParts = command.split(separator: " ").map(String.init)
+        if !cmdParts.isEmpty { config.Cmd = cmdParts }
+        let entrypointParts = entrypoint.split(separator: " ").map(String.init)
+        if !entrypointParts.isEmpty { config.Entrypoint = entrypointParts }
+        if !workingDir.isEmpty { config.WorkingDir = workingDir }
+
+        let policyName: Components.Schemas.RestartPolicy.NamePayload =
+            switch restartPolicy {
+            case "always": .always
+            case "unless-stopped": .unless_hyphen_stopped
+            case "on-failure": .on_hyphen_failure
+            default: .no
+            }
+        var resources = Components.Schemas.Resources()
+        if dockerInit { resources.Init = true }
+        let hostConfig = Components.Schemas.HostConfig(
+            value1: resources,
+            value2: .init(
+                RestartPolicy: .init(Name: policyName),
+                AutoRemove: autoRemove,
+                Privileged: privileged,
+                ReadonlyRootfs: readOnlyRootfs
+            )
+        )
+
+        do {
+            let response = try await docker.api.ContainerCreate(
+                query: .init(name: name.isEmpty ? nil : name, platform: platform),
+                body: .json(.init(value1: config, value2: .init(HostConfig: hostConfig)))
+            )
+            switch response {
+            case .created(let created):
+                switch created.body {
+                case .json(let body):
+                    let id = body.Id
+                    Log.container.info("Created container \(id, privacy: .private)")
+                    await loadContainersFromDocker(docker: docker)
+                    return id
+                }
+            case .badRequest(let err):
+                Log.container.error("Bad request creating container: \(String(describing: err), privacy: .private)")
+            case .notFound(let err):
+                Log.container.error("Image not found: \(String(describing: err), privacy: .private)")
+            case .conflict(let err):
+                Log.container.error("Container name conflict: \(String(describing: err), privacy: .private)")
+            case .internalServerError(let err):
+                Log.container.error("Server error creating container: \(String(describing: err), privacy: .private)")
+            case .undocumented(let statusCode, _):
+                Log.container.error("Unexpected status \(statusCode, privacy: .public) creating container")
+            }
+        } catch {
+            Log.container.error("Error creating container: \(String(describing: error), privacy: .private)")
+        }
+        return nil
+    }
+
     func removeContainer(_ id: String, client: ArcBoxClient?) async {
+        lastError = nil
         guard let client else { return }
         var request = Arcbox_V1_RemoveContainerRequest()
         request.id = id
         request.force = true
         do {
-            _ = try await client.containers.remove(request)
+            _ = try await client.containers.remove(request, options: ArcBoxClient.defaultCallOptions)
             removeContainerLocally(id)
         } catch {
-            Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         await loadContainers(client: client)
     }
@@ -361,7 +467,7 @@ class ContainersViewModel {
         request.id = id
 
         do {
-            let details = try await client.containers.inspect(request)
+            let details = try await client.containers.inspect(request, options: ArcBoxClient.defaultCallOptions)
             setContainerDetails(
                 id,
                 domain: Self.normalized(details.config.domainname),
@@ -376,7 +482,8 @@ class ContainersViewModel {
                 }
             )
         } catch {
-            Log.container.error("Error inspecting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error inspecting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -389,6 +496,10 @@ class ContainersViewModel {
             return
         }
 
+        if loadState != .loaded {
+            loadState = .loading
+        }
+
         let currentTransitioning = transitioningIDs
         let cachedDetails = containerDetailsCache()
         do {
@@ -397,59 +508,74 @@ class ContainersViewModel {
             var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
             applyCachedDetails(cachedDetails, to: &viewModels)
             applyCachedIcons(to: &viewModels)
-            // Preserve transitioning state across reload
             for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
                 viewModels[i].isTransitioning = true
             }
             containers = viewModels
-            Log.container.info("Loaded \(self.containers.count, privacy: .public) containers")
+            Log.container.info("Loaded \(self.containers.count, privacy: .public) containers via Docker")
             applyExpandedGroups(from: containers)
             await fetchIcons(client: iconClient)
             if let selectedID, containers.contains(where: { $0.id == selectedID }) {
                 await loadContainerDetailsFromDocker(selectedID, docker: docker)
             }
+            loadState = .loaded
         } catch {
-            Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .public)")
+            Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .private)")
             SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_docker", key: "container_op")
+            }
+            if containers.isEmpty {
+                loadState = .failed(error.localizedDescription)
+            } else {
+                loadState = .loaded
+                lastError = error.localizedDescription
             }
         }
     }
 
     func startContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         setTransitioning(id, true)
         do {
             _ = try await docker.api.ContainerStart(path: .init(id: id))
             setContainerRunningState(id, isRunning: true)
         } catch {
-            Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func stopContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         setTransitioning(id, true)
         do {
             _ = try await docker.api.ContainerStop(path: .init(id: id))
             setContainerRunningState(id, isRunning: false)
         } catch {
-            Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         setTransitioning(id, false)
         await loadContainersFromDocker(docker: docker)
     }
 
     func removeContainerDocker(_ id: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         do {
             _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
             removeContainerLocally(id)
             NotificationCenter.default.post(name: .dockerDataChanged, object: nil)
         } catch {
-            Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         await loadContainersFromDocker(docker: docker)
     }
@@ -479,10 +605,12 @@ class ContainersViewModel {
                 rootfsMountPath: Self.normalized(snapshot.rootfsMountPath)
             )
             Log.container.debug(
-                "Inspect snapshot for \(id, privacy: .public): domain=\(Self.normalized(snapshot.domainname) ?? "-", privacy: .public), ip=\(Self.normalized(snapshot.ipAddress) ?? "-", privacy: .public), mounts=\(mounts.count, privacy: .public), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-", privacy: .public)"
+                "Inspect snapshot for \(id, privacy: .private): domain=\(Self.normalized(snapshot.domainname) ?? "-", privacy: .private), ip=\(Self.normalized(snapshot.ipAddress) ?? "-", privacy: .private), mounts=\(mounts.count, privacy: .public), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-", privacy: .private)"
             )
         } catch {
-            Log.container.error("Inspect snapshot failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.container.error(
+                "Inspect snapshot failed for \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+            )
             do {
                 // Fallback to generated inspect model if raw path fails unexpectedly.
                 let response = try await docker.api.ContainerInspect(path: .init(id: id))
@@ -506,10 +634,12 @@ class ContainersViewModel {
                     mounts: mounts
                 )
                 Log.container.debug(
-                    "Inspect fallback for \(id, privacy: .public): domain=\(Self.normalized(details.Config?.Domainname) ?? "-", privacy: .public), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-", privacy: .public), mounts=\(mounts.count, privacy: .public)"
+                    "Inspect fallback for \(id, privacy: .private): domain=\(Self.normalized(details.Config?.Domainname) ?? "-", privacy: .private), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-", privacy: .private), mounts=\(mounts.count, privacy: .public)"
                 )
             } catch {
-                Log.container.error("Inspect fallback failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                Log.container.error(
+                    "Inspect fallback failed for \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                )
             }
         }
     }
@@ -529,7 +659,9 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStart(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: true)
                     } catch {
-                        Log.container.error("Error starting container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.error(
+                            "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                        )
                     }
                 }
             }
@@ -551,7 +683,9 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerStop(path: .init(id: id))
                         await self?.setContainerRunningState(id, isRunning: false)
                     } catch {
-                        Log.container.error("Error stopping container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.error(
+                            "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                        )
                     }
                 }
             }
@@ -570,7 +704,9 @@ class ContainersViewModel {
                         _ = try await docker.api.ContainerDelete(path: .init(id: id), query: .init(force: true))
                         await self?.removeContainerLocally(id)
                     } catch {
-                        Log.container.error("Error removing container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Log.container.error(
+                            "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                        )
                     }
                 }
             }
@@ -592,17 +728,19 @@ class ContainersViewModel {
 extension ContainerViewModel {
     /// Create a ContainerViewModel from a gRPC ContainerSummary.
     init(from summary: Arcbox_V1_ContainerSummary) {
-        let name = summary.names.first.map {
-            $0.hasPrefix("/") ? String($0.dropFirst()) : $0
-        } ?? summary.id.prefix(12).description
+        let name =
+            summary.names.first.map {
+                $0.hasPrefix("/") ? String($0.dropFirst()) : $0
+            } ?? summary.id.prefix(12).description
 
-        let state: ContainerState = switch summary.state {
-        case "running": .running
-        case "paused": .paused
-        case "restarting": .restarting
-        case "dead": .dead
-        default: .stopped
-        }
+        let state: ContainerState =
+            switch summary.state {
+            case "running": .running
+            case "paused": .paused
+            case "restarting": .restarting
+            case "dead": .dead
+            default: .stopped
+            }
 
         let ports = summary.ports.map { port in
             PortMapping(
@@ -613,6 +751,7 @@ extension ContainerViewModel {
         }
 
         let composeProject = summary.labels["com.docker.compose.project"]
+        let composeService = summary.labels["com.docker.compose.service"]
         let rootfsMountPath = ContainerViewModel.inferRootFSMountPath(
             explicitPath: nil,
             labels: summary.labels,
@@ -627,6 +766,7 @@ extension ContainerViewModel {
             ports: ports,
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.created)),
             composeProject: composeProject,
+            composeService: composeService,
             labels: summary.labels,
             cpuPercent: 0,
             memoryMB: 0,
@@ -637,17 +777,19 @@ extension ContainerViewModel {
 
     /// Create a ContainerViewModel from a Docker Engine API ContainerSummary.
     init(fromDocker summary: Components.Schemas.ContainerSummary) {
-        let name = summary.Names?.first.map {
-            $0.hasPrefix("/") ? String($0.dropFirst()) : $0
-        } ?? summary.Id?.prefix(12).description ?? "unknown"
+        let name =
+            summary.Names?.first.map {
+                $0.hasPrefix("/") ? String($0.dropFirst()) : $0
+            } ?? summary.Id?.prefix(12).description ?? "unknown"
 
-        let state: ContainerState = switch summary.State?.lowercased() {
-        case "running": .running
-        case "paused": .paused
-        case "restarting": .restarting
-        case "dead": .dead
-        default: .stopped // created, exited, removing -> stopped
-        }
+        let state: ContainerState =
+            switch summary.State?.lowercased() {
+            case "running": .running
+            case "paused": .paused
+            case "restarting": .restarting
+            case "dead": .dead
+            default: .stopped  // created, exited, removing -> stopped
+            }
 
         let ports = (summary.Ports ?? []).compactMap { port -> PortMapping? in
             guard let publicPort = port.PublicPort else { return nil }
@@ -660,6 +802,7 @@ extension ContainerViewModel {
 
         let labels = summary.Labels?.additionalProperties ?? [:]
         let composeProject = labels["com.docker.compose.project"]
+        let composeService = labels["com.docker.compose.service"]
         let mounts = (summary.Mounts ?? []).compactMap { mount -> ContainerMount? in
             guard let destination = ContainersViewModel.normalized(mount.Destination) else { return nil }
             let source = ContainersViewModel.normalized(mount.Source) ?? "-"
@@ -684,6 +827,7 @@ extension ContainerViewModel {
             ports: ports,
             createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created ?? 0)),
             composeProject: composeProject,
+            composeService: composeService,
             labels: labels,
             cpuPercent: 0,
             memoryMB: 0,

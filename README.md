@@ -7,6 +7,7 @@
 [![macOS](https://img.shields.io/badge/macOS-15%2B-000?logo=apple)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/swift-6.0-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Release](https://img.shields.io/github/v/release/arcboxlabs/arcbox-desktop?color=green)](https://github.com/arcboxlabs/arcbox-desktop/releases)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 
 </div>
 
@@ -107,4 +108,9 @@ scripts/                   Build, packaging, and distribution scripts
 
 ## License
 
-Proprietary. All rights reserved.
+Licensed under either of
+
+- [MIT license](LICENSE-MIT)
+- [Apache License, Version 2.0](LICENSE-APACHE)
+
+at your option.

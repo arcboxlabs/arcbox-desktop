@@ -1,6 +1,6 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 /// Column 2: volumes list with toolbar
 struct VolumesListView: View {
@@ -11,18 +11,6 @@ struct VolumesListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // "In Use" section header — only show when data is loaded
-            if orchestrator?.isReady == true && daemonManager.state.isRunning {
-                HStack {
-                    Text("In Use")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
-
             if let orchestrator, !orchestrator.isReady {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
@@ -32,15 +20,17 @@ struct VolumesListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(vm.sortedVolumes) { volume in
-                            VolumeRowView(
-                                volume: volume,
-                                isSelected: vm.selectedID == volume.id,
-                                onSelect: { vm.selectVolume(volume.id) },
-                                onDelete: {
-                                    Task { await vm.removeVolume(volume.name, docker: docker) }
-                                }
-                            )
+                        if !inUseVolumes.isEmpty {
+                            sectionHeader("In Use")
+                            ForEach(inUseVolumes) { volume in
+                                volumeRow(volume)
+                            }
+                        }
+                        if !unusedVolumes.isEmpty {
+                            sectionHeader("Unused")
+                            ForEach(unusedVolumes) { volume in
+                                volumeRow(volume)
+                            }
                         }
                     }
                 }
@@ -55,20 +45,62 @@ struct VolumesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showNewVolumeSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showNewVolumeSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
+                .accessibilityLabel("New volume")
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .sheet(isPresented: Bindable(vm).showNewVolumeSheet) {
             NewVolumeSheet()
         }
-        .task(id: docker != nil) { await vm.loadVolumes(docker: docker) }
+        .errorToast(message: Bindable(vm).lastError)
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
+            await vm.loadVolumes(docker: docker)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
             Task { await vm.loadVolumes(docker: docker) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
             Task { await vm.loadVolumes(docker: docker) }
         }
+    }
+
+    private var inUseVolumes: [VolumeViewModel] {
+        vm.sortedVolumes.filter(\.inUse)
+    }
+
+    private var unusedVolumes: [VolumeViewModel] {
+        vm.sortedVolumes.filter { !$0.inUse }
+    }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppColors.textSecondary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private func volumeRow(_ volume: VolumeViewModel) -> some View {
+        VolumeRowView(
+            volume: volume,
+            isSelected: vm.selectedID == volume.id,
+            onSelect: { vm.selectVolume(volume.id) },
+            onDelete: {
+                Task { await vm.removeVolume(volume.name, docker: docker) }
+            }
+        )
     }
 }

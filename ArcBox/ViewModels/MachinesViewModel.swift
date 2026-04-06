@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 /// Detail tab options for machines (matches container pattern)
 enum MachineDetailTab: String, CaseIterable, Identifiable {
@@ -11,10 +12,11 @@ enum MachineDetailTab: String, CaseIterable, Identifiable {
 }
 
 /// Machine list state
+@MainActor
 @Observable
 class MachinesViewModel {
     var machines: [MachineViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: MachineDetailTab = .info
     var searchText: String = ""
     var isSearching: Bool = false
@@ -23,7 +25,7 @@ class MachinesViewModel {
         guard !searchText.isEmpty else { return machines }
         return machines.filter {
             $0.name.localizedCaseInsensitiveContains(searchText)
-            || $0.distro.displayName.localizedCaseInsensitiveContains(searchText)
+                || $0.distro.displayName.localizedCaseInsensitiveContains(searchText)
         }
     }
 
@@ -42,10 +44,16 @@ class MachinesViewModel {
         selectedID = id
     }
 
-    // Mock actions
-    func startMachine(_ id: String) {}
-    func stopMachine(_ id: String) {}
-    func deleteMachine(_ id: String) {}
+    // TODO: Implement when machine lifecycle is connected to gRPC
+    func startMachine(_ id: String) {
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
+    }
+    func stopMachine(_ id: String) {
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
+    }
+    func deleteMachine(_ id: String) {
+        Log.machine.warning("Not implemented: \(#function) for \(id, privacy: .private)")
+    }
 
     func loadSampleData() {
         machines = SampleData.machines

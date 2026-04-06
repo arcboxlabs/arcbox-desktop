@@ -5,7 +5,7 @@ struct MetricCard: View {
     let title: String
     let value: String
     let subtitle: String
-    var limit: Int? = nil
+    var limit: Int?
     var isLive: Bool = true
 
     var body: some View {

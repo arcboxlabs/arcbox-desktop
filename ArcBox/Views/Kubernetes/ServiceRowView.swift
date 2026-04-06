@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Single service row
@@ -46,7 +47,15 @@ struct ServiceRowView: View {
         .foregroundStyle(isSelected ? AppColors.onAccent : AppColors.text)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(service.name), \(service.type.rawValue)")
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .contextMenu {
+            Button("Copy Name") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(service.name, forType: .string)
+            }
+        }
     }
 }

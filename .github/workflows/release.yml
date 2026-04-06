@@ -31,6 +31,7 @@ jobs:
       dmg: ${{ steps.dmg.outputs.dmg }}
       ed_signature: ${{ steps.sparkle_sign.outputs.ed_signature }}
       dmg_length: ${{ steps.sparkle_sign.outputs.dmg_length }}
+      build_number: ${{ steps.dmg.outputs.build_number }}
 
     steps:
       - name: Checkout arcbox-desktop
@@ -125,6 +126,18 @@ jobs:
             --key-id "$NOTARY_KEY_ID" \
             --issuer "$NOTARY_ISSUER"
           rm "$RUNNER_TEMP/private_keys/AuthKey.p8"
+
+      - name: Decode provisioning profile
+        env:
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: |
+          if [ -z "$APPLE_PROVISIONING_PROFILE" ]; then
+            echo "::error::APPLE_PROVISIONING_PROFILE secret is not set"
+            exit 1
+          fi
+          echo "$APPLE_PROVISIONING_PROFILE" | base64 --decode > "$RUNNER_TEMP/embedded.provisionprofile"
+          echo "Decoded provisioning profile to $RUNNER_TEMP/embedded.provisionprofile"
+          security cms -D -i "$RUNNER_TEMP/embedded.provisionprofile" | head -5
 
       - name: Download pre-built arcbox binaries
         id: prebuilt
@@ -273,11 +286,14 @@ jobs:
             SIGN_IDENTITY="${{ secrets.APPLE_SIGNING_IDENTITY }}" \
             VERSION="${{ steps.version.outputs.version }}" \
             SPARKLE_FEED_URL="https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml" \
-            NOTARIZE=1
+            NOTARIZE=1 \
+            PROVISIONING_PROFILE="$RUNNER_TEMP/embedded.provisionprofile"
           DMG_PATH=$(ls "${{ github.workspace }}/arcbox-core/target/ArcBox-"*.dmg | head -1)
           DMG_NAME=$(basename "$DMG_PATH")
+          BUILD_NUMBER=$(git rev-list --count HEAD)
           echo "dmg=$DMG_NAME" >> "$GITHUB_OUTPUT"
           echo "dmg_path=$DMG_PATH" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Generate checksum
         run: |
@@ -320,11 +336,12 @@ jobs:
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
 
           KEY_FILE="$(mktemp)"
+          chmod 600 "$KEY_FILE"
+          trap 'rm -f "$KEY_FILE"' EXIT
           printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
           SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" -f "$KEY_FILE" 2>&1) || {
             echo "::error::sign_update failed"
             echo "$SIGN_OUTPUT"
-            rm -f "$KEY_FILE"
             exit 1
           }
           rm -f "$KEY_FILE"
@@ -481,6 +498,7 @@ jobs:
 
           APPCAST_ARGS=(
             --version "$VERSION"
+            --build-number "${{ needs.build-dmg.outputs.build_number }}"
             --dmg-url "$DMG_URL"
             --dmg-length "${{ needs.build-dmg.outputs.dmg_length }}"
             --ed-signature "${{ needs.build-dmg.outputs.ed_signature }}"
@@ -494,7 +512,7 @@ jobs:
           fi
 
           mkdir -p cdn-staging/desktop/appcast
-          bash scripts/generate-appcast.sh "${APPCAST_ARGS[@]}"
+          scripts/generate-appcast.py "${APPCAST_ARGS[@]}"
 
       - name: Update latest.json
         run: |
@@ -511,7 +529,7 @@ jobs:
             LATEST_ARGS+=(--existing existing/latest.json)
           fi
 
-          bash scripts/update-latest-json.sh "${LATEST_ARGS[@]}"
+          scripts/update-latest-json.py "${LATEST_ARGS[@]}"
 
       - name: Prepare staging directory
         run: |
@@ -608,3 +626,59 @@ jobs:
             -d "{\"url\": \"${CDN_URL}\"}")
           echo "$RESPONSE" | jq '{shortLink, url}'
           echo "Updated ARM64 download link -> $CDN_URL"
+
+  # ==========================================================================
+  # Update Homebrew tap Cask with new version and SHA256
+  # ==========================================================================
+  update-homebrew-tap:
+    name: Update Homebrew tap
+    needs: [build-dmg, upload-cdn]
+    if: needs.build-dmg.outputs.channel == 'stable'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          repositories: homebrew-tap
+
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arcbox-desktop-dmg
+          path: artifacts/
+
+      - name: Update Cask
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ needs.build-dmg.outputs.version }}
+        run: |
+          CASK_VERSION="${VERSION#v}"
+          DMG_PATH="$(find artifacts/ -type f -name '*.dmg' -print -quit)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "Error: No DMG file found under artifacts/"
+            exit 1
+          fi
+          SHA256=$(sha256sum "$DMG_PATH" | awk '{print $1}')
+
+          git clone --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/arcboxlabs/homebrew-tap.git" \
+            /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+          git config user.name "arcbox-labs[bot]"
+          git config user.email "254083426+arcbox-labs[bot]@users.noreply.github.com"
+
+          CASK="Casks/arcbox.rb"
+          sed -i "s|version \".*\"|version \"${CASK_VERSION}\"|" "$CASK"
+          sed -i "s|sha256 arm: *\".*\"|sha256 arm:   \"${SHA256}\"|" "$CASK"
+
+          if git diff --quiet; then
+            echo "Cask already up to date"
+            exit 0
+          fi
+          git add "$CASK"
+          git commit -m "arcbox ${VERSION}"
+          git push

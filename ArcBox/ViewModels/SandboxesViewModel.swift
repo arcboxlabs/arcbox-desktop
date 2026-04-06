@@ -29,7 +29,7 @@ enum SandboxSortField: String, CaseIterable {
 @Observable
 class SandboxesViewModel {
     var sandboxes: [SandboxViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: SandboxDetailTab = .info
     var pageTab: SandboxPageTab = .monitoring
     var listWidth: CGFloat = 320

@@ -2,13 +2,7 @@ import SwiftUI
 
 struct MachineEmptyState: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Text("No Linux machines yet")
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
-
+        EmptyStateView(icon: "desktopcomputer", title: "No Linux machines yet") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Create a new machine to run a full Linux environment:")
                     .font(.system(size: 11))
@@ -27,15 +21,6 @@ struct MachineEmptyState: View {
                     .foregroundStyle(AppColors.textSecondary)
                     .padding(.top, 8)
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(AppColors.surfaceElevated)
-            )
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(24)
     }
 }

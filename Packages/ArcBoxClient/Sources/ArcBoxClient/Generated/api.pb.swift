@@ -813,6 +813,119 @@ public struct Arcbox_V1_VolumeUsage: Sendable {
   public init() {}
 }
 
+/// Request to prepare a migration.
+public struct Arcbox_V1_PrepareMigrationRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Stable source runtime identifier (for example, "docker-desktop" or "orbstack").
+  public var sourceKind: String = String()
+
+  /// Optional override for the source Docker-compatible socket path.
+  public var sourceSocketPath: String = String()
+
+  /// Allow prepare to include replace actions in the plan.
+  public var allowReplacements: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Prepared migration summary.
+public struct Arcbox_V1_PrepareMigrationResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Opaque identifier for the prepared plan.
+  public var planID: String = String()
+
+  /// Source runtime identifier used for the plan.
+  public var sourceKind: String = String()
+
+  /// Resolved source socket path used for the plan.
+  public var sourceSocketPath: String = String()
+
+  /// Number of images included in the plan.
+  public var imageCount: UInt32 = 0
+
+  /// Number of volumes included in the plan.
+  public var volumeCount: UInt32 = 0
+
+  /// Number of networks included in the plan.
+  public var networkCount: UInt32 = 0
+
+  /// Number of containers included in the plan.
+  public var containerCount: UInt32 = 0
+
+  /// Whether the plan would replace existing ArcBox resources (images, volumes,
+  /// networks, or containers that already exist on the target). When true,
+  /// RunMigrationRequest.allow_replacements must be set to confirm.
+  public var replacementsRequired: Bool = false
+
+  /// Non-fatal warnings discovered during preparation (for example, volume
+  /// blockers that will require stopping running source containers).
+  public var warnings: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to run a prepared migration.
+public struct Arcbox_V1_RunMigrationRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Opaque identifier returned by PrepareMigration.
+  public var planID: String = String()
+
+  /// Confirms that the caller accepts any replace actions in the plan.
+  public var allowReplacements: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Streaming migration progress event.
+public struct Arcbox_V1_RunMigrationEvent: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Opaque identifier of the plan being executed.
+  public var planID: String = String()
+
+  /// High-level execution phase (for example, "prepare", "images", or "containers").
+  public var phase: String = String()
+
+  /// Optional resource name currently being processed.
+  public var resource: String = String()
+
+  /// Human-readable progress detail.
+  public var message: String = String()
+
+  /// Number of completed work items in the current phase.
+  public var completed: UInt32 = 0
+
+  /// Total work items expected in the current phase.
+  public var total: UInt32 = 0
+
+  /// Indicates that no more events will follow for this run.
+  public var done: Bool = false
+
+  /// Indicates whether the run completed successfully.
+  public var success: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Shell input for interactive sessions.
 public struct Arcbox_V1_ShellInput: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -2412,6 +2525,216 @@ extension Arcbox_V1_VolumeUsage: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
   public static func ==(lhs: Arcbox_V1_VolumeUsage, rhs: Arcbox_V1_VolumeUsage) -> Bool {
     if lhs.size != rhs.size {return false}
     if lhs.refCount != rhs.refCount {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_PrepareMigrationRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PrepareMigrationRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}source_kind\0\u{3}source_socket_path\0\u{3}allow_replacements\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.sourceKind) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sourceSocketPath) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.allowReplacements) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.sourceKind.isEmpty {
+      try visitor.visitSingularStringField(value: self.sourceKind, fieldNumber: 1)
+    }
+    if !self.sourceSocketPath.isEmpty {
+      try visitor.visitSingularStringField(value: self.sourceSocketPath, fieldNumber: 2)
+    }
+    if self.allowReplacements != false {
+      try visitor.visitSingularBoolField(value: self.allowReplacements, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_PrepareMigrationRequest, rhs: Arcbox_V1_PrepareMigrationRequest) -> Bool {
+    if lhs.sourceKind != rhs.sourceKind {return false}
+    if lhs.sourceSocketPath != rhs.sourceSocketPath {return false}
+    if lhs.allowReplacements != rhs.allowReplacements {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_PrepareMigrationResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PrepareMigrationResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}plan_id\0\u{3}source_kind\0\u{3}source_socket_path\0\u{3}image_count\0\u{3}volume_count\0\u{3}network_count\0\u{3}container_count\0\u{3}replacements_required\0\u{1}warnings\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.planID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sourceKind) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.sourceSocketPath) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.imageCount) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.volumeCount) }()
+      case 6: try { try decoder.decodeSingularUInt32Field(value: &self.networkCount) }()
+      case 7: try { try decoder.decodeSingularUInt32Field(value: &self.containerCount) }()
+      case 8: try { try decoder.decodeSingularBoolField(value: &self.replacementsRequired) }()
+      case 9: try { try decoder.decodeRepeatedStringField(value: &self.warnings) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.planID.isEmpty {
+      try visitor.visitSingularStringField(value: self.planID, fieldNumber: 1)
+    }
+    if !self.sourceKind.isEmpty {
+      try visitor.visitSingularStringField(value: self.sourceKind, fieldNumber: 2)
+    }
+    if !self.sourceSocketPath.isEmpty {
+      try visitor.visitSingularStringField(value: self.sourceSocketPath, fieldNumber: 3)
+    }
+    if self.imageCount != 0 {
+      try visitor.visitSingularUInt32Field(value: self.imageCount, fieldNumber: 4)
+    }
+    if self.volumeCount != 0 {
+      try visitor.visitSingularUInt32Field(value: self.volumeCount, fieldNumber: 5)
+    }
+    if self.networkCount != 0 {
+      try visitor.visitSingularUInt32Field(value: self.networkCount, fieldNumber: 6)
+    }
+    if self.containerCount != 0 {
+      try visitor.visitSingularUInt32Field(value: self.containerCount, fieldNumber: 7)
+    }
+    if self.replacementsRequired != false {
+      try visitor.visitSingularBoolField(value: self.replacementsRequired, fieldNumber: 8)
+    }
+    if !self.warnings.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.warnings, fieldNumber: 9)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_PrepareMigrationResponse, rhs: Arcbox_V1_PrepareMigrationResponse) -> Bool {
+    if lhs.planID != rhs.planID {return false}
+    if lhs.sourceKind != rhs.sourceKind {return false}
+    if lhs.sourceSocketPath != rhs.sourceSocketPath {return false}
+    if lhs.imageCount != rhs.imageCount {return false}
+    if lhs.volumeCount != rhs.volumeCount {return false}
+    if lhs.networkCount != rhs.networkCount {return false}
+    if lhs.containerCount != rhs.containerCount {return false}
+    if lhs.replacementsRequired != rhs.replacementsRequired {return false}
+    if lhs.warnings != rhs.warnings {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_RunMigrationRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RunMigrationRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}plan_id\0\u{3}allow_replacements\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.planID) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.allowReplacements) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.planID.isEmpty {
+      try visitor.visitSingularStringField(value: self.planID, fieldNumber: 1)
+    }
+    if self.allowReplacements != false {
+      try visitor.visitSingularBoolField(value: self.allowReplacements, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_RunMigrationRequest, rhs: Arcbox_V1_RunMigrationRequest) -> Bool {
+    if lhs.planID != rhs.planID {return false}
+    if lhs.allowReplacements != rhs.allowReplacements {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_RunMigrationEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RunMigrationEvent"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}plan_id\0\u{1}phase\0\u{1}resource\0\u{1}message\0\u{1}completed\0\u{1}total\0\u{1}done\0\u{1}success\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.planID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.phase) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.resource) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.message) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.completed) }()
+      case 6: try { try decoder.decodeSingularUInt32Field(value: &self.total) }()
+      case 7: try { try decoder.decodeSingularBoolField(value: &self.done) }()
+      case 8: try { try decoder.decodeSingularBoolField(value: &self.success) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.planID.isEmpty {
+      try visitor.visitSingularStringField(value: self.planID, fieldNumber: 1)
+    }
+    if !self.phase.isEmpty {
+      try visitor.visitSingularStringField(value: self.phase, fieldNumber: 2)
+    }
+    if !self.resource.isEmpty {
+      try visitor.visitSingularStringField(value: self.resource, fieldNumber: 3)
+    }
+    if !self.message.isEmpty {
+      try visitor.visitSingularStringField(value: self.message, fieldNumber: 4)
+    }
+    if self.completed != 0 {
+      try visitor.visitSingularUInt32Field(value: self.completed, fieldNumber: 5)
+    }
+    if self.total != 0 {
+      try visitor.visitSingularUInt32Field(value: self.total, fieldNumber: 6)
+    }
+    if self.done != false {
+      try visitor.visitSingularBoolField(value: self.done, fieldNumber: 7)
+    }
+    if self.success != false {
+      try visitor.visitSingularBoolField(value: self.success, fieldNumber: 8)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_RunMigrationEvent, rhs: Arcbox_V1_RunMigrationEvent) -> Bool {
+    if lhs.planID != rhs.planID {return false}
+    if lhs.phase != rhs.phase {return false}
+    if lhs.resource != rhs.resource {return false}
+    if lhs.message != rhs.message {return false}
+    if lhs.completed != rhs.completed {return false}
+    if lhs.total != rhs.total {return false}
+    if lhs.done != rhs.done {return false}
+    if lhs.success != rhs.success {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 /// Files tab backed by an already-mounted local rootfs directory.
 struct ContainerFilesTab: View {
@@ -50,10 +50,13 @@ struct ContainerFilesTab: View {
 
             Spacer()
 
-            Button(action: { showHiddenFiles.toggle() }) {
-                Image(systemName: showHiddenFiles ? "eye.slash" : "eye")
-                    .font(.system(size: 12))
-            }
+            Button(
+                action: { showHiddenFiles.toggle() },
+                label: {
+                    Image(systemName: showHiddenFiles ? "eye.slash" : "eye")
+                        .font(.system(size: 12))
+                }
+            )
             .buttonStyle(.plain)
             .help(showHiddenFiles ? "Hide hidden files" : "Show hidden files")
 
@@ -63,14 +66,6 @@ struct ContainerFilesTab: View {
             }
             .buttonStyle(.plain)
             .help("Refresh")
-
-//            Button(action: openSelected) {
-//                Image(systemName: "arrow.up.forward.app")
-//                    .font(.system(size: 12))
-//            }
-//            .buttonStyle(.plain)
-//            .disabled(selectedURL == nil)
-//            .help("Open selected")
 
             Button(action: revealSelectedInFinder) {
                 Image(systemName: "finder")
@@ -162,11 +157,6 @@ struct ContainerFilesTab: View {
         }
 
         isLoadingRoot = false
-    }
-
-    private func openSelected() {
-        guard let url = selectedURL else { return }
-        _ = NSWorkspace.shared.open(url)
     }
 
     private func revealSelectedInFinder() {

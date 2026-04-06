@@ -1,6 +1,7 @@
-import SwiftUI
 import DockerClient
 import OSLog
+import OpenAPIRuntime
+import SwiftUI
 
 /// Detail tab for volumes
 enum VolumeDetailTab: String, CaseIterable, Identifiable {
@@ -18,10 +19,11 @@ enum VolumeSortField: String, CaseIterable {
 }
 
 /// Volume list state
+@MainActor
 @Observable
 class VolumesViewModel {
     var volumes: [VolumeViewModel] = []
-    var selectedID: String? = nil
+    var selectedID: String?
     var activeTab: VolumeDetailTab = .info
     var listWidth: CGFloat = 320
     var showNewVolumeSheet: Bool = false
@@ -29,6 +31,7 @@ class VolumesViewModel {
     var isSearching: Bool = false
     var sortBy: VolumeSortField = .name
     var sortAscending: Bool = true
+    var lastError: String?
 
     var totalSize: String {
         let bytes: UInt64 = volumes.compactMap(\.sizeBytes).reduce(0, +)
@@ -90,19 +93,137 @@ class VolumesViewModel {
             volumes = (dfResponse.Volumes ?? []).map { VolumeViewModel(fromDocker: $0) }
             Log.volume.info("Loaded \(self.volumes.count, privacy: .public) volumes")
         } catch {
-            Log.volume.error("Error loading volumes: \(error.localizedDescription, privacy: .public)")
+            Log.volume.error("Error loading volumes: \(error.localizedDescription, privacy: .private)")
         }
     }
 
+    /// Create a volume. Returns true on success.
+    func createVolume(name: String, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+        do {
+            let response = try await docker.api.VolumeCreate(
+                body: .json(.init(Name: name.isEmpty ? nil : name))
+            )
+            let vol = try response.created.body.json
+            Log.volume.info("Created volume \(vol.Name, privacy: .private)")
+            await loadVolumes(docker: docker)
+            return true
+        } catch {
+            Log.volume.error("Error creating volume: \(String(describing: error), privacy: .private)")
+            return false
+        }
+    }
+
+    /// Ensure a helper image exists locally, pulling it on demand if necessary.
+    private func ensureImageExists(_ image: String, docker: DockerClient) async throws {
+        // Check if image exists locally
+        do {
+            _ = try await docker.api.ImageInspect(path: .init(name: image))
+            return
+        } catch {}
+        // Pull it
+        let response = try await docker.api.ImageCreate(query: .init(fromImage: image))
+        _ = try response.ok
+    }
+
+    /// Import a tar archive into a new volume. Returns true on success.
+    /// Creates the volume, then uses a temporary container + PutContainerArchive to extract contents.
+    func importVolume(name: String, tarURL: URL, docker: DockerClient?) async -> Bool {
+        guard let docker else { return false }
+
+        // 1. Create volume
+        let volName: String
+        do {
+            let response = try await docker.api.VolumeCreate(
+                body: .json(.init(Name: name.isEmpty ? nil : name))
+            )
+            volName = try response.created.body.json.Name
+        } catch {
+            Log.volume.error("Error creating volume for import: \(String(describing: error), privacy: .private)")
+            return false
+        }
+
+        // Helper to clean up the volume on failure
+        var success = false
+        defer {
+            if !success {
+                Task {
+                    _ = try? await docker.api.VolumeDelete(path: .init(name: volName), query: .init(force: true))
+                }
+            }
+        }
+
+        // 2. Ensure busybox image exists
+        do {
+            try await ensureImageExists("busybox:latest", docker: docker)
+        } catch {
+            Log.volume.error("Error pulling busybox for import: \(String(describing: error), privacy: .private)")
+            return false
+        }
+
+        // 3. Create temp container with volume mounted
+        var config = Components.Schemas.ContainerConfig()
+        config.Image = "busybox:latest"
+        config.Cmd = ["true"]
+
+        let tempID: String
+        do {
+            let response = try await docker.api.ContainerCreate(
+                body: .json(
+                    .init(
+                        value1: config,
+                        value2: .init(
+                            HostConfig: .init(
+                                value1: .init(),
+                                value2: .init(Binds: ["\(volName):/data"])
+                            ))
+                    ))
+            )
+            tempID = try response.created.body.json.Id
+        } catch {
+            Log.volume.error(
+                "Error creating temp container for import: \(String(describing: error), privacy: .private)")
+            return false
+        }
+
+        // 4. Upload tar into /data
+        defer {
+            Task {
+                _ = try? await docker.api.ContainerDelete(path: .init(id: tempID), query: .init(force: true))
+            }
+        }
+        do {
+            let data = try Data(contentsOf: tarURL, options: .mappedIfSafe)
+            let body = HTTPBody(data)
+            let response = try await docker.api.PutContainerArchive(
+                path: .init(id: tempID),
+                query: .init(path: "/data"),
+                body: .application_x_hyphen_tar(body)
+            )
+            _ = try response.ok
+            Log.volume.info("Imported tar into volume \(volName, privacy: .private)")
+        } catch {
+            Log.volume.error("Error importing tar into volume: \(String(describing: error), privacy: .private)")
+            return false
+        }
+
+        success = true
+        await loadVolumes(docker: docker)
+        return true
+    }
+
     func removeVolume(_ name: String, docker: DockerClient?) async {
+        lastError = nil
         guard let docker else { return }
         if selectedID == name { selectedID = nil }
         do {
             let response = try await docker.api.VolumeDelete(path: .init(name: name), query: .init(force: true))
             _ = try response.noContent
-            Log.volume.info("Removed volume \(name, privacy: .public)")
+            Log.volume.info("Removed volume \(name, privacy: .private)")
         } catch {
-            Log.volume.error("Error removing volume \(name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Log.volume.error(
+                "Error removing volume \(name, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            lastError = error.localizedDescription
         }
         await loadVolumes(docker: docker)
     }
@@ -114,20 +235,7 @@ class VolumesViewModel {
 extension VolumeViewModel {
     /// Create a VolumeViewModel from a Docker Engine API Volume.
     init(fromDocker volume: Components.Schemas.Volume) {
-        let createdAt: Date
-        if let created = volume.CreatedAt {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let parsed = formatter.date(from: created) {
-                createdAt = parsed
-            } else {
-                // Retry without fractional seconds
-                formatter.formatOptions = [.withInternetDateTime]
-                createdAt = formatter.date(from: created) ?? .distantPast
-            }
-        } else {
-            createdAt = .distantPast
-        }
+        let createdAt = parseISO8601Date(volume.CreatedAt)
 
         let sizeBytes: UInt64?
         if let size = volume.UsageData?.Size, size >= 0 {

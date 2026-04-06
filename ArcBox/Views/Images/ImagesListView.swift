@@ -1,6 +1,6 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 /// Column 2: images list with toolbar
 struct ImagesListView: View {
@@ -12,18 +12,6 @@ struct ImagesListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // "In Use" section header — only show when data is loaded
-            if orchestrator?.isReady == true && daemonManager.state.isRunning {
-                HStack {
-                    Text("In Use")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
-
             if let orchestrator, !orchestrator.isReady {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
@@ -33,15 +21,17 @@ struct ImagesListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(vm.sortedImages) { image in
-                            ImageRowView(
-                                image: image,
-                                isSelected: vm.selectedID == image.id,
-                                onSelect: { vm.selectImage(image.id) },
-                                onDelete: {
-                                    Task { await vm.removeImage(image.id, dockerId: image.dockerId, docker: docker) }
-                                }
-                            )
+                        if !inUseImages.isEmpty {
+                            sectionHeader("In Use")
+                            ForEach(inUseImages) { image in
+                                imageRow(image)
+                            }
+                        }
+                        if !unusedImages.isEmpty {
+                            sectionHeader("Unused")
+                            ForEach(unusedImages) { image in
+                                imageRow(image)
+                            }
                         }
                     }
                 }
@@ -56,20 +46,62 @@ struct ImagesListView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                Button(action: { vm.showPullImageSheet = true }) {
-                    Image(systemName: "plus")
-                }
+                Button(
+                    action: { vm.showPullImageSheet = true },
+                    label: {
+                        Image(systemName: "plus")
+                    }
+                )
+                .accessibilityLabel("Pull image")
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .sheet(isPresented: Bindable(vm).showPullImageSheet) {
             PullImageSheet()
         }
-        .task(id: docker != nil) { await vm.loadImages(docker: docker, iconClient: client) }
+        .errorToast(message: Bindable(vm).lastError)
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
+            await vm.loadImages(docker: docker, iconClient: client)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
             Task { await vm.loadImages(docker: docker, iconClient: client) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
             Task { await vm.loadImages(docker: docker, iconClient: client) }
         }
+    }
+
+    private var inUseImages: [ImageViewModel] {
+        vm.sortedImages.filter(\.inUse)
+    }
+
+    private var unusedImages: [ImageViewModel] {
+        vm.sortedImages.filter { !$0.inUse }
+    }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppColors.textSecondary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private func imageRow(_ image: ImageViewModel) -> some View {
+        ImageRowView(
+            image: image,
+            isSelected: vm.selectedID == image.id,
+            onSelect: { vm.selectImage(image.id) },
+            onDelete: {
+                Task { await vm.removeImage(image.id, dockerId: image.dockerId, docker: docker) }
+            }
+        )
     }
 }

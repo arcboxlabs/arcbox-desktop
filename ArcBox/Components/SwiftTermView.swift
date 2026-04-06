@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftTerm
+import SwiftUI
 
 /// NSViewRepresentable wrapper to embed SwiftTerm's TerminalView in SwiftUI.
 ///
@@ -8,6 +8,9 @@ import SwiftTerm
 struct SwiftTermView: NSViewRepresentable {
     let delegate: any TerminalViewDelegate
     let onTerminalCreated: (TerminalView) -> Void
+    var theme: String = "system"
+
+    @Environment(\.colorScheme) private var colorScheme
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -30,7 +33,10 @@ struct SwiftTermView: NSViewRepresentable {
         return tv
     }
 
-    func updateNSView(_ nsView: TerminalView, context: Context) {}
+    func updateNSView(_ nsView: TerminalView, context: Context) {
+        // Reconfigure colors when system appearance or theme preference changes
+        TerminalAppearance.configure(nsView, theme: theme)
+    }
 
     class Coordinator {
         var delegate: (any TerminalViewDelegate)?

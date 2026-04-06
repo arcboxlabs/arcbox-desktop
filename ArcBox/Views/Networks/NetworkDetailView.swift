@@ -29,16 +29,23 @@ struct NetworkDetailView: View {
                 }
             } else {
                 Spacer()
-                Text("No Selection")
-                    .foregroundStyle(AppColors.textSecondary)
-                    .font(.system(size: 15))
+                VStack(spacing: 12) {
+                    Image(systemName: "point.3.filled.connected.trianglepath.dotted")
+                        .font(.system(size: 32))
+                        .foregroundStyle(AppColors.textMuted)
+                    Text("No Selection")
+                        .foregroundStyle(AppColors.textSecondary)
+                        .font(.system(size: 15))
+                }
                 Spacer()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Spacer()
+                Text("Info")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppColors.textSecondary)
             }
         }
     }
