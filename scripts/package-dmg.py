@@ -326,7 +326,11 @@ def embed_completions(app_bundle: Path) -> None:
     docker_bin = app_bundle / "Contents" / "MacOS" / "xbin" / "docker"
     comp_dest = app_bundle / "Contents" / "Resources" / "completions"
 
-    # Map shell name → (completion subcommand arg, output filename).
+    if not docker_bin.is_file():
+        warn("docker binary not found in app bundle, cannot generate completions")
+        return
+
+    # Map shell name → output filename.
     shell_map: dict[str, str] = {
         "bash": "docker",
         "zsh": "_docker",
@@ -334,20 +338,17 @@ def embed_completions(app_bundle: Path) -> None:
     }
 
     for shell, filename in shell_map.items():
-        dest_dir = comp_dest / shell
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        if docker_bin.is_file():
-            result = subprocess.run(
-                [str(docker_bin), "completion", shell],
-                capture_output=True, text=True,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                (dest_dir / filename).write_text(result.stdout)
-                print(f"  Generated {shell} completion → {filename}")
-            else:
-                warn(f"docker completion {shell} failed: {result.stderr.strip()}")
+        result = subprocess.run(
+            [str(docker_bin), "completion", shell],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            dest_dir = comp_dest / shell
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            (dest_dir / filename).write_text(result.stdout, encoding="utf-8")
+            print(f"  Generated {shell} completion → {filename}")
         else:
-            warn("docker binary not found in app bundle, cannot generate completions")
+            warn(f"docker completion {shell} failed: {result.stderr.strip()}")
 
 
 def embed_pstramp(app_bundle: Path, arcbox_dir: Path, sign_identity: str) -> None:

@@ -182,8 +182,8 @@ public final class DaemonManager {
 
     /// Copy all shell completions bundled in
     /// `Contents/Resources/completions/{bash,zsh,fish}/` into the
-    /// user's `~/.arcbox/completions/` directory, preserving any
-    /// files already installed by `abctl setup install`.
+    /// user's `~/.arcbox/completions/` directory, overwriting any
+    /// existing files so bundled completion updates propagate.
     private func installBundledCompletions() async {
         let bundleURL = Bundle.main.bundleURL
         await Task.detached { @Sendable in
