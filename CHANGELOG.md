@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.20.1...v1.20.2) (2026-04-06)
+
+
+### Bug Fixes
+
+* **completions:** install all bundled completions into ~/.arcbox/completions/ ([#205](https://github.com/arcboxlabs/arcbox-desktop/issues/205)) ([01f6c7a](https://github.com/arcboxlabs/arcbox-desktop/commit/01f6c7a4eb821375dc50fb47f1aff36136d4b763))
+
 ## [1.20.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.20.0...v1.20.1) (2026-04-06)
 
 
