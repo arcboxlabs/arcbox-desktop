@@ -248,13 +248,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PSTRAMP_VERSION=$(gh release list --repo arcboxlabs/pstramp --limit 1 --json tagName -q '.[0].tagName')
-          echo "Downloading pstramp $PSTRAMP_VERSION"
+          # Read pinned version and checksum from assets.lock
+          PSTRAMP_VERSION=$(awk '/name = "pstramp"/,/^$/' "${{ github.workspace }}/arcbox-core/assets.lock" \
+            | grep '^version' | sed 's/.*= *"\(.*\)"/\1/')
+          PSTRAMP_SHA256=$(awk '/name = "pstramp"/,/^$/' "${{ github.workspace }}/arcbox-core/assets.lock" \
+            | grep 'arm64.sha256' | sed 's/.*= *"\(.*\)"/\1/')
+          echo "Downloading pstramp v${PSTRAMP_VERSION}"
           mkdir -p pstramp/target/release
-          gh release download "$PSTRAMP_VERSION" \
+          gh release download "v${PSTRAMP_VERSION}" \
             --repo arcboxlabs/pstramp \
             --pattern "pstramp-*-aarch64-apple-darwin" \
             --output pstramp/target/release/pstramp
+          # Verify checksum
+          echo "${PSTRAMP_SHA256}  pstramp/target/release/pstramp" | shasum -a 256 -c -
           chmod +x pstramp/target/release/pstramp
           file pstramp/target/release/pstramp
 
