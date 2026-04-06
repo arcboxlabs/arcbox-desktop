@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.21.0...v1.21.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* resolve Swift 6 strict concurrency errors for Xcode 26.2 ([63aba89](https://github.com/arcboxlabs/arcbox-desktop/commit/63aba8965bdcc84b13cc124a369af7a0b0bab6e7))
+
 ## [1.21.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.20.2...v1.21.0) (2026-04-06)
 
 
