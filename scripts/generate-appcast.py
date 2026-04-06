@@ -46,9 +46,12 @@ def build_item(
     if channel != "stable":
         channel_element = f"\n        <sparkle:channel>{channel}</sparkle:channel>"
 
+    release_notes_url = f"https://github.com/arcboxlabs/arcbox-desktop/releases/tag/v{display_version}"
+
     return (
         f"      <item>\n"
         f"        <title>ArcBox {display_version}</title>\n"
+        f"        <sparkle:releaseNotesLink>{release_notes_url}</sparkle:releaseNotesLink>\n"
         f"        <pubDate>{pub_date}</pubDate>\n"
         f"        <sparkle:version>{build_number}</sparkle:version>\n"
         f"        <sparkle:shortVersionString>{display_version}</sparkle:shortVersionString>"
