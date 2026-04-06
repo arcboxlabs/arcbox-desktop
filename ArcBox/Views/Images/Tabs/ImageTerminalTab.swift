@@ -83,7 +83,7 @@ struct ImageTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalBridge(session: session), theme: terminalTheme) { terminalView in
+        SwiftTermView(delegate: TerminalBridge(session: session), onTerminalCreated: { terminalView in
             configureTerminalAppearance(terminalView)
 
             // Store terminal view reference (don't connect here — runs during makeNSView)
@@ -99,7 +99,7 @@ struct ImageTerminalTab: View {
                 connectedImageID = img.id
                 session.connectImage(imageName: img.fullName, shell: shell)
             }
-        }
+        }, theme: terminalTheme)
     }
 
     private func configureTerminalAppearance(_ terminalView: TerminalView) {

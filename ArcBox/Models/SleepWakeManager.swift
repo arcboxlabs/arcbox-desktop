@@ -1,5 +1,6 @@
 import AppKit
 import DockerClient
+import os
 
 /// Monitors macOS sleep/wake events and pauses/unpauses running containers accordingly.
 ///
@@ -15,8 +16,9 @@ final class SleepWakeManager {
     @ObservationIgnored private var sleepObserver: NSObjectProtocol?
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
 
-    /// Weak reference to the Docker client — set from ArcBoxApp when clients are initialized.
-    @ObservationIgnored weak var dockerClientRef: DockerClient?
+    /// Docker client reference — set from ArcBoxApp when clients are initialized.
+    /// DockerClient is a value type (struct), so `weak` is not applicable.
+    @ObservationIgnored var dockerClientRef: DockerClient?
 
     func start() {
         // Ensure idempotency — avoid duplicate observers on repeated calls
@@ -102,10 +104,6 @@ final class SleepWakeManager {
         pausedByUs = failed
     }
 
-    deinit {
-        // Observers are removed in stop(), but ensure cleanup
-        let workspace = NSWorkspace.shared.notificationCenter
-        if let sleepObserver { workspace.removeObserver(sleepObserver) }
-        if let wakeObserver { workspace.removeObserver(wakeObserver) }
-    }
+    // Observers are removed in stop() which is called during app shutdown.
+    // A deinit cleanup is unnecessary and triggers Sendable issues in Swift 6.
 }

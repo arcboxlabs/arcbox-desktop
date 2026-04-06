@@ -405,7 +405,7 @@ public final class DaemonManager {
     /// builds may use ad-hoc signatures that fail strict verification.
     ///
     /// Static so it can be called from a detached task without capturing self.
-    private static func verifyDaemonSignature(at daemonPath: String) {
+    nonisolated private static func verifyDaemonSignature(at daemonPath: String) {
         guard FileManager.default.fileExists(atPath: daemonPath) else {
             ClientLog.daemon.warning("Daemon binary not found at expected path, skipping signature check")
             return

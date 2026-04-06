@@ -1,7 +1,8 @@
 import AppKit
+import os
 
 /// Launches an external terminal app with Docker environment pre-configured.
-enum ExternalTerminalLauncher {
+nonisolated enum ExternalTerminalLauncher {
     private static let logger = Log.terminal
 
     /// The Docker socket environment variable value used by ArcBox.
