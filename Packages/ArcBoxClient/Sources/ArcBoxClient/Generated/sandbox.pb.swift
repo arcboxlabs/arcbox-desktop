@@ -971,7 +971,7 @@ extension Sandbox_V1_TerminalSize: SwiftProtobuf.Message, SwiftProtobuf._Message
 
 extension Sandbox_V1_CreateSandboxRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateSandboxRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}labels\0\u{1}kernel\0\u{1}rootfs\0\u{3}boot_args\0\u{1}limits\0\u{1}image\0\u{1}cmd\0\u{1}env\0\u{3}working_dir\0\u{1}user\0\u{1}mounts\0\u{1}network\0\u{3}ttl_seconds\0\u{3}ssh_public_key\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}labels\0\u{1}kernel\0\u{1}rootfs\0\u{3}boot_args\0\u{1}limits\0\u{1}image\0\u{1}cmd\0\u{1}env\0\u{3}working_dir\0\u{1}user\0\u{1}mounts\0\u{1}network\0\u{3}ttl_seconds\0\u{3}ssh_public_key\0\u{c}\u{10}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
