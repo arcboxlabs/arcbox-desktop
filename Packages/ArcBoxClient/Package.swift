@@ -5,10 +5,10 @@ import PackageDescription
 let package = Package(
     name: "ArcBoxClient",
     platforms: [
-        .macOS(.v15),
+        .macOS(.v15)
     ],
     products: [
-        .library(name: "ArcBoxClient", targets: ["ArcBoxClient"]),
+        .library(name: "ArcBoxClient", targets: ["ArcBoxClient"])
     ],
     dependencies: [
         .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.2.0"),

@@ -91,7 +91,7 @@ struct ArcBoxDesktopApp: App {
     /// No-ops gracefully when DSN is empty or placeholder.
     private static func initSentry() {
         guard let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDSN") as? String,
-              !dsn.isEmpty, dsn != "YOUR_SENTRY_DSN_HERE", dsn != "$(SENTRY_DSN)"
+            !dsn.isEmpty, dsn != "YOUR_SENTRY_DSN_HERE", dsn != "$(SENTRY_DSN)"
         else {
             Log.startup.info("Sentry DSN not configured, crash reporting disabled")
             return
@@ -109,10 +109,10 @@ struct ArcBoxDesktopApp: App {
                 return event
             }
             #if DEBUG
-            options.debug = true
-            options.environment = "development"
+                options.debug = true
+                options.environment = "development"
             #else
-            options.environment = "production"
+                options.environment = "production"
             #endif
         }
 

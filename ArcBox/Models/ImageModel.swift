@@ -72,7 +72,9 @@ struct ImageViewModel: Identifiable, Hashable {
 }
 
 /// Calculate total and unused image sizes
-func calculateImageStats(_ images: [ImageViewModel]) -> (totalSize: UInt64, unusedSize: UInt64, totalCount: Int, unusedCount: Int) {
+func calculateImageStats(
+    _ images: [ImageViewModel]
+) -> (totalSize: UInt64, unusedSize: UInt64, totalCount: Int, unusedCount: Int) {
     let totalSize = images.reduce(UInt64(0)) { $0 + $1.sizeBytes }
     let unused = images.filter { !$0.inUse }
     let unusedSize = unused.reduce(UInt64(0)) { $0 + $1.sizeBytes }

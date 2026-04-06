@@ -5,7 +5,7 @@ import OSLog
 ///
 /// When enabled, sets the Docker context on app startup and restores the
 /// previous context on shutdown by writing to `~/.docker/config.json`.
-enum DockerContextManager {
+nonisolated enum DockerContextManager {
     private static let logger = Log.context
     private static let previousContextKey = "previousDockerContext"
 

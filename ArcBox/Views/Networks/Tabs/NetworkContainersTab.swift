@@ -1,6 +1,6 @@
-import SwiftUI
 import DockerClient
 import OSLog
+import SwiftUI
 
 /// Inline section showing containers connected to this network
 struct NetworkContainersSection: View {
@@ -74,9 +74,10 @@ struct NetworkContainersSection: View {
             let networkContainers = networkDetail.Containers?.additionalProperties ?? [:]
 
             containers = networkContainers.map { (containerID, entry) in
-                let isRunning = containersVM.containers.first {
-                    $0.id == containerID
-                }?.state == .running
+                let isRunning =
+                    containersVM.containers.first {
+                        $0.id == containerID
+                    }?.state == .running
 
                 return NetworkContainerEntry(
                     name: entry.Name ?? containerID.prefix(12).description,
@@ -87,7 +88,9 @@ struct NetworkContainersSection: View {
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
-            Log.network.error("Error loading containers for network \(network.id, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            Log.network.error(
+                "Error loading containers for network \(network.id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+            )
             containers = []
         }
     }

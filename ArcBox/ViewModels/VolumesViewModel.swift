@@ -1,7 +1,7 @@
-import SwiftUI
 import DockerClient
-import OpenAPIRuntime
 import OSLog
+import OpenAPIRuntime
+import SwiftUI
 
 /// Detail tab for volumes
 enum VolumeDetailTab: String, CaseIterable, Identifiable {
@@ -169,17 +169,20 @@ class VolumesViewModel {
         let tempID: String
         do {
             let response = try await docker.api.ContainerCreate(
-                body: .json(.init(
-                    value1: config,
-                    value2: .init(HostConfig: .init(
-                        value1: .init(),
-                        value2: .init(Binds: ["\(volName):/data"])
+                body: .json(
+                    .init(
+                        value1: config,
+                        value2: .init(
+                            HostConfig: .init(
+                                value1: .init(),
+                                value2: .init(Binds: ["\(volName):/data"])
+                            ))
                     ))
-                ))
             )
             tempID = try response.created.body.json.Id
         } catch {
-            Log.volume.error("Error creating temp container for import: \(String(describing: error), privacy: .private)")
+            Log.volume.error(
+                "Error creating temp container for import: \(String(describing: error), privacy: .private)")
             return false
         }
 
@@ -218,7 +221,8 @@ class VolumesViewModel {
             _ = try response.noContent
             Log.volume.info("Removed volume \(name, privacy: .private)")
         } catch {
-            Log.volume.error("Error removing volume \(name, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            Log.volume.error(
+                "Error removing volume \(name, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         await loadVolumes(docker: docker)

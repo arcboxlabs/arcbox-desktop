@@ -1,0 +1,41 @@
+included:
+  - ArcBox
+  - Packages
+
+excluded:
+  - Packages/ArcBoxClient/Sources/ArcBoxClient/Generated
+  - Packages/*/.build
+  - .build
+  - .claude
+
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - type_body_length
+  - file_length
+  - function_body_length
+  - function_parameter_count
+  - cyclomatic_complexity
+  - nesting
+  - identifier_name
+  - large_tuple
+  - type_name
+  - force_cast
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_filter_count
+  - contains_over_first_not_nil
+  - discouraged_object_literal
+  - empty_collection_literal
+  - empty_string
+  - first_where
+  - flatmap_over_map_reduce
+  - last_where
+  - modifier_order
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument

@@ -1,4 +1,5 @@
 import AppKit
+import os
 
 /// Launches an external terminal app with Docker environment pre-configured.
 enum ExternalTerminalLauncher {
@@ -18,7 +19,8 @@ enum ExternalTerminalLauncher {
     static func open(preference: String, containerID: String? = nil, shell: String = "/bin/sh") {
         let command: String
         if let containerID {
-            command = "export DOCKER_HOST=\(shellEscape(dockerHost)) && docker exec -it \(shellEscape(containerID)) \(shellEscape(shell))"
+            command =
+                "export DOCKER_HOST=\(shellEscape(dockerHost)) && docker exec -it \(shellEscape(containerID)) \(shellEscape(shell))"
         } else {
             command = "export DOCKER_HOST=\(shellEscape(dockerHost))"
         }
@@ -28,7 +30,7 @@ enum ExternalTerminalLauncher {
             openITerm(command: command)
         case "terminal":
             openTerminalApp(command: command)
-        default: // "lastUsed" — try iTerm first, fall back to Terminal.app
+        default:  // "lastUsed" — try iTerm first, fall back to Terminal.app
             if isITermInstalled() {
                 openITerm(command: command)
             } else {
@@ -41,11 +43,11 @@ enum ExternalTerminalLauncher {
 
     private static func openTerminalApp(command: String) {
         let script = """
-        tell application "Terminal"
-            activate
-            do script "\(escapeForAppleScript(command))"
-        end tell
-        """
+            tell application "Terminal"
+                activate
+                do script "\(escapeForAppleScript(command))"
+            end tell
+            """
         runAppleScript(script)
     }
 
@@ -53,14 +55,14 @@ enum ExternalTerminalLauncher {
 
     private static func openITerm(command: String) {
         let script = """
-        tell application "iTerm"
-            activate
-            set newWindow to (create window with default profile)
-            tell current session of newWindow
-                write text "\(escapeForAppleScript(command))"
+            tell application "iTerm"
+                activate
+                set newWindow to (create window with default profile)
+                tell current session of newWindow
+                    write text "\(escapeForAppleScript(command))"
+                end tell
             end tell
-        end tell
-        """
+            """
         runAppleScript(script)
     }
 
@@ -77,21 +79,21 @@ enum ExternalTerminalLauncher {
 
     private static func escapeForAppleScript(_ string: String) -> String {
         string.replacingOccurrences(of: "\\", with: "\\\\")
-              .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
     private static func runAppleScript(_ source: String) {
         let scriptSource = source
         Task.detached {
             guard let script = NSAppleScript(source: scriptSource) else {
-                logger.error("Failed to create AppleScript")
+                await MainActor.run { logger.error("Failed to create AppleScript") }
                 return
             }
             var error: NSDictionary?
             script.executeAndReturnError(&error)
             if let error {
                 let errorMessage = (error[NSAppleScript.errorMessage] as? String) ?? "Unknown AppleScript error"
-                logger.error("AppleScript error: \(errorMessage, privacy: .public)")
+                await MainActor.run { logger.error("AppleScript error: \(errorMessage, privacy: .public)") }
             }
         }
     }

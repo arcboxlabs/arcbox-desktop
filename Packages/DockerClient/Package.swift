@@ -5,10 +5,10 @@ import PackageDescription
 let package = Package(
     name: "DockerClient",
     platforms: [
-        .macOS(.v15),
+        .macOS(.v15)
     ],
     products: [
-        .library(name: "DockerClient", targets: ["DockerClient"]),
+        .library(name: "DockerClient", targets: ["DockerClient"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.10.0"),
@@ -23,8 +23,8 @@ let package = Package(
                 .product(name: "OpenAPIAsyncHTTPClient", package: "swift-openapi-async-http-client"),
             ],
             plugins: [
-                .plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator"),
+                .plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")
             ]
-        ),
+        )
     ]
 )

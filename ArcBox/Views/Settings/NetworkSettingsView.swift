@@ -46,9 +46,11 @@ struct NetworkSettingsView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Allow access to container domains & IPs")
-                        Text("Use domains and IPs to connect to containers and machines without port forwarding. [Learn more](#)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Text(
+                            "Use domains and IPs to connect to containers and machines without port forwarding. [Learn more](#)"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 }
 
@@ -69,9 +71,11 @@ struct NetworkSettingsView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("IP range")
-                        Text("Used for domains and machines. Containers and Kubernetes use different IPs. Don't change this unless you run into issues with the default.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Text(
+                            "Used for domains and machines. Containers and Kubernetes use different IPs. Don't change this unless you run into issues with the default."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 }
             }

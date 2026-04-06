@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct LocalRootFSOutlineView: NSViewRepresentable {
     let rootURL: URL
@@ -282,11 +282,11 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             }
 
             guard let outlineView,
-                  let scrollView = outlineView.enclosingScrollView,
-                  let nameColumn,
-                  let dateColumn,
-                  let sizeColumn,
-                  let kindColumn
+                let scrollView = outlineView.enclosingScrollView,
+                let nameColumn,
+                let dateColumn,
+                let sizeColumn,
+                let kindColumn
             else {
                 return
             }
@@ -318,7 +318,8 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
         private func markUserColumnCustomizationIfNeeded(from notification: Notification) {
             guard !isApplyingAutoColumnWidths else { return }
 
-            let wasUserResize = (notification.userInfo?["NSTableColumnUserResized"] as? Bool)
+            let wasUserResize =
+                (notification.userInfo?["NSTableColumnUserResized"] as? Bool)
                 ?? {
                     guard let eventType = NSApp.currentEvent?.type else { return false }
                     return eventType == .leftMouseDragged || eventType == .leftMouseUp
@@ -448,7 +449,7 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
             item: Any
         ) -> NSView? {
             guard let node = item as? Node,
-                  let identifier = tableColumn?.identifier.rawValue
+                let identifier = tableColumn?.identifier.rawValue
             else {
                 return nil
             }
@@ -484,7 +485,8 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
 
         private func nameCell(for node: Node, outlineView: NSOutlineView) -> NSView {
             let identifier = NSUserInterfaceItemIdentifier("nameCell")
-            let cell = outlineView.makeView(withIdentifier: identifier, owner: nil) as? NSTableCellView
+            let cell =
+                outlineView.makeView(withIdentifier: identifier, owner: nil) as? NSTableCellView
                 ?? NSTableCellView(frame: .zero)
             cell.identifier = identifier
 

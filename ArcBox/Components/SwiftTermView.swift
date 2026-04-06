@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftTerm
+import SwiftUI
 
 /// NSViewRepresentable wrapper to embed SwiftTerm's TerminalView in SwiftUI.
 ///

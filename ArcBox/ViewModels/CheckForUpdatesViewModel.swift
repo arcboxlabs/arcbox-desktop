@@ -1,5 +1,5 @@
-import Sparkle
 import Combine
+import Sparkle
 
 @MainActor
 @Observable

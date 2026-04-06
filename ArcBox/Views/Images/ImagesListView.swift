@@ -1,6 +1,6 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 /// Column 2: images list with toolbar
 struct ImagesListView: View {

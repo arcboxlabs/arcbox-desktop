@@ -50,7 +50,8 @@ class PodsViewModel {
 
         do {
             if k8sClient == nil {
-                let kubeconfigResponse: Arcbox_V1_KubernetesKubeconfigResponse = try await client.kubernetes.getKubeconfig(.init(), options: ArcBoxClient.defaultCallOptions)
+                let kubeconfigResponse: Arcbox_V1_KubernetesKubeconfigResponse = try await client.kubernetes
+                    .getKubeconfig(.init(), options: ArcBoxClient.defaultCallOptions)
                 let config = try KubeConfig(yaml: kubeconfigResponse.kubeconfig)
                 self.k8sClient = try K8sClient(config: config)
             }

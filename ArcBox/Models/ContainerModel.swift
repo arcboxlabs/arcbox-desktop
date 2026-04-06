@@ -101,7 +101,7 @@ struct ContainerViewModel: Identifiable, Hashable {
         }
 
         if let rootMount = mounts.first(where: { $0.destination == "/" }),
-           let sourcePath = normalizedPath(rootMount.source)
+            let sourcePath = normalizedPath(rootMount.source)
         {
             return sourcePath
         }

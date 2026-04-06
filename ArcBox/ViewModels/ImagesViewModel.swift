@@ -1,8 +1,8 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
-import OpenAPIRuntime
 import OSLog
+import OpenAPIRuntime
+import SwiftUI
 
 /// Detail tab for images
 enum ImageDetailTab: String, CaseIterable, Identifiable {
@@ -100,11 +100,14 @@ class ImagesViewModel {
                     do {
                         var request = Arcbox_V1_GetImageIconRequest()
                         request.fqin = repo
-                        let response = try await client.icons.getImageIcon(request, options: ArcBoxClient.defaultCallOptions)
+                        let response = try await client.icons.getImageIcon(
+                            request, options: ArcBoxClient.defaultCallOptions)
                         let url = response.url.isEmpty ? nil : response.url
                         return (repo, url, true)
                     } catch {
-                        Log.image.debug("Icon fetch failed for \(repo, privacy: .private): \(error.localizedDescription, privacy: .private)")
+                        Log.image.debug(
+                            "Icon fetch failed for \(repo, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                        )
                         return (repo, nil, false)
                     }
                 }
@@ -182,7 +185,8 @@ class ImagesViewModel {
             await loadImages(docker: docker)
             return true
         } catch {
-            Log.image.error("Error pulling image \(reference, privacy: .private): \(String(describing: error), privacy: .private)")
+            Log.image.error(
+                "Error pulling image \(reference, privacy: .private): \(String(describing: error), privacy: .private)")
             return false
         }
     }
@@ -214,7 +218,8 @@ class ImagesViewModel {
             _ = try response.ok
             Log.image.info("Removed image \(dockerId, privacy: .private)")
         } catch {
-            Log.image.error("Error removing image \(dockerId, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            Log.image.error(
+                "Error removing image \(dockerId, privacy: .private): \(error.localizedDescription, privacy: .private)")
             lastError = error.localizedDescription
         }
         await loadImages(docker: docker)

@@ -15,7 +15,7 @@ enum TerminalAppearance {
             isDark = false
         case "dark":
             isDark = true
-        default: // "system"
+        default:  // "system"
             isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         }
 

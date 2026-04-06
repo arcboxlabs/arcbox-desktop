@@ -35,7 +35,7 @@ public struct KubeConfig: Sendable {
             throw KubeConfigError.missingField("server")
         }
         guard let caB64 = Self.extractValue(for: "certificate-authority-data:", from: yaml),
-              let caData = Data(base64Encoded: caB64)
+            let caData = Data(base64Encoded: caB64)
         else {
             throw KubeConfigError.missingField("certificate-authority-data")
         }
@@ -48,8 +48,8 @@ public struct KubeConfig: Sendable {
         let keyB64 = Self.extractValue(for: "client-key-data:", from: yaml)
 
         if let certB64, let keyB64,
-           let certData = Data(base64Encoded: certB64),
-           let keyData = Data(base64Encoded: keyB64)
+            let certData = Data(base64Encoded: certB64),
+            let keyData = Data(base64Encoded: keyB64)
         {
             self.clientCertificateData = certData
             self.clientKeyData = keyData
@@ -113,10 +113,12 @@ public struct KubeConfig: Sendable {
     /// If the data is already DER (no PEM headers), returns it as-is.
     static func pemToDER(_ data: Data) -> Data {
         guard let pem = String(data: data, encoding: .utf8),
-              pem.contains("-----BEGIN") else {
+            pem.contains("-----BEGIN")
+        else {
             return data
         }
-        let base64 = pem
+        let base64 =
+            pem
             .components(separatedBy: .newlines)
             .filter { !$0.hasPrefix("-----") }
             .joined()
@@ -136,16 +138,18 @@ public struct KubeConfig: Sendable {
         let lines = yaml.components(separatedBy: .newlines)
 
         // Find the "exec:" line
-        guard let execIndex = lines.firstIndex(where: {
-            $0.trimmingCharacters(in: .whitespaces).hasPrefix("exec:")
-        }) else {
+        guard
+            let execIndex = lines.firstIndex(where: {
+                $0.trimmingCharacters(in: .whitespaces).hasPrefix("exec:")
+            })
+        else {
             return nil
         }
 
         // Determine indentation of the exec block's children
         let execLine = lines[execIndex]
         let execIndent = execLine.prefix(while: { $0 == " " }).count
-        let childIndent = execIndent + 2 // expected child indentation
+        let childIndent = execIndent + 2  // expected child indentation
 
         // Collect lines belonging to the exec block
         var command: String?
@@ -292,8 +296,10 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
 
         // Create in-memory identity from client cert + key (no keychain needed)
         guard let clientCertData = config.clientCertificateData,
-              let clientKeyData = config.clientKeyData else {
-            throw KubeConfigError.invalidCertificate("Certificate auth requires client-certificate-data and client-key-data")
+            let clientKeyData = config.clientKeyData
+        else {
+            throw KubeConfigError.invalidCertificate(
+                "Certificate auth requires client-certificate-data and client-key-data")
         }
         self.identity = try Self.createIdentity(
             certData: KubeConfig.pemToDER(clientCertData),
@@ -308,7 +314,7 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
         let protectionSpace = challenge.protectionSpace
 
         if protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-           let serverTrust = protectionSpace.serverTrust
+            let serverTrust = protectionSpace.serverTrust
         {
             // Verify server hostname against certificate CN/SAN fields
             let sslPolicy = SecPolicyCreateSSL(true, protectionSpace.host as CFString)
@@ -326,11 +332,14 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
         }
 
         if protectionSpace.authenticationMethod == NSURLAuthenticationMethodClientCertificate {
-            return (.useCredential, URLCredential(
-                identity: identity,
-                certificates: nil,
-                persistence: .forSession
-            ))
+            return (
+                .useCredential,
+                URLCredential(
+                    identity: identity,
+                    certificates: nil,
+                    persistence: .forSession
+                )
+            )
         }
 
         return (.performDefaultHandling, nil)
@@ -350,8 +359,8 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
         var type = SecExternalItemType.itemTypePrivateKey
         let status = SecItemImport(keyPEM as CFData, nil, &format, &type, [], nil, nil, &items)
         guard status == errSecSuccess,
-              let importedItems = items as? [SecKey],
-              let privateKey = importedItems.first
+            let importedItems = items as? [SecKey],
+            let privateKey = importedItems.first
         else {
             throw KubeConfigError.invalidCertificate("Failed to import private key (status: \(status))")
         }
@@ -388,7 +397,7 @@ final class KubeBearerTokenDelegate: NSObject, URLSessionDelegate, @unchecked Se
         let protectionSpace = challenge.protectionSpace
 
         if protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-           let serverTrust = protectionSpace.serverTrust
+            let serverTrust = protectionSpace.serverTrust
         {
             let sslPolicy = SecPolicyCreateSSL(true, protectionSpace.host as CFString)
             SecTrustSetPolicies(serverTrust, sslPolicy)

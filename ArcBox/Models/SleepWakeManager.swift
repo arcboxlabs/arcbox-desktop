@@ -1,10 +1,19 @@
 import AppKit
 import DockerClient
+import os
+
+/// Wraps observer tokens so they can live inside an OSAllocatedUnfairLock.
+/// Access is serialised by the lock, so @unchecked Sendable is safe.
+nonisolated private struct _SleepWakeObserverTokens: @unchecked Sendable {
+    var sleep: NSObjectProtocol?
+    var wake: NSObjectProtocol?
+}
 
 /// Monitors macOS sleep/wake events and pauses/unpauses running containers accordingly.
 ///
 /// When the Mac goes to sleep and the setting is enabled, all running containers
 /// are paused to save resources. On wake, they are automatically unpaused.
+
 @MainActor
 @Observable
 final class SleepWakeManager {
@@ -12,18 +21,20 @@ final class SleepWakeManager {
 
     /// IDs of containers that were paused by this manager (not manually paused by user).
     @ObservationIgnored private var pausedByUs: Set<String> = []
-    @ObservationIgnored private var sleepObserver: NSObjectProtocol?
-    @ObservationIgnored private var wakeObserver: NSObjectProtocol?
+    /// Observer tokens stored in a lock so deinit (nonisolated) can clean them up.
+    @ObservationIgnored private let observers = OSAllocatedUnfairLock(initialState: _SleepWakeObserverTokens())
 
-    /// Weak reference to the Docker client — set from ArcBoxApp when clients are initialized.
-    @ObservationIgnored weak var dockerClientRef: DockerClient?
+    /// Docker client reference — set from ArcBoxApp when clients are initialized.
+    /// DockerClient is a value type (struct), so `weak` is not applicable.
+    @ObservationIgnored var dockerClientRef: DockerClient?
 
     func start() {
         // Ensure idempotency — avoid duplicate observers on repeated calls
-        if sleepObserver != nil { return }
+        let alreadyStarted = observers.withLockUnchecked { $0.sleep != nil }
+        if alreadyStarted { return }
 
         let workspace = NSWorkspace.shared.notificationCenter
-        sleepObserver = workspace.addObserver(
+        let sleepToken = workspace.addObserver(
             forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
         ) { [weak self] _ in
             guard let self else { return }
@@ -31,7 +42,7 @@ final class SleepWakeManager {
                 await self.handleSleep()
             }
         }
-        wakeObserver = workspace.addObserver(
+        let wakeToken = workspace.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             guard let self else { return }
@@ -39,15 +50,19 @@ final class SleepWakeManager {
                 await self.handleWake()
             }
         }
+        observers.withLockUnchecked { $0 = _SleepWakeObserverTokens(sleep: sleepToken, wake: wakeToken) }
         logger.info("Sleep/wake monitoring started")
     }
 
     func stop() {
+        let tokens = observers.withLockUnchecked { old -> _SleepWakeObserverTokens in
+            let prev = old
+            old = _SleepWakeObserverTokens()
+            return prev
+        }
         let workspace = NSWorkspace.shared.notificationCenter
-        if let sleepObserver { workspace.removeObserver(sleepObserver) }
-        if let wakeObserver { workspace.removeObserver(wakeObserver) }
-        sleepObserver = nil
-        wakeObserver = nil
+        if let s = tokens.sleep { workspace.removeObserver(s) }
+        if let w = tokens.wake { workspace.removeObserver(w) }
         pausedByUs.removeAll()
         logger.info("Sleep/wake monitoring stopped")
     }
@@ -69,7 +84,9 @@ final class SleepWakeManager {
                     _ = try await docker.api.ContainerPause(path: .init(id: id))
                     paused.append(id)
                 } catch {
-                    logger.error("Failed to pause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    logger.error(
+                        "Failed to pause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
             pausedByUs = Set(paused)
@@ -94,7 +111,9 @@ final class SleepWakeManager {
                 unpaused += 1
             } catch {
                 failed.insert(id)
-                logger.error("Failed to unpause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                logger.error(
+                    "Failed to unpause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
             }
         }
         logger.info("Unpaused \(unpaused)/\(self.pausedByUs.count) containers after wake")
@@ -103,9 +122,15 @@ final class SleepWakeManager {
     }
 
     deinit {
-        // Observers are removed in stop(), but ensure cleanup
+        // Observer tokens are behind OSAllocatedUnfairLock (Sendable),
+        // so they can be safely accessed from nonisolated deinit.
+        let tokens = observers.withLockUnchecked { old -> _SleepWakeObserverTokens in
+            let prev = old
+            old = _SleepWakeObserverTokens()
+            return prev
+        }
         let workspace = NSWorkspace.shared.notificationCenter
-        if let sleepObserver { workspace.removeObserver(sleepObserver) }
-        if let wakeObserver { workspace.removeObserver(wakeObserver) }
+        if let s = tokens.sleep { workspace.removeObserver(s) }
+        if let w = tokens.wake { workspace.removeObserver(w) }
     }
 }

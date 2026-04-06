@@ -1,6 +1,6 @@
-import SwiftUI
 import ArcBoxClient
 import DockerClient
+import SwiftUI
 
 /// Column 2: container list with toolbar
 struct ContainersListView: View {
@@ -129,8 +129,11 @@ struct ContainersListView: View {
                 },
                 onStartStop: { id, running in
                     Task {
-                        if running { await vm.stopContainerDocker(id, docker: docker) }
-                        else { await vm.startContainerDocker(id, docker: docker) }
+                        if running {
+                            await vm.stopContainerDocker(id, docker: docker)
+                        } else {
+                            await vm.startContainerDocker(id, docker: docker)
+                        }
                     }
                 },
                 onDelete: { id in
@@ -168,8 +171,11 @@ struct ContainersListView: View {
                 },
                 onStartStop: {
                     Task {
-                        if container.isRunning { await vm.stopContainerDocker(container.id, docker: docker) }
-                        else { await vm.startContainerDocker(container.id, docker: docker) }
+                        if container.isRunning {
+                            await vm.stopContainerDocker(container.id, docker: docker)
+                        } else {
+                            await vm.startContainerDocker(container.id, docker: docker)
+                        }
                     }
                 },
                 onDelete: {
