@@ -50,7 +50,7 @@ class SandboxTerminalSession {
 
         let metadata = SandboxMetadata.forMachine(machineID)
 
-        execTask = Task.detached { [weak self] in
+        execTask = Task.detached {
             do {
                 try await client.sandboxes.exec(
                     metadata: metadata,
@@ -72,7 +72,7 @@ class SandboxTerminalSession {
                         }
                     },
                     onResponse: { response in
-                        await MainActor.run {
+                        await MainActor.run { [weak self] in
                             guard let self, self.sessionGeneration == generation else { return }
                             self.state = .connected
                         }
@@ -82,7 +82,7 @@ class SandboxTerminalSession {
                             let data = output.data
                             let isDone = output.done
 
-                            await MainActor.run {
+                            await MainActor.run { [weak self] in
                                 guard let self, self.sessionGeneration == generation else { return }
                                 if !data.isEmpty {
                                     let bytes = [UInt8](data)
@@ -97,13 +97,13 @@ class SandboxTerminalSession {
                 )
             } catch {
                 guard !Task.isCancelled else { return }
-                await MainActor.run {
+                await MainActor.run { [weak self] in
                     guard let self, self.sessionGeneration == generation else { return }
                     self.state = .error(error.localizedDescription)
                 }
             }
 
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 guard let self, self.sessionGeneration == generation else { return }
                 if self.state == .connected {
                     self.state = .disconnected

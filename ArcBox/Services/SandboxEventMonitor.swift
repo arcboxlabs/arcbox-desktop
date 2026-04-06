@@ -30,11 +30,11 @@ final class SandboxEventMonitor {
                     try await client.sandboxes.events(
                         Sandbox_V1_SandboxEventsRequest(),
                         metadata: metadata
-                    ) { [weak self] response in
+                    ) { response in
                         for try await _ in response.messages {
                             guard !Task.isCancelled else { break }
                             await MainActor.run {
-                                self?.debouncedPost()
+                                self.debouncedPost()
                             }
                         }
                     }
