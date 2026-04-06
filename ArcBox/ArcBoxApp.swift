@@ -2,6 +2,7 @@ import AppKit
 import ArcBoxClient
 import DockerClient
 import OSLog
+import PostHog
 @preconcurrency import Sentry
 import Sparkle
 import SwiftUI
@@ -79,6 +80,7 @@ struct ArcBoxDesktopApp: App {
 
     init() {
         Self.initSentry()
+        Self.initPostHog()
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: updaterDelegate,
@@ -135,6 +137,36 @@ struct ArcBoxDesktopApp: App {
         }
     }
 
+    /// Initialize PostHog product analytics if an API key is configured.
+    /// API key is read from Info.plist (injected via POSTHOG_API_KEY build setting).
+    /// No-ops gracefully when key is empty or placeholder.
+    /// Telemetry is enabled by default; users can opt out in Settings > Privacy.
+    private static func initPostHog() {
+        guard let apiKey = Bundle.main.object(forInfoDictionaryKey: "PostHogAPIKey") as? String,
+            !apiKey.isEmpty, apiKey != "YOUR_POSTHOG_API_KEY_HERE", apiKey != "$(POSTHOG_API_KEY)"
+        else {
+            Log.startup.info("PostHog API key not configured, telemetry disabled")
+            return
+        }
+
+        // Ensure UserDefaults default matches @AppStorage default (true).
+        // Without this, bool(forKey:) returns false on first launch before
+        // the Settings view has ever appeared.
+        UserDefaults.standard.register(defaults: ["telemetryEnabled": true])
+
+        let config = PostHogConfig(apiKey: apiKey, host: "https://us.i.posthog.com")
+        config.captureApplicationLifecycleEvents = true
+        config.captureScreenViews = false  // No-op on macOS, track manually
+        config.personProfiles = .identifiedOnly
+        config.optOut = !UserDefaults.standard.bool(forKey: "telemetryEnabled")
+        #if DEBUG
+            // Never send telemetry from development builds.
+            config.optOut = true
+        #endif
+        PostHogSDK.shared.setup(config)
+        Log.startup.info("PostHog initialized (opted \(config.optOut ? "out" : "in", privacy: .public))")
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -154,6 +186,7 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
 
+                    let startupStart = CFAbsoluteTimeGetCurrent()
                     let orchestrator = StartupOrchestrator(
                         daemonManager: daemonManager,
                         onClientsNeeded: { try initClientsAndReturn() }
@@ -161,6 +194,23 @@ struct ArcBoxDesktopApp: App {
                     startupOrchestrator = orchestrator
                     appDelegate.startupOrchestrator = orchestrator
                     await orchestrator.start()
+
+                    // Bridge startup result to PostHog analytics.
+                    let startupMs = Int((CFAbsoluteTimeGetCurrent() - startupStart) * 1000)
+                    if orchestrator.isReady {
+                        Analytics.capture(
+                            .startupCompleted,
+                            properties: [
+                                "duration_ms": startupMs
+                            ])
+                    } else if case .failed(let step, _) = orchestrator.phase {
+                        Analytics.capture(
+                            .startupFailed,
+                            properties: [
+                                "duration_ms": startupMs,
+                                "step": step.label,
+                            ])
+                    }
                 }
                 // DockerClient is created when daemon state becomes running.
                 // ListViews gate their initial load on setupPhase.isDockerReady
@@ -208,6 +258,9 @@ struct ArcBoxDesktopApp: App {
 
         Settings {
             SettingsView()
+                .environment(daemonManager)
+                .environment(containersVM)
+                .environment(imagesVM)
                 .environment(\.dockerClient, dockerClient)
         }
 

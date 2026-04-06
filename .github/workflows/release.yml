@@ -265,11 +265,13 @@ jobs:
         env:
           SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
         run: |
           cat > Local.xcconfig <<XCEOF
           #include "Version.xcconfig"
           INFOPLIST_KEY_SUPublicEDKey = ${SPARKLE_PUBLIC_KEY}
           SENTRY_DSN = ${SENTRY_DSN}
+          POSTHOG_API_KEY = ${POSTHOG_API_KEY}
           XCEOF
           echo "Local.xcconfig:"
           cat Local.xcconfig

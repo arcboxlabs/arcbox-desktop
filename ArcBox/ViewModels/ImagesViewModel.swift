@@ -136,8 +136,10 @@ class ImagesViewModel {
         }
 
         do {
-            let response = try await docker.api.ImageList(.init())
-            let imageList = try response.ok.body.json
+            let imageList = try await Perf.measure("image.list") {
+                let response = try await docker.api.ImageList(.init())
+                return try response.ok.body.json
+            }
             var viewModels = imageList.flatMap { ImageViewModel.fromDocker($0) }
             applyCachedIcons(to: &viewModels)
             images = viewModels
@@ -145,6 +147,7 @@ class ImagesViewModel {
             await fetchIcons(client: iconClient)
         } catch {
             Log.image.error("Error loading images: \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .image, operation: "list")
         }
     }
 
@@ -187,6 +190,7 @@ class ImagesViewModel {
         } catch {
             Log.image.error(
                 "Error pulling image \(reference, privacy: .private): \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .image, operation: "pull")
             return false
         }
     }
@@ -205,6 +209,7 @@ class ImagesViewModel {
             return true
         } catch {
             Log.image.error("Error importing image: \(String(describing: error), privacy: .private)")
+            ErrorReporting.capture(error, domain: .image, operation: "import")
             return false
         }
     }
@@ -220,6 +225,7 @@ class ImagesViewModel {
         } catch {
             Log.image.error(
                 "Error removing image \(dockerId, privacy: .private): \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .image, operation: "remove")
             lastError = error.localizedDescription
         }
         await loadImages(docker: docker)

@@ -19,6 +19,7 @@ class KubernetesState {
                 .init(), options: ArcBoxClient.defaultCallOptions)
             self.enabled = status.running && status.apiReady
         } catch {
+            ErrorReporting.capture(error, domain: .kubernetes, operation: "check_status")
             self.enabled = false
         }
     }
@@ -61,6 +62,7 @@ class KubernetesState {
         } catch {
             startError = error.localizedDescription
             Log.pods.error("Error starting Kubernetes: \(error.localizedDescription, privacy: .private)")
+            ErrorReporting.capture(error, domain: .kubernetes, operation: "start")
             self.enabled = false
         }
         isStarting = false
@@ -76,6 +78,7 @@ class KubernetesState {
             self.enabled = false
         } catch {
             Log.pods.error("Error stopping Kubernetes: \(error)")
+            ErrorReporting.capture(error, domain: .kubernetes, operation: "stop")
             // Re-check actual status on failure
             await checkStatus(client: client)
         }
