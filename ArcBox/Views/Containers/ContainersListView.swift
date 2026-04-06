@@ -95,7 +95,8 @@ struct ContainersListView: View {
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
-        .task(id: docker != nil) {
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
             await vm.loadContainersFromDocker(docker: docker, iconClient: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in

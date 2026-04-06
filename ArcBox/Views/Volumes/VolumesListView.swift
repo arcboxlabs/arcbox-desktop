@@ -59,7 +59,10 @@ struct VolumesListView: View {
             NewVolumeSheet()
         }
         .errorToast(message: Bindable(vm).lastError)
-        .task(id: docker != nil) { await vm.loadVolumes(docker: docker) }
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
+            await vm.loadVolumes(docker: docker)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
             Task { await vm.loadVolumes(docker: docker) }
         }

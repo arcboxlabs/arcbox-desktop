@@ -489,12 +489,6 @@ class ContainersViewModel {
 
     // MARK: - Docker API Operations
 
-    /// Maximum retries for the initial container list fetch.
-    /// The Docker engine inside the daemon may take a few seconds to initialize
-    /// after the gRPC stream connects, so transient failures are expected.
-    private static let initialLoadMaxRetries = 5
-    private static let initialLoadRetryDelay: Duration = .seconds(1)
-
     /// Load containers from Docker Engine API.
     func loadContainersFromDocker(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
@@ -502,57 +496,39 @@ class ContainersViewModel {
             return
         }
 
-        let isInitialLoad = loadState == .waiting || loadState == .loading
         if loadState == .waiting {
             loadState = .loading
         }
 
-        let maxAttempts = isInitialLoad ? Self.initialLoadMaxRetries : 1
-        var lastError: (any Error)?
-
-        for attempt in 1...maxAttempts {
-            let currentTransitioning = transitioningIDs
-            let cachedDetails = containerDetailsCache()
-            do {
-                let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
-                let containerList = try response.ok.body.json
-                var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
-                applyCachedDetails(cachedDetails, to: &viewModels)
-                applyCachedIcons(to: &viewModels)
-                for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
-                    viewModels[i].isTransitioning = true
-                }
-                containers = viewModels
-                Log.container.info("Loaded \(self.containers.count, privacy: .public) containers via Docker")
-                applyExpandedGroups(from: containers)
-                await fetchIcons(client: iconClient)
-                if let selectedID, containers.contains(where: { $0.id == selectedID }) {
-                    await loadContainerDetailsFromDocker(selectedID, docker: docker)
-                }
-                loadState = .loaded
-                return
-            } catch {
-                lastError = error
-                if attempt < maxAttempts {
-                    Log.container.info(
-                        "Container list attempt \(attempt)/\(maxAttempts) failed, retrying in \(Self.initialLoadRetryDelay)..."
-                    )
-                    try? await Task.sleep(for: Self.initialLoadRetryDelay)
-                }
+        let currentTransitioning = transitioningIDs
+        let cachedDetails = containerDetailsCache()
+        do {
+            let response = try await docker.api.ContainerList(.init(query: .init(all: true)))
+            let containerList = try response.ok.body.json
+            var viewModels = containerList.map { ContainerViewModel(fromDocker: $0) }
+            applyCachedDetails(cachedDetails, to: &viewModels)
+            applyCachedIcons(to: &viewModels)
+            for i in viewModels.indices where currentTransitioning.contains(viewModels[i].id) {
+                viewModels[i].isTransitioning = true
             }
-        }
-
-        // All attempts exhausted.
-        if let lastError {
-            Log.container.error("Error loading containers: \(lastError.localizedDescription, privacy: .private)")
-            SentrySDK.capture(error: lastError) { scope in
+            containers = viewModels
+            Log.container.info("Loaded \(self.containers.count, privacy: .public) containers via Docker")
+            applyExpandedGroups(from: containers)
+            await fetchIcons(client: iconClient)
+            if let selectedID, containers.contains(where: { $0.id == selectedID }) {
+                await loadContainerDetailsFromDocker(selectedID, docker: docker)
+            }
+            loadState = .loaded
+        } catch {
+            Log.container.error("Error loading containers: \(error.localizedDescription, privacy: .private)")
+            SentrySDK.capture(error: error) { scope in
                 scope.setTag(value: "list_docker", key: "container_op")
             }
             if containers.isEmpty {
-                loadState = .failed(lastError.localizedDescription)
+                loadState = .failed(error.localizedDescription)
             } else {
                 loadState = .loaded
-                self.lastError = lastError.localizedDescription
+                lastError = error.localizedDescription
             }
         }
     }

@@ -59,7 +59,10 @@ struct NetworksListView: View {
             NewNetworkSheet()
         }
         .errorToast(message: Bindable(vm).lastError)
-        .task(id: docker != nil) { await vm.loadNetworks(docker: docker) }
+        .task(id: daemonManager.dockerSocketLinked) {
+            guard daemonManager.dockerSocketLinked else { return }
+            await vm.loadNetworks(docker: docker)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
             Task { await vm.loadNetworks(docker: docker) }
         }
