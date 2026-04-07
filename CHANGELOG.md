@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.21.1...v1.22.0) (2026-04-06)
+
+
+### Features
+
+* show GitHub release notes in Sparkle update dialog ([#212](https://github.com/arcboxlabs/arcbox-desktop/issues/212)) ([075ace3](https://github.com/arcboxlabs/arcbox-desktop/commit/075ace309a2396ba4dd86420562a24493532d36f))
+
+
+### CI
+
+* **release:** pin pstramp version from assets.lock with checksum verification ([76d7335](https://github.com/arcboxlabs/arcbox-desktop/commit/76d7335e7252cc5449f9dde0cbb33c4a43714598))
+
 ## [1.21.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.21.0...v1.21.1) (2026-04-06)
 
 
