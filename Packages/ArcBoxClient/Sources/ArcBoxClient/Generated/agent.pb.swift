@@ -12,6 +12,7 @@
 //
 // This service runs inside the guest VM and handles requests from the host.
 
+import Foundation
 import SwiftProtobuf
 
 // If the compiler emits an error on this type, it is because this file
@@ -405,6 +406,47 @@ public struct Arcbox_V1_ShutdownResponse: Sendable {
 
   /// Always true when the agent accepts the request.
   public var accepted: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Test-only: read a file through `mmap(MAP_SHARED)` to force the guest
+/// kernel to issue `FUSE_SETUPMAPPING` and exercise the VirtioFS DAX path.
+/// Used by the ABX-362 E2E harness. Not intended for production callers.
+public struct Arcbox_V1_MmapReadFileRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Absolute guest path (typically a file inside a VirtioFS mount).
+  public var path: String = String()
+
+  /// Byte offset within the file.
+  public var offset: UInt64 = 0
+
+  /// Number of bytes to read. Rounded up to a page boundary internally;
+  /// the response trims back to the requested length.
+  public var length: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response to `MmapReadFileRequest`.
+public struct Arcbox_V1_MmapReadFileResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Bytes read, trimmed to the originally requested length.
+  public var data: Data = Data()
+
+  /// Number of bytes actually read (<= length). Short if file smaller
+  /// than offset+length.
+  public var bytesRead: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1164,6 +1206,81 @@ extension Arcbox_V1_ShutdownResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
   public static func ==(lhs: Arcbox_V1_ShutdownResponse, rhs: Arcbox_V1_ShutdownResponse) -> Bool {
     if lhs.accepted != rhs.accepted {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MmapReadFileRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MmapReadFileRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}offset\0\u{1}length\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.path) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.offset) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.length) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.path.isEmpty {
+      try visitor.visitSingularStringField(value: self.path, fieldNumber: 1)
+    }
+    if self.offset != 0 {
+      try visitor.visitSingularUInt64Field(value: self.offset, fieldNumber: 2)
+    }
+    if self.length != 0 {
+      try visitor.visitSingularUInt64Field(value: self.length, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MmapReadFileRequest, rhs: Arcbox_V1_MmapReadFileRequest) -> Bool {
+    if lhs.path != rhs.path {return false}
+    if lhs.offset != rhs.offset {return false}
+    if lhs.length != rhs.length {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MmapReadFileResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MmapReadFileResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}data\0\u{3}bytes_read\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.data) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.bytesRead) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.data.isEmpty {
+      try visitor.visitSingularBytesField(value: self.data, fieldNumber: 1)
+    }
+    if self.bytesRead != 0 {
+      try visitor.visitSingularUInt64Field(value: self.bytesRead, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MmapReadFileResponse, rhs: Arcbox_V1_MmapReadFileResponse) -> Bool {
+    if lhs.data != rhs.data {return false}
+    if lhs.bytesRead != rhs.bytesRead {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
