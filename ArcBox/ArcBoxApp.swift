@@ -12,6 +12,7 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var eventMonitor: DockerEventMonitor?
+    var sandboxEventMonitor: SandboxEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
     var arcboxClient: ArcBoxClient?
     var connectionTask: Task<Void, Never>?
@@ -32,6 +33,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         eventMonitor?.stop()
+        sandboxEventMonitor?.stop()
         DockerContextManager.restorePreviousContext()
         arcboxClient?.close()
         connectionTask?.cancel()
@@ -59,6 +61,7 @@ struct ArcBoxDesktopApp: App {
     @State private var dockerClient: DockerClient?
     // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
+    @State private var sandboxEventMonitor = SandboxEventMonitor()
     @State private var sleepWakeManager = SleepWakeManager()
     @State private var startupOrchestrator: StartupOrchestrator?
     @AppStorage("showInMenuBar") private var showInMenuBar = false
@@ -185,6 +188,7 @@ struct ArcBoxDesktopApp: App {
 
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
+                    appDelegate.sandboxEventMonitor = sandboxEventMonitor
 
                     let startupStart = CFAbsoluteTimeGetCurrent()
                     let orchestrator = StartupOrchestrator(
@@ -227,9 +231,14 @@ struct ArcBoxDesktopApp: App {
                             sleepWakeManager.dockerClientRef = dockerClient
                             sleepWakeManager.start()
                         }
+                        if let arcboxClient {
+                            sandboxEventMonitor.start(
+                                client: arcboxClient, machineID: "default")
+                        }
                         DockerContextManager.switchToArcBox()
                     } else {
                         eventMonitor.stop()
+                        sandboxEventMonitor.stop()
                         sleepWakeManager.stop()
                         DockerContextManager.restorePreviousContext()
                     }

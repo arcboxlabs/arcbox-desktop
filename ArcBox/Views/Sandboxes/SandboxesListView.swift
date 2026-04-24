@@ -1,8 +1,12 @@
+import ArcBoxClient
 import SwiftUI
 
 /// Column 2: sandboxes page with Monitoring and List tabs
 struct SandboxesListView: View {
     @Environment(SandboxesViewModel.self) private var vm
+    @Environment(\.arcboxClient) private var client
+
+    @State private var sandboxToRemove: SandboxViewModel? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,17 +59,50 @@ struct SandboxesListView: View {
                             Image(systemName: "magnifyingglass")
                         })
                 }
-                Button(
-                    action: {},
-                    label: {
-                        Image(systemName: "plus")
-                    })
+                Button(action: {
+                    vm.showNewSandboxSheet = true
+                }) {
+                    Image(systemName: "plus")
+                }
             }
         }
-        .onAppear {
-            #if DEBUG
-                vm.loadSampleData()
-            #endif
+        .task {
+            await vm.loadSandboxes(client: client)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .sandboxChanged)) { _ in
+            Task {
+                await vm.loadSandboxes(client: client)
+            }
+        }
+        .confirmationDialog(
+            "Remove Sandbox",
+            isPresented: Binding(
+                get: { sandboxToRemove != nil },
+                set: { if !$0 { sandboxToRemove = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let sandbox = sandboxToRemove {
+                Button("Remove \"\(sandbox.displayName)\"", role: .destructive) {
+                    Task {
+                        await vm.removeSandbox(sandbox.id, force: true, client: client)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { sandboxToRemove = nil }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+        .alert("Error", isPresented: Binding(
+            get: { vm.errorMessage != nil },
+            set: { if !$0 { vm.clearError() } }
+        )) {
+            Button("OK") { vm.clearError() }
+        } message: {
+            Text(vm.errorMessage ?? "")
+        }
+        .sheet(isPresented: Bindable(vm).showNewSandboxSheet) {
+            NewSandboxSheet()
         }
     }
 
@@ -80,7 +117,13 @@ struct SandboxesListView: View {
                             SandboxRowView(
                                 sandbox: sandbox,
                                 isSelected: vm.selectedID == sandbox.id,
-                                onSelect: { vm.selectSandbox(sandbox.id) }
+                                onSelect: { vm.selectSandbox(sandbox.id) },
+                                onStop: {
+                                    Task { await vm.stopSandbox(sandbox.id, client: client) }
+                                },
+                                onRemove: {
+                                    sandboxToRemove = sandbox
+                                }
                             )
                         }
                     }
