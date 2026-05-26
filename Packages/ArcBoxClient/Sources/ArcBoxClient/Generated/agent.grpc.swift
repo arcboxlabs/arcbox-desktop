@@ -144,6 +144,18 @@ public enum Arcbox_V1_AgentService {
                 method: "Shutdown"
             )
         }
+        /// Namespace for "DiskTrim" metadata.
+        public enum DiskTrim {
+            /// Request type for "DiskTrim".
+            public typealias Input = Arcbox_V1_DiskTrimRequest
+            /// Response type for "DiskTrim".
+            public typealias Output = Arcbox_V1_DiskTrimResponse
+            /// Descriptor for "DiskTrim".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "DiskTrim"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.AgentService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Ping.descriptor,
@@ -155,7 +167,8 @@ public enum Arcbox_V1_AgentService {
             DeleteKubernetes.descriptor,
             GetKubernetesStatus.descriptor,
             GetKubeconfig.descriptor,
-            Shutdown.descriptor
+            Shutdown.descriptor,
+            DiskTrim.descriptor
         ]
     }
 }
@@ -365,6 +378,25 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_ShutdownRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ShutdownResponse>
+
+        /// Handle the "DiskTrim" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+        /// > file space on the host.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_DiskTrimRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_DiskTrimResponse` messages.
+        func diskTrim(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_DiskTrimRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_DiskTrimResponse>
     }
 
     /// Service protocol for the "arcbox.v1.AgentService" service.
@@ -559,6 +591,25 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.ServerRequest<Arcbox_V1_ShutdownRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ShutdownResponse>
+
+        /// Handle the "DiskTrim" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+        /// > file space on the host.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_DiskTrimRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_DiskTrimResponse` message.
+        func diskTrim(
+            request: GRPCCore.ServerRequest<Arcbox_V1_DiskTrimRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_DiskTrimResponse>
     }
 
     /// Simple service protocol for the "arcbox.v1.AgentService" service.
@@ -751,6 +802,25 @@ extension Arcbox_V1_AgentService {
             request: Arcbox_V1_ShutdownRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_ShutdownResponse
+
+        /// Handle the "DiskTrim" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+        /// > file space on the host.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_DiskTrimRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_DiskTrimResponse` to respond with.
+        func diskTrim(
+            request: Arcbox_V1_DiskTrimRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_DiskTrimResponse
     }
 }
 
@@ -868,6 +938,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.DiskTrim.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_DiskTrimRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_DiskTrimResponse>(),
+            handler: { request, context in
+                try await self.diskTrim(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -978,6 +1059,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ShutdownResponse> {
         let response = try await self.shutdown(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func diskTrim(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_DiskTrimRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_DiskTrimResponse> {
+        let response = try await self.diskTrim(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1111,6 +1203,19 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ShutdownResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_ShutdownResponse>(
             message: try await self.shutdown(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func diskTrim(
+        request: GRPCCore.ServerRequest<Arcbox_V1_DiskTrimRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_DiskTrimResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_DiskTrimResponse>(
+            message: try await self.diskTrim(
                 request: request.message,
                 context: context
             ),
@@ -1361,6 +1466,30 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ShutdownResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ShutdownResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "DiskTrim" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+        /// > file space on the host.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_DiskTrimRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_DiskTrimRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_DiskTrimResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func diskTrim<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_DiskTrimRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_DiskTrimRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_DiskTrimResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_DiskTrimResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -1724,6 +1853,41 @@ extension Arcbox_V1_AgentService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "DiskTrim" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+        /// > file space on the host.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_DiskTrimRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_DiskTrimRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_DiskTrimResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func diskTrim<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_DiskTrimRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_DiskTrimRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_DiskTrimResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_DiskTrimResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.DiskTrim.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2016,6 +2180,36 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ShutdownRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ShutdownResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "DiskTrim" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+    /// > file space on the host.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_DiskTrimRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func diskTrim<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_DiskTrimRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_DiskTrimResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.diskTrim(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_DiskTrimRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_DiskTrimResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2350,6 +2544,40 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.shutdown(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "DiskTrim" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Triggers an immediate fstrim on data mount points to reclaim sparse
+    /// > file space on the host.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func diskTrim<Result>(
+        _ message: Arcbox_V1_DiskTrimRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_DiskTrimResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_DiskTrimRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.diskTrim(
             request: request,
             options: options,
             onResponse: handleResponse
