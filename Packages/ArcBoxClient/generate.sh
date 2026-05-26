@@ -18,8 +18,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OUT_DIR="${SCRIPT_DIR}/Sources/ArcBoxClient/Generated"
 PROTO_TMPDIR=""
 
-GITHUB_REPO="arcbox-labs/arcbox"
-GITHUB_BRANCH="main"
+GITHUB_REPO="arcboxlabs/arcbox"
+GITHUB_BRANCH="master"
 GITHUB_PROTO_PATH="rpc/arcbox-protocol/proto"
 
 PROTOS=(
@@ -56,16 +56,17 @@ find_local_proto() {
     return 1
 }
 
-# Download proto files from GitHub
+# Download proto files from GitHub. Progress messages go to stderr so the
+# function's stdout is just the tmp directory path captured by callers.
 fetch_from_github() {
     PROTO_TMPDIR="$(mktemp -d)"
-    echo "Fetching proto files from GitHub (${GITHUB_REPO}@${GITHUB_BRANCH})..."
+    echo "Fetching proto files from GitHub (${GITHUB_REPO}@${GITHUB_BRANCH})..." >&2
 
     for proto in "${PROTOS[@]}"; do
         local url="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_PROTO_PATH}/${proto}"
-        echo "  Downloading ${proto}"
+        echo "  Downloading ${proto}" >&2
         if ! curl -fsSL -o "${PROTO_TMPDIR}/${proto}" "$url"; then
-            echo "Error: failed to download ${proto} from ${url}"
+            echo "Error: failed to download ${proto} from ${url}" >&2
             exit 1
         fi
     done
