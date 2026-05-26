@@ -35,3 +35,11 @@ Local.xcconfig
 *.cer
 .env
 .env.*
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
