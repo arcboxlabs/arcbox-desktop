@@ -12,6 +12,7 @@ enum NavItem: String, CaseIterable, Identifiable {
     case machines
     case sandboxes
     case templates
+    case runner
 
     var id: String { rawValue }
 
@@ -20,9 +21,20 @@ enum NavItem: String, CaseIterable, Identifiable {
         switch self {
         case .templates:
             true
+        case .runner:
+            !Self.runnerSectionEnabled
         default:
             false
         }
+    }
+
+    /// The Runner section ships dark outside DEBUG until desktop onboarding (RUN-8) lands.
+    private static var runnerSectionEnabled: Bool {
+        #if DEBUG
+            true
+        #else
+            false
+        #endif
     }
 
     var label: String {
@@ -37,6 +49,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .machines: "Machines"
         case .sandboxes: "Sandboxes"
         case .templates: "Templates"
+        case .runner: "This Mac"
         }
     }
 
@@ -52,6 +65,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .machines: "desktopcomputer"
         case .sandboxes: "server.rack"
         case .templates: "doc.on.doc"
+        case .runner: "hammer"
         }
     }
 
@@ -62,6 +76,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case kubernetes = "KUBERNETES"
         case linux = "LINUX"
         case sandbox = "SANDBOX"
+        case runners = "RUNNERS"
 
         var id: String { rawValue }
 
@@ -72,6 +87,7 @@ enum NavItem: String, CaseIterable, Identifiable {
             case .kubernetes: [.pods, .services]
             case .linux: [.machines]
             case .sandbox: [.sandboxes, .templates]
+            case .runners: [.runner]
             }
         }
     }

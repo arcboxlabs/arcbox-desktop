@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var machinesVM = MachinesViewModel()
     @State private var sandboxesVM = SandboxesViewModel()
     @State private var templatesVM = TemplatesViewModel()
+    @State private var runnersVM = RunnersViewModel()
 
     @State private var lastValidNav: NavItem? = .containers
 
@@ -91,6 +92,13 @@ struct ContentView: View {
                         .tag(item)
                 }
             }
+            Section("CI Runners") {
+                ForEach(NavItem.Section.runners.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .badge(runnersVM.activeJobCount)
+                        .tag(item)
+                }
+            }
         }
         .listStyle(.sidebar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -137,6 +145,9 @@ struct ContentView: View {
         case .machines:
             MachinesView()
                 .environment(machinesVM)
+        case .runner:
+            RunnersView()
+                .environment(runnersVM)
         case .sandboxes:
             SandboxesListView()
                 .environment(sandboxesVM)
@@ -182,6 +193,9 @@ struct ContentView: View {
         case .machines:
             MachineDetailView()
                 .environment(machinesVM)
+        case .runner:
+            // Job / host detail arrives with RUN-12 / RUN-13.
+            DetailPlaceholderView()
         case .sandboxes:
             SandboxDetailView()
                 .environment(sandboxesVM)
