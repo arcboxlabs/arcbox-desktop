@@ -39,7 +39,7 @@ public struct Arcbox_V1_CreateMachineRequest: Sendable {
   /// Machine name.
   public var name: String = String()
 
-  /// Number of CPUs.
+  /// Number of CPUs (0 = use the daemon default).
   public var cpus: UInt32 = 0
 
   /// Memory in bytes.
