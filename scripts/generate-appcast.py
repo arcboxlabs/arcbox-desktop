@@ -31,6 +31,11 @@ def rfc2822_now() -> str:
     return formatdate(timeval=datetime.now(timezone.utc).timestamp(), usegmt=True)
 
 
+def cdata(text: str) -> str:
+    """Wrap text in a CDATA section, splitting any ']]>' terminators."""
+    return "<![CDATA[" + text.replace("]]>", "]]]]><![CDATA[>") + "]]>"
+
+
 def build_item(
     display_version: str,
     build_number: str,
@@ -40,18 +45,25 @@ def build_item(
     channel: str,
     min_macos: str,
     pub_date: str,
+    release_notes_html: str | None,
 ) -> str:
     """Build a single <item> XML fragment."""
     channel_element = ""
     if channel != "stable":
         channel_element = f"\n        <sparkle:channel>{channel}</sparkle:channel>"
 
-    release_notes_url = f"https://github.com/arcboxlabs/arcbox-desktop/releases/tag/v{display_version}"
+    # Embedded HTML renders inside Sparkle's update dialog. A releaseNotesLink
+    # would be loaded as a full web page there, so it is only a fallback.
+    if release_notes_html:
+        notes_element = f"        <description>{cdata(release_notes_html)}</description>"
+    else:
+        release_notes_url = f"https://github.com/arcboxlabs/arcbox-desktop/releases/tag/v{display_version}"
+        notes_element = f"        <sparkle:releaseNotesLink>{release_notes_url}</sparkle:releaseNotesLink>"
 
     return (
         f"      <item>\n"
         f"        <title>ArcBox {display_version}</title>\n"
-        f"        <sparkle:releaseNotesLink>{release_notes_url}</sparkle:releaseNotesLink>\n"
+        f"{notes_element}\n"
         f"        <pubDate>{pub_date}</pubDate>\n"
         f"        <sparkle:version>{build_number}</sparkle:version>\n"
         f"        <sparkle:shortVersionString>{display_version}</sparkle:shortVersionString>"
@@ -89,17 +101,16 @@ def merge_appcast(existing_path: Path, item: str, display_version: str) -> str:
 
     # Remove any existing items that match this version by shortVersionString
     # or sparkle:version (build number is the display_version for dedup).
-    for tag in ("sparkle:shortVersionString", "sparkle:version"):
-        pattern = (
-            r"\s*<item>.*?<"
-            + tag
-            + r">"
-            + re.escape(display_version)
-            + r"</"
-            + tag
-            + r">.*?</item>"
-        )
-        content = re.sub(pattern, "", content, flags=re.DOTALL)
+    # Each <item> is matched individually: a single lazy cross-item pattern
+    # would also swallow every item preceding the duplicate.
+    def keep_or_drop(match: re.Match) -> str:
+        item_xml = match.group(0)
+        for tag in ("sparkle:shortVersionString", "sparkle:version"):
+            if f"<{tag}>{display_version}</{tag}>" in item_xml:
+                return ""
+        return item_xml
+
+    content = re.sub(r"\s*<item>.*?</item>", keep_or_drop, content, flags=re.DOTALL)
 
     # Strip legacy <sparkle:channel>stable</sparkle:channel> tags.
     content = re.sub(r"\n\s*<sparkle:channel>stable</sparkle:channel>", "", content)
@@ -123,11 +134,22 @@ def main() -> None:
     parser.add_argument("--min-macos", default="15.0", help="Minimum macOS version (default: 15.0)")
     parser.add_argument("--output", required=True, type=Path, help="Output appcast XML path")
     parser.add_argument("--existing", default=None, type=Path, help="Existing appcast to merge into")
+    parser.add_argument(
+        "--release-notes-html",
+        default=None,
+        type=Path,
+        help="HTML file embedded as the item description; "
+        "falls back to linking the GitHub release page",
+    )
 
     args = parser.parse_args()
 
     display_version = args.version.lstrip("v")
     pub_date = rfc2822_now()
+
+    release_notes_html = None
+    if args.release_notes_html and args.release_notes_html.is_file():
+        release_notes_html = args.release_notes_html.read_text().strip() or None
 
     item = build_item(
         display_version=display_version,
@@ -138,6 +160,7 @@ def main() -> None:
         channel=args.channel,
         min_macos=args.min_macos,
         pub_date=pub_date,
+        release_notes_html=release_notes_html,
     )
 
     if args.existing and args.existing.is_file():
