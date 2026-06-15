@@ -455,6 +455,9 @@ jobs:
     name: Upload to CDN
     needs: [build-dmg]
     runs-on: ubuntu-latest
+    permissions:
+      # The releases/generate-notes API requires contents: write.
+      contents: write
 
     steps:
       - name: Checkout code
@@ -474,6 +477,23 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
           echo "Channel: $CHANNEL, Version: $VERSION"
+
+      # Sparkle renders these inline in the update dialog. Linking the GitHub
+      # release page instead would load the whole GitHub website in the dialog.
+      - name: Generate release notes HTML
+        id: release_notes
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ needs.build-dmg.outputs.version }}"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f tag_name="$VERSION" --jq '.body // empty' > notes.md
+          # GitHub-flavored HTML, with PR/compare URLs collapsed to short links
+          gh api markdown -f mode=gfm -f context="$GITHUB_REPOSITORY" \
+            -F text=@notes.md > notes.html
+          [ -s notes.html ]
+          echo "found=true" >> "$GITHUB_OUTPUT"
 
       - name: Download existing appcast from CDN
         id: existing_appcast
@@ -517,6 +537,10 @@ jobs:
 
           if [ "${{ steps.existing_appcast.outputs.found }}" = "true" ]; then
             APPCAST_ARGS+=(--existing existing/appcast.xml)
+          fi
+
+          if [ "${{ steps.release_notes.outputs.found }}" = "true" ]; then
+            APPCAST_ARGS+=(--release-notes-html notes.html)
           fi
 
           mkdir -p cdn-staging/desktop/appcast
