@@ -488,7 +488,7 @@ jobs:
         run: |
           VERSION="${{ needs.build-dmg.outputs.version }}"
           gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
-            -f tag_name="$VERSION" --jq .body > notes.md
+            -f tag_name="$VERSION" --jq '.body // empty' > notes.md
           # GitHub-flavored HTML, with PR/compare URLs collapsed to short links
           gh api markdown -f mode=gfm -f context="$GITHUB_REPOSITORY" \
             -F text=@notes.md > notes.html
