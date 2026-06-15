@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.8](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.7...v1.22.8) (2026-06-15)
+
+
+### Bug Fixes
+
+* **daemon:** run launchd agent at Standard QoS, not Background ([#234](https://github.com/arcboxlabs/arcbox-desktop/issues/234)) ([e6c8999](https://github.com/arcboxlabs/arcbox-desktop/commit/e6c899973ba8ec41147726c07185bcf42131095e))
+* **updater:** embed release notes in appcast instead of linking GitHub ([#233](https://github.com/arcboxlabs/arcbox-desktop/issues/233)) ([8f46d7e](https://github.com/arcboxlabs/arcbox-desktop/commit/8f46d7e3cb16204a5e727ae7c97fe794c6756f97))
+
 ## [1.22.7](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.6...v1.22.7) (2026-06-12)
 
 
