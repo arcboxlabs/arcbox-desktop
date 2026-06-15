@@ -27,8 +27,12 @@
     <key>ThrottleInterval</key>
     <integer>5</integer>
 
+    <!-- Must NOT be Background: that QoS class throttles CPU/I/O, which slows
+         the guest VM cold boot past the daemon's agent-wait timeout
+         (DEFAULT_STARTUP_TIMEOUT_SECS), causing "timeout waiting for agent"
+         crash loops. The daemon boots a latency-sensitive VM, so use Standard. -->
     <key>ProcessType</key>
-    <string>Background</string>
+    <string>Standard</string>
 
     <!-- Kept for backward compatibility: the current bundled daemon
          (< 0.4) still writes to stdout/stderr. Once it switches to
