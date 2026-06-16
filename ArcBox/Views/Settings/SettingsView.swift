@@ -35,18 +35,31 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
+            sidebar
+        } detail: {
+            settingsContent
+                .navigationTitle(selectedTab?.rawValue ?? "")
+                .background(AppColors.background)
+        }
+        .frame(minWidth: 700, minHeight: 580)
+        .background(AppColors.background)
+    }
+
+    private var sidebar: some View {
+        ZStack {
+            AppColors.sidebar
+                .ignoresSafeArea(.container, edges: [.top, .bottom, .leading])
+
             List(SettingsTab.allCases, selection: $selectedTab) { tab in
                 Label(tab.rawValue, systemImage: tab.sfSymbol)
                     .tag(tab)
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 150, ideal: 180, max: 220)
-        } detail: {
-            settingsContent
-                .navigationTitle(selectedTab?.rawValue ?? "")
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
-        .toolbar(removing: .sidebarToggle)
-        .frame(width: 700, height: 580)
+        .background(AppColors.sidebar)
+        .navigationSplitViewColumnWidth(180)
     }
 
     @ViewBuilder
