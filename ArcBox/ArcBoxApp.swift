@@ -51,6 +51,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct ArcBoxDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.openWindow) private var openWindow
     // Lightweight init — no network calls until view appears
     @State private var appVM = AppViewModel()
     // Lightweight init — no network calls until view appears
@@ -254,15 +255,25 @@ struct ArcBoxDesktopApp: App {
                 }
                 CheckForUpdatesView(updater: updaterController.updater)
             }
+            CommandGroup(replacing: .appSettings) {
+                Button {
+                    openWindow(id: "settings")
+                } label: {
+                    Label("Settings...", systemImage: "gear")
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
 
-        Settings {
+        Window("Settings", id: "settings") {
             SettingsView()
                 .environment(daemonManager)
                 .environment(containersVM)
                 .environment(imagesVM)
                 .environment(\.dockerClient, dockerClient)
         }
+        .defaultSize(width: 700, height: 580)
+        .windowResizability(.contentSize)
 
         MenuBarExtra("ArcBox", systemImage: "shippingbox", isInserted: $showInMenuBar) {
             MenuBarView()
