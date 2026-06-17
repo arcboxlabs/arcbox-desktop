@@ -37,6 +37,19 @@ struct MenuBarView: View {
             .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
                 Task { await loadAll() }
             }
+            .onAppear {
+                containersExpanded = hasContainers
+            }
+            .onChange(of: containersVM.runningCount) { _, newValue in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    containersExpanded = newValue > 0 || hasStoppedContainers
+                }
+            }
+            .onChange(of: containersVM.containers.isEmpty) { _, isEmpty in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    containersExpanded = !isEmpty
+                }
+            }
     }
 
     // MARK: - Data
@@ -161,15 +174,26 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 2) {
             containersHeader
 
-            if containersExpanded, !sortedContainers.isEmpty {
-                containerList
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+            if hasContainers {
+                containerListViewport
             }
         }
     }
 
+    private var containerListViewport: some View {
+        ZStack(alignment: .topLeading) {
+            if containersExpanded {
+                containerList
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .frame(height: containersExpanded ? containerListHeight : 0, alignment: .top)
+        .clipped()
+    }
+
     private var containersHeader: some View {
         Button {
+            guard hasContainers else { return }
             withAnimation(.easeInOut(duration: 0.2)) {
                 containersExpanded.toggle()
             }
@@ -192,7 +216,8 @@ struct MenuBarView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.tertiary)
-                    .rotationEffect(.degrees(containersExpanded ? 90 : 0))
+                    .opacity(hasContainers ? 1 : 0.35)
+                    .rotationEffect(.degrees(containersExpanded && hasContainers ? 90 : 0))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
@@ -200,26 +225,27 @@ struct MenuBarView: View {
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(
-                        containersExpanded
+                        containersExpanded && hasContainers
                             ? AnyShapeStyle(.quaternary.opacity(0.30))
                             : AnyShapeStyle(.clear))
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(!hasContainers)
     }
 
     private var containerList: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(sortedContainers) { container in
+            VStack(alignment: .leading, spacing: containerRowSpacing) {
+                ForEach(displayedContainers) { container in
                     containerRow(container)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxHeight: 200)
-        .padding(.leading, 26)
+        .frame(height: containerListHeight)
+        .padding(.leading, 12)
     }
 
     private func containerRow(_ container: ContainerViewModel) -> some View {
@@ -245,6 +271,7 @@ struct MenuBarView: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 5)
+            .frame(height: containerRowHeight)
         }
     }
 
@@ -263,7 +290,7 @@ struct MenuBarView: View {
             MenuBarHoverButton {
                 // TODO: open settings when settings UI is implemented
             } label: {
-                Label("Settings", systemImage: "gearshape")
+                Label("Settings", systemImage: "gear")
                     .padding(.horizontal, 6)
                     .padding(.vertical, 5)
             }
@@ -286,14 +313,35 @@ struct MenuBarView: View {
 
     // MARK: - Helpers
 
-    private var sortedContainers: [ContainerViewModel] {
+    private var hasContainers: Bool {
+        !displayedContainers.isEmpty
+    }
+
+    private var hasStoppedContainers: Bool {
+        containersVM.containers.contains { !$0.isRunning }
+    }
+
+    private var displayedContainers: [ContainerViewModel] {
         containersVM.containers.sorted { lhs, rhs in
             if lhs.isRunning != rhs.isRunning {
-                return lhs.isRunning && !rhs.isRunning
+                return lhs.isRunning
             }
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
     }
+
+    private var containerListHeight: CGFloat {
+        let rowCount = min(displayedContainers.count, maxVisibleContainerRows)
+        let rowsHeight = CGFloat(rowCount) * containerRowHeight
+        let spacingHeight = CGFloat(max(rowCount - 1, 0)) * containerRowSpacing
+        return rowsHeight + spacingHeight
+    }
+
+    private var maxVisibleContainerRows: Int { 8 }
+
+    private var containerRowHeight: CGFloat { 24 }
+
+    private var containerRowSpacing: CGFloat { 2 }
 
     private var daemonStateDisplay: String {
         switch daemonManager.state {
