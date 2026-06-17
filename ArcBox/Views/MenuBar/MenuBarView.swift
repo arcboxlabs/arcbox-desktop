@@ -1,6 +1,8 @@
+import AppKit
+import SwiftUI
+
 import ArcBoxClient
 import DockerClient
-import SwiftUI
 
 struct MenuBarView: View {
     @Environment(DaemonManager.self) private var daemonManager
@@ -9,6 +11,7 @@ struct MenuBarView: View {
     @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(NetworksViewModel.self) private var networksVM
     @Environment(VolumesViewModel.self) private var volumesVM
+    @Environment(\.openWindow) private var openWindow
     @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
@@ -252,7 +255,7 @@ struct MenuBarView: View {
         MenuBarHoverButton {
             containersVM.selectContainer(container.id)
             appVM.navigate(to: .containers)
-            NSApp.activate(ignoringOtherApps: true)
+            showArcBoxWindow()
         } label: {
             HStack(spacing: 8) {
                 Circle()
@@ -279,22 +282,17 @@ struct MenuBarView: View {
 
     private var actionSection: some View {
         VStack(alignment: .leading, spacing: 2) {
-            MenuBarHoverButton {
-                NSApp.activate(ignoringOtherApps: true)
-            } label: {
+            MenuBarHoverButton(action: showArcBoxWindow) {
                 Label("Show ArcBox", systemImage: "macwindow")
                     .padding(.horizontal, 6)
                     .padding(.vertical, 5)
             }
 
-            MenuBarHoverButton {
-                // TODO: open settings when settings UI is implemented
-            } label: {
+            MenuBarHoverButton(action: showSettingsWindow) {
                 Label("Settings", systemImage: "gear")
                     .padding(.horizontal, 6)
                     .padding(.vertical, 5)
             }
-            .disabled(true)
 
             Divider()
                 .padding(.vertical, 4)
@@ -374,7 +372,54 @@ struct MenuBarView: View {
 
     private func navigateToPage(_ item: NavItem) {
         appVM.navigate(to: item)
+        showArcBoxWindow()
+    }
+
+    private func showSettingsWindow() {
+        openWindow(id: "settings")
+        if !bringWindowToFront(matching: { $0.title == "Settings" }) {
+            bringWindowToFrontAfterOpening(matching: { $0.title == "Settings" })
+        }
+    }
+
+    private func showArcBoxWindow() {
+        if bringWindowToFront(matching: isMainArcBoxWindow) {
+            return
+        }
+
+        openWindow(id: "main")
+        bringWindowToFrontAfterOpening(matching: isMainArcBoxWindow)
+    }
+
+    @discardableResult
+    private func bringWindowToFront(matching predicate: (NSWindow) -> Bool) -> Bool {
+        NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        guard let window = NSApp.windows.first(where: predicate) else {
+            return false
+        }
+
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
+        window.makeKeyAndOrderFront(nil)
+        return true
+    }
+
+    private func bringWindowToFrontAfterOpening(matching predicate: @escaping (NSWindow) -> Bool) {
+        Task { @MainActor in
+            await Task.yield()
+            _ = bringWindowToFront(matching: predicate)
+        }
+    }
+
+    private func isMainArcBoxWindow(_ window: NSWindow) -> Bool {
+        guard window.styleMask.contains(.titled), !(window is NSPanel) else {
+            return false
+        }
+
+        return window.title == "ArcBox" || window.title.isEmpty
     }
 }
 
