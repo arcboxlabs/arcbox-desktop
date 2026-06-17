@@ -169,7 +169,7 @@ struct ArcBoxDesktopApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("ArcBox", id: "main") {
             ContentView()
                 .environment(appVM)
                 .environment(daemonManager)
@@ -249,6 +249,8 @@ struct ArcBoxDesktopApp: App {
         }
         .defaultSize(width: 1200, height: 800)
         .commands {
+            CommandGroup(replacing: .newItem) {}
+
             CommandGroup(replacing: .appInfo) {
                 Button("About ArcBox") {
                     showAboutWindow()
