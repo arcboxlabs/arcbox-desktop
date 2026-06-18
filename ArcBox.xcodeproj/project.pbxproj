@@ -15,14 +15,14 @@
 		DC0A11012F4E000000000001 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A11002F4E000000000001 /* DockerClient */; };
 		DC0B11012F4E000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DC0B11002F4E000000000001 /* SwiftTerm */; };
 		K8S100012F90000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = K8S100002F90000000000001 /* K8sClient */; };
+		RES100012FA0000000000001 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = RES100002FA0000000000001 /* CHANGELOG.md */; };
+		RES200012FA0000000000001 /* arcbox.version in Resources */ = {isa = PBXBuildFile; fileRef = RES200002FA0000000000001 /* arcbox.version */; };
 		SE0300012F90000000000001 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = SE0200012F90000000000001 /* Sentry */; };
 		UT0100012FA0000000000001 /* ContainersViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0100002FA0000000000001 /* ContainersViewModelTests.swift */; };
 		UT0200012FA0000000000001 /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0200002FA0000000000001 /* ImagesViewModelTests.swift */; };
 		UT0300012FA0000000000001 /* K8sModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0300002FA0000000000001 /* K8sModelsTests.swift */; };
 		UT0400012FA0000000000001 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = UT0400002FA0000000000001 /* K8sClient */; };
 		UT0500012FA0000000000001 /* ChangelogParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = UT0500002FA0000000000001 /* ChangelogParserTests.swift */; };
-		RES100012FA0000000000001 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = RES100002FA0000000000001 /* CHANGELOG.md */; };
-		RES200012FA0000000000001 /* arcbox.version in Resources */ = {isa = PBXBuildFile; fileRef = RES200002FA0000000000001 /* arcbox.version */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,12 +56,12 @@
 		8AFC409B6C134B0BBFA4D294 /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0D00012F60000000000001 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
 		AB0F00012F80000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		RES100002FA0000000000001 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		RES200002FA0000000000001 /* arcbox.version */ = {isa = PBXFileReference; lastKnownFileType = text; path = arcbox.version; sourceTree = "<group>"; };
 		UT0100002FA0000000000001 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
 		UT0200002FA0000000000001 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
 		UT0300002FA0000000000001 /* K8sModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sModelsTests.swift; sourceTree = "<group>"; };
 		UT0500002FA0000000000001 /* ChangelogParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParserTests.swift; sourceTree = "<group>"; };
-		RES100002FA0000000000001 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
-		RES200002FA0000000000001 /* arcbox.version */ = {isa = PBXFileReference; lastKnownFileType = text; path = arcbox.version; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
