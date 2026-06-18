@@ -376,10 +376,11 @@ struct MenuBarView: View {
     }
 
     private func showSettingsWindow() {
-        openWindow(id: "settings")
-        if !bringWindowToFront(matching: { $0.title == "Settings" }) {
-            bringWindowToFrontAfterOpening(matching: { $0.title == "Settings" })
+        if bringWindowToFront(matching: { $0.title == "Settings" }) {
+            return
         }
+
+        openWindow(id: "settings")
     }
 
     private func showArcBoxWindow() {
@@ -388,17 +389,16 @@ struct MenuBarView: View {
         }
 
         openWindow(id: "main")
-        bringWindowToFrontAfterOpening(matching: isMainArcBoxWindow)
     }
 
     @discardableResult
     private func bringWindowToFront(matching predicate: (NSWindow) -> Bool) -> Bool {
-        NSApp.unhide(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
         guard let window = NSApp.windows.first(where: predicate) else {
             return false
         }
+
+        NSApp.unhide(nil)
+        NSApp.activate(ignoringOtherApps: true)
 
         if window.isMiniaturized {
             window.deminiaturize(nil)
@@ -407,19 +407,12 @@ struct MenuBarView: View {
         return true
     }
 
-    private func bringWindowToFrontAfterOpening(matching predicate: @escaping (NSWindow) -> Bool) {
-        Task { @MainActor in
-            await Task.yield()
-            _ = bringWindowToFront(matching: predicate)
-        }
-    }
-
     private func isMainArcBoxWindow(_ window: NSWindow) -> Bool {
         guard window.styleMask.contains(.titled), !(window is NSPanel) else {
             return false
         }
 
-        return window.title == "ArcBox" || window.title.isEmpty
+        return window.title == "ArcBox"
     }
 }
 
