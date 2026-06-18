@@ -82,7 +82,7 @@ class DockerTerminalSession {
 
         state = .connecting
 
-        guard let dockerPath = Self.findDockerCLI() else {
+        guard let dockerPath = DockerCLIResolver.findDockerCLI() else {
             state = .error("Docker CLI not found")
             return
         }
@@ -271,35 +271,4 @@ class DockerTerminalSession {
         return FileManager.default.isExecutableFile(atPath: path) ? path : nil
     }
 
-    // MARK: - Docker CLI Discovery
-
-    nonisolated private static let dockerSearchPaths = [
-        "/usr/local/bin/docker",
-        "/opt/homebrew/bin/docker",
-        "/usr/bin/docker",
-    ]
-
-    nonisolated private static func findDockerCLI() -> String? {
-        for path in dockerSearchPaths where FileManager.default.isExecutableFile(atPath: path) {
-            return path
-        }
-        // Fallback: check PATH
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-        proc.arguments = ["docker"]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError = FileHandle.nullDevice
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let path = String(data: data, encoding: .utf8)?.trimmingCharacters(
-                in: .whitespacesAndNewlines)
-            if let path, !path.isEmpty, FileManager.default.isExecutableFile(atPath: path) {
-                return path
-            }
-        } catch {}
-        return nil
-    }
 }

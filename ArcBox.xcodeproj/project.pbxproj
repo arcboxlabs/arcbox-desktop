@@ -458,7 +458,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				AUTOMATION_APPLE_EVENTS = NO;
+				AUTOMATION_APPLE_EVENTS = YES;
 				CODE_SIGN_ENTITLEMENTS = ArcBox/ArcBox.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -471,6 +471,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
 				INFOPLIST_KEY_PostHogAPIKey = "$(POSTHOG_API_KEY)";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
@@ -503,7 +504,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				AUTOMATION_APPLE_EVENTS = NO;
+				AUTOMATION_APPLE_EVENTS = YES;
 				CODE_SIGN_ENTITLEMENTS = ArcBox/ArcBox.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -516,6 +517,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
 				INFOPLIST_KEY_PostHogAPIKey = "$(POSTHOG_API_KEY)";
 				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
