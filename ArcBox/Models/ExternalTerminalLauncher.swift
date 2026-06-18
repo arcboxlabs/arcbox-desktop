@@ -1,3 +1,4 @@
+import Foundation
 import AppKit
 import Darwin
 import os
@@ -5,18 +6,6 @@ import os
 /// Launches an external terminal app with Docker environment pre-configured.
 enum ExternalTerminalLauncher {
     private static let logger = Log.terminal
-
-    private enum TerminalApp: Sendable {
-        case terminal
-        case iTerm
-
-        var bundleIdentifier: String {
-            switch self {
-            case .terminal: "com.apple.Terminal"
-            case .iTerm: "com.googlecode.iterm2"
-            }
-        }
-    }
 
     /// The Docker socket environment variable value used by ArcBox.
     private static var dockerHost: String {
@@ -26,7 +15,7 @@ enum ExternalTerminalLauncher {
 
     /// Open an external terminal with an optional docker exec command.
     /// - Parameters:
-    ///   - preference: The user's terminal preference: "terminal", "iterm", or "lastUsed".
+    ///   - preference: The user's terminal preference stored by `GeneralSettingsView`.
     ///   - containerID: Optional container ID to exec into.
     ///   - shell: Shell to use (e.g. "/bin/sh"). Only used when containerID is provided.
     static func open(preference: String, containerID: String? = nil, shell: String = "/bin/sh") {
@@ -36,20 +25,9 @@ enum ExternalTerminalLauncher {
 
         openCommandScript(
             scriptURL,
-            terminal: resolveTerminal(preference: preference),
+            terminal: ExternalTerminalDiscovery.resolve(preference: preference),
             fallbackCommand: command
         )
-    }
-
-    private static func resolveTerminal(preference: String) -> TerminalApp {
-        switch preference {
-        case "iterm":
-            .iTerm
-        case "terminal":
-            .terminal
-        default:
-            isITermInstalled() ? .iTerm : .terminal
-        }
     }
 
     private static func makeCommand(containerID: String?, shell: String) -> String {
@@ -92,7 +70,7 @@ enum ExternalTerminalLauncher {
 
     private static func writeCommandScript(_ source: String) -> URL? {
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("arcbox-terminal-\(UUID().uuidString).command")
+            .appending(path: "arcbox-terminal-\(UUID().uuidString).command")
 
         do {
             try source.write(to: scriptURL, atomically: true, encoding: .utf8)
@@ -104,8 +82,12 @@ enum ExternalTerminalLauncher {
         }
     }
 
-    private static func openCommandScript(_ scriptURL: URL, terminal: TerminalApp, fallbackCommand: String) {
-        guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: terminal.bundleIdentifier) else {
+    private static func openCommandScript(
+        _ scriptURL: URL,
+        terminal: ExternalTerminalApp,
+        fallbackCommand: String
+    ) {
+        guard let appURL = terminal.appURL else {
             NSWorkspace.shared.open(scriptURL)
             return
         }
@@ -116,13 +98,17 @@ enum ExternalTerminalLauncher {
             guard let error else { return }
             Task { @MainActor in
                 logger.error("Failed to open command script: \(error.localizedDescription, privacy: .public)")
-                openWithAppleScript(terminal: terminal, command: fallbackCommand)
+                if let backend = terminal.appleScriptBackend {
+                    openWithAppleScript(backend: backend, command: fallbackCommand)
+                } else {
+                    NSWorkspace.shared.open(scriptURL)
+                }
             }
         }
     }
 
-    private static func openWithAppleScript(terminal: TerminalApp, command: String) {
-        switch terminal {
+    private static func openWithAppleScript(backend: ExternalTerminalApp.AppleScriptBackend, command: String) {
+        switch backend {
         case .terminal:
             openTerminalApp(command: command)
         case .iTerm:
@@ -155,10 +141,6 @@ enum ExternalTerminalLauncher {
             end tell
             """
         runAppleScript(script)
-    }
-
-    private static func isITermInstalled() -> Bool {
-        NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.googlecode.iterm2") != nil
     }
 
     // MARK: - Helpers
