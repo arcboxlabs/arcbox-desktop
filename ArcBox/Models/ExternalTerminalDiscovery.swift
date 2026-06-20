@@ -85,13 +85,10 @@ enum ExternalTerminalDiscovery {
         return terminals
     }
 
-    static func terminalApp(for appURL: URL) -> ExternalTerminalApp? {
+    static func terminalApp(for appURL: URL, commandHandlerBundleIDs: Set<String>) -> ExternalTerminalApp? {
         guard let bundle = Bundle(url: appURL), let bundleID = bundle.bundleIdentifier else {
             return nil
         }
-        let commandHandlerBundleIDs = Set(
-            commandFileHandlerAppURLs().compactMap { Bundle(url: $0)?.bundleIdentifier }
-        )
         return terminalApp(
             for: appURL,
             bundleID: bundleID,
