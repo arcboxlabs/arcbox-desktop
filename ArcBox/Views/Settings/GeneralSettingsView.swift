@@ -25,6 +25,8 @@ struct GeneralSettingsView: View {
     @State private var isExportingDiagnostics = false
     @State private var externalTerminalApps = ExternalTerminalDiscovery.availableTerminals()
     @State private var externalTerminalSelection = ExternalTerminalApp.terminalBundleIdentifier
+    @State private var isShowingExternalTerminalSelectionError = false
+    @State private var externalTerminalSelectionErrorMessage = ""
 
     var body: some View {
         Form {
@@ -130,6 +132,11 @@ struct GeneralSettingsView: View {
             syncLoginItemState()
             refreshExternalTerminalApps()
         }
+        .alert("External terminal not available", isPresented: $isShowingExternalTerminalSelectionError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(externalTerminalSelectionErrorMessage)
+        }
     }
 
     private func refreshExternalTerminalApps(additionalTerminal: ExternalTerminalApp? = nil) {
@@ -171,16 +178,38 @@ struct GeneralSettingsView: View {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
 
-        guard panel.runModal() == .OK,
-            let appURL = panel.url,
-            let terminal = ExternalTerminalDiscovery.terminalApp(for: appURL)
-        else {
+        guard panel.runModal() == .OK else {
             externalTerminalSelection = externalTerminal
+            return
+        }
+
+        guard let appURL = panel.url else {
+            externalTerminalSelection = externalTerminal
+            showExternalTerminalSelectionError("No application was selected.")
+            return
+        }
+
+        let commandHandlerBundleIDs = Set(
+            externalTerminalApps.filter(\.supportsCommandFiles).compactMap(\.bundleIdentifier)
+        )
+        guard let terminal = ExternalTerminalDiscovery.terminalApp(
+            for: appURL,
+            commandHandlerBundleIDs: commandHandlerBundleIDs
+        ) else {
+            externalTerminalSelection = externalTerminal
+            showExternalTerminalSelectionError(
+                "ArcBox could not read a bundle identifier from the selected app."
+            )
             return
         }
 
         externalTerminal = terminal.id
         refreshExternalTerminalApps(additionalTerminal: terminal)
+    }
+
+    private func showExternalTerminalSelectionError(_ message: String) {
+        externalTerminalSelectionErrorMessage = message
+        isShowingExternalTerminalSelectionError = true
     }
 
     // MARK: - Login Item

@@ -25,8 +25,7 @@ enum ExternalTerminalLauncher {
 
         openCommandScript(
             scriptURL,
-            terminal: ExternalTerminalDiscovery.resolve(preference: preference),
-            fallbackCommand: command
+            terminal: ExternalTerminalDiscovery.resolve(preference: preference)
         )
     }
 
@@ -84,8 +83,7 @@ enum ExternalTerminalLauncher {
 
     private static func openCommandScript(
         _ scriptURL: URL,
-        terminal: ExternalTerminalApp,
-        fallbackCommand: String
+        terminal: ExternalTerminalApp
     ) {
         guard let appURL = terminal.appURL else {
             NSWorkspace.shared.open(scriptURL)
@@ -99,7 +97,7 @@ enum ExternalTerminalLauncher {
             Task { @MainActor in
                 logger.error("Failed to open command script: \(error.localizedDescription, privacy: .public)")
                 if let backend = terminal.appleScriptBackend {
-                    openWithAppleScript(backend: backend, command: fallbackCommand)
+                    openWithAppleScript(backend: backend, command: fallbackCommand(for: scriptURL))
                 } else {
                     NSWorkspace.shared.open(scriptURL)
                 }
@@ -148,6 +146,10 @@ enum ExternalTerminalLauncher {
     /// Wrap a value in single quotes for safe shell interpolation.
     private static func shellEscape(_ string: String) -> String {
         "'" + string.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    private static func fallbackCommand(for scriptURL: URL) -> String {
+        shellEscape(scriptURL.path)
     }
 
     private static func escapeForAppleScript(_ string: String) -> String {
