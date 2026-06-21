@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.22.9](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.8...v1.22.9) (2026-06-21)
+
+
+### Bug Fixes
+
+* **menubar:** polish container quick actions ([8b886ea](https://github.com/arcboxlabs/arcbox-desktop/commit/8b886eafe6533dff74871fee0986e57863148874))
+* **menubar:** simplify window focusing ([4397ecb](https://github.com/arcboxlabs/arcbox-desktop/commit/4397ecb19535f359266310dd145547439ac5b802))
+* **menubar:** wire window actions ([2a8e0ea](https://github.com/arcboxlabs/arcbox-desktop/commit/2a8e0ea6173d1c82ddcbb72b02972c35dcf39a94))
+* **settings:** polish settings sidebar window ([#237](https://github.com/arcboxlabs/arcbox-desktop/issues/237)) ([6bfed09](https://github.com/arcboxlabs/arcbox-desktop/commit/6bfed09b8b5f93c8fc4c5e429d41cb0e53d4c264))
+* **terminal:** discover external terminal apps ([dd7fa64](https://github.com/arcboxlabs/arcbox-desktop/commit/dd7fa64a9f2d20ecd1603e468de6fb226a6bd9db))
+* **terminal:** open external terminals with command scripts ([da02ed3](https://github.com/arcboxlabs/arcbox-desktop/commit/da02ed3d3f912e66c5499c9475f3deb9e6456e43))
+* **terminal:** run fallback script and surface picker errors ([3194f47](https://github.com/arcboxlabs/arcbox-desktop/commit/3194f473d00fba52c4f6a7176d6370a1eec10602))
+
 ## [1.22.8](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.7...v1.22.8) (2026-06-15)
 
 
