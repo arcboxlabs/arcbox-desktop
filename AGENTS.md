@@ -4,7 +4,7 @@
 - Build: `xcodebuild build -project ArcBox.xcodeproj -scheme ArcBox -configuration Debug`
 - Test all: `xcodebuild test -project ArcBox.xcodeproj -scheme ArcBox -configuration Debug -destination 'platform=macOS'`
 - Swift-only (skip Rust): add `SKIP_RUST_BUILD=1 CODE_SIGN_IDENTITY=-` to xcodebuild
-- Rust binaries: the Xcode build phase runs `scripts/embed-arcbox-binaries.py`, which calls `make build-rust` in `../arcbox`
+- Rust binaries: the Xcode build phase runs `cargo xtask macos embed`, which calls `make build-rust` in `../arcbox`
 
 ## Architecture
 - **ArcBox/** — SwiftUI macOS app (MVVM): Views/, ViewModels/, Models/, Services/, Components/, Theme/
@@ -17,7 +17,7 @@
 ## Daemon Signing
 - The daemon MUST be signed with Developer ID, not Xcode's Apple Development certificate
 - Restricted entitlements (`com.apple.security.virtualization`, `com.apple.security.hypervisor`, `com.apple.vm.networking`) require Developer ID for AMFI to accept them; Apple Development signing causes silent `OS_REASON_EXEC` crash loops from launchd
-- `embed-arcbox-binaries.py` resolves Developer ID by SHA-1 hash (not name, to avoid keychain ambiguity) independently of Xcode's `CODE_SIGN_IDENTITY`
+- `cargo xtask macos embed` resolves Developer ID by SHA-1 hash (not name, to avoid keychain ambiguity) independently of Xcode's `CODE_SIGN_IDENTITY`
 - If daemon fails to start locally: `make -C ../arcbox sign-daemon`
 
 ## SwiftUI Startup Timing — Known Pitfalls

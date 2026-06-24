@@ -1,0 +1,4 @@
+[alias]
+# `cargo xtask <command>` runs the standalone dev-tool crate. Run from the repo
+# root so the relative manifest path resolves. See xtask/README.md.
+xtask = "run --quiet --manifest-path xtask/Cargo.toml --"
