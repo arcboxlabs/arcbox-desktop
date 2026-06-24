@@ -25,9 +25,9 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 120
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      prerelease: ${{ steps.version.outputs.prerelease }}
-      channel: ${{ steps.version.outputs.channel }}
+      version: ${{ steps.resolve.outputs.version }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+      channel: ${{ steps.resolve.outputs.channel }}
       dmg: ${{ steps.dmg.outputs.dmg }}
       ed_signature: ${{ steps.sparkle_sign.outputs.ed_signature }}
       dmg_length: ${{ steps.sparkle_sign.outputs.dmg_length }}
@@ -39,69 +39,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve arcbox ref
-        id: arcbox_ref
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Resolve build metadata
+        id: resolve
         run: |
-          # Priority: workflow input > arcbox.version file > master
-          if [ -n "${{ inputs.arcbox_ref }}" ] && [ "${{ inputs.arcbox_ref }}" != "master" ]; then
-            REF="${{ inputs.arcbox_ref }}"
-          elif [ -f arcbox.version ]; then
-            REF="$(tr -d '[:space:]' < arcbox.version)"
-          else
-            REF="master"
-          fi
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          echo "Arcbox ref: $REF"
+          cargo xtask release resolve \
+            --arcbox-ref "${{ inputs.arcbox_ref }}" \
+            --tag "${{ inputs.tag }}"
 
       - name: Checkout arcbox
         uses: actions/checkout@v6
         with:
           repository: arcboxlabs/arcbox
           path: arcbox-core
-          ref: ${{ steps.arcbox_ref.outputs.ref }}
-
-      - name: Determine version
-        id: version
-        run: |
-          # Read canonical version from Version.xcconfig
-          XCCONFIG_VERSION=$(sed -n 's/^MARKETING_VERSION *= *\(.*\)/\1/p' \
-              Version.xcconfig | sed 's/ *\/\/.*//' | tr -d ' ')
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ -n "${{ inputs.tag }}" ]; then
-              VERSION="${{ inputs.tag }}"
-            else
-              VERSION="v${XCCONFIG_VERSION}"
-            fi
-          else
-            VERSION="${GITHUB_REF#refs/tags/}"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          # Validate tag version matches Version.xcconfig
-          TAG_VER="${VERSION#v}"
-          if [ "$TAG_VER" != "$XCCONFIG_VERSION" ]; then
-            echo "::warning::Tag version ($TAG_VER) differs from Version.xcconfig ($XCCONFIG_VERSION)"
-          fi
-
-          if echo "$VERSION" | grep -qE '(alpha|beta|rc)'; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          # Determine Sparkle update channel
-          if echo "$VERSION" | grep -qE 'alpha'; then
-            echo "channel=alpha" >> "$GITHUB_OUTPUT"
-          elif echo "$VERSION" | grep -qE 'beta'; then
-            echo "channel=beta" >> "$GITHUB_OUTPUT"
-          elif echo "$VERSION" | grep -qE 'rc'; then
-            echo "channel=rc" >> "$GITHUB_OUTPUT"
-          else
-            echo "channel=stable" >> "$GITHUB_OUTPUT"
-          fi
-
-          echo "Building version: $VERSION"
+          ref: ${{ steps.resolve.outputs.ref }}
 
       - name: Install dependencies
         timeout-minutes: 5
@@ -145,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          REF="${{ steps.arcbox_ref.outputs.ref }}"
+          REF="${{ steps.resolve.outputs.ref }}"
 
           # Resolve which release to download:
           #   - If REF is a version tag (v*), use that exact release
@@ -214,14 +169,7 @@ jobs:
           file arcbox-core/target/release/abctl arcbox-core/target/release/arcbox-daemon
           echo "found=true" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Rust
-        if: steps.prebuilt.outputs.found != 'true'
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
       - name: Cache cargo
-        if: steps.prebuilt.outputs.found != 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -268,32 +216,31 @@ jobs:
         run: ln -s "$GITHUB_WORKSPACE/arcbox-core" ../arcbox
 
       - name: Create Local.xcconfig
-        env:
-          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
         run: |
+          # Telemetry/Sparkle keys are injected into Info.plist at package time
+          # by `cargo xtask macos dmg` (plutil), not via INFOPLIST_KEY_ build
+          # settings — those silently drop custom keys. This file only supplies
+          # the project base configuration.
           cat > Local.xcconfig <<XCEOF
           #include "Version.xcconfig"
-          INFOPLIST_KEY_SUPublicEDKey = ${SPARKLE_PUBLIC_KEY}
-          SENTRY_DSN = ${SENTRY_DSN}
-          POSTHOG_API_KEY = ${POSTHOG_API_KEY}
           XCEOF
-          echo "Local.xcconfig:"
-          cat Local.xcconfig
 
       - name: Trust SwiftPM plugins
         run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
 
       - name: Build DMG
         id: dmg
+        env:
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
         run: |
           make dmg-release \
             ARCBOX_DIR="${{ github.workspace }}/arcbox-core" \
             SKIP_BUILD=1 \
             SIGN_IDENTITY="${{ secrets.APPLE_SIGNING_IDENTITY }}" \
-            VERSION="${{ steps.version.outputs.version }}" \
-            SPARKLE_FEED_URL="https://release.arcboxcdn.com/desktop/appcast/${{ steps.version.outputs.channel }}.xml" \
+            VERSION="${{ steps.resolve.outputs.version }}" \
+            SPARKLE_FEED_URL="https://release.arcboxcdn.com/desktop/appcast/${{ steps.resolve.outputs.channel }}.xml" \
             NOTARIZE=1 \
             PROVISIONING_PROFILE="$RUNNER_TEMP/embedded.provisionprofile"
           DMG_PATH=$(ls "${{ github.workspace }}/arcbox-core/target/ArcBox-"*.dmg | head -1)
@@ -376,7 +323,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.resolve.outputs.version }}
         run: |
           # Install sentry-cli
           brew install getsentry/tools/sentry-cli
@@ -463,6 +410,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
       - name: Download DMG artifact
         uses: actions/download-artifact@v4
         with:
@@ -544,7 +496,7 @@ jobs:
           fi
 
           mkdir -p cdn-staging/desktop/appcast
-          scripts/generate-appcast.py "${APPCAST_ARGS[@]}"
+          cargo xtask release appcast "${APPCAST_ARGS[@]}"
 
       - name: Update latest.json
         run: |
@@ -561,7 +513,7 @@ jobs:
             LATEST_ARGS+=(--existing existing/latest.json)
           fi
 
-          scripts/update-latest-json.py "${LATEST_ARGS[@]}"
+          cargo xtask release latest-json "${LATEST_ARGS[@]}"
 
       - name: Prepare staging directory
         run: |

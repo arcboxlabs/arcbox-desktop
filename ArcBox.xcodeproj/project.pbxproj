@@ -273,7 +273,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "exec \"${PROJECT_DIR}/scripts/embed-arcbox-binaries.py\"\n";
+			shellScript = "if [ \"$SKIP_RUST_BUILD\" = \"1\" ]; then echo 'note: SKIP_RUST_BUILD=1, skipping binary embedding'; exit 0; fi\nexport PATH=\"$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"${PROJECT_DIR}\"\nexec cargo xtask macos embed\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

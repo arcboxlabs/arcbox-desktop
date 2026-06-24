@@ -21,6 +21,9 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# Rust (xtask)
+/xtask/target/
+
 # Xcode build output
 build/
 
