@@ -36,6 +36,14 @@ extension KubeConfig {
             case contexts
             case users
         }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            currentContext = try container.decodeIfPresent(String.self, forKey: .currentContext)
+            clusters = try container.decodeIfPresent([NamedCluster].self, forKey: .clusters) ?? []
+            contexts = try container.decodeIfPresent([NamedContext].self, forKey: .contexts)
+            users = try container.decodeIfPresent([NamedUser].self, forKey: .users) ?? []
+        }
     }
 
     struct NamedCluster: Decodable {
@@ -44,8 +52,8 @@ extension KubeConfig {
     }
 
     struct Cluster: Decodable {
-        let server: String
-        let certificateAuthorityData: String
+        let server: String?
+        let certificateAuthorityData: String?
 
         enum CodingKeys: String, CodingKey {
             case server

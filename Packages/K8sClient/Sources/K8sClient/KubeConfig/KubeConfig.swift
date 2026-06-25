@@ -35,23 +35,40 @@ public struct KubeConfig: Sendable {
             document.contexts?.first { $0.name == currentContext }?.context
         }
 
-        let cluster = context.flatMap { context in
-            document.clusters.first { $0.name == context.cluster }
-        } ?? document.clusters.first
+        let cluster: KubeConfig.NamedCluster?
+        if let context {
+            cluster = document.clusters.first { $0.name == context.cluster }
+            guard cluster != nil else {
+                throw KubeConfigError.missingField("cluster \(context.cluster)")
+            }
+        } else {
+            cluster = document.clusters.first
+        }
 
         guard let cluster else {
             throw KubeConfigError.missingField("server")
         }
-        guard let caData = Data(base64Encoded: cluster.cluster.certificateAuthorityData) else {
+        guard let server = cluster.cluster.server else {
+            throw KubeConfigError.missingField("server")
+        }
+        guard let caB64 = cluster.cluster.certificateAuthorityData,
+            let caData = Data(base64Encoded: caB64)
+        else {
             throw KubeConfigError.missingField("certificate-authority-data")
         }
 
-        self.server = cluster.cluster.server
+        self.server = server
         self.certificateAuthorityData = caData
 
-        let user = context.flatMap { context in
-            document.users.first { $0.name == context.user }
-        } ?? document.users.first
+        let user: KubeConfig.NamedUser?
+        if let context {
+            user = document.users.first { $0.name == context.user }
+            guard user != nil else {
+                throw KubeConfigError.missingField("user \(context.user)")
+            }
+        } else {
+            user = document.users.first
+        }
 
         // Try certificate auth first
         let certB64 = user?.user.clientCertificateData
