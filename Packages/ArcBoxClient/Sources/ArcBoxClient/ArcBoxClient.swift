@@ -155,6 +155,16 @@ public final class ArcBoxClient: Sendable {
         .init(wrapping: grpcClient)
     }
 
+    /// Sandbox lifecycle operations.
+    public var sandboxes: Sandbox_V1_SandboxService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
+    /// Sandbox snapshot operations.
+    public var snapshots: Sandbox_V1_SandboxSnapshotService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
     /// Kubernetes cluster lifecycle operations.
     public var kubernetes: Arcbox_V1_KubernetesService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)

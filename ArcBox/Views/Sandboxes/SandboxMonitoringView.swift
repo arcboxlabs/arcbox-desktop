@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Metric card matching the E2B monitoring dashboard style
+/// Metric card matching the ArcBox monitoring dashboard style
 struct MetricCard: View {
     let title: String
     let value: String
@@ -46,7 +46,7 @@ struct MetricCard: View {
     }
 }
 
-/// Chart placeholder matching the E2B monitoring style
+/// Chart placeholder matching the ArcBox monitoring style
 struct MonitoringChart: View {
     let title: String
     let value: String
@@ -139,13 +139,15 @@ struct SandboxMonitoringView: View {
                     MetricCard(
                         title: "Start Rate",
                         value: String(format: "%.3f", vm.startRatePerSecond),
-                        subtitle: "Start Rate Per Second\n(5-sec avg)"
+                        subtitle: "Start Rate Per Second\n(5-sec rolling avg)",
+                        isLive: false
                     )
                     MetricCard(
                         title: "Peak Concurrent",
                         value: "\(vm.peakConcurrentSandboxes)",
-                        subtitle: "Peak Concurrent Sandboxes\n(30-day max)",
-                        limit: vm.concurrentLimit
+                        subtitle: "Peak Concurrent Sandboxes\n(session max)",
+                        limit: vm.concurrentLimit,
+                        isLive: false
                     )
                 }
 

@@ -5,14 +5,20 @@ struct SandboxRowView: View {
     let sandbox: SandboxViewModel
     let isSelected: Bool
     let onSelect: () -> Void
+    var onStop: (() -> Void)? = nil
+    var onRemove: (() -> Void)? = nil
 
     @State private var isHovered: Bool = false
 
     private var stateColor: Color {
         switch sandbox.state {
+        case .starting: AppColors.warning
+        case .ready, .idle: AppColors.running
         case .running: AppColors.running
-        case .paused: AppColors.warning
+        case .stopping: AppColors.warning
         case .stopped: AppColors.stopped
+        case .failed: AppColors.error
+        case .removed, .unknown: AppColors.stopped
         }
     }
 
@@ -28,12 +34,12 @@ struct SandboxRowView: View {
                         .foregroundStyle(stateColor)
                 }
 
-            // Name and template
+            // Name and ID
             VStack(alignment: .leading, spacing: 2) {
-                Text(sandbox.alias)
+                Text(sandbox.displayName)
                     .font(.system(size: 13))
                     .lineLimit(1)
-                Text(sandbox.templateID)
+                Text(sandbox.shortID)
                     .font(.system(size: 11))
                     .foregroundStyle(
                         isSelected ? Color.white.opacity(0.67) : AppColors.textSecondary
@@ -49,11 +55,19 @@ struct SandboxRowView: View {
 
             // Action buttons
             if isHovered || isSelected {
-                IconButton(
-                    symbol: sandbox.isRunning ? "stop.fill" : "trash.fill",
-                    action: {},
-                    color: isSelected ? AppColors.onAccent : AppColors.textSecondary
-                )
+                if sandbox.state.isActive {
+                    IconButton(
+                        symbol: "stop.fill",
+                        action: { onStop?() },
+                        color: isSelected ? AppColors.onAccent : AppColors.textSecondary
+                    )
+                } else {
+                    IconButton(
+                        symbol: "trash.fill",
+                        action: { onRemove?() },
+                        color: isSelected ? AppColors.onAccent : AppColors.textSecondary
+                    )
+                }
             }
         }
         .padding(.horizontal, 8)

@@ -12,6 +12,12 @@ extension Notification.Name {
     static let dockerVolumeChanged = Notification.Name("dockerVolumeChanged")
 }
 
+// Sandbox notifications are defined separately from Docker events since they
+// originate from the ArcBox gRPC event stream, not the Docker daemon.
+extension Notification.Name {
+    static let sandboxChanged = Notification.Name("sandboxChanged")
+}
+
 // MARK: - DockerEventMonitor
 
 /// App-level Docker event listener that streams `/events` from the daemon,

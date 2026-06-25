@@ -1,14 +1,20 @@
+import ArcBoxClient
 import SwiftUI
 
 /// Column 3: sandbox detail with tab-based toolbar
 struct SandboxDetailView: View {
     @Environment(SandboxesViewModel.self) private var vm
+    @Environment(\.arcboxClient) private var client
 
     private func stateColor(_ state: SandboxState) -> Color {
         switch state {
+        case .starting: AppColors.warning
+        case .ready, .idle: AppColors.running
         case .running: AppColors.running
-        case .paused: AppColors.warning
+        case .stopping: AppColors.warning
         case .stopped: AppColors.stopped
+        case .failed: AppColors.error
+        case .removed, .unknown: AppColors.stopped
         }
     }
 
@@ -22,23 +28,41 @@ struct SandboxDetailView: View {
                 case .info:
                     ScrollView {
                         VStack(spacing: 0) {
-                            InfoRow(label: "Alias", value: sandbox.alias)
                             InfoRow(label: "ID", value: sandbox.shortID)
-                            InfoRow(label: "Template", value: sandbox.templateID)
                             InfoRow(label: "Status", value: sandbox.state.label)
+                            InfoRow(label: "IP Address", value: sandbox.ipAddress.isEmpty ? "—" : sandbox.ipAddress)
                             InfoRow(label: "CPU", value: sandbox.cpuDisplay)
                             InfoRow(label: "Memory", value: sandbox.memoryDisplay)
-                            InfoRow(label: "Started", value: sandbox.startedAgo)
-                            InfoRow(label: "Time Left", value: sandbox.timeRemaining)
+                            InfoRow(label: "Created", value: sandbox.createdAgo)
+                            if let readyAt = sandbox.readyAt {
+                                InfoRow(label: "Ready At", value: relativeTime(from: readyAt))
+                            }
+                            if sandbox.lastExitedAt != nil {
+                                InfoRow(label: "Last Exit Code", value: "\(sandbox.lastExitCode)")
+                            }
+                            if !sandbox.error.isEmpty {
+                                InfoRow(label: "Error", value: sandbox.error)
+                            }
+                            if !sandbox.labels.isEmpty {
+                                InfoRow(
+                                    label: "Labels",
+                                    value: sandbox.labels.map { "\($0.key)=\($0.value)" }
+                                        .joined(separator: ", ")
+                                )
+                            }
                         }
                         .infoSectionStyle()
                         .padding(16)
                     }
-                case .logs:
-                    Spacer()
-                    Text("Logs coming soon...")
-                        .foregroundStyle(AppColors.textSecondary)
-                    Spacer()
+                case .terminal:
+                    if sandbox.state.isAcceptingCommands {
+                        SandboxTerminalTab(sandboxID: sandbox.id)
+                    } else {
+                        Spacer()
+                        Text("Sandbox must be in ready or idle state for terminal access")
+                            .foregroundStyle(AppColors.textSecondary)
+                        Spacer()
+                    }
                 }
             } else {
                 Spacer()
@@ -58,6 +82,11 @@ struct SandboxDetailView: View {
                 }
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 200)
+            }
+        }
+        .task(id: vm.selectedID) {
+            if let id = vm.selectedID {
+                await vm.loadSandboxDetails(id, client: client)
             }
         }
     }
