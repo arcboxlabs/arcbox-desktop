@@ -156,6 +156,18 @@ public enum Arcbox_V1_AgentService {
                 method: "DiskTrim"
             )
         }
+        /// Namespace for "WatchReadiness" metadata.
+        public enum WatchReadiness {
+            /// Request type for "WatchReadiness".
+            public typealias Input = Arcbox_V1_WatchReadinessRequest
+            /// Response type for "WatchReadiness".
+            public typealias Output = Arcbox_V1_ReadinessEvent
+            /// Descriptor for "WatchReadiness".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "WatchReadiness"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.AgentService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Ping.descriptor,
@@ -168,7 +180,8 @@ public enum Arcbox_V1_AgentService {
             GetKubernetesStatus.descriptor,
             GetKubeconfig.descriptor,
             Shutdown.descriptor,
-            DiskTrim.descriptor
+            DiskTrim.descriptor,
+            WatchReadiness.descriptor
         ]
     }
 }
@@ -397,6 +410,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_DiskTrimRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_DiskTrimResponse>
+
+        /// Handle the "WatchReadiness" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest readiness events until the requested runtime is ready or failed.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_WatchReadinessRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ReadinessEvent` messages.
+        func watchReadiness(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchReadinessRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent>
     }
 
     /// Service protocol for the "arcbox.v1.AgentService" service.
@@ -610,6 +641,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.ServerRequest<Arcbox_V1_DiskTrimRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_DiskTrimResponse>
+
+        /// Handle the "WatchReadiness" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest readiness events until the requested runtime is ready or failed.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchReadinessRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ReadinessEvent` messages.
+        func watchReadiness(
+            request: GRPCCore.ServerRequest<Arcbox_V1_WatchReadinessRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent>
     }
 
     /// Simple service protocol for the "arcbox.v1.AgentService" service.
@@ -821,6 +870,25 @@ extension Arcbox_V1_AgentService {
             request: Arcbox_V1_DiskTrimRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_DiskTrimResponse
+
+        /// Handle the "WatchReadiness" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest readiness events until the requested runtime is ready or failed.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_WatchReadinessRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_ReadinessEvent` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchReadiness(
+            request: Arcbox_V1_WatchReadinessRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_ReadinessEvent>,
+            context: GRPCCore.ServerContext
+        ) async throws
     }
 }
 
@@ -944,6 +1012,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_DiskTrimResponse>(),
             handler: { request, context in
                 try await self.diskTrim(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.WatchReadiness.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_WatchReadinessRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ReadinessEvent>(),
+            handler: { request, context in
+                try await self.watchReadiness(
                     request: request,
                     context: context
                 )
@@ -1074,6 +1153,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
             context: context
         )
         return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func watchReadiness(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchReadinessRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent> {
+        let response = try await self.watchReadiness(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
     }
 }
 
@@ -1220,6 +1310,23 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
                 context: context
             ),
             metadata: [:]
+        )
+    }
+
+    public func watchReadiness(
+        request: GRPCCore.ServerRequest<Arcbox_V1_WatchReadinessRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchReadiness(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
         )
     }
 }
@@ -1490,6 +1597,29 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_DiskTrimResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_DiskTrimResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchReadiness" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest readiness events until the requested runtime is ready or failed.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchReadinessRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchReadinessRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ReadinessEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchReadiness<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchReadinessRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchReadinessRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ReadinessEvent>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ReadinessEvent>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -1888,6 +2018,38 @@ extension Arcbox_V1_AgentService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "WatchReadiness" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest readiness events until the requested runtime is ready or failed.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchReadinessRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchReadinessRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ReadinessEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchReadiness<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchReadinessRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchReadinessRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ReadinessEvent>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ReadinessEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.WatchReadiness.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2210,6 +2372,33 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_DiskTrimRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_DiskTrimResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchReadiness" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams guest readiness events until the requested runtime is ready or failed.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_WatchReadinessRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchReadiness<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_WatchReadinessRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ReadinessEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchReadiness(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchReadinessRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ReadinessEvent>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2578,6 +2767,37 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.diskTrim(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchReadiness" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams guest readiness events until the requested runtime is ready or failed.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchReadiness<Result>(
+        _ message: Arcbox_V1_WatchReadinessRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ReadinessEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_WatchReadinessRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchReadiness(
             request: request,
             options: options,
             onResponse: handleResponse
