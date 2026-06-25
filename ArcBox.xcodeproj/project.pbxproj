@@ -1464,7 +1464,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/$(ARCBOX_PRODUCT_NAME).app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/$(ARCBOX_PRODUCT_NAME)";
 			};
 			name = Release;
 		};
@@ -1486,8 +1486,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcBox/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
-				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(ARCBOX_APP_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleName = "$(ARCBOX_PRODUCT_NAME)";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1495,8 +1495,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = ArcBox;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ARCBOX_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(ARCBOX_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
@@ -1605,13 +1605,13 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArcBox.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArcBox";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/$(ARCBOX_PRODUCT_NAME).app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/$(ARCBOX_PRODUCT_NAME)";
 			};
 			name = Debug;
 		};
 		FA16326409B9B381CDC02A57 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 68FD048401D9884E96A52412 /* Version.xcconfig */;
+			baseConfigurationReference = A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1627,8 +1627,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcBox/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
-				INFOPLIST_KEY_CFBundleName = ArcBox;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(ARCBOX_APP_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleName = "$(ARCBOX_PRODUCT_NAME)";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1636,8 +1636,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop;
-				PRODUCT_NAME = ArcBox;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ARCBOX_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(ARCBOX_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = YES;
