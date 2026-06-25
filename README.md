@@ -73,6 +73,14 @@ cargo build --release -p arcbox-daemon
 cargo build --release -p arcbox-agent --target aarch64-unknown-linux-musl
 ```
 
+When bumping the embedded ArcBox daemon version, update `arcbox.version` and the generated gRPC client in the same change:
+
+```bash
+make bump-arcbox VERSION=v0.4.12
+```
+
+This wraps `cargo xtask protocol bump --version v0.4.12`, which restores the previous `arcbox.version` and generated client if generation fails. CI verifies this with `make verify-arcbox-protobuf`.
+
 ## Project Structure
 
 ```

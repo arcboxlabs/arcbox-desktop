@@ -16,6 +16,7 @@ repo root and never joins a parent `cargo build`. Requires a Rust toolchain on
 
 ```sh
 cargo xtask release appcast --help
+cargo xtask protocol bump --version v0.4.12
 cargo xtask macos dmg --sign "Developer ID Application: …" --notarize
 ```
 
@@ -26,6 +27,8 @@ cargo xtask macos dmg --sign "Developer ID Application: …" --notarize
 | `macos embed` | Embed arcbox Rust binaries into the app bundle. Runs from the Xcode "Embed Arcbox Binaries" build phase; env-driven (`PROJECT_DIR`, `BUILT_PRODUCTS_DIR`, `SKIP_RUST_BUILD`, …). |
 | `macos bundle` | Wrap the `arcbox-daemon` binary in a minimal signed `.app` (its own `embedded.provisionprofile` for AMFI). |
 | `macos dmg` | Build `ArcBox.app`, embed assets/binaries, bundle + sign the daemon, deep-sign, package the DMG, and notarize. Injects `PostHogAPIKey`/`SentryDSN`/`SUPublicEDKey` into Info.plist. |
+| `protocol bump` | Update `arcbox.version` and regenerate the Swift protobuf client atomically. |
+| `protocol verify` | Regenerate the Swift protobuf client from `arcbox.version` and fail if checked-in generated files drift. |
 | `release appcast` | Generate or merge a Sparkle 2.x appcast XML feed. |
 | `release latest-json` | Update the `latest.json` channel manifest. |
 
@@ -37,6 +40,7 @@ src/
   commands/
     macos.rs              dispatch: embed / bundle / dmg (macOS-gated)
     macos/{embed,bundle,dmg}.rs
+    protocol.rs           arcbox.version + protobuf client codegen
     release.rs            dispatch: appcast / latest-json
     release/{appcast,latest_json}.rs
   support/fs.rs           generic helpers shared by macOS commands

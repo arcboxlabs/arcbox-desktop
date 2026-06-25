@@ -6,6 +6,7 @@
 #
 # Local:
 #   make generate-xcodeproj
+#   make bump-arcbox VERSION=v0.4.12
 #   make dmg-signed
 #
 # CI:
@@ -24,12 +25,16 @@ PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
-.PHONY: generate-xcodeproj build-rust prefetch dmg dmg-signed dmg-release clean help
+.PHONY: generate-xcodeproj bump-arcbox verify-arcbox-protobuf build-rust prefetch dmg dmg-signed dmg-release clean help
 
 help:
 	@echo "ArcBox build targets:"
 	@echo ""
 	@echo "  make generate-xcodeproj  Regenerate ArcBox.xcodeproj from project.yml"
+	@echo "  make bump-arcbox VERSION=vX.Y.Z"
+	@echo "                         Update arcbox.version and regenerate protobuf client"
+	@echo "  make verify-arcbox-protobuf"
+	@echo "                         Verify generated protobuf client matches arcbox.version"
 	@echo "  make build-rust     Build arcbox binaries (release)"
 	@echo "  make prefetch       Download boot assets + Docker tools"
 	@echo "  make dmg            Package unsigned DMG (local testing)"
@@ -45,6 +50,18 @@ help:
 
 generate-xcodeproj:
 	xcodegen generate
+
+## ── ArcBox Protocol ───────────────────────────────────
+
+bump-arcbox:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "ERROR: VERSION is required, e.g. make bump-arcbox VERSION=v0.4.12" >&2; \
+		exit 1; \
+	fi
+	cargo xtask protocol bump --version "$(VERSION)"
+
+verify-arcbox-protobuf:
+	cargo xtask protocol verify
 
 ## ── Prerequisites ─────────────────────────────────────
 

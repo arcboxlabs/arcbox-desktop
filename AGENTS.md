@@ -13,6 +13,7 @@
 - **Packages/K8sClient** — Kubernetes API client with kubeconfig + exec-based auth
 - Daemon (`arcbox-daemon`) is a separate Rust binary from the `../arcbox` repo; communicates via gRPC over `~/.arcbox/run/arcbox.sock`
 - Entitlements for the daemon live in `../arcbox/bundle/arcbox.entitlements` (single source of truth)
+- When bumping the embedded daemon version, use `make bump-arcbox VERSION=vX.Y.Z` so `arcbox.version` and generated protobuf client code are updated atomically
 
 ## Daemon Signing
 - The daemon MUST be signed with Developer ID, not Xcode's Apple Development certificate

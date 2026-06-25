@@ -23,6 +23,8 @@ struct Cli {
 enum Command {
     /// macOS build, bundling, signing, and packaging tasks.
     Macos(MacosArgs),
+    /// ArcBox protocol client generation and verification tasks.
+    Protocol(ProtocolArgs),
     /// Release metadata generation (Sparkle appcast, latest.json).
     Release(ReleaseArgs),
 }
@@ -99,6 +101,32 @@ struct MacosDmgArgs {
     #[arg(long, env = "SPARKLE_PUBLIC_KEY")]
     sparkle_public_key: Option<String>,
 }
+
+// ── protocol ────────────────────────────────────────────────────────────────
+
+#[derive(Args)]
+struct ProtocolArgs {
+    #[command(subcommand)]
+    command: ProtocolCommand,
+}
+
+#[derive(Subcommand)]
+enum ProtocolCommand {
+    /// Update arcbox.version and regenerate the Swift protobuf client atomically.
+    Bump(ProtocolBumpArgs),
+    /// Verify the generated Swift protobuf client matches arcbox.version.
+    Verify(ProtocolVerifyArgs),
+}
+
+#[derive(Args)]
+struct ProtocolBumpArgs {
+    /// Embedded arcbox daemon version tag, e.g. v0.4.12.
+    #[arg(long, env = "VERSION")]
+    version: String,
+}
+
+#[derive(Args)]
+struct ProtocolVerifyArgs {}
 
 // ── release ────────────────────────────────────────────────────────────────--
 
@@ -198,6 +226,7 @@ fn main() {
 fn run() -> Result<()> {
     match Cli::parse().command {
         Command::Macos(args) => commands::macos::run(args),
+        Command::Protocol(args) => commands::protocol::run(args),
         Command::Release(args) => commands::release::run(args),
     }
 }
