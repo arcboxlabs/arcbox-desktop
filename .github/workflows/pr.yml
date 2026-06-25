@@ -36,11 +36,18 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Resolve arcbox proto ref
+        id: protoref
+        run: echo "ref=$(tr -d '[:space:]' < arcbox.version)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout arcbox proto definitions
         uses: actions/checkout@v4
         with:
           repository: arcboxlabs/arcbox
           path: arcbox
+          # Pin to the embedded arcbox version so the drift check matches the
+          # daemon the app ships with (see Packages/ArcBoxClient/generate.sh).
+          ref: ${{ steps.protoref.outputs.ref }}
           sparse-checkout: rpc/arcbox-protocol/proto
           sparse-checkout-cone-mode: false
 
@@ -78,6 +85,12 @@ jobs:
         run: |
           brew install swiftlint
           swiftlint lint --strict --config .swiftlint.yml
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          git diff --exit-code ArcBox.xcodeproj project.yml
 
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox

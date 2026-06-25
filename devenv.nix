@@ -6,6 +6,7 @@
   # provides auxiliary tooling: lint/format for pre-commit hooks and
   # protoc for Packages/ArcBoxClient/generate.sh.
   packages = with pkgs; [
+    xcodegen
     swift-format
     swiftlint
     pre-commit

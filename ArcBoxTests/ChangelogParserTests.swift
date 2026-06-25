@@ -6,7 +6,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - Version Header Parsing
 
-    func testParsesVersionHeaderWithDate() {
+    @MainActor func testParsesVersionHeaderWithDate() {
         let input = """
             ## [1.2.0](https://example.com) (2026-03-15)
 
@@ -20,7 +20,7 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertEqual(releases.first?.date, "2026-03-15")
     }
 
-    func testParsesVersionHeaderWithoutLink() {
+    @MainActor func testParsesVersionHeaderWithoutLink() {
         let input = """
             ## [0.9.0] (2025-12-01)
 
@@ -35,7 +35,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - Section Parsing
 
-    func testParsesMultipleSections() {
+    @MainActor func testParsesMultipleSections() {
         let input = """
             ## [2.0.0](https://example.com) (2026-04-01)
 
@@ -61,7 +61,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - Bullet Items
 
-    func testParsesBulletItems() {
+    @MainActor func testParsesBulletItems() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -76,7 +76,7 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertEqual(items, ["alpha feature", "beta feature", "gamma feature"])
     }
 
-    func testIgnoresNonBulletLines() {
+    @MainActor func testIgnoresNonBulletLines() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -93,7 +93,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - cleanItem: Commit Hash Removal
 
-    func testRemovesCommitHashLinks() {
+    @MainActor func testRemovesCommitHashLinks() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -108,7 +108,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - cleanItem: Issue Link Conversion
 
-    func testConvertsIssueLinksToPlainText() {
+    @MainActor func testConvertsIssueLinksToPlainText() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -123,7 +123,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - cleanItem: Bold Scope Removal
 
-    func testRemovesBoldScopeMarkers() {
+    @MainActor func testRemovesBoldScopeMarkers() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -138,7 +138,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - cleanItem: Combined Cleanup
 
-    func testCombinedCleanup() {
+    @MainActor func testCombinedCleanup() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -153,7 +153,7 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - Limit Parameter
 
-    func testLimitParameter() {
+    @MainActor func testLimitParameter() {
         let input = """
             ## [3.0.0](https://example.com) (2026-03-01)
 
@@ -185,12 +185,12 @@ final class ChangelogParserTests: XCTestCase {
 
     // MARK: - Empty / Malformed Input
 
-    func testEmptyInputReturnsEmpty() {
+    @MainActor func testEmptyInputReturnsEmpty() {
         let releases = ChangelogParser.parse("")
         XCTAssertTrue(releases.isEmpty)
     }
 
-    func testMalformedHeadersAreSkipped() {
+    @MainActor func testMalformedHeadersAreSkipped() {
         let input = """
             # Not a version header
 
@@ -202,7 +202,7 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertTrue(releases.isEmpty)
     }
 
-    func testReleaseWithNoSectionsIsIncluded() {
+    @MainActor func testReleaseWithNoSectionsIsIncluded() {
         // A version header with no ### sections and no items still produces a release
         // (with empty sections array).
         let input = """
@@ -214,7 +214,7 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertTrue(releases.first!.sections.isEmpty)
     }
 
-    func testReleaseWithEmptySectionsAreExcluded() {
+    @MainActor func testReleaseWithEmptySectionsAreExcluded() {
         // A section header with no bullet items is not included in sections.
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)

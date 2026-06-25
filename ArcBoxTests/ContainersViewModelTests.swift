@@ -100,7 +100,7 @@ final class ContainersViewModelTests: XCTestCase {
     func testSearchFiltersByName() {
         vm.containers = [
             makeContainer(id: "1", name: "nginx-web"),
-            makeContainer(id: "2", name: "redis-cache"),
+            makeContainer(id: "2", name: "redis-cache", image: "redis:7"),
         ]
         vm.searchText = "nginx"
         XCTAssertEqual(vm.standaloneContainers.count, 1)
