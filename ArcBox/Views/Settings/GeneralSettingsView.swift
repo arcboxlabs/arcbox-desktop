@@ -1,9 +1,8 @@
+import ArcBoxClient
+import PostHog
 import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
-
-import ArcBoxClient
-import PostHog
 
 struct GeneralSettingsView: View {
     private static let chooseExternalTerminalID = "__arcbox_choose_external_terminal__"
@@ -192,10 +191,12 @@ struct GeneralSettingsView: View {
         let commandHandlerBundleIDs = Set(
             externalTerminalApps.filter(\.supportsCommandFiles).compactMap(\.bundleIdentifier)
         )
-        guard let terminal = ExternalTerminalDiscovery.terminalApp(
-            for: appURL,
-            commandHandlerBundleIDs: commandHandlerBundleIDs
-        ) else {
+        guard
+            let terminal = ExternalTerminalDiscovery.terminalApp(
+                for: appURL,
+                commandHandlerBundleIDs: commandHandlerBundleIDs
+            )
+        else {
             externalTerminalSelection = externalTerminal
             showExternalTerminalSelectionError(
                 "ArcBox could not read a bundle identifier from the selected app."
