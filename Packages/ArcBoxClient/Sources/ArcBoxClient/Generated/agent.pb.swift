@@ -151,6 +151,92 @@ public struct Arcbox_V1_RuntimeStatusRequest: Sendable {
   public init() {}
 }
 
+/// Request for guest-driven readiness events.
+public struct Arcbox_V1_WatchReadinessRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Whether the agent should start the runtime if it is not ready.
+  public var startRuntimeIfNeeded: Bool = false
+
+  /// Maximum time to wait for runtime readiness before reporting failure.
+  public var timeoutMs: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Guest readiness event.
+public struct Arcbox_V1_ReadinessEvent: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Event kind.
+  public var kind: Arcbox_V1_ReadinessEvent.Kind = .unspecified
+
+  /// Runtime endpoint exposed to host proxy when known.
+  public var endpoint: String = String()
+
+  /// Human-readable detail for diagnostics.
+  public var detail: String = String()
+
+  /// Per-service status entries for fine-grained observability.
+  public var services: [Arcbox_V1_ServiceStatus] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Kind: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+    case agentReady // = 1
+    case runtimeStarting // = 2
+    case runtimeReady // = 3
+    case runtimeFailed // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .agentReady
+      case 2: self = .runtimeStarting
+      case 3: self = .runtimeReady
+      case 4: self = .runtimeFailed
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .agentReady: return 1
+      case .runtimeStarting: return 2
+      case .runtimeReady: return 3
+      case .runtimeFailed: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_ReadinessEvent.Kind] = [
+      .unspecified,
+      .agentReady,
+      .runtimeStarting,
+      .runtimeReady,
+      .runtimeFailed,
+    ]
+
+  }
+
+  public init() {}
+}
+
 /// Runtime status report.
 public struct Arcbox_V1_RuntimeStatusResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -724,6 +810,90 @@ extension Arcbox_V1_RuntimeStatusRequest: SwiftProtobuf.Message, SwiftProtobuf._
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Arcbox_V1_WatchReadinessRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".WatchReadinessRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}start_runtime_if_needed\0\u{3}timeout_ms\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.startRuntimeIfNeeded) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.timeoutMs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.startRuntimeIfNeeded != false {
+      try visitor.visitSingularBoolField(value: self.startRuntimeIfNeeded, fieldNumber: 1)
+    }
+    if self.timeoutMs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.timeoutMs, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_WatchReadinessRequest, rhs: Arcbox_V1_WatchReadinessRequest) -> Bool {
+    if lhs.startRuntimeIfNeeded != rhs.startRuntimeIfNeeded {return false}
+    if lhs.timeoutMs != rhs.timeoutMs {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReadinessEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReadinessEvent"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kind\0\u{1}endpoint\0\u{1}detail\0\u{1}services\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.endpoint) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.detail) }()
+      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.services) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.kind != .unspecified {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 1)
+    }
+    if !self.endpoint.isEmpty {
+      try visitor.visitSingularStringField(value: self.endpoint, fieldNumber: 2)
+    }
+    if !self.detail.isEmpty {
+      try visitor.visitSingularStringField(value: self.detail, fieldNumber: 3)
+    }
+    if !self.services.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.services, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReadinessEvent, rhs: Arcbox_V1_ReadinessEvent) -> Bool {
+    if lhs.kind != rhs.kind {return false}
+    if lhs.endpoint != rhs.endpoint {return false}
+    if lhs.detail != rhs.detail {return false}
+    if lhs.services != rhs.services {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReadinessEvent.Kind: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0KIND_UNSPECIFIED\0\u{1}AGENT_READY\0\u{1}RUNTIME_STARTING\0\u{1}RUNTIME_READY\0\u{1}RUNTIME_FAILED\0")
 }
 
 extension Arcbox_V1_RuntimeStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
