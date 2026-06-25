@@ -1,0 +1,16 @@
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "swift-format"
+name = "swift-format"
+language = "system"
+entry = "swift-format format -i"
+types = ["swift"]
+
+[[repos.hooks]]
+id = "swiftlint"
+name = "swiftlint"
+language = "system"
+entry = "swiftlint lint --strict --config .swiftlint.yml"
+types = ["swift"]
