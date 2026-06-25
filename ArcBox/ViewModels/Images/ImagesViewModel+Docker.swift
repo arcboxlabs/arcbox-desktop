@@ -1,91 +1,10 @@
 import ArcBoxClient
 import DockerClient
+import Foundation
 import OSLog
 import OpenAPIRuntime
-import SwiftUI
 
-/// Detail tab for images
-enum ImageDetailTab: String, CaseIterable, Identifiable {
-    case info = "Info"
-    case terminal = "Terminal"
-    case files = "Files"
-
-    var id: String { rawValue }
-}
-
-/// Sort field for images
-enum ImageSortField: String, CaseIterable {
-    case name = "Name"
-    case dateCreated = "Date Created"
-    case size = "Size"
-}
-
-/// Image list state
-@MainActor
-@Observable
-class ImagesViewModel {
-    var images: [ImageViewModel] = []
-    var selectedID: String?
-    var activeTab: ImageDetailTab = .info
-    var listWidth: CGFloat = 320
-    var showPullImageSheet: Bool = false
-    var searchText: String = ""
-    var isSearching: Bool = false
-    var sortBy: ImageSortField = .name
-    var sortAscending: Bool = true
-    var lastError: String?
-    private var iconsByImage: [String: String] = [:]
-
-    var totalSize: String {
-        let bytes: UInt64 = images.map(\.sizeBytes).reduce(0, +)
-        let gb = Double(bytes) / 1_000_000_000.0
-        if gb >= 1.0 {
-            return String(format: "%.2f GB total", gb)
-        }
-        let mb = Double(bytes) / 1_000_000.0
-        return String(format: "%.1f MB total", mb)
-    }
-
-    var sortedImages: [ImageViewModel] {
-        let filtered: [ImageViewModel]
-        if !searchText.isEmpty {
-            let query = searchText.lowercased()
-            filtered = images.filter {
-                $0.repository.lowercased().contains(query)
-                    || $0.tag.lowercased().contains(query)
-            }
-        } else {
-            filtered = images
-        }
-        return filtered.sorted { a, b in
-            let result: Bool
-            switch sortBy {
-            case .name:
-                result = a.repository.localizedCaseInsensitiveCompare(b.repository) == .orderedAscending
-            case .dateCreated:
-                result = a.createdAt < b.createdAt
-            case .size:
-                result = a.sizeBytes < b.sizeBytes
-            }
-            return sortAscending ? result : !result
-        }
-    }
-
-    var selectedImage: ImageViewModel? {
-        guard let id = selectedID else { return nil }
-        return images.first { $0.id == id }
-    }
-
-    func selectImage(_ id: String) {
-        selectedID = id
-    }
-
-    private func applyCachedIcons(to viewModels: inout [ImageViewModel]) {
-        for i in viewModels.indices {
-            viewModels[i].iconURL = iconsByImage[viewModels[i].repository]
-        }
-    }
-
+extension ImagesViewModel {
     /// Fetch icon URLs for all unique image repositories that are not already cached.
     func fetchIcons(client: ArcBoxClient?) async {
         guard let client else { return }
@@ -126,8 +45,6 @@ class ImagesViewModel {
         images = snapshot
     }
 
-    // MARK: - Docker API Operations
-
     /// Load images from Docker Engine API.
     func loadImages(docker: DockerClient?, iconClient: ArcBoxClient? = nil) async {
         guard let docker else {
@@ -155,7 +72,7 @@ class ImagesViewModel {
     /// e.g. "localhost:5000/repo:tag" → ("localhost:5000/repo", "tag")
     ///      "repo@sha256:abc" → ("repo@sha256:abc", nil)
     ///      "nginx:latest" → ("nginx", "latest")
-    private func parseImageReference(_ reference: String) -> (fromImage: String, tag: String?) {
+    func parseImageReference(_ reference: String) -> (fromImage: String, tag: String?) {
         if reference.contains("@") {
             return (fromImage: reference, tag: nil)
         }
@@ -218,6 +135,7 @@ class ImagesViewModel {
         lastError = nil
         guard let docker else { return }
         if selectedID == id { selectedID = nil }
+
         do {
             let response = try await docker.api.ImageDelete(path: .init(name: dockerId), query: .init(force: true))
             _ = try response.ok
@@ -229,34 +147,5 @@ class ImagesViewModel {
             lastError = error.localizedDescription
         }
         await loadImages(docker: docker)
-    }
-
-}
-
-// MARK: - Docker API → UI Model Conversion
-
-extension ImageViewModel {
-    /// Create ImageViewModels from a Docker Engine API ImageSummary.
-    /// One ImageSummary can have multiple RepoTags, producing multiple view models.
-    static func fromDocker(_ summary: Components.Schemas.ImageSummary) -> [ImageViewModel] {
-        let tags = summary.RepoTags.isEmpty ? ["<none>:<none>"] : summary.RepoTags
-
-        return tags.map { repoTag in
-            let parts = repoTag.split(separator: ":", maxSplits: 1)
-            let repository = parts.first.map(String.init) ?? "<none>"
-            let tag = parts.count > 1 ? String(parts[1]) : "<none>"
-
-            return ImageViewModel(
-                id: "\(summary.Id)/\(repository):\(tag)",
-                dockerId: summary.Id,
-                repository: repository,
-                tag: tag,
-                sizeBytes: UInt64(summary.Size),
-                createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created)),
-                inUse: summary.Containers > 0,
-                os: "",
-                architecture: ""
-            )
-        }
     }
 }
