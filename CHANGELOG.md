@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.22.10](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.9...v1.22.10) (2026-06-25)
+
+
+### Bug Fixes
+
+* **proto:** make generate.sh --remote mode actually work ([#227](https://github.com/arcboxlabs/arcbox-desktop/issues/227)) ([52ed9b2](https://github.com/arcboxlabs/arcbox-desktop/commit/52ed9b2382c616d84a1a78653ed918d1d1b7f111))
+
+
+### Refactoring
+
+* **xtask:** migrate desktop scripts into xtask CLI ([0e69ac0](https://github.com/arcboxlabs/arcbox-desktop/commit/0e69ac046f2e9278523f06f0d050c1ad783bfc34))
+
+
+### Miscellaneous
+
+* **devenv:** add devenv-based reproducible dev shell ([#228](https://github.com/arcboxlabs/arcbox-desktop/issues/228)) ([5b80d3b](https://github.com/arcboxlabs/arcbox-desktop/commit/5b80d3b69369281479343df74048001ddb48cb5a))
+
+
+### Documentation
+
+* update embed reference to 'cargo xtask macos embed' ([6c788d3](https://github.com/arcboxlabs/arcbox-desktop/commit/6c788d37b38f86be107234d34e647574b1742cf9))
+
+
+### CI
+
+* **release:** convert CDN/HTTP steps from curl to github-script ([161e50c](https://github.com/arcboxlabs/arcbox-desktop/commit/161e50cc28f9e10daeb5cc11d6c2ffe735dd2682))
+
 ## [1.22.9](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.8...v1.22.9) (2026-06-21)
 
 
