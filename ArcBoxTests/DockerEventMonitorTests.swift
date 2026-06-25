@@ -142,35 +142,54 @@ final class DockerEventMonitorTests: XCTestCase {
 
     func test_debounce_coalesces_rapidEvents() {
         // Send 3 rapid container events — should coalesce into 1 notification.
-        let exp = expectation(forNotification: .dockerContainerChanged, object: nil)
-        // Inverted extra expectation to verify it fires exactly once within window.
-        let extraExp = expectation(forNotification: .dockerContainerChanged, object: nil)
-        extraExp.isInverted = true
-        // expectedFulfillmentCount on exp is 1 (default)
+        var notificationCount = 0
+        let firstNotification = expectation(description: "first container notification")
+        let token = NotificationCenter.default.addObserver(
+            forName: .dockerContainerChanged,
+            object: nil,
+            queue: .main
+        ) { _ in
+            notificationCount += 1
+            if notificationCount == 1 {
+                firstNotification.fulfill()
+            }
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
 
         monitor.handleEvent(event("container", "start"))
         monitor.handleEvent(event("container", "stop"))
         monitor.handleEvent(event("container", "die"))
 
         // Wait for the debounce to fire (~300ms) + margin
-        wait(for: [exp], timeout: 1.0)
-        // The inverted expectation verifies no second notification arrived
-        wait(for: [extraExp], timeout: 0.5)
+        wait(for: [firstNotification], timeout: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        XCTAssertEqual(notificationCount, 1)
     }
 
     // MARK: - Stop Behavior
 
     func test_stop_cancelsDebounce() {
         // Post an event then immediately stop — debounce should be cancelled.
-        refuteNotification(.dockerContainerChanged) {
-            monitor.handleEvent(event("container", "start"))
-            monitor.stop()
+        var didReceiveNotification = false
+        let token = NotificationCenter.default.addObserver(
+            forName: .dockerContainerChanged,
+            object: nil,
+            queue: .main
+        ) { _ in
+            didReceiveNotification = true
         }
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        monitor.handleEvent(event("container", "start"))
+        monitor.stop()
+
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        XCTAssertFalse(didReceiveNotification)
     }
 
     // MARK: - Start Idempotency
 
-    func test_start_isIdempotent() {
+    func test_start_isIdempotent() async throws {
         // Calling start() twice should not crash or leave zombie tasks.
         // We can't directly assert task count, but we can verify the monitor
         // still works correctly after double-start.
@@ -178,6 +197,7 @@ final class DockerEventMonitorTests: XCTestCase {
         monitor.start(docker: docker)
         monitor.start(docker: docker)
         monitor.stop()
+        try await docker.shutdown()
         // If we get here without crash/hang, idempotency holds.
     }
 }

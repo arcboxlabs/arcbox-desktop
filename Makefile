@@ -5,6 +5,7 @@
 # artifact upload, notarization credentials, Sparkle signing).
 #
 # Local:
+#   make generate-xcodeproj
 #   make dmg-signed
 #
 # CI:
@@ -23,14 +24,14 @@ PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
-.PHONY: build-rust prefetch build-app dmg dmg-signed dmg-release clean help
+.PHONY: generate-xcodeproj build-rust prefetch dmg dmg-signed dmg-release clean help
 
 help:
 	@echo "ArcBox build targets:"
 	@echo ""
+	@echo "  make generate-xcodeproj  Regenerate ArcBox.xcodeproj from project.yml"
 	@echo "  make build-rust     Build arcbox binaries (release)"
 	@echo "  make prefetch       Download boot assets + Docker tools"
-	@echo "  make build-app      Build .app via xcodebuild (debug)"
 	@echo "  make dmg            Package unsigned DMG (local testing)"
 	@echo "  make dmg-signed     Package signed DMG (Developer ID)"
 	@echo "  make dmg-release    Package signed + notarized DMG (CI)"
@@ -39,6 +40,11 @@ help:
 	@echo "Environment:"
 	@echo "  ARCBOX_DIR=$(ARCBOX_DIR)"
 	@echo "  SIGN_IDENTITY=$(SIGN_IDENTITY)"
+
+## ── Xcode Project ─────────────────────────────────────
+
+generate-xcodeproj:
+	xcodegen generate
 
 ## ── Prerequisites ─────────────────────────────────────
 
@@ -63,16 +69,6 @@ prefetch:
 	fi
 	"$(ABCTL)" boot prefetch
 	"$(ABCTL)" docker setup
-
-## ── Build ─────────────────────────────────────────────
-
-build-app:
-	xcodebuild build \
-		-project ArcBox.xcodeproj \
-		-scheme ArcBox \
-		-configuration Debug \
-		-skipPackagePluginValidation \
-		ARCBOX_DIR="$(ARCBOX_DIR)"
 
 ## ── Package ───────────────────────────────────────────
 

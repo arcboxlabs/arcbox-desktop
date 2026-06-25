@@ -19,7 +19,15 @@ OUT_DIR="${SCRIPT_DIR}/Sources/ArcBoxClient/Generated"
 PROTO_TMPDIR=""
 
 GITHUB_REPO="arcboxlabs/arcbox"
-GITHUB_BRANCH="master"
+# Pin the proto ref to the arcbox version the app actually embeds (arcbox.version)
+# rather than master, so the generated gRPC client matches the daemon it ships
+# with. Falls back to master if the pin file is missing.
+ARCBOX_VERSION_FILE="${SCRIPT_DIR}/../../arcbox.version"
+if [ -f "$ARCBOX_VERSION_FILE" ]; then
+    GITHUB_BRANCH="$(tr -d '[:space:]' < "$ARCBOX_VERSION_FILE")"
+else
+    GITHUB_BRANCH="master"
+fi
 GITHUB_PROTO_PATH="rpc/arcbox-protocol/proto"
 
 PROTOS=(
@@ -114,16 +122,16 @@ rm -f "$OUT_DIR"/*.swift
 
 echo ""
 echo "Generating Swift protobuf code..."
-for proto in "${PROTOS[@]}"; do
-    echo "  $proto"
-    protoc \
-        --proto_path="$PROTO_DIR" \
-        --swift_out="$OUT_DIR" \
-        --swift_opt=Visibility=Public \
-        --grpc-swift_out="$OUT_DIR" \
-        --grpc-swift_opt=Visibility=Public \
-        "$PROTO_DIR/$proto"
-done
+printf '  %s\n' "${PROTOS[@]}"
+# One protoc invocation for all files: starts protoc and the plugins once
+# instead of per-proto. Output is identical to the per-file loop.
+protoc \
+    --proto_path="$PROTO_DIR" \
+    --swift_out="$OUT_DIR" \
+    --swift_opt=Visibility=Public \
+    --grpc-swift_out="$OUT_DIR" \
+    --grpc-swift_opt=Visibility=Public \
+    "${PROTOS[@]/#/$PROTO_DIR/}"
 
 echo ""
 echo "Generated files:"
