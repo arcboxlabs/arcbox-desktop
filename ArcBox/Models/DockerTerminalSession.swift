@@ -104,7 +104,7 @@ class DockerTerminalSession {
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
         winSize.ws_row = UInt16(rows)
-        _ = ioctl(primary, TIOCSWINSZ, &winSize)
+        _ = PseudoTerminalHelpers.setWinSize(masterPtyDescriptor: primary, windowSize: &winSize)
 
         // Configure process — use pstramp when available for proper
         // session isolation and controlling-terminal setup.
@@ -194,7 +194,7 @@ class DockerTerminalSession {
         var winSize = winsize()
         winSize.ws_col = UInt16(cols)
         winSize.ws_row = UInt16(rows)
-        _ = ioctl(fd, TIOCSWINSZ, &winSize)
+        _ = PseudoTerminalHelpers.setWinSize(masterPtyDescriptor: fd, windowSize: &winSize)
     }
 
     /// Disconnect and clean up the session.
