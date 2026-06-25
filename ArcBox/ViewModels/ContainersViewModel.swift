@@ -33,6 +33,20 @@ enum ContainerLoadState: Equatable {
     case failed(String)  // Fetch failed with error message
 }
 
+struct ContainerCreateOptions {
+    let image: String
+    let name: String
+    let platform: String?
+    let command: String
+    let entrypoint: String
+    let workingDir: String
+    let autoRemove: Bool
+    let restartPolicy: String
+    let privileged: Bool
+    let readOnlyRootfs: Bool
+    let dockerInit: Bool
+}
+
 /// Container list state, selection, tabs, grouping
 @MainActor
 @Observable
@@ -216,26 +230,16 @@ class ContainersViewModel {
         containers = snapshot
     }
 
-    private func containerDetailsCache() -> [String: (
-        domain: String?, ipAddress: String?, mounts: [ContainerMount], rootfsMountPath: String?
-    )] {
+    private func containerDetailsCache() -> [String: ContainerDetailSnapshot] {
         Dictionary(
             uniqueKeysWithValues: detailsByID.map { id, details in
-                (
-                    id,
-                    (
-                        domain: details.domain,
-                        ipAddress: details.ipAddress,
-                        mounts: details.mounts,
-                        rootfsMountPath: details.rootfsMountPath
-                    )
-                )
+                (id, details)
             }
         )
     }
 
     private func applyCachedDetails(
-        _ cache: [String: (domain: String?, ipAddress: String?, mounts: [ContainerMount], rootfsMountPath: String?)],
+        _ cache: [String: ContainerDetailSnapshot],
         to viewModels: inout [ContainerViewModel]
     ) {
         for i in viewModels.indices {
@@ -373,50 +377,40 @@ class ContainersViewModel {
 
     /// Creates a new container via Docker API and returns its ID, or nil on failure.
     func createContainer(
-        image: String,
-        name: String,
-        platform: String?,
-        command: String,
-        entrypoint: String,
-        workingDir: String,
-        autoRemove: Bool,
-        restartPolicy: String,
-        privileged: Bool,
-        readOnlyRootfs: Bool,
-        dockerInit: Bool,
+        options: ContainerCreateOptions,
         docker: DockerClient?
     ) async -> String? {
         guard let docker else { return nil }
         var config = Components.Schemas.ContainerConfig()
-        config.Image = image
-        let cmdParts = command.split(separator: " ").map(String.init)
+        config.Image = options.image
+        let cmdParts = options.command.split(separator: " ").map(String.init)
         if !cmdParts.isEmpty { config.Cmd = cmdParts }
-        let entrypointParts = entrypoint.split(separator: " ").map(String.init)
+        let entrypointParts = options.entrypoint.split(separator: " ").map(String.init)
         if !entrypointParts.isEmpty { config.Entrypoint = entrypointParts }
-        if !workingDir.isEmpty { config.WorkingDir = workingDir }
+        if !options.workingDir.isEmpty { config.WorkingDir = options.workingDir }
 
         let policyName: Components.Schemas.RestartPolicy.NamePayload =
-            switch restartPolicy {
+            switch options.restartPolicy {
             case "always": .always
             case "unless-stopped": .unless_hyphen_stopped
             case "on-failure": .on_hyphen_failure
             default: .no
             }
         var resources = Components.Schemas.Resources()
-        if dockerInit { resources.Init = true }
+        if options.dockerInit { resources.Init = true }
         let hostConfig = Components.Schemas.HostConfig(
             value1: resources,
             value2: .init(
                 RestartPolicy: .init(Name: policyName),
-                AutoRemove: autoRemove,
-                Privileged: privileged,
-                ReadonlyRootfs: readOnlyRootfs
+                AutoRemove: options.autoRemove,
+                Privileged: options.privileged,
+                ReadonlyRootfs: options.readOnlyRootfs
             )
         )
 
         do {
             let response = try await docker.api.ContainerCreate(
-                query: .init(name: name.isEmpty ? nil : name, platform: platform),
+                query: .init(name: options.name.isEmpty ? nil : options.name, platform: options.platform),
                 body: .json(.init(value1: config, value2: .init(HostConfig: hostConfig)))
             )
             switch response {
@@ -612,8 +606,15 @@ class ContainersViewModel {
                 mounts: mounts,
                 rootfsMountPath: Self.normalized(snapshot.rootfsMountPath)
             )
+            let snapshotDomain = Self.normalized(snapshot.domainname) ?? "-"
+            let snapshotIP = Self.normalized(snapshot.ipAddress) ?? "-"
+            let snapshotRootFS = Self.normalized(snapshot.rootfsMountPath) ?? "-"
+            Log.container.debug("Inspect snapshot for \(id, privacy: .private)")
             Log.container.debug(
-                "Inspect snapshot for \(id, privacy: .private): domain=\(Self.normalized(snapshot.domainname) ?? "-", privacy: .private), ip=\(Self.normalized(snapshot.ipAddress) ?? "-", privacy: .private), mounts=\(mounts.count, privacy: .public), rootfs=\(Self.normalized(snapshot.rootfsMountPath) ?? "-", privacy: .private)"
+                "domain=\(snapshotDomain, privacy: .private), ip=\(snapshotIP, privacy: .private), mounts=\(mounts.count, privacy: .public)"
+            )
+            Log.container.debug(
+                "rootfs=\(snapshotRootFS, privacy: .private)"
             )
         } catch {
             Log.container.error(
@@ -641,8 +642,11 @@ class ContainersViewModel {
                     ipAddress: Self.normalized(details.NetworkSettings?.IPAddress),
                     mounts: mounts
                 )
+                let fallbackDomain = Self.normalized(details.Config?.Domainname) ?? "-"
+                let fallbackIP = Self.normalized(details.NetworkSettings?.IPAddress) ?? "-"
+                Log.container.debug("Inspect fallback for \(id, privacy: .private)")
                 Log.container.debug(
-                    "Inspect fallback for \(id, privacy: .private): domain=\(Self.normalized(details.Config?.Domainname) ?? "-", privacy: .private), ip=\(Self.normalized(details.NetworkSettings?.IPAddress) ?? "-", privacy: .private), mounts=\(mounts.count, privacy: .public)"
+                    "domain=\(fallbackDomain, privacy: .private), ip=\(fallbackIP, privacy: .private), mounts=\(mounts.count, privacy: .public)"
                 )
             } catch {
                 Log.container.error(

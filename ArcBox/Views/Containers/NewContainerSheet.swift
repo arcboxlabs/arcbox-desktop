@@ -49,6 +49,22 @@ struct NewContainerSheet: View {
         image.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    private var createOptions: ContainerCreateOptions {
+        ContainerCreateOptions(
+            image: image,
+            name: name,
+            platform: platform == .auto ? nil : platform.rawValue,
+            command: command,
+            entrypoint: entrypoint,
+            workingDir: workdir,
+            autoRemove: removeAfterStop,
+            restartPolicy: restartPolicy.rawValue,
+            privileged: privileged,
+            readOnlyRootfs: readOnly,
+            dockerInit: useDockerInit
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Title bar
@@ -143,12 +159,9 @@ struct NewContainerSheet: View {
                     isCreating = true
                     Task {
                         let id = await vm.createContainer(
-                            image: image, name: name,
-                            platform: platform == .auto ? nil : platform.rawValue,
-                            command: command, entrypoint: entrypoint, workingDir: workdir,
-                            autoRemove: removeAfterStop, restartPolicy: restartPolicy.rawValue,
-                            privileged: privileged, readOnlyRootfs: readOnly,
-                            dockerInit: useDockerInit, docker: docker)
+                            options: createOptions,
+                            docker: docker
+                        )
                         isCreating = false
                         if id != nil { dismiss() }
                     }
@@ -159,13 +172,9 @@ struct NewContainerSheet: View {
                     isCreating = true
                     Task {
                         if let id = await vm.createContainer(
-                            image: image, name: name,
-                            platform: platform == .auto ? nil : platform.rawValue,
-                            command: command, entrypoint: entrypoint, workingDir: workdir,
-                            autoRemove: removeAfterStop, restartPolicy: restartPolicy.rawValue,
-                            privileged: privileged, readOnlyRootfs: readOnly,
-                            dockerInit: useDockerInit, docker: docker)
-                        {
+                            options: createOptions,
+                            docker: docker
+                        ) {
                             await vm.startContainerDocker(id, docker: docker)
                             isCreating = false
                             dismiss()

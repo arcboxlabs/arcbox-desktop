@@ -72,7 +72,8 @@ struct NetworkSettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("IP range")
                         Text(
-                            "Used for domains and machines. Containers and Kubernetes use different IPs. Don't change this unless you run into issues with the default."
+                            "Used for domains and machines. Containers and Kubernetes use different IPs. "
+                                + "Don't change this unless you run into issues with the default."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
