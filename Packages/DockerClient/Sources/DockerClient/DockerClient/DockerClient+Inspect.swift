@@ -138,8 +138,8 @@ private struct ContainerConfigDTO: Decodable {
 private struct ImageConfigDTO: Decodable {
     let labels: StringMapDTO?
 
-    var normalizedLabels: [String: String] {
-        labels?.values ?? [:]
+    var normalizedLabels: [String: String]? {
+        labels?.values
     }
 
     private enum CodingKeys: String, CodingKey {
