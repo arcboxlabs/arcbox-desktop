@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 
 enum ExternalTerminalDiscovery {
     private static let legacyPreferenceBundleIDs = [

@@ -1,6 +1,6 @@
-import Foundation
 import AppKit
 import Darwin
+import Foundation
 import os
 
 /// Launches an external terminal app with Docker environment pre-configured.
@@ -52,7 +52,10 @@ enum ExternalTerminalLauncher {
             dockerHostExport,
             "\(shellEscape(dockerPath)) exec -it \(shellEscape(containerID)) \(shellEscape(shell))",
             "arcbox_status=$?",
-            "if [ \"$arcbox_status\" -ne 0 ]; then printf '\\nArcBox: docker exec failed with exit code %s. Check that the container is running and that the selected shell exists.\\n' \"$arcbox_status\"; fi",
+            "if [ \"$arcbox_status\" -ne 0 ]; then",
+            "  printf '\\nArcBox: docker exec failed with exit code %s.\\n' \"$arcbox_status\"",
+            "  printf 'Check that the container is running and that the selected shell exists.\\n'",
+            "fi",
         ].joined(separator: "\n")
     }
 

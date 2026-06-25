@@ -19,7 +19,8 @@ struct NewVolumeSheet: View {
                 Text("New Volume")
                     .font(.system(size: 13, weight: .semibold))
                 Text(
-                    "Volumes are for sharing data between containers. Unlike bind mounts, they are stored on a native Linux file system, making them faster and more reliable."
+                    "Volumes are for sharing data between containers. Unlike bind mounts, they are stored "
+                        + "on a native Linux file system, making them faster and more reliable."
                 )
                 .font(.system(size: 11))
                 .foregroundStyle(AppColors.textSecondary)
