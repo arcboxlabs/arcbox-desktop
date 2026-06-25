@@ -1,23 +1,11 @@
 import Foundation
+import Yams
 
 extension KubeConfig {
     // MARK: - Private
 
-    /// Extract the first value for a given YAML key from the raw string.
-    /// Handles both `key: value` and `key: "value"` forms.
-    static func extractValue(for key: String, from yaml: String) -> String? {
-        for line in yaml.components(separatedBy: .newlines) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard trimmed.hasPrefix(key) else { continue }
-            var value = String(trimmed.dropFirst(key.count))
-                .trimmingCharacters(in: .whitespaces)
-            // Strip surrounding quotes if present
-            if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
-                value = String(value.dropFirst().dropLast())
-            }
-            if !value.isEmpty { return value }
-        }
-        return nil
+    static func parseKubeConfigDocument(from yaml: String) throws -> KubeConfigDocument {
+        try YAMLDecoder().decode(KubeConfigDocument.self, from: yaml)
     }
 
     /// Convert PEM-encoded data to DER by stripping headers and decoding inner base64.
@@ -34,6 +22,70 @@ extension KubeConfig {
             .filter { !$0.hasPrefix("-----") }
             .joined()
         return Data(base64Encoded: base64) ?? data
+    }
+
+    struct KubeConfigDocument: Decodable {
+        let currentContext: String?
+        let clusters: [NamedCluster]
+        let contexts: [NamedContext]?
+        let users: [NamedUser]
+
+        enum CodingKeys: String, CodingKey {
+            case currentContext = "current-context"
+            case clusters
+            case contexts
+            case users
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            currentContext = try container.decodeIfPresent(String.self, forKey: .currentContext)
+            clusters = try container.decodeIfPresent([NamedCluster].self, forKey: .clusters) ?? []
+            contexts = try container.decodeIfPresent([NamedContext].self, forKey: .contexts)
+            users = try container.decodeIfPresent([NamedUser].self, forKey: .users) ?? []
+        }
+    }
+
+    struct NamedCluster: Decodable {
+        let name: String
+        let cluster: Cluster
+    }
+
+    struct Cluster: Decodable {
+        let server: String?
+        let certificateAuthorityData: String?
+
+        enum CodingKeys: String, CodingKey {
+            case server
+            case certificateAuthorityData = "certificate-authority-data"
+        }
+    }
+
+    struct NamedContext: Decodable {
+        let name: String
+        let context: Context
+    }
+
+    struct Context: Decodable {
+        let cluster: String
+        let user: String
+    }
+
+    struct NamedUser: Decodable {
+        let name: String
+        let user: User
+    }
+
+    struct User: Decodable {
+        let clientCertificateData: String?
+        let clientKeyData: String?
+        let exec: ExecConfig?
+
+        enum CodingKeys: String, CodingKey {
+            case clientCertificateData = "client-certificate-data"
+            case clientKeyData = "client-key-data"
+            case exec
+        }
     }
 
 }

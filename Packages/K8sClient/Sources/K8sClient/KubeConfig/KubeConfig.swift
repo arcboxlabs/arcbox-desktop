@@ -30,10 +30,28 @@ public struct KubeConfig: Sendable {
     ///
     /// If both are present, certificate auth takes precedence.
     public init(yaml: String) throws {
-        guard let server = Self.extractValue(for: "server:", from: yaml) else {
+        let document = try Self.parseKubeConfigDocument(from: yaml)
+        let context = document.currentContext.flatMap { currentContext in
+            document.contexts?.first { $0.name == currentContext }?.context
+        }
+
+        let cluster: KubeConfig.NamedCluster?
+        if let context {
+            cluster = document.clusters.first { $0.name == context.cluster }
+            guard cluster != nil else {
+                throw KubeConfigError.missingField("cluster \(context.cluster)")
+            }
+        } else {
+            cluster = document.clusters.first
+        }
+
+        guard let cluster else {
             throw KubeConfigError.missingField("server")
         }
-        guard let caB64 = Self.extractValue(for: "certificate-authority-data:", from: yaml),
+        guard let server = cluster.cluster.server else {
+            throw KubeConfigError.missingField("server")
+        }
+        guard let caB64 = cluster.cluster.certificateAuthorityData,
             let caData = Data(base64Encoded: caB64)
         else {
             throw KubeConfigError.missingField("certificate-authority-data")
@@ -42,9 +60,19 @@ public struct KubeConfig: Sendable {
         self.server = server
         self.certificateAuthorityData = caData
 
+        let user: KubeConfig.NamedUser?
+        if let context {
+            user = document.users.first { $0.name == context.user }
+            guard user != nil else {
+                throw KubeConfigError.missingField("user \(context.user)")
+            }
+        } else {
+            user = document.users.first
+        }
+
         // Try certificate auth first
-        let certB64 = Self.extractValue(for: "client-certificate-data:", from: yaml)
-        let keyB64 = Self.extractValue(for: "client-key-data:", from: yaml)
+        let certB64 = user?.user.clientCertificateData
+        let keyB64 = user?.user.clientKeyData
 
         if let certB64, let keyB64,
             let certData = Data(base64Encoded: certB64),
@@ -57,7 +85,7 @@ public struct KubeConfig: Sendable {
         }
 
         // Fall back to exec credential plugin
-        let exec = Self.extractExecConfig(from: yaml)
+        let exec = user?.user.exec
         if let exec {
             let token = try Self.runExecPlugin(
                 command: exec.command,
