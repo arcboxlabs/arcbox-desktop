@@ -1,84 +1,9 @@
 import DockerClient
+import Foundation
 import OSLog
 import OpenAPIRuntime
-import SwiftUI
 
-/// Detail tab for volumes
-enum VolumeDetailTab: String, CaseIterable, Identifiable {
-    case info = "Info"
-    case files = "Files"
-
-    var id: String { rawValue }
-}
-
-/// Sort field for volumes
-enum VolumeSortField: String, CaseIterable {
-    case name = "Name"
-    case dateCreated = "Date Created"
-    case size = "Size"
-}
-
-/// Volume list state
-@MainActor
-@Observable
-class VolumesViewModel {
-    var volumes: [VolumeViewModel] = []
-    var selectedID: String?
-    var activeTab: VolumeDetailTab = .info
-    var listWidth: CGFloat = 320
-    var showNewVolumeSheet: Bool = false
-    var searchText: String = ""
-    var isSearching: Bool = false
-    var sortBy: VolumeSortField = .name
-    var sortAscending: Bool = true
-    var lastError: String?
-
-    var totalSize: String {
-        let bytes: UInt64 = volumes.compactMap(\.sizeBytes).reduce(0, +)
-        let gb = Double(bytes) / 1_000_000_000.0
-        if gb >= 1.0 {
-            return String(format: "%.2f GB total", gb)
-        }
-        let mb = Double(bytes) / 1_000_000.0
-        return String(format: "%.1f MB total", mb)
-    }
-
-    var sortedVolumes: [VolumeViewModel] {
-        let filtered: [VolumeViewModel]
-        if !searchText.isEmpty {
-            let query = searchText.lowercased()
-            filtered = volumes.filter {
-                $0.name.lowercased().contains(query)
-                    || $0.driver.lowercased().contains(query)
-            }
-        } else {
-            filtered = volumes
-        }
-        return filtered.sorted { a, b in
-            let result: Bool
-            switch sortBy {
-            case .name:
-                result = a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
-            case .dateCreated:
-                result = a.createdAt < b.createdAt
-            case .size:
-                result = (a.sizeBytes ?? 0) < (b.sizeBytes ?? 0)
-            }
-            return sortAscending ? result : !result
-        }
-    }
-
-    var selectedVolume: VolumeViewModel? {
-        guard let id = selectedID else { return nil }
-        return volumes.first { $0.id == id }
-    }
-
-    func selectVolume(_ id: String) {
-        selectedID = id
-    }
-
-    // MARK: - Docker API Operations
-
+extension VolumesViewModel {
     /// Load volumes from Docker Engine API using system disk usage endpoint
     /// to include volume size information.
     func loadVolumes(docker: DockerClient?) async {
@@ -117,7 +42,7 @@ class VolumesViewModel {
     }
 
     /// Ensure a helper image exists locally, pulling it on demand if necessary.
-    private func ensureImageExists(_ image: String, docker: DockerClient) async throws {
+    func ensureImageExists(_ image: String, docker: DockerClient) async throws {
         // Check if image exists locally
         do {
             _ = try await docker.api.ImageInspect(path: .init(name: image))
@@ -233,39 +158,5 @@ class VolumesViewModel {
             lastError = error.localizedDescription
         }
         await loadVolumes(docker: docker)
-    }
-
-}
-
-// MARK: - Docker API → UI Model Conversion
-
-extension VolumeViewModel {
-    /// Create a VolumeViewModel from a Docker Engine API Volume.
-    init(fromDocker volume: Components.Schemas.Volume) {
-        let createdAt = parseISO8601Date(volume.CreatedAt)
-
-        let sizeBytes: UInt64?
-        if let size = volume.UsageData?.Size, size >= 0 {
-            sizeBytes = UInt64(size)
-        } else {
-            sizeBytes = nil
-        }
-
-        let inUse: Bool
-        if let refCount = volume.UsageData?.RefCount, refCount > 0 {
-            inUse = true
-        } else {
-            inUse = false
-        }
-
-        self.init(
-            name: volume.Name,
-            driver: volume.Driver,
-            mountPoint: volume.Mountpoint,
-            sizeBytes: sizeBytes,
-            createdAt: createdAt,
-            inUse: inUse,
-            containerNames: []
-        )
     }
 }
