@@ -35,7 +35,7 @@ public struct KubeConfig: Sendable {
             document.contexts?.first { $0.name == currentContext }?.context
         }
 
-        let cluster: KubeConfig.NamedCluster?
+        let cluster: NamedCluster?
         if let context {
             cluster = document.clusters.first { $0.name == context.cluster }
             guard cluster != nil else {
@@ -60,7 +60,7 @@ public struct KubeConfig: Sendable {
         self.server = server
         self.certificateAuthorityData = caData
 
-        let user: KubeConfig.NamedUser?
+        let user: NamedUser?
         if let context {
             user = document.users.first { $0.name == context.user }
             guard user != nil else {

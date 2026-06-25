@@ -1,31 +1,31 @@
 import Foundation
 
+struct ExecConfig: Decodable {
+    let command: String
+    let args: [String]
+    let env: [ExecEnv]
+
+    private enum CodingKeys: String, CodingKey {
+        case command
+        case args
+        case env
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.command = try container.decode(String.self, forKey: .command)
+        self.args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
+        self.env = try container.decodeIfPresent([ExecEnv].self, forKey: .env) ?? []
+    }
+}
+
+struct ExecEnv: Decodable {
+    let name: String
+    let value: String
+}
+
 extension KubeConfig {
     // MARK: - Exec Credential Plugin
-
-    struct ExecConfig: Decodable {
-        let command: String
-        let args: [String]
-        let env: [ExecEnv]
-
-        private enum CodingKeys: String, CodingKey {
-            case command
-            case args
-            case env
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.command = try container.decode(String.self, forKey: .command)
-            self.args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
-            self.env = try container.decodeIfPresent([ExecEnv].self, forKey: .env) ?? []
-        }
-    }
-
-    struct ExecEnv: Decodable {
-        let name: String
-        let value: String
-    }
 
     /// Run an exec credential plugin command and return the bearer token.
     static func runExecPlugin(command: String, args: [String], env: [ExecEnv]) throws -> String {
