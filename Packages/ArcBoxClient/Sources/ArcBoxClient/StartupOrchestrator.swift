@@ -167,8 +167,8 @@ public final class StartupOrchestrator {
         // Developer ID, not Apple Development. Without these, launchd refuses
         // to exec with OS_REASON_EXEC and the daemon silently crash-loops.
         //
-        // This applies to ALL builds including Debug. The embed script
-        // (embed-arcbox-binaries.py) resolves the Developer ID certificate
+        // This applies to ALL builds including Debug. The embed step
+        // (cargo xtask macos embed) resolves the Developer ID certificate
         // independently of Xcode's CODE_SIGN_IDENTITY for this reason.
         //
         // Strict verification is intentional — if this blocks your local
