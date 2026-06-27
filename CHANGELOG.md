@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.22.11](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.10...v1.22.11) (2026-06-27)
+
+
+### Bug Fixes
+
+* **k8s:** flatten kubeconfig parsing types ([506746c](https://github.com/arcboxlabs/arcbox-desktop/commit/506746c10f9207718a1242cf8e3327d9c6045ea2))
+* **project:** regenerate xcode project path group ([e26fa34](https://github.com/arcboxlabs/arcbox-desktop/commit/e26fa344ecbf009ffc41ce607a821e79c67248b1))
+* **protobuf:** make arcbox version bumps atomic ([#257](https://github.com/arcboxlabs/arcbox-desktop/issues/257)) ([68d3db0](https://github.com/arcboxlabs/arcbox-desktop/commit/68d3db0307dacbdf508ff7131a1339e49e23ebb4))
+
+
+### Refactoring
+
+* **about:** split about view sections ([5692f62](https://github.com/arcboxlabs/arcbox-desktop/commit/5692f62b9d2e6adc02e4945bff725e8a446650ee))
+* **app:** move integrations out of models ([#249](https://github.com/arcboxlabs/arcbox-desktop/issues/249)) ([17c8c5a](https://github.com/arcboxlabs/arcbox-desktop/commit/17c8c5a6a78c11b1f32581ac92c4ae7dac0b216d))
+* **app:** split startup app responsibilities ([c1d105f](https://github.com/arcboxlabs/arcbox-desktop/commit/c1d105f87a26fd4e258eec34921b82ece22e0786))
+* **containers:** split container logs tab ([69df78f](https://github.com/arcboxlabs/arcbox-desktop/commit/69df78f405edbea76127ffe356c5d569ed723b0c))
+* **containers:** split container view model by responsibility ([93a1054](https://github.com/arcboxlabs/arcbox-desktop/commit/93a1054e00e959aec586a7a6d3f312c645da0948))
+* **containers:** split local rootfs outline view ([6863c2e](https://github.com/arcboxlabs/arcbox-desktop/commit/6863c2efb81ca983eb426e19ace71321012f263a))
+* **daemon:** split daemon manager by lifecycle area ([8ebed7a](https://github.com/arcboxlabs/arcbox-desktop/commit/8ebed7a7355da83779b598d745f2a0a579df4cfc))
+* **docker:** decode inspect snapshots with DTOs ([#250](https://github.com/arcboxlabs/arcbox-desktop/issues/250)) ([71f2b7f](https://github.com/arcboxlabs/arcbox-desktop/commit/71f2b7f7fa2b487308c70bc43e62c0216fd7b76e))
+* **docker:** split client implementation by concern ([5943774](https://github.com/arcboxlabs/arcbox-desktop/commit/5943774c36573e4ccb03feb45e566e41e3619bc7))
+* **docker:** split log stream parsing ([07ce026](https://github.com/arcboxlabs/arcbox-desktop/commit/07ce02633041c742631ab1c960c46d2283126707))
+* **images:** split image view model responsibilities ([544653b](https://github.com/arcboxlabs/arcbox-desktop/commit/544653b0703a936807ae82e1346f0172d3f9e959))
+* **k8s:** parse kubeconfig with Yams ([#251](https://github.com/arcboxlabs/arcbox-desktop/issues/251)) ([b0d928b](https://github.com/arcboxlabs/arcbox-desktop/commit/b0d928b415802548be9d12f0785b37ac1ecbbe58))
+* **k8s:** split kubeconfig parsing by concern ([967f6fa](https://github.com/arcboxlabs/arcbox-desktop/commit/967f6fa16bd313383b65c442ba74c33b09732a16))
+* **menubar:** split menu bar view sections ([2c04be9](https://github.com/arcboxlabs/arcbox-desktop/commit/2c04be984842923e20f32005d4963dc156cc1e79))
+* **startup:** split orchestrator types ([d5374f6](https://github.com/arcboxlabs/arcbox-desktop/commit/d5374f6cd4d601d9965e1a99bb5059abf3875e18))
+* **terminal:** use SwiftTerm resize helper ([#252](https://github.com/arcboxlabs/arcbox-desktop/issues/252)) ([ba24abf](https://github.com/arcboxlabs/arcbox-desktop/commit/ba24abf6fdc428fcf7a71d215ca0f1235c17ebf6))
+* **volumes:** split volume view model responsibilities ([1874c63](https://github.com/arcboxlabs/arcbox-desktop/commit/1874c6300faebdb6cc8683645a92564d40063bcd))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.4.11 ([#248](https://github.com/arcboxlabs/arcbox-desktop/issues/248)) ([81d8136](https://github.com/arcboxlabs/arcbox-desktop/commit/81d8136ae6dda5a2837be20cc924121dfd200107))
+* bump arcbox version to v0.4.12 ([106618e](https://github.com/arcboxlabs/arcbox-desktop/commit/106618eac6ef267f042b16f91274b0c90d232a16))
+* **lint:** tighten SwiftLint configuration ([d31ac7d](https://github.com/arcboxlabs/arcbox-desktop/commit/d31ac7dfe38aac809d0b6d90602a6fffd0086ced))
+* regenerate arcbox client protobuf ([f59a5b2](https://github.com/arcboxlabs/arcbox-desktop/commit/f59a5b2a16d1176cfac8e775c0bb85e7f485363b))
+* **xcode:** generate project with XcodeGen ([d41dfa8](https://github.com/arcboxlabs/arcbox-desktop/commit/d41dfa8f9485699d94fe4c3660e6ae61ca582a0f))
+
+
+### CI
+
+* create Local.xcconfig for PR checks ([#255](https://github.com/arcboxlabs/arcbox-desktop/issues/255)) ([664d73f](https://github.com/arcboxlabs/arcbox-desktop/commit/664d73f418e3a3761d1cf8cf3ffbd66c3dfa7801))
+
 ## [1.22.10](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.9...v1.22.10) (2026-06-25)
 
 
