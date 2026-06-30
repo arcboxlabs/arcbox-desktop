@@ -32,7 +32,7 @@ struct PodsListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(vm.pods) { pod in
+                        ForEach(vm.filteredPods) { pod in
                             PodRowView(
                                 pod: pod,
                                 isSelected: vm.selectedID == pod.id,
@@ -45,33 +45,48 @@ struct PodsListView: View {
         }
         .navigationTitle("Pods")
         .navigationSubtitle(k8s.enabled ? "\(vm.podCount) total" : "Disabled")
+        .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
+        .onChange(of: vm.isSearching) { _, newValue in
+            if !newValue { vm.searchText = "" }
+        }
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Toggle(
-                    isOn: Binding(
-                        get: { k8s.enabled || k8s.isStarting },
-                        set: { newValue in
-                            Task {
-                                if newValue {
-                                    await k8s.start(client: arcboxClient)
-                                    await loadPodsUntilReady()
-                                } else {
-                                    await k8s.stop(client: arcboxClient)
-                                }
+            if #available(macOS 26.0, *) {
+                ToolbarItem(placement: .primaryAction) {
+                    Toggle(
+                        "Kubernetes",
+                        isOn: Binding(
+                            get: { k8s.enabled || k8s.isStarting },
+                            set: { newValue in
+                                toggleKubernetes(newValue)
                             }
-                        }
+                        )
                     )
-                ) {
-                    EmptyView()
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .fixedSize()
+                    .disabled(k8s.isStarting || k8s.isStopping)
+                    .help(k8s.enabled ? "Stop Kubernetes" : "Start Kubernetes")
                 }
-                .toggleStyle(.switch)
-                .disabled(k8s.isStarting || k8s.isStopping)
-
-                Button(
-                    action: {},
-                    label: {
-                        Image(systemName: "magnifyingglass")
-                    })
+                .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItem(placement: .primaryAction) {
+                    Toggle(
+                        "Kubernetes",
+                        isOn: Binding(
+                            get: { k8s.enabled || k8s.isStarting },
+                            set: { newValue in
+                                toggleKubernetes(newValue)
+                            }
+                        )
+                    )
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .fixedSize()
+                    .disabled(k8s.isStarting || k8s.isStopping)
+                    .help(k8s.enabled ? "Stop Kubernetes" : "Start Kubernetes")
+                }
             }
         }
         .task {
@@ -103,6 +118,17 @@ struct PodsListView: View {
             }
             let success = await vm.loadPods(client: arcboxClient)
             if success { return }
+        }
+    }
+
+    private func toggleKubernetes(_ shouldEnable: Bool) {
+        Task {
+            if shouldEnable {
+                await k8s.start(client: arcboxClient)
+                await loadPodsUntilReady()
+            } else {
+                await k8s.stop(client: arcboxClient)
+            }
         }
     }
 }
