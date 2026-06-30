@@ -700,3 +700,34 @@ jobs:
           git add "$CASK"
           git commit -m "arcbox ${VERSION}"
           git push
+
+  # ==========================================================================
+  # Sync shipped issues to Linear Releases (continuous, stable channel only)
+  #
+  # Runs after the DMG is live on the CDN/appcast, so each Linear release records
+  # what actually reached stable users via Sparkle auto-update — the real
+  # "delivered" signal, distinct from a merged PR. Only the stable channel is
+  # tracked; alpha/beta/rc builds are skipped. Issues are associated by scanning
+  # commits since the previous release for PR references (#NNN, which Linear
+  # resolves to their linked issues) and ABXD-123 identifiers. Requires the
+  # LINEAR_ACCESS_KEY secret (the pipeline's access key from Linear → Settings →
+  # Releases; not a personal API key).
+  # ==========================================================================
+  linear-release:
+    name: Sync Linear Release
+    needs: [build-dmg, upload-cdn]
+    if: needs.build-dmg.outputs.channel == 'stable'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history required for commit-range scanning
+
+      - uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          version: ${{ needs.build-dmg.outputs.version }}
+          links: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dmg.outputs.version }}
