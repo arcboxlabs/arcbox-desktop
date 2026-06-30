@@ -702,22 +702,24 @@ jobs:
           git push
 
   # ==========================================================================
-  # Sync shipped issues to Linear Releases (continuous, per Sparkle channel)
+  # Sync shipped issues to Linear Releases (continuous, stable channel only)
   #
   # Runs after the DMG is live on the CDN/appcast, so each Linear release records
-  # what actually reached users on that channel via Sparkle auto-update — the
-  # real "delivered" signal, distinct from a merged PR. stable and beta map to
-  # separate Linear pipelines (separate baselines); alpha/rc builds are skipped.
-  # Issues are associated by scanning commits since the previous release for PR
-  # references (#NNN, which Linear resolves to their linked issues) and ABXD-123
-  # identifiers. Requires the LINEAR_ACCESS_KEY_STABLE / LINEAR_ACCESS_KEY_BETA
-  # secrets (each pipeline's access key from Linear → Settings → Releases).
+  # what actually reached stable users via Sparkle auto-update — the real
+  # "delivered" signal, distinct from a merged PR. Only the stable channel is
+  # tracked; alpha/beta/rc builds are skipped. Issues are associated by scanning
+  # commits since the previous release for PR references (#NNN, which Linear
+  # resolves to their linked issues) and ABXD-123 identifiers. Requires the
+  # LINEAR_ACCESS_KEY secret (the pipeline's access key from Linear → Settings →
+  # Releases; not a personal API key).
   # ==========================================================================
   linear-release:
     name: Sync Linear Release
     needs: [build-dmg, upload-cdn]
-    if: contains(fromJSON('["stable", "beta"]'), needs.build-dmg.outputs.channel)
+    if: needs.build-dmg.outputs.channel == 'stable'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -726,6 +728,6 @@ jobs:
 
       - uses: linear/linear-release-action@v0
         with:
-          access_key: ${{ needs.build-dmg.outputs.channel == 'stable' && secrets.LINEAR_ACCESS_KEY_STABLE || secrets.LINEAR_ACCESS_KEY_BETA }}
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
           version: ${{ needs.build-dmg.outputs.version }}
           links: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dmg.outputs.version }}
