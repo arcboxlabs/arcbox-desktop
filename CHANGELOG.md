@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.12](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.11...v1.22.12) (2026-06-30)
+
+
+### CI
+
+* **release:** sync shipped issues to Linear Releases ([#259](https://github.com/arcboxlabs/arcbox-desktop/issues/259)) ([0353ff9](https://github.com/arcboxlabs/arcbox-desktop/commit/0353ff9bbd3f458085158e1ded47586d39c49637))
+
 ## [1.22.11](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.10...v1.22.11) (2026-06-27)
 
 
