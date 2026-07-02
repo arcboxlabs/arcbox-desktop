@@ -19,6 +19,8 @@ packages:
     path: Packages/ArcBoxAuth
   ArcBoxClient:
     path: Packages/ArcBoxClient
+  FleetControlClient:
+    path: Packages/FleetControlClient
   DockerClient:
     path: Packages/DockerClient
   K8sClient:
@@ -139,6 +141,7 @@ targets:
     dependencies:
       - package: ArcBoxAuth
       - package: ArcBoxClient
+      - package: FleetControlClient
       - package: DockerClient
       - package: K8sClient
       - package: SwiftTerm

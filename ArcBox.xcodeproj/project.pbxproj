@@ -15,7 +15,7 @@
 		0999A1C28C17EFD150E56CF8 /* MachinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */; };
 		09A2217B8D33E2BD87D23713 /* ActivityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAC9EE4F067CB69F022C1E0 /* ActivityViewModel.swift */; };
 		09FF7CE0E252DAD805077C7E /* ImagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559C97F0CA659149BCBA59A2 /* ImagesViewModel.swift */; };
-		0AF01BD1D2FC14E2F99E9B4C /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
+		0AF01BD1D2FC14E2F99E9B4C /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = 984278376FF4860E6FADC66F /* DockerClient */; };
 		0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */; };
 		0C35F427DABEE19C0C583BE1 /* ContainersViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12C2D038DE6CC49702F85F0 /* ContainersViewModel+Docker.swift */; };
 		0C6B829AD5010FDB0E749471 /* PullImageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8254D67C0D80B99FC18DAD5 /* PullImageSheet.swift */; };
@@ -61,7 +61,7 @@
 		48014023336A8AD5D1B21A27 /* ContainerLogsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */; };
 		4B14BB17843A552B8D1B51BA /* ExternalTerminalDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BE672A52785F040AC6CEB2 /* ExternalTerminalDiscovery.swift */; };
 		4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */; };
-		4D2FB362066EF19A8C5983F1 /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = 984278376FF4860E6FADC66F /* DockerClient */; };
+		4D2FB362066EF19A8C5983F1 /* FleetControlClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0631A4C3410E8D6E9CFDDA2E /* FleetControlClient */; };
 		4D88534FCCE07F2A92609FD1 /* NetworkSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BDFF0AA6C2EA05E000003F1 /* NetworkSettingsView.swift */; };
 		50CCDEFCA186BCD1E99D291F /* ChangelogParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBEBBF08F0E4AC45D9C0BB83 /* ChangelogParser.swift */; };
 		519C116D9CC62268CE4859D4 /* ExternalTerminalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D70EF1BF223C47C7B8E71A5 /* ExternalTerminalApp.swift */; };
@@ -164,7 +164,7 @@
 		BDE44A1851827C2069778F08 /* ImageFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BE02225F61EF92333916B1 /* ImageFilesTab.swift */; };
 		BF22080E6092E730A9DD1424 /* ContainerTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */; };
 		BFA2E94DC17244A06D187331 /* MachineInfoTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791DD121033683719C609B4D /* MachineInfoTab.swift */; };
-		C12978695EDC917704747269 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
+		C12978695EDC917704747269 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = B23ADDA7527EDFFFD6615B12 /* SwiftTerm */; };
 		C12DED2A6B5168308D89BE15 /* MachineCreateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5144C9321F8A17DA72A862DA /* MachineCreateSheet.swift */; };
 		C415E585DA749E8A19984650 /* MachineFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */; };
 		C50DD2284687B64249F15261 /* CheckForUpdatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C15DE3BBE549F8F86D82642 /* CheckForUpdatesViewModel.swift */; };
@@ -175,7 +175,7 @@
 		C94515858BC220B73B93EC5D /* ArcBoxClientErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC5F65FECB2F80BA3AF1D84 /* ArcBoxClientErrorTests.swift */; };
 		C9850114DD3E3F1B3C22E09D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */; };
 		CA35C83C2741D945EF23C5E3 /* VolumeViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867A6CA0B4DD07BE74610FCB /* VolumeViewModel+Docker.swift */; };
-		CC2502232C562D3167B2F3D2 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 9C709A3E8E1972F5BB841623 /* PostHog */; };
+		CC2502232C562D3167B2F3D2 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
 		CCAF8E87C516B0ACE300BDCD /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A76C0B459745654F31B3B2 /* PodsListView.swift */; };
 		CCD9ABC3F69FE5DA233E85EC /* MachineModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0647CCB67160C2509345B5E /* MachineModelTests.swift */; };
 		D0518D07973520530916560B /* ServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F238F21169A97B94193454CF /* ServiceDetailView.swift */; };
@@ -187,6 +187,7 @@
 		D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE313F40E79E409C942B1EE /* AboutWindow.swift */; };
 		D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */; };
 		D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */; };
+		D7149FCB6052803F6900926B /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 9C709A3E8E1972F5BB841623 /* PostHog */; };
 		D745D0D7EF5FF65174C47F28 /* NewVolumeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */; };
 		D786BBF78698824ED9F5E048 /* ComingSoonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE64C34A555B2A5BA02AD9FA /* ComingSoonPanel.swift */; };
 		DAC7224E4BF7F459BB7013CB /* RemoteIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18574DEF808329D8152A379 /* RemoteIconView.swift */; };
@@ -195,7 +196,7 @@
 		E12C55C4C275DCBAB9DA8150 /* VolumeFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDFA2EDA7A3AC8448696F91 /* VolumeFilesTab.swift */; };
 		E387F94A583E46FCAE612008 /* TemplateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6845260698FF44B2E54D301B /* TemplateModel.swift */; };
 		E69436579DA555FA6133A1CF /* ServiceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A147995028C8DB6F49BBD8EF /* ServiceRowView.swift */; };
-		E92C8245EE6AE51D99035E4D /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = B23ADDA7527EDFFFD6615B12 /* SwiftTerm */; };
+		E92C8245EE6AE51D99035E4D /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
 		E9B0A374B532221710729A34 /* ContainerTerminalTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1AFAED2CB7429B714C8A06 /* ContainerTerminalTab.swift */; };
 		ECA0B439D329FA52C529ABE8 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3D2AE66CD9DD4A18CADB71 /* ActivityView.swift */; };
 		ED3023CCFF235C0CF302C812 /* MenuBarView+Containers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */; };
@@ -211,7 +212,7 @@
 		FA1617761F2AA43D4999DA82 /* TemplateDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F861F75EAD82307CECE21855 /* TemplateDetailView.swift */; };
 		FA631E839B38C6D0DBDBA928 /* ArcBoxAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1EEA05F99067212B54970FA5 /* ArcBoxAuth */; };
 		FACCEFF5F4CDC1CCDB664C3D /* ImageEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C249CE2887E590B9F543B37 /* ImageEmptyState.swift */; };
-		FBDBF39F818DDE35E0B7D0DF /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
+		FBDBF39F818DDE35E0B7D0DF /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
 		FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */; };
 		FBE7E964F895EFE9C7818256 /* ContainerViewModel+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5BDCAAF11D1A6B52990E28 /* ContainerViewModel+Mapping.swift */; };
 		FFAB94A328F83148EC0ED794 /* LocalRootFSOutlineCoordinator+Columns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A4B5E95EA5A894B19867570 /* LocalRootFSOutlineCoordinator+Columns.swift */; };
@@ -324,6 +325,7 @@
 		6ADF9F8FFB694C45042664E8 /* DeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLink.swift; sourceTree = "<group>"; };
 		7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWakeManager.swift; sourceTree = "<group>"; };
 		70D9A8B5B6000070B4D69A07 /* SandboxDisabledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxDisabledView.swift; sourceTree = "<group>"; };
+		725E693E00BCEB4D0ADE7A25 /* FleetControlClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FleetControlClient; path = Packages/FleetControlClient; sourceTree = SOURCE_ROOT; };
 		727A1DD3E8D3B0BB875475A8 /* MachineEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineEmptyState.swift; sourceTree = "<group>"; };
 		7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarAccountButton.swift; sourceTree = "<group>"; };
 		77BE672A52785F040AC6CEB2 /* ExternalTerminalDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalDiscovery.swift; sourceTree = "<group>"; };
@@ -467,12 +469,13 @@
 			files = (
 				FA631E839B38C6D0DBDBA928 /* ArcBoxAuth in Frameworks */,
 				82ECF33C9637C7C65B527336 /* ArcBoxClient in Frameworks */,
-				4D2FB362066EF19A8C5983F1 /* DockerClient in Frameworks */,
-				0AF01BD1D2FC14E2F99E9B4C /* K8sClient in Frameworks */,
-				E92C8245EE6AE51D99035E4D /* SwiftTerm in Frameworks */,
-				C12978695EDC917704747269 /* Sparkle in Frameworks */,
-				FBDBF39F818DDE35E0B7D0DF /* Sentry in Frameworks */,
-				CC2502232C562D3167B2F3D2 /* PostHog in Frameworks */,
+				4D2FB362066EF19A8C5983F1 /* FleetControlClient in Frameworks */,
+				0AF01BD1D2FC14E2F99E9B4C /* DockerClient in Frameworks */,
+				E92C8245EE6AE51D99035E4D /* K8sClient in Frameworks */,
+				C12978695EDC917704747269 /* SwiftTerm in Frameworks */,
+				FBDBF39F818DDE35E0B7D0DF /* Sparkle in Frameworks */,
+				CC2502232C562D3167B2F3D2 /* Sentry in Frameworks */,
+				D7149FCB6052803F6900926B /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -857,6 +860,7 @@
 				7BC24B8A6E422D834614E5D5 /* ArcBoxAuth */,
 				00AE70F2EF523D6E02FFF371 /* ArcBoxClient */,
 				C33F6D43F3CE2C79F072C7F3 /* DockerClient */,
+				725E693E00BCEB4D0ADE7A25 /* FleetControlClient */,
 				472F864720948B01C9F5D5A0 /* K8sClient */,
 			);
 			path = Packages;
@@ -1076,6 +1080,7 @@
 			packageProductDependencies = (
 				1EEA05F99067212B54970FA5 /* ArcBoxAuth */,
 				CFE468A82BAC1B4D9AE25368 /* ArcBoxClient */,
+				0631A4C3410E8D6E9CFDDA2E /* FleetControlClient */,
 				984278376FF4860E6FADC66F /* DockerClient */,
 				A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */,
 				B23ADDA7527EDFFFD6615B12 /* SwiftTerm */,
@@ -1143,6 +1148,7 @@
 				82C744580F93EFBCA71607AA /* XCLocalSwiftPackageReference "Packages/ArcBoxAuth" */,
 				52B6A9B00A6EABBBFA08E62D /* XCLocalSwiftPackageReference "Packages/ArcBoxClient" */,
 				5FB2872C43BFD0CA00D1FF5E /* XCLocalSwiftPackageReference "Packages/DockerClient" */,
+				5943466D13147838B8BE6D69 /* XCLocalSwiftPackageReference "Packages/FleetControlClient" */,
 				3D19705D19A4ADF65F4A7A45 /* XCLocalSwiftPackageReference "Packages/K8sClient" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -1733,6 +1739,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ArcBoxClient;
 		};
+		5943466D13147838B8BE6D69 /* XCLocalSwiftPackageReference "Packages/FleetControlClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/FleetControlClient;
+		};
 		5FB2872C43BFD0CA00D1FF5E /* XCLocalSwiftPackageReference "Packages/DockerClient" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/DockerClient;
@@ -1779,6 +1789,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0631A4C3410E8D6E9CFDDA2E /* FleetControlClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FleetControlClient;
+		};
 		1EEA05F99067212B54970FA5 /* ArcBoxAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ArcBoxAuth;
