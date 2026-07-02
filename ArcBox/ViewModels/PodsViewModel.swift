@@ -40,7 +40,7 @@ class PodsViewModel {
 
     var selectedPod: PodViewModel? {
         guard let id = selectedID else { return nil }
-        return pods.first { $0.id == id }
+        return filteredPods.first { $0.id == id }
     }
 
     func selectPod(_ id: String) {

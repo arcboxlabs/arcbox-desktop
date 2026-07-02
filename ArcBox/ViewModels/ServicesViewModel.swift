@@ -39,7 +39,7 @@ class ServicesViewModel {
 
     var selectedService: ServiceViewModel? {
         guard let id = selectedID else { return nil }
-        return services.first { $0.id == id }
+        return filteredServices.first { $0.id == id }
     }
 
     func selectService(_ id: String) {
