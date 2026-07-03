@@ -1,14 +1,24 @@
+import ArcBoxClient
 import SwiftUI
 
 struct SystemSettingsView: View {
     // TODO: Implement resource controls (CPU/Memory) and environment
-    // toggles (Admin/Rosetta) when backend gRPC APIs are available (ABXD-87)
+    // toggles (Admin) when backend gRPC APIs are available (ABXD-87)
     // @State private var memoryLimit: Double = 9
     // @State private var cpuLimit: Double = 17 // 17 = "None" (beyond max)
     // @State private var useAdminPrivileges = true
     @AppStorage("switchDockerContextAutomatically") private var switchContextAutomatically = true
-    // @State private var useRosetta = true
     @AppStorage("pauseContainersWhileSleeping") private var pauseContainersWhileSleeping = true
+
+    @Environment(\.arcboxClient) private var arcboxClient
+    @Environment(DaemonManager.self) private var daemonManager
+    @Environment(SystemVmBackendModel.self) private var backendModel
+
+    // Picker-local state; the switch itself lives in SystemVmBackendModel so
+    // an in-flight restart survives leaving this pane.
+    @State private var selectedBackend: SystemVmBackend = .vz
+    @State private var pendingBackend: SystemVmBackend?
+    @State private var showBackendConfirm = false
 
     // private let memoryRange: ClosedRange<Double> = 1...14
 
@@ -87,18 +97,41 @@ struct SystemSettingsView: View {
             }
 
             Section {
-                // TODO: Implement Rosetta toggle (ABXD-87)
-                // LabeledContent {
-                //     Toggle("", isOn: $useRosetta)
-                //         .labelsHidden()
-                // } label: {
-                //     VStack(alignment: .leading, spacing: 2) {
-                //         Text("Use Rosetta to run Intel code")
-                //         Text("Faster. Only disable if you get errors.")
-                //             .font(.caption)
-                //             .foregroundStyle(.secondary)
-                //     }
-                // }
+                LabeledContent {
+                    Picker("Virtual machine backend", selection: $selectedBackend) {
+                        ForEach(SystemVmBackend.allCases) { backend in
+                            Text(backend.label).tag(backend)
+                        }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                    .disabled(
+                        !daemonManager.state.isRunning || backendModel.currentBackend == nil
+                            || backendModel.isSwitching)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Virtual machine backend")
+                        Text(Self.backendCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if backendModel.isSwitching {
+                    HStack {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Switching backend and restarting the System VM…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let backendError = backendModel.lastError {
+                    Text(backendError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
 
                 LabeledContent {
                     Toggle("", isOn: $pauseContainersWhileSleeping)
@@ -133,6 +166,58 @@ struct SystemSettingsView: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
+        .task(id: daemonManager.state.isRunning) {
+            await backendModel.load(client: daemonManager.state.isRunning ? arcboxClient : nil)
+            syncBackendSelection()
+        }
+        .onChange(of: backendModel.currentBackend) {
+            syncBackendSelection()
+        }
+        .onChange(of: backendModel.isSwitching) { _, switching in
+            // On completion, re-sync even when the backend value didn't change
+            // (a failed switch re-reads the same backend it started with).
+            if !switching {
+                syncBackendSelection()
+            }
+        }
+        .onChange(of: selectedBackend) { _, newValue in
+            guard !backendModel.isSwitching, let current = backendModel.currentBackend,
+                newValue != current
+            else {
+                return
+            }
+            pendingBackend = newValue
+            showBackendConfirm = true
+        }
+        .alert("Switch System VM Backend", isPresented: $showBackendConfirm) {
+            Button("Cancel", role: .cancel) { revertBackendSelection() }
+            Button("Switch and Restart", role: .destructive) {
+                if let pendingBackend {
+                    backendModel.beginSwitch(to: pendingBackend, client: arcboxClient)
+                }
+                pendingBackend = nil
+            }
+        } message: {
+            Text(
+                "Switching the backend restarts the System VM and stops all running containers. Images and container data are preserved."
+            )
+        }
+    }
+
+    // MARK: - System VM Backend
+
+    private static let backendCaption =
+        "Intel (amd64) code runs via Rosetta on Virtualization.framework, or via FEX on Hypervisor.framework. Switching restarts the System VM."
+
+    private func syncBackendSelection() {
+        if let current = backendModel.currentBackend {
+            selectedBackend = current
+        }
+    }
+
+    private func revertBackendSelection() {
+        pendingBackend = nil
+        syncBackendSelection()
     }
 
     // TODO: Uncomment when CPU limit slider is enabled (ABXD-87)
@@ -146,5 +231,7 @@ struct SystemSettingsView: View {
 
 #Preview {
     SystemSettingsView()
+        .environment(DaemonManager())
+        .environment(SystemVmBackendModel())
         .frame(width: 500, height: 600)
 }

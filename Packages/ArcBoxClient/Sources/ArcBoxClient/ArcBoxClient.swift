@@ -120,6 +120,15 @@ public final class ArcBoxClient: Sendable {
         return options
     }
 
+    /// Call options for RPCs that restart the System VM (e.g. `SetSystemVmBackend`).
+    /// These block until the VM has gracefully stopped and rebooted, far beyond
+    /// the default timeout.
+    public static var systemVmRestartCallOptions: GRPCCore.CallOptions {
+        var options = CallOptions.defaults
+        options.timeout = .seconds(180)
+        return options
+    }
+
     /// Container lifecycle operations.
     public var containers: Arcbox_V1_ContainerService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
