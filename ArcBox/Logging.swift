@@ -11,6 +11,7 @@ nonisolated enum Log {
     static let volume = Logger(subsystem: subsystem, category: "volume")
     static let network = Logger(subsystem: subsystem, category: "network")
     static let machine = Logger(subsystem: subsystem, category: "machine")
+    static let fleet = Logger(subsystem: subsystem, category: "fleet")
     static let pods = Logger(subsystem: subsystem, category: "pods")
     static let services = Logger(subsystem: subsystem, category: "services")
     static let context = Logger(subsystem: subsystem, category: "context")

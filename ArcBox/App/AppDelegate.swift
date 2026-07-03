@@ -1,6 +1,7 @@
 import AppKit
 import ArcBoxClient
 import DockerClient
+import FleetControlClient
 import Foundation
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -10,6 +11,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var arcboxClient: ArcBoxClient?
     var connectionTask: Task<Void, Never>?
     let deepLinkRouter = DeepLinkRouter()
+    var fleetControlClient: FleetControlClient?
+    var fleetControlConnectionTask: Task<Void, Never>?
     /// Set to true when the user explicitly requests a full quit (e.g. from menu bar).
     var forceQuit = false
 
@@ -36,6 +39,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DockerContextManager.restorePreviousContext()
         arcboxClient?.close()
         connectionTask?.cancel()
+        fleetControlClient?.close()
+        fleetControlConnectionTask?.cancel()
         guard let daemonManager else { return .terminateNow }
 
         Task { @MainActor in

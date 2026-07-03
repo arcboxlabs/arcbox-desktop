@@ -1,6 +1,7 @@
 import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
+import FleetControlClient
 import Foundation
 import OSLog
 import Sparkle
@@ -18,6 +19,8 @@ struct ArcBoxDesktopApp: App {
     @State private var authSession = AuthSession()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
+    @State private var fleetControlClient: FleetControlClient?
+    @State private var fleetControlConnectionTask: Task<Void, Never>?
     // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
     @State private var sleepWakeManager = SleepWakeManager()
@@ -63,6 +66,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(authSession)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.fleetControlClient, fleetControlClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .environment(\.accessTokenProvider, authSession)
                 .frame(minWidth: 900, minHeight: 600)
@@ -81,6 +85,7 @@ struct ArcBoxDesktopApp: App {
                                 Task { await authSession.handleAuthorizationCallback(url) }
                             }
                         ))
+                    initFleetControlClientIfNeeded()
 
                     guard startupOrchestrator == nil else { return }
 
@@ -182,6 +187,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)
+                .environment(\.fleetControlClient, fleetControlClient)
         }
         .defaultSize(width: 700, height: 580)
         .windowResizability(.contentSize)
@@ -197,6 +203,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(authSession)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.fleetControlClient, fleetControlClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .environment(\.accessTokenProvider, authSession)
         }
@@ -231,5 +238,44 @@ struct ArcBoxDesktopApp: App {
         appDelegate.arcboxClient = client
         appDelegate.connectionTask = task
         return client
+    }
+
+    /// Create the local fleet-agent control client without making it part of daemon startup.
+    ///
+    /// The fleet agent may not be installed or running on personal Macs. Keep
+    /// this path best-effort so the main app can start normally and Fleet UI
+    /// can render an unavailable state later.
+    private func initFleetControlClientIfNeeded() {
+        guard fleetControlClient == nil else { return }
+
+        appDelegate.fleetControlClient?.close()
+        appDelegate.fleetControlConnectionTask?.cancel()
+
+        do {
+            Log.fleet.info(
+                "Creating FleetControlClient at \(FleetControlClient.defaultSocketPath, privacy: .public)"
+            )
+            let client = try FleetControlClient()
+            let task = Task {
+                do {
+                    Log.fleet.info("Fleet control runConnections starting")
+                    try await client.runConnections()
+                    Log.fleet.info("Fleet control runConnections ended")
+                } catch {
+                    Log.fleet.error(
+                        "Fleet control runConnections failed: \(error.localizedDescription, privacy: .private)"
+                    )
+                }
+            }
+
+            fleetControlClient = client
+            fleetControlConnectionTask = task
+            appDelegate.fleetControlClient = client
+            appDelegate.fleetControlConnectionTask = task
+        } catch {
+            Log.fleet.warning(
+                "Fleet control client unavailable: \(error.localizedDescription, privacy: .private)"
+            )
+        }
     }
 }
