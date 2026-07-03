@@ -215,6 +215,7 @@
 		FBDBF39F818DDE35E0B7D0DF /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
 		FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */; };
 		FBE7E964F895EFE9C7818256 /* ContainerViewModel+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5BDCAAF11D1A6B52990E28 /* ContainerViewModel+Mapping.swift */; };
+		FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */; };
 		FFAB94A328F83148EC0ED794 /* LocalRootFSOutlineCoordinator+Columns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A4B5E95EA5A894B19867570 /* LocalRootFSOutlineCoordinator+Columns.swift */; };
 /* End PBXBuildFile section */
 
@@ -291,6 +292,7 @@
 		49A8DDE58F61A6B736A63E11 /* SandboxMonitoringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxMonitoringView.swift; sourceTree = "<group>"; };
 		4A4B5E95EA5A894B19867570 /* LocalRootFSOutlineCoordinator+Columns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+Columns.swift"; sourceTree = "<group>"; };
 		4A6DE83E6B8595E5E0F1299D /* ContainerGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerGroupView.swift; sourceTree = "<group>"; };
+		4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetViewModel.swift; sourceTree = "<group>"; };
 		4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerTypes.swift; sourceTree = "<group>"; };
 		4CEDB1A7E6E5F0EEA2214D21 /* VolumeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeTypes.swift; sourceTree = "<group>"; };
 		4DD7F5E0115C839BB364D59F /* ContainerLogsTab+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerLogsTab+Formatting.swift"; sourceTree = "<group>"; };
@@ -777,6 +779,14 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
+		4EC21FABED29FDC78DC34D1C /* Fleet */ = {
+			isa = PBXGroup;
+			children = (
+				4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */,
+			);
+			path = Fleet;
+			sourceTree = "<group>";
+		};
 		5F282325419E9444ADBEA66D /* Support */ = {
 			isa = PBXGroup;
 			children = (
@@ -834,6 +844,7 @@
 				9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */,
 				93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */,
 				3DCBC0E44C2DBB3064D4A759 /* Containers */,
+				4EC21FABED29FDC78DC34D1C /* Fleet */,
 				7D89C26DD9B6BEB015B28923 /* Images */,
 				46C6E77D6FA08BC8D86F3C3B /* Sandboxes */,
 				FAA50F82805A12EB07DC7083 /* Volumes */,
@@ -1260,6 +1271,7 @@
 				519C116D9CC62268CE4859D4 /* ExternalTerminalApp.swift in Sources */,
 				4B14BB17843A552B8D1B51BA /* ExternalTerminalDiscovery.swift in Sources */,
 				97E56AA0BEC7024FEBBE1B75 /* ExternalTerminalLauncher.swift in Sources */,
+				FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */,
 				F319F8722F145CCFA01650B6 /* GeneralSettingsView.swift in Sources */,
 				BA5C4C0A98D9650B14A2ECB8 /* GuestDataMount.swift in Sources */,
 				FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */,
