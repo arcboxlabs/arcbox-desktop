@@ -15,6 +15,8 @@ configFiles:
   Release: Local.xcconfig
 
 packages:
+  ArcBoxAuth:
+    path: Packages/ArcBoxAuth
   ArcBoxClient:
     path: Packages/ArcBoxClient
   DockerClient:
@@ -129,6 +131,7 @@ targets:
             destination: wrapper
             subpath: Contents/Library/LaunchAgents
     dependencies:
+      - package: ArcBoxAuth
       - package: ArcBoxClient
       - package: DockerClient
       - package: K8sClient
@@ -166,6 +169,8 @@ targets:
         INFOPLIST_KEY_CFBundleName: ArcBox
         INFOPLIST_KEY_NSAppleEventsUsageDescription: ArcBox uses Automation to open your selected terminal app and run container shell commands.
         INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.
+        INFOPLIST_KEY_OIDCClientID: $(OIDC_CLIENT_ID)
+        INFOPLIST_KEY_OIDCIssuerURL: $(OIDC_ISSUER_URL)
         INFOPLIST_KEY_PostHogAPIKey: $(POSTHOG_API_KEY)
         INFOPLIST_KEY_SentryDSN: $(SENTRY_DSN)
         LD_RUNPATH_SEARCH_PATHS:

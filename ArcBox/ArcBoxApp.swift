@@ -1,3 +1,4 @@
+import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
 import Foundation
@@ -13,6 +14,8 @@ struct ArcBoxDesktopApp: App {
     @State private var appVM = AppViewModel()
     // Lightweight init — no network calls until view appears
     @State private var daemonManager = DaemonManager()
+    // Lightweight init — restores tokens from the Keychain, no network
+    @State private var authSession = AuthSession()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     // Lightweight init — no network calls until view appears
@@ -55,9 +58,11 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(networksVM)
                 .environment(volumesVM)
+                .environment(authSession)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
+                .environment(\.accessTokenProvider, authSession)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     guard startupOrchestrator == nil else { return }
@@ -150,7 +155,9 @@ struct ArcBoxDesktopApp: App {
                 .environment(daemonManager)
                 .environment(containersVM)
                 .environment(imagesVM)
+                .environment(authSession)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.accessTokenProvider, authSession)
         }
         .defaultSize(width: 700, height: 580)
         .windowResizability(.contentSize)
@@ -163,9 +170,11 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(networksVM)
                 .environment(volumesVM)
+                .environment(authSession)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
+                .environment(\.accessTokenProvider, authSession)
         }
         .menuBarExtraStyle(.window)
     }

@@ -58,6 +58,8 @@ jobs:
           DEVELOPMENT_TEAM = 422ACSY6Y5
           SENTRY_DSN =
           POSTHOG_API_KEY =
+          OIDC_ISSUER_URL =
+          OIDC_CLIENT_ID =
           XCEOF
 
       - name: Generate Xcode project
