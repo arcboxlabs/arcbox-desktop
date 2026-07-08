@@ -160,6 +160,17 @@ public final class ArcBoxClient: Sendable {
         .init(wrapping: grpcClient)
     }
 
+    /// Sandbox lifecycle operations. All RPCs require `SandboxMetadata.forMachine`.
+    public var sandboxes: Sandbox_V1_SandboxService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
+    /// Sandbox snapshot (checkpoint / restore) operations. All RPCs require
+    /// `SandboxMetadata.forMachine`.
+    public var snapshots: Sandbox_V1_SandboxSnapshotService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
     // MARK: - Error Mapping
 
     /// Map a gRPC or transport error to a user-friendly message.

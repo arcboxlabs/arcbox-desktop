@@ -104,7 +104,8 @@ private struct ImageInspectDTO: Decodable {
     var snapshot: ImageInspectSnapshot {
         ImageInspectSnapshot(
             labels: config?.normalizedLabels ?? containerConfig?.normalizedLabels ?? [:],
-            rootfsMountPath: graphDriver?.imageRootfsMountPath
+            rootfsMountPath: graphDriver?.imageRootfsMountPath,
+            overlayUpperDir: graphDriver?.overlayUpperDir
         )
     }
 
@@ -229,6 +230,10 @@ private struct GraphDriverDTO: Decodable {
 
     var imageRootfsMountPath: String? {
         containerRootfsMountPath ?? DockerClient.normalized(data?.dir)
+    }
+
+    var overlayUpperDir: String? {
+        DockerClient.normalized(data?.upperDir)
     }
 
     private enum CodingKeys: String, CodingKey {
