@@ -51,6 +51,7 @@ nonisolated enum ErrorReporting {
         case pod
         case service
         case kubernetes
+        case sandbox
         case daemon
         case grpc
         case startup

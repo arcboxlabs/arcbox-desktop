@@ -6,6 +6,7 @@ import Foundation
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
     var eventMonitor: DockerEventMonitor?
+    var sandboxEventMonitor: SandboxEventMonitor?
     var startupOrchestrator: StartupOrchestrator?
     var arcboxClient: ArcBoxClient?
     var connectionTask: Task<Void, Never>?
@@ -26,6 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         eventMonitor?.stop()
+        sandboxEventMonitor?.stop()
         DockerContextManager.restorePreviousContext()
         arcboxClient?.close()
         connectionTask?.cancel()
