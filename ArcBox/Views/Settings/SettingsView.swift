@@ -4,6 +4,7 @@ import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
+    case account = "Account"
     case system = "System"
     // TODO: Implement network settings (ABXD-88)
     // case network = "Network"
@@ -18,6 +19,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var sfSymbol: String {
         switch self {
         case .general: return "gearshape"
+        case .account: return "person.circle"
         case .system: return "square.grid.2x2"
         // case .network: return "globe"
         case .storage: return "externaldrive"
@@ -67,6 +69,8 @@ struct SettingsView: View {
         switch selectedTab {
         case .general:
             GeneralSettingsView()
+        case .account:
+            AccountSettingsView()
         case .system:
             SystemSettingsView()
         // TODO: Implement network settings (ABXD-88)

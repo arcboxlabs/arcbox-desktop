@@ -90,6 +90,7 @@
 		79C5F3DA19E7431F8B28B6F0 /* MenuBarView+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC010DD9F0AEC7E4EA778C59 /* MenuBarView+Actions.swift */; };
 		7DABE0FBDD17F88D47333964 /* CommandHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65698313C3204F5F23E099B /* CommandHint.swift */; };
 		7F091F3F3F75F500937DC7BC /* ImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */; };
+		801AAF363A7901B7D17F5C55 /* AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */; };
 		807479D85C38FEE5E53218DD /* LocalRootFSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */; };
 		82ECF33C9637C7C65B527336 /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = CFE468A82BAC1B4D9AE25368 /* ArcBoxClient */; };
 		8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */; };
@@ -311,6 +312,7 @@
 		97E7E52D3A54846906EB064D /* SortMenuButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMenuButton.swift; sourceTree = "<group>"; };
 		99B56D80B89FFE9A579E86AE /* VolumeRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeRowView.swift; sourceTree = "<group>"; };
 		9A04AFE137230F2CE0DD9DBB /* DiagnosticBundleExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticBundleExporter.swift; sourceTree = "<group>"; };
+		9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSettingsView.swift; sourceTree = "<group>"; };
 		9BDFF0AA6C2EA05E000003F1 /* NetworkSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSettingsView.swift; sourceTree = "<group>"; };
 		9CF5769685436501744C4A83 /* NetworkContainersTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkContainersTab.swift; sourceTree = "<group>"; };
 		9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
@@ -602,6 +604,7 @@
 		36146B8720F5A0DE35FA0026 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */,
 				9F60CF8B8E81089BA2E8DC20 /* GeneralSettingsView.swift */,
 				9BDFF0AA6C2EA05E000003F1 /* NetworkSettingsView.swift */,
 				DAE5A29026FA64A7C0A47122 /* SettingsView.swift */,
@@ -1083,6 +1086,7 @@
 				ABA9E2D6873BE5FF255045F3 /* AboutView+SystemInfo.swift in Sources */,
 				76F9D4F43F4E73B79D882830 /* AboutView.swift in Sources */,
 				D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */,
+				801AAF363A7901B7D17F5C55 /* AccountSettingsView.swift in Sources */,
 				5F8BD0B16CBBDC44080F6EA5 /* Analytics.swift in Sources */,
 				B91D470DA46003D64389C7DE /* AppColors.swift in Sources */,
 				BA8E4BE30E5FBB6B8548E214 /* AppDelegate.swift in Sources */,
