@@ -210,8 +210,9 @@ struct ArcBoxDesktopApp: App {
     }
 
     /// Handle incoming `arcbox://` deep links.
-    /// TODO(ABXD-62): Register URL scheme in Info.plist or project build settings
-    /// (INFOPLIST_KEY_LSApplicationCategoryType / CFBundleURLTypes) once scheme routing is finalized.
+    /// TODO(ABXD-62): Register the arcbox:// scheme in project.yml's info block
+    /// (CFBundleURLTypes; INFOPLIST_KEY_* silently drops custom keys) once
+    /// scheme routing is finalized.
     private func handleDeepLink(_ url: URL) {
         Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
         guard url.scheme == "arcbox" else {

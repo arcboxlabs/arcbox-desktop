@@ -275,6 +275,7 @@
 		68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6845260698FF44B2E54D301B /* TemplateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateModel.swift; sourceTree = "<group>"; };
 		68B7685DAD23E5427C0F9911 /* NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDetailView.swift; sourceTree = "<group>"; };
+		68FD048401D9884E96A52412 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		69038D73EF8AC0CC09D4B39C /* NavItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavItem.swift; sourceTree = "<group>"; };
 		699A57392F1D9366CFA78BAF /* VolumesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesViewModel.swift; sourceTree = "<group>"; };
 		6AC42E91F0BCACABF173B87F /* DockerTerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerTerminalSession.swift; sourceTree = "<group>"; };
@@ -306,7 +307,6 @@
 		9101DCB26B0BB5B8DE4CAE70 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterDelegate.swift; sourceTree = "<group>"; };
 		949DB8BB8139F8D3C37503E9 /* MachineRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineRowView.swift; sourceTree = "<group>"; };
-		94BCF13CAB691F0273207C5A /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		95F593FF4C1C56EBF378883E /* MachineLogsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLogsTab.swift; sourceTree = "<group>"; };
 		9730C66B6A04B33F7DA3448B /* NetworkEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkEmptyState.swift; sourceTree = "<group>"; };
 		97E7E52D3A54846906EB064D /* SortMenuButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortMenuButton.swift; sourceTree = "<group>"; };
@@ -321,6 +321,7 @@
 		A147995028C8DB6F49BBD8EF /* ServiceRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceRowView.swift; sourceTree = "<group>"; };
 		A18574DEF808329D8152A379 /* RemoteIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteIconView.swift; sourceTree = "<group>"; };
 		A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
+		A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		A33B6873C4DDA948830B9EEC /* ContainerRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerRowView.swift; sourceTree = "<group>"; };
 		A37BB3605830EBE3A1625452 /* PodModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodModel.swift; sourceTree = "<group>"; };
 		A45A5AAA9B74A59E7543D8D0 /* LocalRootFSOutlineCoordinator+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+Actions.swift"; sourceTree = "<group>"; };
@@ -355,7 +356,6 @@
 		C0DD79FCBCF65FAFFBBB61D0 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Containers.swift"; sourceTree = "<group>"; };
 		C33F6D43F3CE2C79F072C7F3 /* DockerClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DockerClient; path = Packages/DockerClient; sourceTree = SOURCE_ROOT; };
-		C372FFE13E684DC590468C38 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineFilesTab.swift; sourceTree = "<group>"; };
 		CC98017408ED56AFF734125A /* AboutView+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+Sections.swift"; sourceTree = "<group>"; };
 		CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsViewModel.swift; sourceTree = "<group>"; };
@@ -366,6 +366,7 @@
 		DBEBBF08F0E4AC45D9C0BB83 /* ChangelogParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParser.swift; sourceTree = "<group>"; };
 		DE564AAFEC0EF6D094409728 /* SandboxRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxRowView.swift; sourceTree = "<group>"; };
 		E06B22BB8B92AF78C2B87ADC /* AboutView+LinkButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+LinkButton.swift"; sourceTree = "<group>"; };
+		E18EB65626D97DF7604580DF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E1C6B2F85E39321931CEC3ED /* ContainerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerDetailView.swift; sourceTree = "<group>"; };
 		E37F8C85EB27987F81FFB5F4 /* KubernetesState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesState.swift; sourceTree = "<group>"; };
 		E3A8FF41635473729BF0A36E /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
@@ -663,7 +664,7 @@
 				AC70A79B919D909CF6D811B4 /* arcbox.version */,
 				32C86546753C11A9E6CA8CB8 /* CHANGELOG.md */,
 				DC225BF252CB33BB34E74A79 /* ArcBox */,
-				C91F8EF7A2381ED5B2CF9AC8 /* arcbox-desktop-run-9-runner-section */,
+				A6889022EABCBEE366F350AC /* arcbox-desktop */,
 				F40F93A7C5C0CC3834C9D722 /* ArcBoxTests */,
 				CDE1EC6D82D788262B5E4213 /* LaunchDaemons */,
 				8380053000DF0548E7D5142C /* Packages */,
@@ -790,6 +791,16 @@
 			path = Machines;
 			sourceTree = "<group>";
 		};
+		A6889022EABCBEE366F350AC /* arcbox-desktop */ = {
+			isa = PBXGroup;
+			children = (
+				A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */,
+				68FD048401D9884E96A52412 /* Version.xcconfig */,
+			);
+			name = "arcbox-desktop";
+			path = .;
+			sourceTree = "<group>";
+		};
 		B422F342095BFADBE2F147B8 /* Tabs */ = {
 			isa = PBXGroup;
 			children = (
@@ -809,16 +820,6 @@
 				5A87C9445565D341EA85D2F4 /* ExternalTerminalLauncher.swift */,
 			);
 			path = Terminal;
-			sourceTree = "<group>";
-		};
-		C91F8EF7A2381ED5B2CF9AC8 /* arcbox-desktop-run-9-runner-section */ = {
-			isa = PBXGroup;
-			children = (
-				94BCF13CAB691F0273207C5A /* Local.xcconfig */,
-				C372FFE13E684DC590468C38 /* Version.xcconfig */,
-			);
-			name = "arcbox-desktop-run-9-runner-section";
-			path = .;
 			sourceTree = "<group>";
 		};
 		CDE1EC6D82D788262B5E4213 /* LaunchDaemons */ = {
@@ -846,6 +847,7 @@
 				57DD9A9FA0D6072FD4476A91 /* ArcBoxApp.swift */,
 				68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */,
 				54DE8B823FD1E94B0073AC5A /* ErrorReporting.swift */,
+				E18EB65626D97DF7604580DF /* Info.plist */,
 				06688AB84392716F1108AE36 /* Logging.swift */,
 				EA6DBFBB43078F295AFE54C0 /* PerformanceTracing.swift */,
 				2C7006D22506414C67AC5475 /* App */,
@@ -1268,7 +1270,7 @@
 /* Begin XCBuildConfiguration section */
 		30201713747F358DB9057B09 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 94BCF13CAB691F0273207C5A /* Local.xcconfig */;
+			baseConfigurationReference = A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -1356,7 +1358,7 @@
 		};
 		A05F50A0D3A02115582BD519 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C372FFE13E684DC590468C38 /* Version.xcconfig */;
+			baseConfigurationReference = 68FD048401D9884E96A52412 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1371,14 +1373,11 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ArcBox/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
-				INFOPLIST_KEY_OIDCClientID = "$(OIDC_CLIENT_ID)";
-				INFOPLIST_KEY_OIDCIssuerURL = "$(OIDC_ISSUER_URL)";
-				INFOPLIST_KEY_PostHogAPIKey = "$(POSTHOG_API_KEY)";
-				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -1405,7 +1404,7 @@
 		};
 		B65D4F0FCC4C62119FDE962D /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 94BCF13CAB691F0273207C5A /* Local.xcconfig */;
+			baseConfigurationReference = A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -1500,7 +1499,7 @@
 		};
 		FA16326409B9B381CDC02A57 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C372FFE13E684DC590468C38 /* Version.xcconfig */;
+			baseConfigurationReference = 68FD048401D9884E96A52412 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1515,14 +1514,11 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ArcBox/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
-				INFOPLIST_KEY_OIDCClientID = "$(OIDC_CLIENT_ID)";
-				INFOPLIST_KEY_OIDCIssuerURL = "$(OIDC_ISSUER_URL)";
-				INFOPLIST_KEY_PostHogAPIKey = "$(POSTHOG_API_KEY)";
-				INFOPLIST_KEY_SentryDSN = "$(SENTRY_DSN)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
