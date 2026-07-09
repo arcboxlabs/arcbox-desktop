@@ -209,12 +209,21 @@ struct ArcBoxDesktopApp: App {
         return client
     }
 
-    /// Handle incoming `arcbox://` deep links.
+    /// Handle incoming `arcbox://` deep links and OAuth redirect callbacks.
     /// TODO(ABXD-62): Register the arcbox:// scheme in project.yml's info block
     /// (CFBundleURLTypes; INFOPLIST_KEY_* silently drops custom keys) once
     /// scheme routing is finalized.
     private func handleDeepLink(_ url: URL) {
         Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
+        // OAuth redirect (com.arcboxlabs.desktop:/oauth2redirect): the sign-in
+        // browser leg returns here when it ends in an external browser instead
+        // of the ASWebAuthenticationSession sheet.
+        if url.scheme?.caseInsensitiveCompare(
+            OIDCClientConfiguration.redirectURI.scheme ?? "") == .orderedSame
+        {
+            Task { await authSession.handleAuthorizationCallback(url) }
+            return
+        }
         guard url.scheme == "arcbox" else {
             Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .private)")
             return

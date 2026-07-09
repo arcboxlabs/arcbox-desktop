@@ -48,7 +48,7 @@ struct AuthSessionTests {
     // MARK: - completeSignIn
 
     private func callback(code: String = "code-1", state: String = "state-1") -> URL {
-        URL(string: "arcbox://auth/callback?code=\(code)&state=\(state)")!
+        URL(string: "com.arcboxlabs.desktop:/oauth2redirect?code=\(code)&state=\(state)")!
     }
 
     @Test func completeSignInHappyPath() async throws {
@@ -92,7 +92,7 @@ struct AuthSessionTests {
     @Test func completeSignInSurfacesProviderError() async {
         let session = makeSession()
         let url = URL(
-            string: "arcbox://auth/callback?error=access_denied&error_description=Denied&state=state-1"
+            string: "com.arcboxlabs.desktop:/oauth2redirect?error=access_denied&error_description=Denied&state=state-1"
         )!
         await #expect(throws: OIDCError.authorizationDenied("Denied")) {
             try await session.completeSignIn(
@@ -121,6 +121,78 @@ struct AuthSessionTests {
                 endpoints: AuthTestSupport.endpoints)
         }
         #expect(store.stored == nil)
+    }
+
+    // MARK: - Deep-link callback
+
+    @Test func deepLinkCallbackCompletesPendingSignIn() async throws {
+        let session = makeSession()
+        _ = try await session.beginAuthorization()
+        let pending = try #require(session.pendingAuthorization)
+        provider.configure {
+            $0.exchangeResult = .success(
+                TokenResponse(
+                    accessToken: "access-1",
+                    expiresIn: 3600,
+                    refreshToken: "refresh-1",
+                    idToken: AuthTestSupport.idToken(
+                        subject: "user-1", email: "april@arcbox.dev", nonce: pending.nonce)))
+        }
+        let handled = await session.handleAuthorizationCallback(callback(state: pending.state))
+        #expect(handled)
+        #expect(session.status == .signedIn)
+        #expect(session.pendingAuthorization == nil)
+        #expect(store.stored?.accessToken == "access-1")
+    }
+
+    @Test func deepLinkCallbackIgnoresForeignURLs() async {
+        let session = makeSession()
+        _ = try? await session.beginAuthorization()
+        let handled = await session.handleAuthorizationCallback(
+            URL(string: "arcbox://containers/abc")!)
+        #expect(!handled)
+        #expect(session.pendingAuthorization != nil)
+        #expect(provider.exchangeCalls == 0)
+    }
+
+    @Test func deepLinkCallbackWithoutPendingSignInIsDropped() async {
+        let session = makeSession()
+        let handled = await session.handleAuthorizationCallback(callback())
+        #expect(handled)
+        #expect(session.status == .signedOut)
+        #expect(provider.exchangeCalls == 0)
+    }
+
+    @Test func deepLinkCallbackRejectsStateMismatch() async throws {
+        let session = makeSession()
+        _ = try await session.beginAuthorization()
+        let handled = await session.handleAuthorizationCallback(
+            callback(state: "attacker-state"))
+        #expect(handled)
+        #expect(session.status == .error(OIDCError.stateMismatch.userMessage))
+        #expect(session.pendingAuthorization == nil)
+        #expect(store.stored == nil)
+        #expect(provider.exchangeCalls == 0)
+    }
+
+    @Test func deepLinkCallbackConsumesPendingExactlyOnce() async throws {
+        let session = makeSession()
+        _ = try await session.beginAuthorization()
+        let pending = try #require(session.pendingAuthorization)
+        provider.configure {
+            $0.exchangeResult = .success(
+                TokenResponse(
+                    accessToken: "access-1",
+                    expiresIn: 3600,
+                    idToken: AuthTestSupport.idToken(subject: "user-1", nonce: pending.nonce)))
+        }
+        let url = callback(state: pending.state)
+        let first = await session.handleAuthorizationCallback(url)
+        let second = await session.handleAuthorizationCallback(url)
+        #expect(first)
+        #expect(second)
+        #expect(session.status == .signedIn)
+        #expect(provider.exchangeCalls == 1)
     }
 
     // MARK: - accessToken

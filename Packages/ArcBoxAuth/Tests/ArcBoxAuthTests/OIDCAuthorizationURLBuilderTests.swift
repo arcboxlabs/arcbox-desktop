@@ -26,7 +26,7 @@ struct OIDCAuthorizationURLBuilderTests {
         let byName = Dictionary(uniqueKeysWithValues: items.map { ($0.name, $0.value) })
         #expect(byName["response_type"] == "code")
         #expect(byName["client_id"] == "test-client")
-        #expect(byName["redirect_uri"] == "arcbox://auth/callback")
+        #expect(byName["redirect_uri"] == "com.arcboxlabs.desktop:/oauth2redirect")
         #expect(byName["scope"] == "openid profile email offline_access")
         #expect(byName["state"] == "the-state")
         #expect(byName["nonce"] == "the-nonce")

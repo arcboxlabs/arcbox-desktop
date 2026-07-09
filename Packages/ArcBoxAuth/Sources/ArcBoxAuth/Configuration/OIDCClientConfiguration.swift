@@ -16,7 +16,7 @@ import Foundation
 ///     name: ArcBox Desktop
 ///     public: true
 ///     redirectURIs:
-///       - arcbox://auth/callback
+///       - com.arcboxlabs.desktop:/oauth2redirect
 /// ```
 ///
 /// then point your `Local.xcconfig` at it:
@@ -31,7 +31,7 @@ public struct OIDCClientConfiguration: Sendable, Equatable {
 
     /// Registered with the platform IdP; changing it requires coordinated
     /// re-registration server-side, so treat it as stable once shipped.
-    public static let redirectURI = URL(string: "arcbox://auth/callback")!
+    public static let redirectURI = URL(string: "com.arcboxlabs.desktop:/oauth2redirect")!
     public static let scopes = ["openid", "profile", "email", "offline_access"]
 
     public init(issuerURL: URL, clientID: String) {

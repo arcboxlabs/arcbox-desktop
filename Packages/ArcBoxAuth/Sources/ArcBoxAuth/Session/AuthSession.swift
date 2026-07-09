@@ -20,6 +20,10 @@ public final class AuthSession: AccessTokenProviding {
     @ObservationIgnored private var tokens: StoredTokens?
     @ObservationIgnored private var endpoints: OIDCEndpoints?
     @ObservationIgnored private var refreshTask: Task<StoredTokens, Error>?
+    /// Context for the in-flight browser leg, consumed exactly once by
+    /// whichever completion path returns first: the web-session result or a
+    /// deep-link callback (see `AuthSession+SignIn.swift`).
+    @ObservationIgnored var pendingAuthorization: PendingAuthorization?
 
     /// Refresh this long before nominal expiry to absorb clock skew.
     private static let expiryLeeway: TimeInterval = 60
