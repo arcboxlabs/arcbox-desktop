@@ -21,19 +21,31 @@ struct AccountSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        // Sign-in fetches userinfo itself; this covers sessions restored
+        // from the Keychain at launch.
+        .task { await authSession.loadUserInfo() }
     }
 
     @ViewBuilder
     private var signedInRows: some View {
         LabeledContent("Signed in as") {
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(authSession.identity?.displayName ?? "Unknown")
-                if let email = authSession.identity?.email, authSession.identity?.name != nil {
-                    Text(email)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(authSession.identity?.displayName ?? "Unknown")
+                    if let email = authSession.identity?.email, authSession.identity?.name != nil {
+                        Text(email)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                avatar
             }
+        }
+        LabeledContent("User ID") {
+            Text(authSession.identity?.subject ?? "—")
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
         }
         if let expiresAt = authSession.accessTokenExpiresAt {
             LabeledContent("Session renews") {
@@ -50,6 +62,24 @@ struct AccountSettingsView: View {
         Button("Sign Out", role: .destructive) {
             Task { await authSession.signOut() }
         }
+    }
+
+    /// Remote avatar with the Apple-style fallback (white silhouette on
+    /// gray, as in Contacts and Apple Account settings), which also covers
+    /// the loading and failure phases.
+    private var avatar: some View {
+        AsyncImage(url: authSession.identity?.avatarURL) { phase in
+            if let image = phase.image {
+                image.resizable().scaledToFill()
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, Color(nsColor: .systemGray))
+            }
+        }
+        .frame(width: 28, height: 28)
+        .clipShape(Circle())
     }
 
     private var signingInRows: some View {

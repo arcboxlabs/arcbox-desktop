@@ -63,6 +63,35 @@ public final class AuthSession: AccessTokenProviding {
         return try await refreshedTokens().accessToken
     }
 
+    // MARK: - UserInfo
+
+    /// Fetches profile claims from the userinfo endpoint and publishes them
+    /// as `identity`. The platform IdP never embeds profile claims in ID
+    /// tokens, so this is the only source of name/email/avatar. Best-effort:
+    /// failures log and keep the existing identity. Runs automatically after
+    /// sign-in; the app also calls it after a restored launch.
+    public func loadUserInfo() async {
+        guard status == .signedIn else { return }
+        do {
+            let endpoints = try await resolvedEndpoints()
+            guard let endpoint = endpoints.userinfoEndpoint else {
+                ClientLog.auth.warning("Provider advertises no userinfo endpoint")
+                return
+            }
+            let info = try await provider.userInfo(
+                accessToken: try await accessToken(), endpoint: endpoint)
+            identity = AuthIdentity(
+                subject: info.subject,
+                email: info.email ?? identity?.email,
+                name: info.name ?? identity?.name,
+                avatarURL: info.picture)
+            ClientLog.auth.info(
+                "UserInfo loaded for \(info.subject, privacy: .private(mask: .hash))")
+        } catch {
+            ClientLog.auth.warning("UserInfo fetch failed: \(String(describing: error))")
+        }
+    }
+
     // MARK: - Sign-out
 
     /// Clears the session locally and best-effort revokes the refresh token.

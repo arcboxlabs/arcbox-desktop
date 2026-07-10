@@ -47,4 +47,29 @@ struct OIDCClientTests {
             try OIDCClient.decodeTokenResponse(data: Data("not json".utf8), status: 200)
         }
     }
+
+    @Test func decodeUserInfoParsesFullPayload() throws {
+        let json = """
+            {"sub":"user-1","name":"April","email":"april@arcbox.dev",\
+            "email_verified":true,"picture":"https://avatars.example.com/u.png"}
+            """
+        let info = try OIDCClient.decodeUserInfo(data: Data(json.utf8), status: 200)
+        #expect(info.subject == "user-1")
+        #expect(info.name == "April")
+        #expect(info.email == "april@arcbox.dev")
+        #expect(info.emailVerified == true)
+        #expect(info.picture?.absoluteString == "https://avatars.example.com/u.png")
+    }
+
+    @Test func decodeUserInfoToleratesSubjectOnlyPayload() throws {
+        let info = try OIDCClient.decodeUserInfo(data: Data(#"{"sub":"user-1"}"#.utf8), status: 200)
+        #expect(info == OIDCUserInfo(subject: "user-1"))
+    }
+
+    @Test func decodeUserInfoThrowsOnHTTPError() {
+        let body = #"{"error":"invalid_token"}"#
+        #expect(throws: OIDCError.userInfoFailed(status: 401, body: body)) {
+            try OIDCClient.decodeUserInfo(data: Data(body.utf8), status: 401)
+        }
+    }
 }

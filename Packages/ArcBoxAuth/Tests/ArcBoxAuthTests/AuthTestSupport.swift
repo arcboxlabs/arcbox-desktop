@@ -12,7 +12,8 @@ enum AuthTestSupport {
     static let endpoints = OIDCEndpoints(
         authorizationEndpoint: URL(string: "https://idp.example.com/auth")!,
         tokenEndpoint: URL(string: "https://idp.example.com/token")!,
-        revocationEndpoint: URL(string: "https://idp.example.com/revoke")!
+        revocationEndpoint: URL(string: "https://idp.example.com/revoke")!,
+        userinfoEndpoint: URL(string: "https://idp.example.com/userinfo")!
     )
 
     /// Unsigned JWT with the given payload, shaped like a real ID token.
@@ -44,11 +45,14 @@ final class FakeOIDCProvider: OIDCProviding {
     struct State {
         var exchangeResult: Result<TokenResponse, OIDCError> = .failure(.notSignedIn)
         var refreshResult: Result<TokenResponse, OIDCError> = .failure(.notSignedIn)
+        var userInfoResult: Result<OIDCUserInfo, OIDCError> = .failure(
+            .userInfoFailed(status: 401, body: "unconfigured"))
         var refreshDelay: Duration?
         var revokeError: OIDCError?
         var exchangeCalls = 0
         var refreshCalls = 0
         var revokeCalls = 0
+        var userInfoCalls = 0
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -56,6 +60,7 @@ final class FakeOIDCProvider: OIDCProviding {
     var exchangeCalls: Int { state.withLock { $0.exchangeCalls } }
     var refreshCalls: Int { state.withLock { $0.refreshCalls } }
     var revokeCalls: Int { state.withLock { $0.revokeCalls } }
+    var userInfoCalls: Int { state.withLock { $0.userInfoCalls } }
 
     func configure(_ change: @Sendable (inout State) -> Void) {
         state.withLock { change(&$0) }
@@ -101,5 +106,12 @@ final class FakeOIDCProvider: OIDCProviding {
             return s.revokeError
         }
         if let error { throw error }
+    }
+
+    func userInfo(accessToken: String, endpoint: URL) async throws -> OIDCUserInfo {
+        try state.withLock { s in
+            s.userInfoCalls += 1
+            return s.userInfoResult
+        }.get()
     }
 }

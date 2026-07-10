@@ -123,6 +123,66 @@ struct AuthSessionTests {
         #expect(store.stored == nil)
     }
 
+    // MARK: - UserInfo
+
+    @Test func loadUserInfoPopulatesIdentity() async throws {
+        try store.save(freshTokens())
+        provider.configure {
+            $0.userInfoResult = .success(
+                OIDCUserInfo(
+                    subject: "user-1",
+                    name: "April",
+                    email: "april@arcbox.dev",
+                    emailVerified: true,
+                    picture: URL(string: "https://avatars.example.com/user-1.png")))
+        }
+        let session = makeSession()
+        await session.loadUserInfo()
+        #expect(provider.userInfoCalls == 1)
+        #expect(session.identity?.name == "April")
+        #expect(session.identity?.email == "april@arcbox.dev")
+        #expect(session.identity?.avatarURL?.absoluteString == "https://avatars.example.com/user-1.png")
+    }
+
+    @Test func loadUserInfoKeepsIdentityOnFailure() async throws {
+        try store.save(freshTokens())
+        let session = makeSession()
+        let before = session.identity
+        await session.loadUserInfo()
+        #expect(provider.userInfoCalls == 1)
+        #expect(session.identity == before)
+        #expect(session.status == .signedIn)
+    }
+
+    @Test func loadUserInfoIsNoOpWhenSignedOut() async {
+        let session = makeSession()
+        await session.loadUserInfo()
+        #expect(provider.userInfoCalls == 0)
+    }
+
+    @Test func signInFetchesUserInfo() async throws {
+        let session = makeSession()
+        _ = try await session.beginAuthorization()
+        let pending = try #require(session.pendingAuthorization)
+        provider.configure {
+            $0.exchangeResult = .success(
+                TokenResponse(
+                    accessToken: "access-1",
+                    expiresIn: 3600,
+                    idToken: AuthTestSupport.idToken(subject: "user-1", nonce: pending.nonce)))
+            $0.userInfoResult = .success(
+                OIDCUserInfo(
+                    subject: "user-1",
+                    name: "April",
+                    picture: URL(string: "https://avatars.example.com/user-1.png")))
+        }
+        await session.handleAuthorizationCallback(callback(state: pending.state))
+        #expect(session.status == .signedIn)
+        #expect(provider.userInfoCalls == 1)
+        #expect(session.identity?.name == "April")
+        #expect(session.identity?.avatarURL != nil)
+    }
+
     // MARK: - Deep-link callback
 
     @Test func deepLinkCallbackCompletesPendingSignIn() async throws {

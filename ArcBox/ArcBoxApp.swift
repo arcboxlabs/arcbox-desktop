@@ -67,6 +67,11 @@ struct ArcBoxDesktopApp: App {
                 .task {
                     guard startupOrchestrator == nil else { return }
 
+                    // Enrich a Keychain-restored session with userinfo
+                    // (name/email/avatar) without delaying daemon startup;
+                    // sign-in fetches it as part of its own flow.
+                    Task { await authSession.loadUserInfo() }
+
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
 

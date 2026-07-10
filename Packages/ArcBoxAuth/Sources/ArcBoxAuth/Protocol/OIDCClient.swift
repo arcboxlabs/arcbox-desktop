@@ -73,7 +73,27 @@ public final class OIDCClient: OIDCProviding, Sendable {
         }
     }
 
+    public func userInfo(accessToken: String, endpoint: URL) async throws -> OIDCUserInfo {
+        var request = URLRequest(url: endpoint)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        let (data, status) = try await perform(request)
+        return try Self.decodeUserInfo(data: data, status: status)
+    }
+
     // MARK: - Internal (unit-tested via @testable)
+
+    static func decodeUserInfo(data: Data, status: Int) throws -> OIDCUserInfo {
+        guard status == 200 else {
+            throw OIDCError.userInfoFailed(
+                status: status, body: String(bytes: data, encoding: .utf8) ?? "")
+        }
+        do {
+            return try JSONDecoder().decode(OIDCUserInfo.self, from: data)
+        } catch {
+            throw OIDCError.userInfoFailed(status: status, body: "malformed userinfo response")
+        }
+    }
 
     static func decodeTokenResponse(data: Data, status: Int) throws -> TokenResponse {
         guard (200..<300).contains(status) else {

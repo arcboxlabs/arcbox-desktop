@@ -10,6 +10,7 @@ public enum OIDCError: Error, Sendable, Equatable {
     case stateMismatch
     case missingAuthorizationCode
     case tokenRequestFailed(status: Int, body: String)
+    case userInfoFailed(status: Int, body: String)
     case missingRefreshToken
     case invalidIDToken
     case notSignedIn
@@ -29,6 +30,8 @@ public enum OIDCError: Error, Sendable, Equatable {
             "Sign-in failed a security check. Please try again."
         case .tokenRequestFailed:
             "Sign-in failed while exchanging credentials. Please try again."
+        case .userInfoFailed:
+            "Could not load your profile. Please try again."
         case .missingRefreshToken, .notSignedIn:
             "Your session has expired. Please sign in again."
         case .network(let description):

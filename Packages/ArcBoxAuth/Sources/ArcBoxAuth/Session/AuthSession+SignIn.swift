@@ -146,6 +146,7 @@ extension AuthSession {
             }
         }
         adopt(Self.merge(response: response, into: nil), persist: true)
+        await loadUserInfo()
     }
 
     private static func queryParameters(of url: URL) -> [String: String] {

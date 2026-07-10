@@ -25,4 +25,7 @@ public protocol OIDCProviding: Sendable {
         configuration: OIDCClientConfiguration,
         endpoint: URL
     ) async throws
+
+    /// OIDC Core §5.3 userinfo request with a Bearer access token.
+    func userInfo(accessToken: String, endpoint: URL) async throws -> OIDCUserInfo
 }
