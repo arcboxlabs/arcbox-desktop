@@ -42,8 +42,8 @@ struct SidebarAccountButton: View {
         .onHover { isHovered = $0 }
         // Leading inset tuned so the avatar lines up with the icons of the
         // sidebar list rows above.
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .disabled(isDisabled)
         .help(helpText)
     }
