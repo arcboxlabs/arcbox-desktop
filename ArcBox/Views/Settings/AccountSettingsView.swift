@@ -62,6 +62,8 @@ struct AccountSettingsView: View {
             Button("Sign Out…", role: .destructive) {
                 isConfirmingSignOut = true
             }
+            // Form rows on macOS don't tint from the destructive role alone.
+            .foregroundStyle(.red)
             .confirmationDialog("Sign out of ArcBox?", isPresented: $isConfirmingSignOut) {
                 Button("Sign Out", role: .destructive, action: signOut)
             } message: {
