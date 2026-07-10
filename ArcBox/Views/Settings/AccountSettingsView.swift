@@ -102,6 +102,7 @@ struct AccountSettingsView: View {
                         .disabled(authSession.configuration.isPlaceholder)
                 }
             }
+            .frame(maxWidth: .infinity)
             .listRowBackground(Color.clear)
         }
     }

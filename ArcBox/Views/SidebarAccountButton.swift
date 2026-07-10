@@ -14,38 +14,35 @@ struct SidebarAccountButton: View {
     @State private var isHovered = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            Button(action: primaryAction) {
-                HStack(spacing: 8) {
-                    if authSession.status == .signingIn {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(width: 24, height: 24)
-                        Text("Signing In…")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        AvatarView(url: authSession.identity?.avatarURL, size: 24)
-                        Text(title)
-                    }
-                    Spacer(minLength: 0)
+        Button(action: primaryAction) {
+            HStack(spacing: 8) {
+                if authSession.status == .signingIn {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 24, height: 24)
+                    Text("Signing In…")
+                        .foregroundStyle(.secondary)
+                } else {
+                    AvatarView(url: authSession.identity?.avatarURL, size: 24)
+                    Text(title)
                 }
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .contentShape(.rect)
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            .background(
-                isHovered ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear),
-                in: .rect(cornerRadius: 6)
-            )
-            .onHover { isHovered = $0 }
-            .padding(6)
-            .disabled(isDisabled)
-            .help(helpText)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
+        .background(
+            isHovered ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear),
+            in: .rect(cornerRadius: 6)
+        )
+        .onHover { isHovered = $0 }
+        .padding(6)
+        .disabled(isDisabled)
+        .help(helpText)
     }
 
     private var title: String {
