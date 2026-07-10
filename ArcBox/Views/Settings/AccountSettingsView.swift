@@ -46,18 +46,6 @@ struct AccountSettingsView: View {
             }
             LabeledContent("Provider", value: authSession.configuration.environmentLabel)
         }
-        Section("Session") {
-            if let expiresAt = authSession.accessTokenExpiresAt {
-                LabeledContent("Session renews") {
-                    Text(expiresAt, format: .relative(presentation: .named))
-                }
-            }
-            #if DEBUG
-                // Dev-loop aid: exercises the refresh grant; the "Session
-                // renews" row above reflects the outcome.
-                Button("Refresh Access Token", action: refreshAccessToken)
-            #endif
-        }
         Section {
             Button("Sign Out…", role: .destructive) {
                 isConfirmingSignOut = true
@@ -117,10 +105,6 @@ struct AccountSettingsView: View {
 
     private func signOut() {
         Task { await authSession.signOut() }
-    }
-
-    private func refreshAccessToken() {
-        Task { _ = try? await authSession.accessToken() }
     }
 
     private func copyUserID() {
