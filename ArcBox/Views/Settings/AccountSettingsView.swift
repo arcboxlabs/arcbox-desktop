@@ -37,11 +37,11 @@ struct AccountSettingsView: View {
                         .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
-                    Button("Copy User ID", systemImage: "doc.on.doc", action: copyUserID)
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .help("Copy User ID")
+                    // Button("Copy User ID", systemImage: "doc.on.doc", action: copyUserID)
+                    //     .labelStyle(.iconOnly)
+                    //     .buttonStyle(.borderless)
+                    //     .controlSize(.small)
+                    //     .help("Copy User ID")
                 }
             }
             LabeledContent("Provider", value: authSession.configuration.environmentLabel)

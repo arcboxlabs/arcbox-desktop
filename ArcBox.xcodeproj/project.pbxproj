@@ -161,6 +161,7 @@
 		D49278FBAD2A7E36CD278147 /* MachineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949DB8BB8139F8D3C37503E9 /* MachineRowView.swift */; };
 		D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE313F40E79E409C942B1EE /* AboutWindow.swift */; };
 		D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */; };
+		D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */; };
 		D745D0D7EF5FF65174C47F28 /* NewVolumeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */; };
 		D786BBF78698824ED9F5E048 /* ComingSoonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE64C34A555B2A5BA02AD9FA /* ComingSoonPanel.swift */; };
 		DAC7224E4BF7F459BB7013CB /* RemoteIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18574DEF808329D8152A379 /* RemoteIconView.swift */; };
@@ -283,6 +284,7 @@
 		7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWakeManager.swift; sourceTree = "<group>"; };
 		70D9A8B5B6000070B4D69A07 /* SandboxDisabledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxDisabledView.swift; sourceTree = "<group>"; };
 		727A1DD3E8D3B0BB875475A8 /* MachineEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineEmptyState.swift; sourceTree = "<group>"; };
+		7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarAccountButton.swift; sourceTree = "<group>"; };
 		77BE672A52785F040AC6CEB2 /* ExternalTerminalDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalDiscovery.swift; sourceTree = "<group>"; };
 		789DE20DB0F3E106BFAC6E10 /* MenuBarHoverButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHoverButton.swift; sourceTree = "<group>"; };
 		791DD121033683719C609B4D /* MachineInfoTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineInfoTab.swift; sourceTree = "<group>"; };
@@ -624,6 +626,7 @@
 				7DAB7D8E92543D99A995003F /* CheckForUpdatesView.swift */,
 				AE64C34A555B2A5BA02AD9FA /* ComingSoonPanel.swift */,
 				AA88097CAC1929269BE210C5 /* ContentView.swift */,
+				7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */,
 				FDE4F12642D327661286B8A8 /* About */,
 				93FCB887D6304AC5E61E4D2B /* Containers */,
 				2E2958440C093A8D2A401F92 /* Images */,
@@ -1217,6 +1220,7 @@
 				299DA63B52A4A414F246A0D8 /* ServicesListView.swift in Sources */,
 				5D859AD67E6BF46402B5B621 /* ServicesViewModel.swift in Sources */,
 				7024DB45668AC27567EB655E /* SettingsView.swift in Sources */,
+				D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */,
 				D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */,
 				9E79E2BBA05690D9ECAED2CD /* SortMenuButton.swift in Sources */,
 				A03ACBF5074B007C8CD7B101 /* StartupProgressView.swift in Sources */,

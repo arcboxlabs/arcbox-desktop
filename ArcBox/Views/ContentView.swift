@@ -82,6 +82,9 @@ struct ContentView: View {
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SidebarAccountButton()
+        }
         .navigationSplitViewColumnWidth(180)
     }
 

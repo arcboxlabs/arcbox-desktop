@@ -157,6 +157,7 @@ struct ArcBoxDesktopApp: App {
 
         Window("Settings", id: "settings") {
             SettingsView()
+                .environment(appVM)
                 .environment(daemonManager)
                 .environment(containersVM)
                 .environment(imagesVM)
