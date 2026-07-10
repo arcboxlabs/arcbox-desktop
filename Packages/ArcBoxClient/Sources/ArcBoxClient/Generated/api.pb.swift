@@ -30,6 +30,51 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
+/// Hypervisor backend for the single System VM.
+public enum Arcbox_V1_SystemVmBackend: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+
+  /// Unset; rejected by SetSystemVmBackend.
+  case unspecified // = 0
+
+  /// Hypervisor.framework — ArcBox's custom VMM (amd64 via FEX). macOS 15+.
+  case hv // = 1
+
+  /// Virtualization.framework — Apple-managed execution. The default.
+  case vz // = 2
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .hv
+    case 2: self = .vz
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .hv: return 1
+    case .vz: return 2
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Arcbox_V1_SystemVmBackend] = [
+    .unspecified,
+    .hv,
+    .vz,
+  ]
+
+}
+
 /// Request to create a network.
 public struct Arcbox_V1_CreateNetworkRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -292,6 +337,32 @@ public struct Arcbox_V1_NetworkContainer: Sendable {
 
   /// MAC address.
   public var macAddress: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// The System VM's hypervisor backend.
+public struct Arcbox_V1_SystemVmBackendInfo: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var backend: Arcbox_V1_SystemVmBackend = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to switch the System VM's hypervisor backend.
+public struct Arcbox_V1_SetSystemVmBackendRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var backend: Arcbox_V1_SystemVmBackend = .unspecified
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1094,6 +1165,10 @@ public struct Arcbox_V1_SetupStatus: Sendable {
 
 fileprivate let _protobuf_package = "arcbox.v1"
 
+extension Arcbox_V1_SystemVmBackend: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SYSTEM_VM_BACKEND_UNSPECIFIED\0\u{1}SYSTEM_VM_BACKEND_HV\0\u{1}SYSTEM_VM_BACKEND_VZ\0")
+}
+
 extension Arcbox_V1_CreateNetworkRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateNetworkRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}driver\0\u{1}internal\0\u{1}labels\0\u{3}enable_ipv6\0\u{1}ipam\0")
@@ -1587,6 +1662,66 @@ extension Arcbox_V1_NetworkContainer: SwiftProtobuf.Message, SwiftProtobuf._Mess
     if lhs.ipv4Address != rhs.ipv4Address {return false}
     if lhs.ipv6Address != rhs.ipv6Address {return false}
     if lhs.macAddress != rhs.macAddress {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SystemVmBackendInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SystemVmBackendInfo"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}backend\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.backend) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.backend != .unspecified {
+      try visitor.visitSingularEnumField(value: self.backend, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SystemVmBackendInfo, rhs: Arcbox_V1_SystemVmBackendInfo) -> Bool {
+    if lhs.backend != rhs.backend {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetSystemVmBackendRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetSystemVmBackendRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}backend\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.backend) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.backend != .unspecified {
+      try visitor.visitSingularEnumField(value: self.backend, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetSystemVmBackendRequest, rhs: Arcbox_V1_SetSystemVmBackendRequest) -> Bool {
+    if lhs.backend != rhs.backend {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
