@@ -1122,6 +1122,30 @@ public enum Arcbox_V1_SystemService {
                 method: "WatchSetupStatus"
             )
         }
+        /// Namespace for "GetSystemVmBackend" metadata.
+        public enum GetSystemVmBackend {
+            /// Request type for "GetSystemVmBackend".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "GetSystemVmBackend".
+            public typealias Output = Arcbox_V1_SystemVmBackendInfo
+            /// Descriptor for "GetSystemVmBackend".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "GetSystemVmBackend"
+            )
+        }
+        /// Namespace for "SetSystemVmBackend" metadata.
+        public enum SetSystemVmBackend {
+            /// Request type for "SetSystemVmBackend".
+            public typealias Input = Arcbox_V1_SetSystemVmBackendRequest
+            /// Response type for "SetSystemVmBackend".
+            public typealias Output = Arcbox_V1_SystemVmBackendInfo
+            /// Descriptor for "SetSystemVmBackend".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "SetSystemVmBackend"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.SystemService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetInfo.descriptor,
@@ -1130,7 +1154,9 @@ public enum Arcbox_V1_SystemService {
             Events.descriptor,
             Prune.descriptor,
             GetSetupStatus.descriptor,
-            WatchSetupStatus.descriptor
+            WatchSetupStatus.descriptor,
+            GetSystemVmBackend.descriptor,
+            SetSystemVmBackend.descriptor
         ]
     }
 }
@@ -1287,6 +1313,44 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
+
+        /// Handle the "GetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's current hypervisor backend.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SystemVmBackendInfo` messages.
+        func getSystemVmBackend(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo>
+
+        /// Handle the "SetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+        /// > persisted; the System VM is restarted so it takes effect, which stops
+        /// > running containers. Returns the resulting backend.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_SetSystemVmBackendRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SystemVmBackendInfo` messages.
+        func setSystemVmBackend(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo>
     }
 
     /// Service protocol for the "arcbox.v1.SystemService" service.
@@ -1428,6 +1492,44 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
+
+        /// Handle the "GetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's current hypervisor backend.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_SystemVmBackendInfo` message.
+        func getSystemVmBackend(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>
+
+        /// Handle the "SetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+        /// > persisted; the System VM is restarted so it takes effect, which stops
+        /// > running containers. Returns the resulting backend.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetSystemVmBackendRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_SystemVmBackendInfo` message.
+        func setSystemVmBackend(
+            request: GRPCCore.ServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>
     }
 
     /// Simple service protocol for the "arcbox.v1.SystemService" service.
@@ -1569,6 +1671,44 @@ extension Arcbox_V1_SystemService {
             response: GRPCCore.RPCWriter<Arcbox_V1_SetupStatus>,
             context: GRPCCore.ServerContext
         ) async throws
+
+        /// Handle the "GetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's current hypervisor backend.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_SystemVmBackendInfo` to respond with.
+        func getSystemVmBackend(
+            request: Arcbox_V1_Empty,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_SystemVmBackendInfo
+
+        /// Handle the "SetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+        /// > persisted; the System VM is restarted so it takes effect, which stops
+        /// > running containers. Returns the resulting backend.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_SetSystemVmBackendRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_SystemVmBackendInfo` to respond with.
+        func setSystemVmBackend(
+            request: Arcbox_V1_SetSystemVmBackendRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_SystemVmBackendInfo
     }
 }
 
@@ -1648,6 +1788,28 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetupStatus>(),
             handler: { request, context in
                 try await self.watchSetupStatus(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.GetSystemVmBackend.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SystemVmBackendInfo>(),
+            handler: { request, context in
+                try await self.getSystemVmBackend(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.SetSystemVmBackend.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetSystemVmBackendRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SystemVmBackendInfo>(),
+            handler: { request, context in
+                try await self.setSystemVmBackend(
                     request: request,
                     context: context
                 )
@@ -1734,6 +1896,28 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
             context: context
         )
         return response
+    }
+
+    public func getSystemVmBackend(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo> {
+        let response = try await self.getSystemVmBackend(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func setSystemVmBackend(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo> {
+        let response = try await self.setSystemVmBackend(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
     }
 }
 
@@ -1836,6 +2020,32 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
                 )
                 return [:]
             }
+        )
+    }
+
+    public func getSystemVmBackend(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo> {
+        return GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>(
+            message: try await self.getSystemVmBackend(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func setSystemVmBackend(
+        request: GRPCCore.ServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo> {
+        return GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>(
+            message: try await self.setSystemVmBackend(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
         )
     }
 }
@@ -2014,6 +2224,54 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetupStatus>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's current hypervisor backend.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmBackendInfo` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getSystemVmBackend<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmBackendInfo>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+        /// > persisted; the System VM is restarted so it takes effect, which stops
+        /// > running containers. Returns the resulting backend.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetSystemVmBackendRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetSystemVmBackendRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmBackendInfo` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setSystemVmBackend<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetSystemVmBackendRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmBackendInfo>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2272,6 +2530,76 @@ extension Arcbox_V1_SystemService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "GetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's current hypervisor backend.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmBackendInfo` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getSystemVmBackend<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmBackendInfo>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.GetSystemVmBackend.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetSystemVmBackend" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+        /// > persisted; the System VM is restarted so it takes effect, which stops
+        /// > running containers. Returns the resulting backend.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetSystemVmBackendRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetSystemVmBackendRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmBackendInfo` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setSystemVmBackend<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetSystemVmBackendRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmBackendInfo>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.SetSystemVmBackend.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2474,6 +2802,66 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetupStatus>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetSystemVmBackend" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Gets the System VM's current hypervisor backend.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getSystemVmBackend<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getSystemVmBackend(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SystemVmBackendInfo>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetSystemVmBackend" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+    /// > persisted; the System VM is restarted so it takes effect, which stops
+    /// > running containers. Returns the resulting backend.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_SetSystemVmBackendRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setSystemVmBackend<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmBackendRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setSystemVmBackend(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetSystemVmBackendRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SystemVmBackendInfo>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2706,6 +3094,74 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.watchSetupStatus(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetSystemVmBackend" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Gets the System VM's current hypervisor backend.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getSystemVmBackend<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getSystemVmBackend(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetSystemVmBackend" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Switches the System VM's hypervisor backend (HV <-> VZ). The choice is
+    /// > persisted; the System VM is restarted so it takes effect, which stops
+    /// > running containers. Returns the resulting backend.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setSystemVmBackend<Result>(
+        _ message: Arcbox_V1_SetSystemVmBackendRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmBackendRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setSystemVmBackend(
             request: request,
             options: options,
             onResponse: handleResponse
