@@ -141,6 +141,7 @@ struct AuthSessionTests {
         #expect(provider.userInfoCalls == 1)
         #expect(session.identity?.name == "April")
         #expect(session.identity?.email == "april@arcbox.dev")
+        #expect(session.identity?.emailVerified == true)
         #expect(session.identity?.avatarURL?.absoluteString == "https://avatars.example.com/user-1.png")
     }
 

@@ -84,7 +84,8 @@ public final class AuthSession: AccessTokenProviding {
                 subject: info.subject,
                 email: info.email ?? identity?.email,
                 name: info.name ?? identity?.name,
-                avatarURL: info.picture)
+                avatarURL: info.picture,
+                emailVerified: info.emailVerified)
             ClientLog.auth.info(
                 "UserInfo loaded for \(info.subject, privacy: .private(mask: .hash))")
         } catch {

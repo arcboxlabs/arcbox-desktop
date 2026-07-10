@@ -1,23 +1,20 @@
+import AppKit
 import ArcBoxAuth
 import SwiftUI
 
-/// Sign-in state for the ArcBox platform: identity, provider, sign in/out.
+/// Sign-in state for the ArcBox platform: identity, session, sign in/out.
 struct AccountSettingsView: View {
     @Environment(AuthSession.self) private var authSession
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @State private var isConfirmingSignOut = false
 
     var body: some View {
         Form {
-            Section("ArcBox Platform") {
-                switch authSession.status {
-                case .signedIn:
-                    signedInRows
-                case .signingIn:
-                    signingInRows
-                case .signedOut, .error:
-                    signedOutRows
-                }
-                LabeledContent("Provider", value: authSession.configuration.environmentLabel)
+            switch authSession.status {
+            case .signedIn:
+                signedInSections
+            case .signedOut, .signingIn, .error:
+                signedOutSection
             }
         }
         .formStyle(.grouped)
@@ -26,87 +23,138 @@ struct AccountSettingsView: View {
         .task { await authSession.loadUserInfo() }
     }
 
+    // MARK: - Signed in
+
     @ViewBuilder
-    private var signedInRows: some View {
-        LabeledContent("Signed in as") {
-            HStack(spacing: 10) {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(authSession.identity?.displayName ?? "Unknown")
-                    if let email = authSession.identity?.email, authSession.identity?.name != nil {
-                        Text(email)
-                            .font(.caption)
+    private var signedInSections: some View {
+        Section {
+            AccountIdentityHeader(identity: authSession.identity)
+        }
+        Section("Account") {
+            LabeledContent("User ID") {
+                HStack(spacing: 4) {
+                    Text(authSession.identity?.subject ?? "—")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    Button("Copy User ID", systemImage: "doc.on.doc", action: copyUserID)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .help("Copy User ID")
+                }
+            }
+            LabeledContent("Provider", value: authSession.configuration.environmentLabel)
+        }
+        Section("Session") {
+            if let expiresAt = authSession.accessTokenExpiresAt {
+                LabeledContent("Session renews") {
+                    Text(expiresAt, format: .relative(presentation: .named))
+                }
+            }
+            #if DEBUG
+                // Dev-loop aid: exercises the refresh grant; the "Session
+                // renews" row above reflects the outcome.
+                Button("Refresh Access Token", action: refreshAccessToken)
+            #endif
+        }
+        Section {
+            Button("Sign Out…", role: .destructive) {
+                isConfirmingSignOut = true
+            }
+            .confirmationDialog("Sign out of ArcBox?", isPresented: $isConfirmingSignOut) {
+                Button("Sign Out", role: .destructive, action: signOut)
+            } message: {
+                Text("Your local containers and settings are unaffected.")
+            }
+        }
+    }
+
+    // MARK: - Signed out / signing in
+
+    private var signedOutSection: some View {
+        Section {
+            ContentUnavailableView {
+                Label("Not Signed In", systemImage: "person.crop.circle")
+            } description: {
+                if authSession.configuration.isPlaceholder {
+                    Text(
+                        "No OIDC provider is configured for this build. See Local.xcconfig.example."
+                    )
+                } else {
+                    Text("Sign in to your ArcBox account to use platform features.")
+                }
+                if case .error(let message) = authSession.status {
+                    Label(message, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                }
+            } actions: {
+                if authSession.status == .signingIn {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Waiting for the browser…")
                             .foregroundStyle(.secondary)
                     }
+                } else {
+                    Button("Sign In to ArcBox…", action: signIn)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(authSession.configuration.isPlaceholder)
                 }
-                avatar
             }
-        }
-        LabeledContent("User ID") {
-            Text(authSession.identity?.subject ?? "—")
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-        }
-        if let expiresAt = authSession.accessTokenExpiresAt {
-            LabeledContent("Session renews") {
-                Text(expiresAt, format: .relative(presentation: .named))
-            }
-        }
-        #if DEBUG
-            // Dev-loop aid: exercises the refresh grant; the "Session renews"
-            // row above reflects the outcome.
-            Button("Refresh Access Token") {
-                Task { _ = try? await authSession.accessToken() }
-            }
-        #endif
-        Button("Sign Out", role: .destructive) {
-            Task { await authSession.signOut() }
+            .listRowBackground(Color.clear)
         }
     }
 
-    /// Remote avatar with the Apple-style fallback (white silhouette on
-    /// gray, as in Contacts and Apple Account settings), which also covers
-    /// the loading and failure phases.
-    private var avatar: some View {
-        AsyncImage(url: authSession.identity?.avatarURL) { phase in
-            if let image = phase.image {
-                image.resizable().scaledToFill()
-            } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, Color(nsColor: .systemGray))
+    // MARK: - Actions
+
+    private func signIn() {
+        Task { await authSession.signIn(using: webAuthenticationSession) }
+    }
+
+    private func signOut() {
+        Task { await authSession.signOut() }
+    }
+
+    private func refreshAccessToken() {
+        Task { _ = try? await authSession.accessToken() }
+    }
+
+    private func copyUserID() {
+        guard let subject = authSession.identity?.subject else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(subject, forType: .string)
+    }
+}
+
+/// Hero header for the signed-in account — avatar, display name, and email
+/// with a verification badge — in the style of the Apple Account pane.
+private struct AccountIdentityHeader: View {
+    let identity: AuthIdentity?
+
+    var body: some View {
+        VStack(spacing: 8) {
+            AvatarView(url: identity?.avatarURL, size: 64)
+            Text(identity?.displayName ?? "Unknown")
+                .font(.title3)
+                .bold()
+            if let email = identity?.email {
+                HStack(spacing: 4) {
+                    Text(email)
+                    if identity?.emailVerified == true {
+                        Image(systemName: "checkmark.seal.fill")
+                            .foregroundStyle(.green)
+                            .help("Email address verified")
+                            .accessibilityLabel("Verified")
+                    }
+                }
+                .font(.callout)
+                .foregroundStyle(.secondary)
             }
         }
-        .frame(width: 28, height: 28)
-        .clipShape(Circle())
-    }
-
-    private var signingInRows: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-                .controlSize(.small)
-            Text("Waiting for the browser…")
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private var signedOutRows: some View {
-        LabeledContent("Status", value: "Not signed in")
-        if case .error(let message) = authSession.status {
-            Text(message)
-                .font(.caption)
-                .foregroundStyle(.red)
-        }
-        if authSession.configuration.isPlaceholder {
-            Text("No OIDC provider is configured for this build. See Local.xcconfig.example.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        Button("Sign In to ArcBox…") {
-            Task { await authSession.signIn(using: webAuthenticationSession) }
-        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .listRowBackground(Color.clear)
     }
 }
 

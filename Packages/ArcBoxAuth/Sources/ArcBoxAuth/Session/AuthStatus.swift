@@ -16,12 +16,20 @@ public struct AuthIdentity: Sendable, Equatable {
     public let email: String?
     public let name: String?
     public let avatarURL: URL?
+    public let emailVerified: Bool?
 
-    public init(subject: String, email: String?, name: String?, avatarURL: URL? = nil) {
+    public init(
+        subject: String,
+        email: String?,
+        name: String?,
+        avatarURL: URL? = nil,
+        emailVerified: Bool? = nil
+    ) {
         self.subject = subject
         self.email = email
         self.name = name
         self.avatarURL = avatarURL
+        self.emailVerified = emailVerified
     }
 
     public var displayName: String { name ?? email ?? subject }
