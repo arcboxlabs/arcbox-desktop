@@ -166,7 +166,10 @@ struct SystemSettingsView: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
-        .task(id: daemonManager.state.isRunning) {
+        // Keyed on client availability too: at startup the daemon can report
+        // running before the injected client exists, and the load must re-run
+        // once it does.
+        .task(id: daemonManager.state.isRunning && arcboxClient != nil) {
             await backendModel.load(client: daemonManager.state.isRunning ? arcboxClient : nil)
             syncBackendSelection()
         }
