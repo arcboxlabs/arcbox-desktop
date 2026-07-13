@@ -132,6 +132,7 @@ extension DaemonManager {
         case .ready: setupPhase = .ready
         case .degraded: setupPhase = .degraded
         case .cleaningUp: setupPhase = .cleaningUp
+        case .failed: setupPhase = .failed
         case .UNRECOGNIZED: setupPhase = .unknown
         }
 
