@@ -162,6 +162,8 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_PREVIEWS: YES
         GENERATE_INFOPLIST_FILE: YES
+        # Merged into the generated Info.plist; declares the arcbox:// URL scheme.
+        INFOPLIST_FILE: ArcBox/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: ArcBox
         INFOPLIST_KEY_CFBundleName: ArcBox
         INFOPLIST_KEY_NSAppleEventsUsageDescription: ArcBox uses Automation to open your selected terminal app and run container shell commands.
