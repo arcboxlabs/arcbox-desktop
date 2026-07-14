@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.23.0...v1.23.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* **auth:** ship production OIDC configuration in release builds ([#275](https://github.com/arcboxlabs/arcbox-desktop/issues/275)) ([460cbe5](https://github.com/arcboxlabs/arcbox-desktop/commit/460cbe585a552709f43d0db815754f95633c5720))
+
 ## [1.23.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.13...v1.23.0) (2026-07-14)
 
 
