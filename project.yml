@@ -119,24 +119,6 @@ targets:
     configFiles:
       Debug: Version.xcconfig
       Release: Version.xcconfig
-    # Custom Info.plist keys must go through INFOPLIST_FILE: Xcode only honors
-    # INFOPLIST_KEY_* build settings for its own known keys, and a post-build
-    # PlistBuddy script loses a scheduling race with ProcessInfoPlistFile.
-    # ProcessInfoPlistFile expands the $(...) build settings below at build
-    # time and merges this file with the generated Info.plist content.
-    info:
-      path: ArcBox/Info.plist
-      properties:
-        CFBundleShortVersionString: $(MARKETING_VERSION)
-        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        OIDCIssuerURL: $(OIDC_ISSUER_URL)
-        OIDCClientID: $(OIDC_CLIENT_ID)
-        SentryDSN: $(SENTRY_DSN)
-        PostHogAPIKey: $(POSTHOG_API_KEY)
-        CFBundleURLTypes:
-          - CFBundleURLName: com.arcboxlabs.desktop
-            CFBundleURLSchemes:
-              - com.arcboxlabs.desktop
     sources:
       - path: ArcBox
       - path: CHANGELOG.md
@@ -183,6 +165,8 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_PREVIEWS: YES
         GENERATE_INFOPLIST_FILE: YES
+        # Merged into the generated Info.plist; declares the arcbox:// URL scheme.
+        INFOPLIST_FILE: ArcBox/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: ArcBox
         INFOPLIST_KEY_CFBundleName: ArcBox
         INFOPLIST_KEY_NSAppleEventsUsageDescription: ArcBox uses Automation to open your selected terminal app and run container shell commands.

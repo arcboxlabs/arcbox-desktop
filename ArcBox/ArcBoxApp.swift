@@ -35,6 +35,8 @@ struct ArcBoxDesktopApp: App {
     @State private var networksVM = NetworksViewModel()
     // Lightweight init — no network calls until view appears
     @State private var volumesVM = VolumesViewModel()
+    // Lightweight init — no network calls until view appears
+    @State private var systemVmBackendVM = SystemVmBackendModel()
 
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
@@ -65,6 +67,21 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.accessTokenProvider, authSession)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
+                    appDelegate.deepLinkRouter.configure(
+                        .init(
+                            appVM: appVM,
+                            containersVM: containersVM,
+                            volumesVM: volumesVM,
+                            imagesVM: imagesVM,
+                            networksVM: networksVM,
+                            openMainWindow: { openWindow(id: "main") },
+                            openSettingsWindow: { openWindow(id: "settings") },
+                            oauthCallbackScheme: OIDCClientConfiguration.redirectURI.scheme,
+                            onOAuthCallback: { url in
+                                Task { await authSession.handleAuthorizationCallback(url) }
+                            }
+                        ))
+
                     guard startupOrchestrator == nil else { return }
 
                     // Enrich a Keychain-restored session with userinfo
@@ -105,7 +122,6 @@ struct ArcBoxDesktopApp: App {
                 // ListViews gate their initial load on setupPhase.isDockerReady
                 // (reported via the gRPC WatchSetupStatus stream) to avoid hitting the
                 // Docker API before the daemon has finished initialization.
-                .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         if dockerClient == nil {
@@ -162,6 +178,8 @@ struct ArcBoxDesktopApp: App {
                 .environment(containersVM)
                 .environment(imagesVM)
                 .environment(authSession)
+                .environment(systemVmBackendVM)
+                .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)
         }
@@ -213,28 +231,5 @@ struct ArcBoxDesktopApp: App {
         appDelegate.arcboxClient = client
         appDelegate.connectionTask = task
         return client
-    }
-
-    /// Handle incoming `arcbox://` deep links and OAuth redirect callbacks.
-    /// TODO(ABXD-62): Register the arcbox:// scheme in project.yml's info block
-    /// (CFBundleURLTypes; INFOPLIST_KEY_* silently drops custom keys) once
-    /// scheme routing is finalized.
-    private func handleDeepLink(_ url: URL) {
-        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
-        // OAuth redirect (com.arcboxlabs.desktop:/oauth2redirect): the sign-in
-        // browser leg returns here when it ends in an external browser instead
-        // of the ASWebAuthenticationSession sheet.
-        if url.scheme?.caseInsensitiveCompare(
-            OIDCClientConfiguration.redirectURI.scheme ?? "") == .orderedSame
-        {
-            Task { await authSession.handleAuthorizationCallback(url) }
-            return
-        }
-        guard url.scheme == "arcbox" else {
-            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .private)")
-            return
-        }
-        // TODO(ABXD-62): Route deep link to appropriate view based on host/path.
-        // e.g. arcbox://containers/<id>, arcbox://settings, etc.
     }
 }

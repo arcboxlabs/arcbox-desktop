@@ -21,15 +21,26 @@ class PodsViewModel {
     var activeTab: PodDetailTab = .info
     var listWidth: CGFloat = 320
     var isLoading: Bool = false
+    var searchText: String = ""
+    var isSearching: Bool = false
 
     private var k8sClient: K8sClient?
 
     var podCount: Int { pods.count }
     var runningCount: Int { pods.filter(\.isRunning).count }
+    var filteredPods: [PodViewModel] {
+        guard !searchText.isEmpty else { return pods }
+        let query = searchText.lowercased()
+        return pods.filter {
+            $0.name.lowercased().contains(query)
+                || $0.namespace.lowercased().contains(query)
+                || $0.phase.rawValue.lowercased().contains(query)
+        }
+    }
 
     var selectedPod: PodViewModel? {
         guard let id = selectedID else { return nil }
-        return pods.first { $0.id == id }
+        return filteredPods.first { $0.id == id }
     }
 
     func selectPod(_ id: String) {

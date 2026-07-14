@@ -14,12 +14,9 @@ permissions:
 jobs:
   build:
     name: Build & Test
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable

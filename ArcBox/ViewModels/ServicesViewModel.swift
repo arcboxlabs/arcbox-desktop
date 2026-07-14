@@ -19,14 +19,27 @@ class ServicesViewModel {
     var activeTab: ServiceDetailTab = .info
     var listWidth: CGFloat = 320
     var isLoading: Bool = false
+    var searchText: String = ""
+    var isSearching: Bool = false
 
     private var k8sClient: K8sClient?
 
     var serviceCount: Int { services.count }
+    var filteredServices: [ServiceViewModel] {
+        guard !searchText.isEmpty else { return services }
+        let query = searchText.lowercased()
+        return services.filter {
+            $0.name.lowercased().contains(query)
+                || $0.namespace.lowercased().contains(query)
+                || $0.type.rawValue.lowercased().contains(query)
+                || ($0.clusterIP?.lowercased().contains(query) ?? false)
+                || $0.portsDisplay.lowercased().contains(query)
+        }
+    }
 
     var selectedService: ServiceViewModel? {
         guard let id = selectedID else { return nil }
-        return services.first { $0.id == id }
+        return filteredServices.first { $0.id == id }
     }
 
     func selectService(_ id: String) {
