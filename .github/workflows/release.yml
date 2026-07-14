@@ -221,8 +221,13 @@ jobs:
           # by `cargo xtask macos dmg` (plutil), not via INFOPLIST_KEY_ build
           # settings — those silently drop custom keys. This file only supplies
           # the project base configuration.
-          cat > Local.xcconfig <<XCEOF
+          # The OIDC values expand into Info.plist at build time. They are not
+          # secrets (public client + PKCE); the $() stops xcconfig from reading
+          # "//" in the URL as a comment.
+          cat > Local.xcconfig <<'XCEOF'
           #include "Version.xcconfig"
+          OIDC_ISSUER_URL = https:/$()/auth.arcbox.dev/api/auth
+          OIDC_CLIENT_ID = arcbox-desktop
           XCEOF
 
       - name: Trust SwiftPM plugins
