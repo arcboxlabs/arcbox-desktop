@@ -1146,6 +1146,18 @@ public enum Arcbox_V1_SystemService {
                 method: "SetSystemVmBackend"
             )
         }
+        /// Namespace for "GetVirtioDebug" metadata.
+        public enum GetVirtioDebug {
+            /// Request type for "GetVirtioDebug".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "GetVirtioDebug".
+            public typealias Output = Arcbox_V1_VirtioDebugInfo
+            /// Descriptor for "GetVirtioDebug".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "GetVirtioDebug"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.SystemService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetInfo.descriptor,
@@ -1156,7 +1168,8 @@ public enum Arcbox_V1_SystemService {
             GetSetupStatus.descriptor,
             WatchSetupStatus.descriptor,
             GetSystemVmBackend.descriptor,
-            SetSystemVmBackend.descriptor
+            SetSystemVmBackend.descriptor,
+            GetVirtioDebug.descriptor
         ]
     }
 }
@@ -1351,6 +1364,28 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo>
+
+        /// Handle the "GetVirtioDebug" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+        /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+        /// > slots, and pending interrupt state. Custom-VMM backends only —
+        /// > empty under VZ, where the devices belong to
+        /// > Virtualization.framework.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_VirtioDebugInfo` messages.
+        func getVirtioDebug(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_VirtioDebugInfo>
     }
 
     /// Service protocol for the "arcbox.v1.SystemService" service.
@@ -1530,6 +1565,28 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.ServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>
+
+        /// Handle the "GetVirtioDebug" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+        /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+        /// > slots, and pending interrupt state. Custom-VMM backends only —
+        /// > empty under VZ, where the devices belong to
+        /// > Virtualization.framework.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_VirtioDebugInfo` message.
+        func getVirtioDebug(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_VirtioDebugInfo>
     }
 
     /// Simple service protocol for the "arcbox.v1.SystemService" service.
@@ -1709,6 +1766,28 @@ extension Arcbox_V1_SystemService {
             request: Arcbox_V1_SetSystemVmBackendRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_SystemVmBackendInfo
+
+        /// Handle the "GetVirtioDebug" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+        /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+        /// > slots, and pending interrupt state. Custom-VMM backends only —
+        /// > empty under VZ, where the devices belong to
+        /// > Virtualization.framework.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_VirtioDebugInfo` to respond with.
+        func getVirtioDebug(
+            request: Arcbox_V1_Empty,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_VirtioDebugInfo
     }
 }
 
@@ -1815,6 +1894,17 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.GetVirtioDebug.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_VirtioDebugInfo>(),
+            handler: { request, context in
+                try await self.getVirtioDebug(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -1914,6 +2004,17 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo> {
         let response = try await self.setSystemVmBackend(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func getVirtioDebug(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_VirtioDebugInfo> {
+        let response = try await self.getVirtioDebug(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -2042,6 +2143,19 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo> {
         return GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>(
             message: try await self.setSystemVmBackend(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func getVirtioDebug(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_VirtioDebugInfo> {
+        return GRPCCore.ServerResponse<Arcbox_V1_VirtioDebugInfo>(
+            message: try await self.getVirtioDebug(
                 request: request.message,
                 context: context
             ),
@@ -2272,6 +2386,33 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmBackendInfo>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetVirtioDebug" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+        /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+        /// > slots, and pending interrupt state. Custom-VMM backends only —
+        /// > empty under VZ, where the devices belong to
+        /// > Virtualization.framework.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_VirtioDebugInfo` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getVirtioDebug<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_VirtioDebugInfo>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_VirtioDebugInfo>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2600,6 +2741,44 @@ extension Arcbox_V1_SystemService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "GetVirtioDebug" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+        /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+        /// > slots, and pending interrupt state. Custom-VMM backends only —
+        /// > empty under VZ, where the devices belong to
+        /// > Virtualization.framework.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_VirtioDebugInfo` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getVirtioDebug<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_VirtioDebugInfo>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_VirtioDebugInfo>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.GetVirtioDebug.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2862,6 +3041,39 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetSystemVmBackendRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SystemVmBackendInfo>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetVirtioDebug" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+    /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+    /// > slots, and pending interrupt state. Custom-VMM backends only —
+    /// > empty under VZ, where the devices belong to
+    /// > Virtualization.framework.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getVirtioDebug<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_VirtioDebugInfo>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getVirtioDebug(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_VirtioDebugInfo>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3162,6 +3374,43 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.setSystemVmBackend(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetVirtioDebug" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Dumps a diagnostic snapshot of the System VM's virtio devices:
+    /// > per-queue kick counters, live avail/used ring indices, EVENT_IDX
+    /// > slots, and pending interrupt state. Custom-VMM backends only —
+    /// > empty under VZ, where the devices belong to
+    /// > Virtualization.framework.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getVirtioDebug<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_VirtioDebugInfo>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getVirtioDebug(
             request: request,
             options: options,
             onResponse: handleResponse

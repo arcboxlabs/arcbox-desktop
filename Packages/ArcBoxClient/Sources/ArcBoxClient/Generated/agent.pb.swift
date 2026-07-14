@@ -54,6 +54,12 @@ public struct Arcbox_V1_AgentPingResponse: Sendable {
   /// Agent version.
   public var version: String = String()
 
+  /// Host↔agent protocol version the agent speaks
+  /// (`arcbox_constants::wire::AGENT_PROTOCOL_VERSION`). Absent (0) on
+  /// agents that predate the handshake; the host rejects agents below
+  /// its minimum supported version at boot.
+  public var protocolVersion: UInt32 = 0
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -605,7 +611,7 @@ extension Arcbox_V1_AgentPingRequest: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Arcbox_V1_AgentPingResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AgentPingResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}message\0\u{1}version\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}message\0\u{1}version\0\u{3}protocol_version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -615,6 +621,7 @@ extension Arcbox_V1_AgentPingResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.message) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.version) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.protocolVersion) }()
       default: break
       }
     }
@@ -627,12 +634,16 @@ extension Arcbox_V1_AgentPingResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if !self.version.isEmpty {
       try visitor.visitSingularStringField(value: self.version, fieldNumber: 2)
     }
+    if self.protocolVersion != 0 {
+      try visitor.visitSingularUInt32Field(value: self.protocolVersion, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Arcbox_V1_AgentPingResponse, rhs: Arcbox_V1_AgentPingResponse) -> Bool {
     if lhs.message != rhs.message {return false}
     if lhs.version != rhs.version {return false}
+    if lhs.protocolVersion != rhs.protocolVersion {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
