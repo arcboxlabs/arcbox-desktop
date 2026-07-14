@@ -14,7 +14,7 @@
 		07A382D149C73C697CAA1601 /* SandboxRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE564AAFEC0EF6D094409728 /* SandboxRowView.swift */; };
 		0999A1C28C17EFD150E56CF8 /* MachinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */; };
 		09FF7CE0E252DAD805077C7E /* ImagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559C97F0CA659149BCBA59A2 /* ImagesViewModel.swift */; };
-		0AF01BD1D2FC14E2F99E9B4C /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = 984278376FF4860E6FADC66F /* DockerClient */; };
+		0AF01BD1D2FC14E2F99E9B4C /* FleetPlatformClient in Frameworks */ = {isa = PBXBuildFile; productRef = 1143C225F6C8A5BF7366588B /* FleetPlatformClient */; };
 		0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */; };
 		0C35F427DABEE19C0C583BE1 /* ContainersViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12C2D038DE6CC49702F85F0 /* ContainersViewModel+Docker.swift */; };
 		0C6B829AD5010FDB0E749471 /* PullImageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8254D67C0D80B99FC18DAD5 /* PullImageSheet.swift */; };
@@ -91,6 +91,7 @@
 		7910184754585B4CF647FA92 /* ContainerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C6B2F85E39321931CEC3ED /* ContainerDetailView.swift */; };
 		79C5F3DA19E7431F8B28B6F0 /* MenuBarView+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC010DD9F0AEC7E4EA778C59 /* MenuBarView+Actions.swift */; };
 		7DABE0FBDD17F88D47333964 /* CommandHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65698313C3204F5F23E099B /* CommandHint.swift */; };
+		7DB0F638AAD7DCB4F8349402 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 9C709A3E8E1972F5BB841623 /* PostHog */; };
 		7F091F3F3F75F500937DC7BC /* ImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */; };
 		801AAF363A7901B7D17F5C55 /* AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */; };
 		807479D85C38FEE5E53218DD /* LocalRootFSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */; };
@@ -147,7 +148,7 @@
 		BDE44A1851827C2069778F08 /* ImageFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BE02225F61EF92333916B1 /* ImageFilesTab.swift */; };
 		BF22080E6092E730A9DD1424 /* ContainerTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */; };
 		BFA2E94DC17244A06D187331 /* MachineInfoTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791DD121033683719C609B4D /* MachineInfoTab.swift */; };
-		C12978695EDC917704747269 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = B23ADDA7527EDFFFD6615B12 /* SwiftTerm */; };
+		C12978695EDC917704747269 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
 		C415E585DA749E8A19984650 /* MachineFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */; };
 		C50DD2284687B64249F15261 /* CheckForUpdatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C15DE3BBE549F8F86D82642 /* CheckForUpdatesViewModel.swift */; };
 		C63E9B1B9AC8A12C20996A74 /* VolumeRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B56D80B89FFE9A579E86AE /* VolumeRowView.swift */; };
@@ -155,7 +156,7 @@
 		C8C56406446AE0906E11100C /* InfoTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED1683EF0A3490B8B7B5CF6 /* InfoTableView.swift */; };
 		C9850114DD3E3F1B3C22E09D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */; };
 		CA35C83C2741D945EF23C5E3 /* VolumeViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867A6CA0B4DD07BE74610FCB /* VolumeViewModel+Docker.swift */; };
-		CC2502232C562D3167B2F3D2 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
+		CC2502232C562D3167B2F3D2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
 		CCAF8E87C516B0ACE300BDCD /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A76C0B459745654F31B3B2 /* PodsListView.swift */; };
 		D0518D07973520530916560B /* ServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F238F21169A97B94193454CF /* ServiceDetailView.swift */; };
 		D1130C3F57D641955CEE5518 /* MachineCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECF05A96F099B6E80E9077B /* MachineCardView.swift */; };
@@ -165,7 +166,7 @@
 		D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE313F40E79E409C942B1EE /* AboutWindow.swift */; };
 		D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */; };
 		D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */; };
-		D7149FCB6052803F6900926B /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 9C709A3E8E1972F5BB841623 /* PostHog */; };
+		D7149FCB6052803F6900926B /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
 		D745D0D7EF5FF65174C47F28 /* NewVolumeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */; };
 		D786BBF78698824ED9F5E048 /* ComingSoonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE64C34A555B2A5BA02AD9FA /* ComingSoonPanel.swift */; };
 		DAC7224E4BF7F459BB7013CB /* RemoteIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18574DEF808329D8152A379 /* RemoteIconView.swift */; };
@@ -174,7 +175,7 @@
 		E12C55C4C275DCBAB9DA8150 /* VolumeFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDFA2EDA7A3AC8448696F91 /* VolumeFilesTab.swift */; };
 		E387F94A583E46FCAE612008 /* TemplateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6845260698FF44B2E54D301B /* TemplateModel.swift */; };
 		E69436579DA555FA6133A1CF /* ServiceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A147995028C8DB6F49BBD8EF /* ServiceRowView.swift */; };
-		E92C8245EE6AE51D99035E4D /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
+		E92C8245EE6AE51D99035E4D /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = 984278376FF4860E6FADC66F /* DockerClient */; };
 		E9B0A374B532221710729A34 /* ContainerTerminalTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1AFAED2CB7429B714C8A06 /* ContainerTerminalTab.swift */; };
 		ED3023CCFF235C0CF302C812 /* MenuBarView+Containers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */; };
 		EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */; };
@@ -188,7 +189,7 @@
 		FA1617761F2AA43D4999DA82 /* TemplateDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F861F75EAD82307CECE21855 /* TemplateDetailView.swift */; };
 		FA631E839B38C6D0DBDBA928 /* ArcBoxAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1EEA05F99067212B54970FA5 /* ArcBoxAuth */; };
 		FACCEFF5F4CDC1CCDB664C3D /* ImageEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C249CE2887E590B9F543B37 /* ImageEmptyState.swift */; };
-		FBDBF39F818DDE35E0B7D0DF /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
+		FBDBF39F818DDE35E0B7D0DF /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = B23ADDA7527EDFFFD6615B12 /* SwiftTerm */; };
 		FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */; };
 		FBE7E964F895EFE9C7818256 /* ContainerViewModel+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5BDCAAF11D1A6B52990E28 /* ContainerViewModel+Mapping.swift */; };
 		FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */; };
@@ -250,6 +251,7 @@
 		2E8FB9C9E3349126EF773522 /* DaemonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonLoadingView.swift; sourceTree = "<group>"; };
 		32115BE04C97CECA9C05A273 /* StartupProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupProgressView.swift; sourceTree = "<group>"; };
 		32C86546753C11A9E6CA8CB8 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		3BC4F9DD6F2872B375FE872B /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		3E30F5FC430804013B58C6F1 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
 		3ED1683EF0A3490B8B7B5CF6 /* InfoTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoTableView.swift; sourceTree = "<group>"; };
 		4009DCC81EA64B23A77FB0C4 /* ServicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesViewModel.swift; sourceTree = "<group>"; };
@@ -269,6 +271,7 @@
 		4E7528A43356F3BB6CE3FB96 /* ArcBox.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArcBox.entitlements; sourceTree = "<group>"; };
 		4F0D0444E612EC32D81A7E0C /* LocalRootFSOutlineCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineCoordinator.swift; sourceTree = "<group>"; };
 		5272B55436BFFB8D2021CA20 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		533C6DA3C7A256B8DD07A0B7 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		545D230723A80CB5C011B57E /* ContainersViewModel+BatchOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainersViewModel+BatchOperations.swift"; sourceTree = "<group>"; };
 		54B3991292BCEAFE5ED4EF39 /* TerminalLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalLine.swift; sourceTree = "<group>"; };
 		54DE8B823FD1E94B0073AC5A /* ErrorReporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReporting.swift; sourceTree = "<group>"; };
@@ -276,7 +279,6 @@
 		5626F66A42E96606730DF28C /* ContainerEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerEmptyState.swift; sourceTree = "<group>"; };
 		57DD9A9FA0D6072FD4476A91 /* ArcBoxApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcBoxApp.swift; sourceTree = "<group>"; };
 		591B3B9F3D3A0B5C43EC7B55 /* TemplatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesViewModel.swift; sourceTree = "<group>"; };
-		5A03AF5D1FDDC524D609E178 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		5A87C9445565D341EA85D2F4 /* ExternalTerminalLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalLauncher.swift; sourceTree = "<group>"; };
 		5D70EF1BF223C47C7B8E71A5 /* ExternalTerminalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalApp.swift; sourceTree = "<group>"; };
 		61EE316315F864BA1BF0FFED /* MachinesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesViewModel.swift; sourceTree = "<group>"; };
@@ -375,7 +377,6 @@
 		CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsViewModel.swift; sourceTree = "<group>"; };
 		CE1AFAED2CB7429B714C8A06 /* ContainerTerminalTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerTerminalTab.swift; sourceTree = "<group>"; };
 		D12C2D038DE6CC49702F85F0 /* ContainersViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainersViewModel+Docker.swift"; sourceTree = "<group>"; };
-		D265CBB97D7FC09BB67C4D18 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		D4ED3EC883A488801DE03195 /* NetworksViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworksViewModel.swift; sourceTree = "<group>"; };
 		DAE5A29026FA64A7C0A47122 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DBEBBF08F0E4AC45D9C0BB83 /* ChangelogParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParser.swift; sourceTree = "<group>"; };
@@ -387,6 +388,7 @@
 		E3A8FF41635473729BF0A36E /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
 		E78A5DD895DA4DA3A83D1269 /* ListResizeHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListResizeHandle.swift; sourceTree = "<group>"; };
+		E992C1D278E4591238514552 /* FleetPlatformClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FleetPlatformClient; path = Packages/FleetPlatformClient; sourceTree = SOURCE_ROOT; };
 		EA6DBFBB43078F295AFE54C0 /* PerformanceTracing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTracing.swift; sourceTree = "<group>"; };
 		EB477EF803A15EDFF2685A23 /* ImageTerminalTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTerminalTab.swift; sourceTree = "<group>"; };
 		EC6744BCBFA0A05831AFED0E /* MenuBarView+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Layout.swift"; sourceTree = "<group>"; };
@@ -424,12 +426,13 @@
 				FA631E839B38C6D0DBDBA928 /* ArcBoxAuth in Frameworks */,
 				82ECF33C9637C7C65B527336 /* ArcBoxClient in Frameworks */,
 				4D2FB362066EF19A8C5983F1 /* FleetControlClient in Frameworks */,
-				0AF01BD1D2FC14E2F99E9B4C /* DockerClient in Frameworks */,
-				E92C8245EE6AE51D99035E4D /* K8sClient in Frameworks */,
-				C12978695EDC917704747269 /* SwiftTerm in Frameworks */,
-				FBDBF39F818DDE35E0B7D0DF /* Sparkle in Frameworks */,
-				CC2502232C562D3167B2F3D2 /* Sentry in Frameworks */,
-				D7149FCB6052803F6900926B /* PostHog in Frameworks */,
+				0AF01BD1D2FC14E2F99E9B4C /* FleetPlatformClient in Frameworks */,
+				E92C8245EE6AE51D99035E4D /* DockerClient in Frameworks */,
+				C12978695EDC917704747269 /* K8sClient in Frameworks */,
+				FBDBF39F818DDE35E0B7D0DF /* SwiftTerm in Frameworks */,
+				CC2502232C562D3167B2F3D2 /* Sparkle in Frameworks */,
+				D7149FCB6052803F6900926B /* Sentry in Frameworks */,
+				7DB0F638AAD7DCB4F8349402 /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -658,16 +661,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		383ACCD418F5268EDD32AC14 /* arcbox-desktop-fleet-control */ = {
-			isa = PBXGroup;
-			children = (
-				D265CBB97D7FC09BB67C4D18 /* Local.xcconfig */,
-				5A03AF5D1FDDC524D609E178 /* Version.xcconfig */,
-			);
-			name = "arcbox-desktop-fleet-control";
-			path = .;
-			sourceTree = "<group>";
-		};
 		3DCBC0E44C2DBB3064D4A759 /* Containers */ = {
 			isa = PBXGroup;
 			children = (
@@ -695,7 +688,7 @@
 				AC70A79B919D909CF6D811B4 /* arcbox.version */,
 				32C86546753C11A9E6CA8CB8 /* CHANGELOG.md */,
 				DC225BF252CB33BB34E74A79 /* ArcBox */,
-				383ACCD418F5268EDD32AC14 /* arcbox-desktop-fleet-control */,
+				8050EF384BD8D3A4AA5FFB79 /* arcbox-desktop-run-8-platform-client */,
 				F40F93A7C5C0CC3834C9D722 /* ArcBoxTests */,
 				CDE1EC6D82D788262B5E4213 /* LaunchDaemons */,
 				8380053000DF0548E7D5142C /* Packages */,
@@ -793,6 +786,16 @@
 			path = MenuBarView;
 			sourceTree = "<group>";
 		};
+		8050EF384BD8D3A4AA5FFB79 /* arcbox-desktop-run-8-platform-client */ = {
+			isa = PBXGroup;
+			children = (
+				3BC4F9DD6F2872B375FE872B /* Local.xcconfig */,
+				533C6DA3C7A256B8DD07A0B7 /* Version.xcconfig */,
+			);
+			name = "arcbox-desktop-run-8-platform-client";
+			path = .;
+			sourceTree = "<group>";
+		};
 		8380053000DF0548E7D5142C /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -800,6 +803,7 @@
 				00AE70F2EF523D6E02FFF371 /* ArcBoxClient */,
 				C33F6D43F3CE2C79F072C7F3 /* DockerClient */,
 				725E693E00BCEB4D0ADE7A25 /* FleetControlClient */,
+				E992C1D278E4591238514552 /* FleetPlatformClient */,
 				472F864720948B01C9F5D5A0 /* K8sClient */,
 			);
 			path = Packages;
@@ -996,6 +1000,7 @@
 				1EEA05F99067212B54970FA5 /* ArcBoxAuth */,
 				CFE468A82BAC1B4D9AE25368 /* ArcBoxClient */,
 				0631A4C3410E8D6E9CFDDA2E /* FleetControlClient */,
+				1143C225F6C8A5BF7366588B /* FleetPlatformClient */,
 				984278376FF4860E6FADC66F /* DockerClient */,
 				A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */,
 				B23ADDA7527EDFFFD6615B12 /* SwiftTerm */,
@@ -1064,6 +1069,7 @@
 				52B6A9B00A6EABBBFA08E62D /* XCLocalSwiftPackageReference "Packages/ArcBoxClient" */,
 				5FB2872C43BFD0CA00D1FF5E /* XCLocalSwiftPackageReference "Packages/DockerClient" */,
 				5943466D13147838B8BE6D69 /* XCLocalSwiftPackageReference "Packages/FleetControlClient" */,
+				2E3DD7E31B54E2BB5117816E /* XCLocalSwiftPackageReference "Packages/FleetPlatformClient" */,
 				3D19705D19A4ADF65F4A7A45 /* XCLocalSwiftPackageReference "Packages/K8sClient" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -1312,7 +1318,7 @@
 /* Begin XCBuildConfiguration section */
 		30201713747F358DB9057B09 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D265CBB97D7FC09BB67C4D18 /* Local.xcconfig */;
+			baseConfigurationReference = 3BC4F9DD6F2872B375FE872B /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -1400,7 +1406,7 @@
 		};
 		A05F50A0D3A02115582BD519 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5A03AF5D1FDDC524D609E178 /* Version.xcconfig */;
+			baseConfigurationReference = 533C6DA3C7A256B8DD07A0B7 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1446,7 +1452,7 @@
 		};
 		B65D4F0FCC4C62119FDE962D /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D265CBB97D7FC09BB67C4D18 /* Local.xcconfig */;
+			baseConfigurationReference = 3BC4F9DD6F2872B375FE872B /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -1541,7 +1547,7 @@
 		};
 		FA16326409B9B381CDC02A57 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5A03AF5D1FDDC524D609E178 /* Version.xcconfig */;
+			baseConfigurationReference = 533C6DA3C7A256B8DD07A0B7 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1618,6 +1624,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		2E3DD7E31B54E2BB5117816E /* XCLocalSwiftPackageReference "Packages/FleetPlatformClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/FleetPlatformClient;
+		};
 		3D19705D19A4ADF65F4A7A45 /* XCLocalSwiftPackageReference "Packages/K8sClient" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/K8sClient;
@@ -1679,6 +1689,10 @@
 		0631A4C3410E8D6E9CFDDA2E /* FleetControlClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FleetControlClient;
+		};
+		1143C225F6C8A5BF7366588B /* FleetPlatformClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FleetPlatformClient;
 		};
 		1EEA05F99067212B54970FA5 /* ArcBoxAuth */ = {
 			isa = XCSwiftPackageProductDependency;
