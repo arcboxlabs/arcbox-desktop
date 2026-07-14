@@ -1,8 +1,7 @@
+import FleetControlClient
 import Foundation
 import SwiftUI
 import os
-
-import FleetControlClient
 
 /// Fleet runner page loading state.
 enum FleetLoadState: Equatable {
@@ -46,7 +45,12 @@ final class FleetViewModel {
         if let snapshot {
             return snapshot.enrollment != .unenrolled && snapshot.enrollment != .unspecified
         }
-        return status?.state == .enrolled || status?.state == .draining
+        switch status?.state {
+        case .enrolled, .draining, .detached, .credentialRejected:
+            return true
+        case .unspecified, .unenrolled, .unrecognized, nil:
+            return false
+        }
     }
 
     /// Begin the handshake and state watch loop.
@@ -160,13 +164,13 @@ final class FleetViewModel {
         }
     }
 
-    /// Disconnect this Mac from fleet enrollment.
+    /// Remove this Mac's persisted fleet enrollment.
     @discardableResult
-    func disconnect() async -> Bool {
+    func unenroll() async -> Bool {
         guard let client = requireClient() else { return false }
 
-        return await performAction("disconnect") {
-            try await client.disconnect()
+        return await performAction("unenroll") {
+            try await client.unenroll()
             snapshot = nil
             settings = nil
             status = FleetAgentStatus(state: .unenrolled, machineID: nil)
@@ -192,19 +196,21 @@ final class FleetViewModel {
     func updateSettings(
         loadCeiling: Double? = nil,
         memFloorMib: UInt64? = nil,
-        runnerImage: String? = nil,
+        linuxRunnerImage: String? = nil,
         gateway: String? = nil,
         dockerMode: FleetDockerMode? = nil,
-        runnerScript: String? = nil
+        runnerScript: String? = nil,
+        participate: Bool? = nil
     ) async -> Bool {
         await updateSettings(
             FleetSettingsUpdate(
                 loadCeiling: loadCeiling,
                 memFloorMib: memFloorMib,
-                runnerImage: runnerImage,
+                linuxRunnerImage: linuxRunnerImage,
                 gateway: gateway,
                 dockerMode: dockerMode,
-                runnerScript: runnerScript
+                runnerScript: runnerScript,
+                participate: participate
             )
         )
     }
@@ -323,19 +329,19 @@ final class FleetViewModel {
 
     private static func status(from snapshot: FleetAgentSnapshot) -> FleetAgentStatus {
         let state: FleetConnectionState
-        if snapshot.isDraining {
-            state = .draining
-        } else {
-            switch snapshot.enrollment {
-            case .unenrolled:
-                state = .unenrolled
-            case .attaching, .attached:
-                state = .enrolled
-            case .unspecified:
-                state = .unspecified
-            case .unrecognized(let value):
-                state = .unrecognized(value)
-            }
+        switch snapshot.enrollment {
+        case .unenrolled:
+            state = .unenrolled
+        case .attaching, .attached:
+            state = snapshot.isDraining ? .draining : .enrolled
+        case .detached:
+            state = .detached
+        case .credentialRejected:
+            state = .credentialRejected
+        case .unspecified:
+            state = .unspecified
+        case .unrecognized(let value):
+            state = .unrecognized(value)
         }
         return FleetAgentStatus(state: state, machineID: snapshot.machineID)
     }
