@@ -1,37 +1,95 @@
-import SwiftUI
-import os
+import FleetControlClient
+import FleetPlatformClient
+import Observation
 
 @MainActor
 @Observable
-class RunnersViewModel {
-    /// The enrolled fleet host record for this Mac; nil until enrollment completes.
-    var host: RunnerHostViewModel?
+final class RunnersViewModel {
+    let fleet: FleetViewModel
 
-    var isEnrolled: Bool { host != nil }
-
-    /// Jobs currently occupying slots across both runtime pools.
-    var activeJobCount: Int { host?.activeJobCount ?? 0 }
-
-    /// Settable so the drain switch can bind via `Bindable(vm).isDraining`.
-    var isDraining: Bool {
-        get { host?.status == .draining }
-        set { setDraining(newValue) }
+    init(fleet: FleetViewModel = FleetViewModel()) {
+        self.fleet = fleet
     }
 
-    // MARK: - Actions (wired to the platform REST client once RUN-8 lands)
+    var viewState: RunnersViewState {
+        if let snapshot = fleet.snapshot {
+            switch snapshot.enrollment {
+            case .attaching, .attached, .detached, .credentialRejected:
+                return .enrolled(
+                    RunnerHostViewModel(snapshot: snapshot, agentInfo: fleet.agentInfo)
+                )
+            case .unenrolled, .unspecified, .unrecognized:
+                return .unenrolled
+            }
+        }
 
-    func connect() {
-        Log.runner.warning("Not implemented: \(#function) — web handoff arrives with RUN-8")
+        switch fleet.loadState {
+        case .idle, .connecting, .ready:
+            return .connecting
+        case .unavailable(let message), .failed(let message):
+            return .unavailable(message)
+        }
     }
 
-    private func setDraining(_ draining: Bool) {
-        guard var host, host.status != .offline else { return }
-        host.status = draining ? .draining : .online
-        self.host = host
-        Log.runner.warning("Not implemented: \(#function) — platform call arrives with RUN-13")
+    var activeJobCount: Int {
+        fleet.snapshot?.inFlightJobs.count ?? 0
     }
 
-    func loadSampleData() {
-        host = SampleData.runnerHost
+    var workspaces: [FleetWorkspace] {
+        fleet.workspaces
+    }
+
+    var errorMessage: String? {
+        fleet.platformError ?? fleet.lastError
+    }
+
+    var isBusy: Bool {
+        fleet.isLoadingWorkspaces || fleet.isPerformingAction
+    }
+
+    var subtitle: String {
+        switch viewState {
+        case .connecting: "Connecting"
+        case .unavailable: "Agent unavailable"
+        case .unenrolled: "Not connected"
+        case .enrolled(let host):
+            host.activeJobCount == 1
+                ? "\(host.status.label) · 1 active job"
+                : "\(host.status.label) · \(host.activeJobCount) active jobs"
+        }
+    }
+
+    func start(
+        controlClient: FleetControlClient?,
+        platformClient: FleetPlatformClient?
+    ) {
+        fleet.start(client: controlClient, platformClient: platformClient)
+    }
+
+    func stop() {
+        fleet.stop()
+    }
+
+    func prepareEnrollment() async -> Bool {
+        guard await fleet.loadWorkspaces() else { return false }
+        guard !fleet.workspaces.isEmpty else {
+            fleet.platformError = "No ArcBox workspace is available for this account."
+            return false
+        }
+        return true
+    }
+
+    @discardableResult
+    func enroll(in workspace: FleetWorkspace) async -> Bool {
+        await fleet.enroll(workspaceID: workspace.id)
+    }
+
+    @discardableResult
+    func setDraining(_ draining: Bool) async -> Bool {
+        if draining {
+            await fleet.drain()
+        } else {
+            await fleet.resume()
+        }
     }
 }
