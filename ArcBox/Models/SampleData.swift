@@ -31,20 +31,6 @@ enum SampleData {
         ),
     ]
 
-    // MARK: - Runner
-
-    static let runnerHost = RunnerHostViewModel(
-        id: "flm-a1b2c3d4e5f6",
-        name: "April's Mac Studio",
-        fleetName: "macos-ci",
-        orgs: ["arcboxlabs"],
-        status: .online,
-        chip: "Apple M3 Max",
-        macOSPool: RunnerCapacity(used: 1, limit: 2),
-        linuxPool: RunnerCapacity(used: 2, limit: 6),
-        lastSeenAt: Date().addingTimeInterval(-8)
-    )
-
     // MARK: - Pods
 
     static let pods: [PodViewModel] = []

@@ -3,6 +3,8 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.fleetControlClient) private var fleetControlClient
+    @Environment(\.fleetPlatformClient) private var fleetPlatformClient
 
     // Shared ViewModels (injected from ArcBoxApp, shared with menu bar)
     @Environment(ContainersViewModel.self) private var containersVM
@@ -49,6 +51,13 @@ struct ContentView: View {
                 lastValidNav = newNav
             }
         }
+        .task(id: fleetClientReadiness) {
+            runnersVM.start(
+                controlClient: fleetControlClient,
+                platformClient: fleetPlatformClient
+            )
+        }
+        .onDisappear(perform: runnersVM.stop)
     }
 
     // MARK: - Sidebar
@@ -98,6 +107,10 @@ struct ContentView: View {
 
     private var isSandboxSection: Bool {
         appVM.currentNav == .sandboxes || appVM.currentNav == .templates
+    }
+
+    private var fleetClientReadiness: Int {
+        (fleetControlClient == nil ? 0 : 1) | (fleetPlatformClient == nil ? 0 : 2)
     }
 
     // MARK: - Content column
