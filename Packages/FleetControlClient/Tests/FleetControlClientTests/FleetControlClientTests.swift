@@ -2,16 +2,12 @@ import Testing
 
 @testable import FleetControlClient
 
-@Test func generatedTypesAreAvailable() {
-    let request = Arcbox_Fleet_Control_V1_GetAgentInfoRequest()
-    #expect(request == Arcbox_Fleet_Control_V1_GetAgentInfoRequest())
-}
-
 @Test func settingsUpdatePreservesOptionalPresence() {
     let update = FleetSettingsUpdate(
         loadCeiling: 0,
-        runnerImage: "",
-        dockerMode: .disabled
+        linuxRunnerImage: "",
+        dockerMode: .disabled,
+        participate: false
     )
 
     let request = update.protoValue
@@ -19,12 +15,15 @@ import Testing
     #expect(request.hasLoadCeiling)
     #expect(request.loadCeiling == 0)
     #expect(!request.hasMemFloorMib)
-    #expect(request.hasRunnerImage)
-    #expect(request.runnerImage == "")
+    #expect(request.hasLinuxRunnerImage)
+    #expect(request.linuxRunnerImage.isEmpty)
     #expect(!request.hasGateway)
     #expect(request.hasDockerMode)
     #expect(request.dockerMode == .disabled)
     #expect(!request.hasRunnerScript)
+    #expect(request.hasParticipate)
+    #expect(!request.participate)
+    #expect(!update.isEmpty)
 }
 
 @Test func settingsMappingPreservesCurrentTargetAndPresence() {
@@ -40,13 +39,56 @@ import Testing
     dockerMode.target = .disabled
     proto.dockerMode = dockerMode
 
+    var linuxRunnerImage = Arcbox_Fleet_Control_V1_StringSetting()
+    linuxRunnerImage.current = "arcbox/runner@sha256:current"
+    linuxRunnerImage.target = "arcbox/runner:latest"
+    proto.linuxRunnerImage = linuxRunnerImage
+
+    var participate = Arcbox_Fleet_Control_V1_BoolSetting()
+    participate.current = false
+    participate.target = true
+    proto.participate = participate
+
     let settings = FleetAgentSettings(proto: proto)
 
     #expect(settings.loadCeiling == FleetSetting(current: 0.7, target: 0.9))
     #expect(settings.memFloorMib == nil)
-    #expect(settings.runnerImage == nil)
+    #expect(
+        settings.linuxRunnerImage
+            == FleetSetting(
+                current: "arcbox/runner@sha256:current",
+                target: "arcbox/runner:latest"
+            ))
     #expect(settings.dockerMode == FleetSetting(current: .auto, target: .disabled))
+    #expect(settings.participate == FleetSetting(current: false, target: true))
     #expect(settings.hasPendingChanges)
+}
+
+@Test func newLifecycleStatesMapWithoutLosingMeaning() {
+    #expect(FleetConnectionState(proto: .detached) == .detached)
+    #expect(FleetConnectionState(proto: .credentialRejected) == .credentialRejected)
+    #expect(FleetEnrollmentState(proto: .detached) == .detached)
+    #expect(FleetEnrollmentState(proto: .credentialRejected) == .credentialRejected)
+}
+
+@Test func imagePreparationMappingPreservesProgressAndUnknownKinds() {
+    var proto = Arcbox_Fleet_Control_V1_PrepareResponse()
+    proto.kind = .UNRECOGNIZED(42)
+    proto.detail = "linux/arm64"
+    proto.stage = "pulling"
+    proto.fraction = 0.75
+
+    let event = FleetImagePreparationEvent(proto: proto)
+
+    #expect(
+        event
+            == FleetImagePreparationEvent(
+                kind: .unrecognized(42),
+                detail: "linux/arm64",
+                stage: "pulling",
+                fraction: 0.75
+            ))
+    #expect(event.kind.protoValue == .UNRECOGNIZED(42))
 }
 
 @Test func snapshotMappingPreservesOptionalTelemetryAndSettings() {
@@ -86,15 +128,18 @@ import Testing
     #expect(snapshot.isDraining)
     #expect(snapshot.capabilities == [FleetCapability(os: "macos", arch: "arm64", backend: .vm)])
     #expect(snapshot.inFlightJobs == [FleetInFlightJob(jobID: "job_123", os: "macos", arch: "arm64")])
-    #expect(snapshot.recentVerdicts == [
-        FleetOfferVerdict(jobID: "job_456", accepted: false, reason: "draining")
-    ])
-    #expect(snapshot.telemetry == FleetHostTelemetry(
-        loadAverage1Minute: 1.25,
-        cpuCount: 10,
-        memoryTotalMib: 32768,
-        memoryAvailableMib: 8192
-    ))
+    #expect(
+        snapshot.recentVerdicts == [
+            FleetOfferVerdict(jobID: "job_456", accepted: false, reason: "draining")
+        ])
+    #expect(
+        snapshot.telemetry
+            == FleetHostTelemetry(
+                loadAverage1Minute: 1.25,
+                cpuCount: 10,
+                memoryTotalMib: 32768,
+                memoryAvailableMib: 8192
+            ))
     #expect(snapshot.settings == nil)
 }
 

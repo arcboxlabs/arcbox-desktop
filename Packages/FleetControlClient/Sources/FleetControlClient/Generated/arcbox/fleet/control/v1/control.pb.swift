@@ -37,6 +37,13 @@ public nonisolated enum Arcbox_Fleet_Control_V1_ConnectionState: SwiftProtobuf.E
 
   /// Enrolled but not accepting new offers.
   case draining // = 3
+
+  /// Enrolled but deliberately offline: the participate setting is off.
+  case detached // = 4
+
+  /// The gateway rejected the credential (machine decommissioned
+  /// server-side); parked until an explicit Unenroll.
+  case credentialRejected // = 5
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -49,6 +56,8 @@ public nonisolated enum Arcbox_Fleet_Control_V1_ConnectionState: SwiftProtobuf.E
     case 1: self = .unenrolled
     case 2: self = .enrolled
     case 3: self = .draining
+    case 4: self = .detached
+    case 5: self = .credentialRejected
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -59,6 +68,8 @@ public nonisolated enum Arcbox_Fleet_Control_V1_ConnectionState: SwiftProtobuf.E
     case .unenrolled: return 1
     case .enrolled: return 2
     case .draining: return 3
+    case .detached: return 4
+    case .credentialRejected: return 5
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -69,6 +80,8 @@ public nonisolated enum Arcbox_Fleet_Control_V1_ConnectionState: SwiftProtobuf.E
     .unenrolled,
     .enrolled,
     .draining,
+    .detached,
+    .credentialRejected,
   ]
 
 }
@@ -85,6 +98,17 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
 
   /// Enrolled, attach stream live.
   case attached // = 3
+
+  /// Enrolled — the credential is kept — but deliberately not attached:
+  /// the participate setting is off. The machine shows Offline server-side;
+  /// participate=true reattaches with the same identity.
+  case detached // = 4
+
+  /// The gateway rejected the credential (revoked server-side — the machine
+  /// was decommissioned). The agent stops reconnecting and keeps the
+  /// credential on disk until an explicit Unenroll, so a server-side auth
+  /// regression can never make agents wipe their own credentials.
+  case credentialRejected // = 5
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -97,6 +121,8 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
     case 1: self = .unenrolled
     case 2: self = .attaching
     case 3: self = .attached
+    case 4: self = .detached
+    case 5: self = .credentialRejected
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -107,6 +133,8 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
     case .unenrolled: return 1
     case .attaching: return 2
     case .attached: return 3
+    case .detached: return 4
+    case .credentialRejected: return 5
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -117,6 +145,8 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
     .unenrolled,
     .attaching,
     .attached,
+    .detached,
+    .credentialRejected,
   ]
 
 }
@@ -205,6 +235,46 @@ public nonisolated enum Arcbox_Fleet_Control_V1_DockerMode: SwiftProtobuf.Enum, 
     .auto,
     .enabled,
     .disabled,
+  ]
+
+}
+
+/// Which image setting a Prepare call (or event) concerns. One value per
+/// preparable image setting; the macOS image kind arrives with the VM
+/// backend.
+public nonisolated enum Arcbox_Fleet_Control_V1_ImageKind: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+
+  /// `linux_runner_image`, prepared by pulling it for every
+  /// currently-advertised Docker-served Linux arch.
+  case linuxRunnerImage // = 1
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .linuxRunnerImage
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .linuxRunnerImage: return 1
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Arcbox_Fleet_Control_V1_ImageKind] = [
+    .unspecified,
+    .linuxRunnerImage,
   ]
 
 }
@@ -308,7 +378,7 @@ public nonisolated struct Arcbox_Fleet_Control_V1_ResumeResponse: Sendable {
   public init() {}
 }
 
-public nonisolated struct Arcbox_Fleet_Control_V1_DisconnectRequest: Sendable {
+public nonisolated struct Arcbox_Fleet_Control_V1_UnenrollRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -318,7 +388,7 @@ public nonisolated struct Arcbox_Fleet_Control_V1_DisconnectRequest: Sendable {
   public init() {}
 }
 
-public nonisolated struct Arcbox_Fleet_Control_V1_DisconnectResponse: Sendable {
+public nonisolated struct Arcbox_Fleet_Control_V1_UnenrollResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -595,14 +665,19 @@ public nonisolated struct Arcbox_Fleet_Control_V1_UpdateSettingsRequest: Sendabl
   /// Clears the value of `memFloorMib`. Subsequent reads from it will return its default value.
   public mutating func clearMemFloorMib() {self._memFloorMib = nil}
 
-  public var runnerImage: String {
-    get {_runnerImage ?? String()}
-    set {_runnerImage = newValue}
+  /// Container image Linux jobs run in ("linux" names the jobs' platform;
+  /// macOS jobs get their own image setting alongside the VM backend).
+  /// Writes `target` only — the image becomes `current` when
+  /// FleetImageService.Prepare verifies it, never as a side effect of this
+  /// call.
+  public var linuxRunnerImage: String {
+    get {_linuxRunnerImage ?? String()}
+    set {_linuxRunnerImage = newValue}
   }
-  /// Returns true if `runnerImage` has been explicitly set.
-  public var hasRunnerImage: Bool {self._runnerImage != nil}
-  /// Clears the value of `runnerImage`. Subsequent reads from it will return its default value.
-  public mutating func clearRunnerImage() {self._runnerImage = nil}
+  /// Returns true if `linuxRunnerImage` has been explicitly set.
+  public var hasLinuxRunnerImage: Bool {self._linuxRunnerImage != nil}
+  /// Clears the value of `linuxRunnerImage`. Subsequent reads from it will return its default value.
+  public mutating func clearLinuxRunnerImage() {self._linuxRunnerImage = nil}
 
   public var gateway: String {
     get {_gateway ?? String()}
@@ -633,16 +708,32 @@ public nonisolated struct Arcbox_Fleet_Control_V1_UpdateSettingsRequest: Sendabl
   /// Clears the value of `runnerScript`. Subsequent reads from it will return its default value.
   public mutating func clearRunnerScript() {self._runnerScript = nil}
 
+  /// Whether this machine takes part in the fleet. false detaches — the
+  /// credential is kept and the machine shows Offline server-side — and
+  /// true reattaches with the same identity. Writes `target` only; the
+  /// supervisor reconciles, and `current` flips when the attach/detach
+  /// actually completes. This is deliberately the one lifecycle-touching
+  /// setting (see FleetSettingsService's doc).
+  public var participate: Bool {
+    get {_participate ?? false}
+    set {_participate = newValue}
+  }
+  /// Returns true if `participate` has been explicitly set.
+  public var hasParticipate: Bool {self._participate != nil}
+  /// Clears the value of `participate`. Subsequent reads from it will return its default value.
+  public mutating func clearParticipate() {self._participate = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _loadCeiling: Double? = nil
   fileprivate var _memFloorMib: UInt64? = nil
-  fileprivate var _runnerImage: String? = nil
+  fileprivate var _linuxRunnerImage: String? = nil
   fileprivate var _gateway: String? = nil
   fileprivate var _dockerMode: Arcbox_Fleet_Control_V1_DockerMode? = nil
   fileprivate var _runnerScript: String? = nil
+  fileprivate var _participate: Bool? = nil
 }
 
 /// Reused across every setting regardless of type, so a client's rendering
@@ -704,6 +795,20 @@ public nonisolated struct Arcbox_Fleet_Control_V1_DockerModeSetting: Sendable {
   public init() {}
 }
 
+public nonisolated struct Arcbox_Fleet_Control_V1_BoolSetting: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var current: Bool = false
+
+  public var target: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 public nonisolated struct Arcbox_Fleet_Control_V1_AgentSettings: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -727,14 +832,18 @@ public nonisolated struct Arcbox_Fleet_Control_V1_AgentSettings: Sendable {
   /// Clears the value of `memFloorMib`. Subsequent reads from it will return its default value.
   public mutating func clearMemFloorMib() {self._memFloorMib = nil}
 
-  public var runnerImage: Arcbox_Fleet_Control_V1_StringSetting {
-    get {_runnerImage ?? Arcbox_Fleet_Control_V1_StringSetting()}
-    set {_runnerImage = newValue}
+  /// For image settings, `target` is operator intent and may float (a
+  /// moving tag or an unpinned stream); `current` is the verified artifact
+  /// jobs actually use. FleetImageService.Prepare is what converges the
+  /// two — including re-resolving a floating target that moved.
+  public var linuxRunnerImage: Arcbox_Fleet_Control_V1_StringSetting {
+    get {_linuxRunnerImage ?? Arcbox_Fleet_Control_V1_StringSetting()}
+    set {_linuxRunnerImage = newValue}
   }
-  /// Returns true if `runnerImage` has been explicitly set.
-  public var hasRunnerImage: Bool {self._runnerImage != nil}
-  /// Clears the value of `runnerImage`. Subsequent reads from it will return its default value.
-  public mutating func clearRunnerImage() {self._runnerImage = nil}
+  /// Returns true if `linuxRunnerImage` has been explicitly set.
+  public var hasLinuxRunnerImage: Bool {self._linuxRunnerImage != nil}
+  /// Clears the value of `linuxRunnerImage`. Subsequent reads from it will return its default value.
+  public mutating func clearLinuxRunnerImage() {self._linuxRunnerImage = nil}
 
   public var gateway: Arcbox_Fleet_Control_V1_StringSetting {
     get {_gateway ?? Arcbox_Fleet_Control_V1_StringSetting()}
@@ -763,16 +872,64 @@ public nonisolated struct Arcbox_Fleet_Control_V1_AgentSettings: Sendable {
   /// Clears the value of `runnerScript`. Subsequent reads from it will return its default value.
   public mutating func clearRunnerScript() {self._runnerScript = nil}
 
+  public var participate: Arcbox_Fleet_Control_V1_BoolSetting {
+    get {_participate ?? Arcbox_Fleet_Control_V1_BoolSetting()}
+    set {_participate = newValue}
+  }
+  /// Returns true if `participate` has been explicitly set.
+  public var hasParticipate: Bool {self._participate != nil}
+  /// Clears the value of `participate`. Subsequent reads from it will return its default value.
+  public mutating func clearParticipate() {self._participate = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _loadCeiling: Arcbox_Fleet_Control_V1_DoubleSetting? = nil
   fileprivate var _memFloorMib: Arcbox_Fleet_Control_V1_Uint64Setting? = nil
-  fileprivate var _runnerImage: Arcbox_Fleet_Control_V1_StringSetting? = nil
+  fileprivate var _linuxRunnerImage: Arcbox_Fleet_Control_V1_StringSetting? = nil
   fileprivate var _gateway: Arcbox_Fleet_Control_V1_StringSetting? = nil
   fileprivate var _dockerMode: Arcbox_Fleet_Control_V1_DockerModeSetting? = nil
   fileprivate var _runnerScript: Arcbox_Fleet_Control_V1_StringSetting? = nil
+  fileprivate var _participate: Arcbox_Fleet_Control_V1_BoolSetting? = nil
+}
+
+public nonisolated struct Arcbox_Fleet_Control_V1_PrepareRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Image settings to converge; empty prepares every kind this agent
+  /// supports. An unrecognized kind (from a newer client) is rejected with
+  /// INVALID_ARGUMENT rather than silently skipped.
+  public var kinds: [Arcbox_Fleet_Control_V1_ImageKind] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Progress for one preparation step. Human-oriented: `detail`/`stage` are
+/// display strings ("linux/arm64", "pulling"), not a machine contract.
+public nonisolated struct Arcbox_Fleet_Control_V1_PrepareResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var kind: Arcbox_Fleet_Control_V1_ImageKind = .unspecified
+
+  /// What within the kind is progressing — a platform for Docker pulls.
+  public var detail: String = String()
+
+  /// Coarse stage label; "promoted" is always the kind's final event.
+  public var stage: String = String()
+
+  /// Completion fraction within the stage (0.0..=1.0).
+  public var fraction: Double = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -780,11 +937,11 @@ public nonisolated struct Arcbox_Fleet_Control_V1_AgentSettings: Sendable {
 fileprivate nonisolated let _protobuf_package = "arcbox.fleet.control.v1"
 
 nonisolated extension Arcbox_Fleet_Control_V1_ConnectionState: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CONNECTION_STATE_UNSPECIFIED\0\u{1}CONNECTION_STATE_UNENROLLED\0\u{1}CONNECTION_STATE_ENROLLED\0\u{1}CONNECTION_STATE_DRAINING\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0CONNECTION_STATE_UNSPECIFIED\0\u{1}CONNECTION_STATE_UNENROLLED\0\u{1}CONNECTION_STATE_ENROLLED\0\u{1}CONNECTION_STATE_DRAINING\0\u{1}CONNECTION_STATE_DETACHED\0\u{1}CONNECTION_STATE_CREDENTIAL_REJECTED\0")
 }
 
 nonisolated extension Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ENROLLMENT_UNSPECIFIED\0\u{1}ENROLLMENT_UNENROLLED\0\u{1}ENROLLMENT_ATTACHING\0\u{1}ENROLLMENT_ATTACHED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ENROLLMENT_UNSPECIFIED\0\u{1}ENROLLMENT_UNENROLLED\0\u{1}ENROLLMENT_ATTACHING\0\u{1}ENROLLMENT_ATTACHED\0\u{1}ENROLLMENT_DETACHED\0\u{1}ENROLLMENT_CREDENTIAL_REJECTED\0")
 }
 
 nonisolated extension Arcbox_Fleet_Control_V1_Backend: SwiftProtobuf._ProtoNameProviding {
@@ -793,6 +950,10 @@ nonisolated extension Arcbox_Fleet_Control_V1_Backend: SwiftProtobuf._ProtoNameP
 
 nonisolated extension Arcbox_Fleet_Control_V1_DockerMode: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0DOCKER_MODE_UNSPECIFIED\0\u{1}DOCKER_MODE_AUTO\0\u{1}DOCKER_MODE_ENABLED\0\u{1}DOCKER_MODE_DISABLED\0")
+}
+
+nonisolated extension Arcbox_Fleet_Control_V1_ImageKind: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0IMAGE_KIND_UNSPECIFIED\0\u{1}IMAGE_KIND_LINUX_RUNNER_IMAGE\0")
 }
 
 nonisolated extension Arcbox_Fleet_Control_V1_GetAgentInfoRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -995,8 +1156,8 @@ nonisolated extension Arcbox_Fleet_Control_V1_ResumeResponse: SwiftProtobuf.Mess
   }
 }
 
-nonisolated extension Arcbox_Fleet_Control_V1_DisconnectRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".DisconnectRequest"
+nonisolated extension Arcbox_Fleet_Control_V1_UnenrollRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".UnenrollRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1008,14 +1169,14 @@ nonisolated extension Arcbox_Fleet_Control_V1_DisconnectRequest: SwiftProtobuf.M
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Arcbox_Fleet_Control_V1_DisconnectRequest, rhs: Arcbox_Fleet_Control_V1_DisconnectRequest) -> Bool {
+  public static func ==(lhs: Arcbox_Fleet_Control_V1_UnenrollRequest, rhs: Arcbox_Fleet_Control_V1_UnenrollRequest) -> Bool {
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-nonisolated extension Arcbox_Fleet_Control_V1_DisconnectResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".DisconnectResponse"
+nonisolated extension Arcbox_Fleet_Control_V1_UnenrollResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".UnenrollResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1027,7 +1188,7 @@ nonisolated extension Arcbox_Fleet_Control_V1_DisconnectResponse: SwiftProtobuf.
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Arcbox_Fleet_Control_V1_DisconnectResponse, rhs: Arcbox_Fleet_Control_V1_DisconnectResponse) -> Bool {
+  public static func ==(lhs: Arcbox_Fleet_Control_V1_UnenrollResponse, rhs: Arcbox_Fleet_Control_V1_UnenrollResponse) -> Bool {
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1513,7 +1674,7 @@ nonisolated extension Arcbox_Fleet_Control_V1_UpdateSettingsResponse: SwiftProto
 
 nonisolated extension Arcbox_Fleet_Control_V1_UpdateSettingsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UpdateSettingsRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}load_ceiling\0\u{3}mem_floor_mib\0\u{3}runner_image\0\u{1}gateway\0\u{3}docker_mode\0\u{3}runner_script\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}load_ceiling\0\u{3}mem_floor_mib\0\u{3}linux_runner_image\0\u{1}gateway\0\u{3}docker_mode\0\u{3}runner_script\0\u{1}participate\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1523,10 +1684,11 @@ nonisolated extension Arcbox_Fleet_Control_V1_UpdateSettingsRequest: SwiftProtob
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularDoubleField(value: &self._loadCeiling) }()
       case 2: try { try decoder.decodeSingularUInt64Field(value: &self._memFloorMib) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self._runnerImage) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._linuxRunnerImage) }()
       case 4: try { try decoder.decodeSingularStringField(value: &self._gateway) }()
       case 5: try { try decoder.decodeSingularEnumField(value: &self._dockerMode) }()
       case 6: try { try decoder.decodeSingularStringField(value: &self._runnerScript) }()
+      case 7: try { try decoder.decodeSingularBoolField(value: &self._participate) }()
       default: break
       }
     }
@@ -1543,7 +1705,7 @@ nonisolated extension Arcbox_Fleet_Control_V1_UpdateSettingsRequest: SwiftProtob
     try { if let v = self._memFloorMib {
       try visitor.visitSingularUInt64Field(value: v, fieldNumber: 2)
     } }()
-    try { if let v = self._runnerImage {
+    try { if let v = self._linuxRunnerImage {
       try visitor.visitSingularStringField(value: v, fieldNumber: 3)
     } }()
     try { if let v = self._gateway {
@@ -1555,16 +1717,20 @@ nonisolated extension Arcbox_Fleet_Control_V1_UpdateSettingsRequest: SwiftProtob
     try { if let v = self._runnerScript {
       try visitor.visitSingularStringField(value: v, fieldNumber: 6)
     } }()
+    try { if let v = self._participate {
+      try visitor.visitSingularBoolField(value: v, fieldNumber: 7)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Arcbox_Fleet_Control_V1_UpdateSettingsRequest, rhs: Arcbox_Fleet_Control_V1_UpdateSettingsRequest) -> Bool {
     if lhs._loadCeiling != rhs._loadCeiling {return false}
     if lhs._memFloorMib != rhs._memFloorMib {return false}
-    if lhs._runnerImage != rhs._runnerImage {return false}
+    if lhs._linuxRunnerImage != rhs._linuxRunnerImage {return false}
     if lhs._gateway != rhs._gateway {return false}
     if lhs._dockerMode != rhs._dockerMode {return false}
     if lhs._runnerScript != rhs._runnerScript {return false}
+    if lhs._participate != rhs._participate {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1710,9 +1876,44 @@ nonisolated extension Arcbox_Fleet_Control_V1_DockerModeSetting: SwiftProtobuf.M
   }
 }
 
+nonisolated extension Arcbox_Fleet_Control_V1_BoolSetting: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".BoolSetting"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}current\0\u{1}target\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.current) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.target) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.current != false {
+      try visitor.visitSingularBoolField(value: self.current, fieldNumber: 1)
+    }
+    if self.target != false {
+      try visitor.visitSingularBoolField(value: self.target, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_Fleet_Control_V1_BoolSetting, rhs: Arcbox_Fleet_Control_V1_BoolSetting) -> Bool {
+    if lhs.current != rhs.current {return false}
+    if lhs.target != rhs.target {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 nonisolated extension Arcbox_Fleet_Control_V1_AgentSettings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AgentSettings"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}load_ceiling\0\u{3}mem_floor_mib\0\u{3}runner_image\0\u{1}gateway\0\u{3}docker_mode\0\u{3}runner_script\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}load_ceiling\0\u{3}mem_floor_mib\0\u{3}linux_runner_image\0\u{1}gateway\0\u{3}docker_mode\0\u{3}runner_script\0\u{1}participate\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1722,10 +1923,11 @@ nonisolated extension Arcbox_Fleet_Control_V1_AgentSettings: SwiftProtobuf.Messa
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._loadCeiling) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._memFloorMib) }()
-      case 3: try { try decoder.decodeSingularMessageField(value: &self._runnerImage) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._linuxRunnerImage) }()
       case 4: try { try decoder.decodeSingularMessageField(value: &self._gateway) }()
       case 5: try { try decoder.decodeSingularMessageField(value: &self._dockerMode) }()
       case 6: try { try decoder.decodeSingularMessageField(value: &self._runnerScript) }()
+      case 7: try { try decoder.decodeSingularMessageField(value: &self._participate) }()
       default: break
       }
     }
@@ -1742,7 +1944,7 @@ nonisolated extension Arcbox_Fleet_Control_V1_AgentSettings: SwiftProtobuf.Messa
     try { if let v = self._memFloorMib {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
-    try { if let v = self._runnerImage {
+    try { if let v = self._linuxRunnerImage {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
     try { if let v = self._gateway {
@@ -1754,16 +1956,95 @@ nonisolated extension Arcbox_Fleet_Control_V1_AgentSettings: SwiftProtobuf.Messa
     try { if let v = self._runnerScript {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     } }()
+    try { if let v = self._participate {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Arcbox_Fleet_Control_V1_AgentSettings, rhs: Arcbox_Fleet_Control_V1_AgentSettings) -> Bool {
     if lhs._loadCeiling != rhs._loadCeiling {return false}
     if lhs._memFloorMib != rhs._memFloorMib {return false}
-    if lhs._runnerImage != rhs._runnerImage {return false}
+    if lhs._linuxRunnerImage != rhs._linuxRunnerImage {return false}
     if lhs._gateway != rhs._gateway {return false}
     if lhs._dockerMode != rhs._dockerMode {return false}
     if lhs._runnerScript != rhs._runnerScript {return false}
+    if lhs._participate != rhs._participate {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Arcbox_Fleet_Control_V1_PrepareRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PrepareRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kinds\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedEnumField(value: &self.kinds) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.kinds.isEmpty {
+      try visitor.visitPackedEnumField(value: self.kinds, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_Fleet_Control_V1_PrepareRequest, rhs: Arcbox_Fleet_Control_V1_PrepareRequest) -> Bool {
+    if lhs.kinds != rhs.kinds {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension Arcbox_Fleet_Control_V1_PrepareResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PrepareResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kind\0\u{1}detail\0\u{1}stage\0\u{1}fraction\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.detail) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.stage) }()
+      case 4: try { try decoder.decodeSingularDoubleField(value: &self.fraction) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.kind != .unspecified {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 1)
+    }
+    if !self.detail.isEmpty {
+      try visitor.visitSingularStringField(value: self.detail, fieldNumber: 2)
+    }
+    if !self.stage.isEmpty {
+      try visitor.visitSingularStringField(value: self.stage, fieldNumber: 3)
+    }
+    if self.fraction.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.fraction, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_Fleet_Control_V1_PrepareResponse, rhs: Arcbox_Fleet_Control_V1_PrepareResponse) -> Bool {
+    if lhs.kind != rhs.kind {return false}
+    if lhs.detail != rhs.detail {return false}
+    if lhs.stage != rhs.stage {return false}
+    if lhs.fraction != rhs.fraction {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

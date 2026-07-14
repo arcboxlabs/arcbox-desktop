@@ -130,8 +130,8 @@ public final class FleetControlClient: Sendable {
     }
 
     /// Removes the persisted machine credential and returns to unenrolled.
-    public func disconnect() async throws {
-        _ = try await lifecycle.disconnect(
+    public func unenroll() async throws {
+        _ = try await lifecycle.unenroll(
             .init(),
             options: Self.defaultCallOptions
         )
@@ -181,6 +181,44 @@ public final class FleetControlClient: Sendable {
         }
     }
 
+    /// Prepares the requested image settings and streams their progress.
+    ///
+    /// An empty kinds array asks the agent to prepare every supported image.
+    public func prepareImages(
+        _ kinds: [FleetImageKind] = []
+    ) -> AsyncThrowingStream<FleetImagePreparationEvent, Error> {
+        let request: Arcbox_Fleet_Control_V1_PrepareRequest = {
+            var request = Arcbox_Fleet_Control_V1_PrepareRequest()
+            request.kinds = kinds.map(\.protoValue)
+            return request
+        }()
+
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let service = image
+                    try await service.prepare(
+                        request,
+                        options: Self.streamingCallOptions
+                    ) { response in
+                        for try await message in response.messages {
+                            continuation.yield(FleetImagePreparationEvent(proto: message))
+                        }
+                    }
+                    continuation.finish()
+                } catch is CancellationError {
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
+            }
+        }
+    }
+
     /// Reads the current persisted agent settings.
     public func getSettings() async throws -> FleetAgentSettings {
         let response = try await settings.getSettings(
@@ -212,19 +250,21 @@ public final class FleetControlClient: Sendable {
     public func updateSettings(
         loadCeiling: Double? = nil,
         memFloorMib: UInt64? = nil,
-        runnerImage: String? = nil,
+        linuxRunnerImage: String? = nil,
         gateway: String? = nil,
         dockerMode: FleetDockerMode? = nil,
-        runnerScript: String? = nil
+        runnerScript: String? = nil,
+        participate: Bool? = nil
     ) async throws -> FleetAgentSettings {
         try await updateSettings(
             FleetSettingsUpdate(
                 loadCeiling: loadCeiling,
                 memFloorMib: memFloorMib,
-                runnerImage: runnerImage,
+                linuxRunnerImage: linuxRunnerImage,
                 gateway: gateway,
                 dockerMode: dockerMode,
-                runnerScript: runnerScript
+                runnerScript: runnerScript,
+                participate: participate
             )
         )
     }
@@ -288,21 +328,35 @@ public final class FleetControlClient: Sendable {
         _grpcClient.withLock { $0 }
     }
 
-    private var lifecycle: Arcbox_Fleet_Control_V1_FleetLifecycleService.Client<
-        HTTP2ClientTransport.TransportServices
-    > {
+    private var lifecycle:
+        Arcbox_Fleet_Control_V1_FleetLifecycleService.Client<
+            HTTP2ClientTransport.TransportServices
+        >
+    {
         .init(wrapping: grpcClient)
     }
 
-    private var state: Arcbox_Fleet_Control_V1_FleetStateService.Client<
-        HTTP2ClientTransport.TransportServices
-    > {
+    private var state:
+        Arcbox_Fleet_Control_V1_FleetStateService.Client<
+            HTTP2ClientTransport.TransportServices
+        >
+    {
         .init(wrapping: grpcClient)
     }
 
-    private var settings: Arcbox_Fleet_Control_V1_FleetSettingsService.Client<
-        HTTP2ClientTransport.TransportServices
-    > {
+    private var settings:
+        Arcbox_Fleet_Control_V1_FleetSettingsService.Client<
+            HTTP2ClientTransport.TransportServices
+        >
+    {
+        .init(wrapping: grpcClient)
+    }
+
+    private var image:
+        Arcbox_Fleet_Control_V1_FleetImageService.Client<
+            HTTP2ClientTransport.TransportServices
+        >
+    {
         .init(wrapping: grpcClient)
     }
 }
