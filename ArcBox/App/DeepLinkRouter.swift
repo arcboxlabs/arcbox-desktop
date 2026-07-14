@@ -15,29 +15,46 @@ final class DeepLinkRouter {
         let networksVM: NetworksViewModel
         let openMainWindow: () -> Void
         let openSettingsWindow: () -> Void
+        /// URL scheme of the OAuth redirect (e.g. `com.arcboxlabs.desktop`).
+        /// Callbacks with this scheme are forwarded to `onOAuthCallback` rather
+        /// than parsed as `arcbox://` deep links.
+        let oauthCallbackScheme: String?
+        let onOAuthCallback: (URL) -> Void
     }
 
     private var target: Target?
-    private var pending: [DeepLink] = []
+    private var pending: [URL] = []
 
     func configure(_ target: Target) {
         self.target = target
         let buffered = pending
         pending = []
-        buffered.forEach(apply)
+        buffered.forEach(dispatch)
     }
 
     func handle(_ url: URL) {
+        if target == nil {
+            pending.append(url)
+        } else {
+            dispatch(url)
+        }
+    }
+
+    private func dispatch(_ url: URL) {
+        guard let target else { return }
+        if let scheme = target.oauthCallbackScheme,
+            url.scheme?.caseInsensitiveCompare(scheme) == .orderedSame
+        {
+            Log.deepLink.info("Handling OAuth redirect callback")
+            target.onOAuthCallback(url)
+            return
+        }
         guard let link = DeepLink(url) else {
             Log.deepLink.warning("Ignoring unrecognized deep link: \(url.absoluteString, privacy: .private)")
             return
         }
         Log.deepLink.info("Handling deep link: \(url.absoluteString, privacy: .private)")
-        if target == nil {
-            pending.append(link)
-        } else {
-            apply(link)
-        }
+        apply(link)
     }
 
     private func apply(_ link: DeepLink) {

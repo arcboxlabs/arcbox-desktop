@@ -4,3 +4,14 @@
 DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
 SENTRY_DSN = YOUR_SENTRY_DSN_HERE
 POSTHOG_API_KEY = YOUR_POSTHOG_API_KEY_HERE
+
+// OIDC sign-in for the ArcBox platform. Leave the placeholders to run with
+// sign-in unconfigured, or point at a local Dex instance for development
+// (see OIDCClientConfiguration.swift in Packages/ArcBoxAuth for the exact
+// Dex static-client shape). The $() below is required: xcconfig treats "//"
+// as a comment even inside values, so an empty expansion splits the slashes;
+// the resolved value is a normal http:// URL.
+//   OIDC_ISSUER_URL = http:/$()/localhost:5556/dex
+//   OIDC_CLIENT_ID = arcbox-desktop
+OIDC_ISSUER_URL = YOUR_OIDC_ISSUER_URL_HERE
+OIDC_CLIENT_ID = YOUR_OIDC_CLIENT_ID_HERE

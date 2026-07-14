@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Merged with the Xcode-generated Info.plist (GENERATE_INFOPLIST_FILE).
-	     Only keys that cannot be expressed as INFOPLIST_KEY_* settings live here. -->
+	<!-- Merged with the Xcode-generated Info.plist (GENERATE_INFOPLIST_FILE);
+	     $(...) are expanded at build time. Only keys that cannot be expressed
+	     as INFOPLIST_KEY_* settings live here — custom keys (OIDC*, telemetry)
+	     are silently dropped when set via INFOPLIST_KEY_*. -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -16,6 +18,24 @@
 				<string>arcbox</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>None</string>
+			<key>CFBundleURLName</key>
+			<string>com.arcboxlabs.desktop.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.arcboxlabs.desktop</string>
+			</array>
+		</dict>
 	</array>
+	<key>OIDCClientID</key>
+	<string>$(OIDC_CLIENT_ID)</string>
+	<key>OIDCIssuerURL</key>
+	<string>$(OIDC_ISSUER_URL)</string>
+	<key>PostHogAPIKey</key>
+	<string>$(POSTHOG_API_KEY)</string>
+	<key>SentryDSN</key>
+	<string>$(SENTRY_DSN)</string>
 </dict>
 </plist>
