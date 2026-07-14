@@ -369,6 +369,195 @@ public struct Arcbox_V1_SetSystemVmBackendRequest: Sendable {
   public init() {}
 }
 
+/// Diagnostic snapshot of the System VM's virtio devices and vCPUs.
+public struct Arcbox_V1_VirtioDebugInfo: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var devices: [Arcbox_V1_VirtioDeviceDebug] = []
+
+  /// Per-vCPU exit counters (custom-VMM backends; empty under VZ).
+  public var vcpus: [Arcbox_V1_VcpuDebug] = []
+
+  /// Times any component broadcast hv_vcpus_exit to ALL vCPUs.
+  public var kickBroadcasts: UInt64 = 0
+
+  /// Times the IRQ callback unparked ALL vCPU threads on an SPI assertion.
+  public var unparkBroadcasts: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Cumulative exit counters for one vCPU.
+public struct Arcbox_V1_VcpuDebug: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var vcpu: UInt32 = 0
+
+  /// MMIO read exits.
+  public var mmioReads: UInt64 = 0
+
+  /// MMIO write exits (includes every virtio QUEUE_NOTIFY doorbell).
+  public var mmioWrites: UInt64 = 0
+
+  /// WFI exits — the guest going idle.
+  public var wfi: UInt64 = 0
+
+  /// HVC exits (PSCI + ArcBox hypercalls).
+  public var hvc: UInt64 = 0
+
+  /// SMC exits.
+  public var smc: UInt64 = 0
+
+  /// Virtual-timer activations.
+  public var vtimer: UInt64 = 0
+
+  /// Times this vCPU was kicked out of hv_vcpu_run by hv_vcpus_exit.
+  public var kicksReceived: UInt64 = 0
+
+  /// Trapped system-register accesses (treated RAZ/WI).
+  public var sysreg: UInt64 = 0
+
+  /// Unhandled exception classes and unknown exits.
+  public var other: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Snapshot of one virtio MMIO device.
+public struct Arcbox_V1_VirtioDeviceDebug: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Device ID within the VMM's device manager.
+  public var id: UInt32 = 0
+
+  /// Device type, e.g. "VirtioNet".
+  public var deviceType: String = String()
+
+  /// Device name.
+  public var name: String = String()
+
+  /// MMIO device status register bits.
+  public var status: UInt32 = 0
+
+  /// Pending interrupt reasons not yet acknowledged by the guest.
+  public var interruptStatus: UInt32 = 0
+
+  /// Whether VIRTIO_F_EVENT_IDX was negotiated.
+  public var eventIdx: Bool = false
+
+  /// Cumulative interrupts raised by the device.
+  public var interrupts: UInt64 = 0
+
+  /// Configured queues.
+  public var queues: [Arcbox_V1_VirtioQueueDebug] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Snapshot of one virtqueue. Ring fields are only present when the ring
+/// address was configured and lies inside guest RAM.
+public struct Arcbox_V1_VirtioQueueDebug: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Queue index within the device.
+  public var index: UInt32 = 0
+
+  /// Ring size negotiated by the driver.
+  public var size: UInt32 = 0
+
+  /// QUEUE_READY state.
+  public var ready: Bool = false
+
+  /// Cumulative guest kicks (QUEUE_NOTIFY writes).
+  public var kicks: UInt64 = 0
+
+  /// avail.idx — where the guest has published up to.
+  public var availIdx: UInt32 {
+    get {_availIdx ?? 0}
+    set {_availIdx = newValue}
+  }
+  /// Returns true if `availIdx` has been explicitly set.
+  public var hasAvailIdx: Bool {self._availIdx != nil}
+  /// Clears the value of `availIdx`. Subsequent reads from it will return its default value.
+  public mutating func clearAvailIdx() {self._availIdx = nil}
+
+  /// used.idx — where the device has completed up to. A persistent gap
+  /// behind avail_idx means the queue is wedged.
+  public var usedIdx: UInt32 {
+    get {_usedIdx ?? 0}
+    set {_usedIdx = newValue}
+  }
+  /// Returns true if `usedIdx` has been explicitly set.
+  public var hasUsedIdx: Bool {self._usedIdx != nil}
+  /// Clears the value of `usedIdx`. Subsequent reads from it will return its default value.
+  public mutating func clearUsedIdx() {self._usedIdx = nil}
+
+  /// avail.flags (bit 0 = VRING_AVAIL_F_NO_INTERRUPT).
+  public var availFlags: UInt32 {
+    get {_availFlags ?? 0}
+    set {_availFlags = newValue}
+  }
+  /// Returns true if `availFlags` has been explicitly set.
+  public var hasAvailFlags: Bool {self._availFlags != nil}
+  /// Clears the value of `availFlags`. Subsequent reads from it will return its default value.
+  public mutating func clearAvailFlags() {self._availFlags = nil}
+
+  /// used.flags (bit 0 = VRING_USED_F_NO_NOTIFY).
+  public var usedFlags: UInt32 {
+    get {_usedFlags ?? 0}
+    set {_usedFlags = newValue}
+  }
+  /// Returns true if `usedFlags` has been explicitly set.
+  public var hasUsedFlags: Bool {self._usedFlags != nil}
+  /// Clears the value of `usedFlags`. Subsequent reads from it will return its default value.
+  public mutating func clearUsedFlags() {self._usedFlags = nil}
+
+  /// used_event slot (guest → device kick threshold; EVENT_IDX only).
+  public var usedEvent: UInt32 {
+    get {_usedEvent ?? 0}
+    set {_usedEvent = newValue}
+  }
+  /// Returns true if `usedEvent` has been explicitly set.
+  public var hasUsedEvent: Bool {self._usedEvent != nil}
+  /// Clears the value of `usedEvent`. Subsequent reads from it will return its default value.
+  public mutating func clearUsedEvent() {self._usedEvent = nil}
+
+  /// avail_event slot (device → guest interrupt threshold; EVENT_IDX only).
+  public var availEvent: UInt32 {
+    get {_availEvent ?? 0}
+    set {_availEvent = newValue}
+  }
+  /// Returns true if `availEvent` has been explicitly set.
+  public var hasAvailEvent: Bool {self._availEvent != nil}
+  /// Clears the value of `availEvent`. Subsequent reads from it will return its default value.
+  public mutating func clearAvailEvent() {self._availEvent = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _availIdx: UInt32? = nil
+  fileprivate var _usedIdx: UInt32? = nil
+  fileprivate var _availFlags: UInt32? = nil
+  fileprivate var _usedFlags: UInt32? = nil
+  fileprivate var _usedEvent: UInt32? = nil
+  fileprivate var _availEvent: UInt32? = nil
+}
+
 /// Request to get system info.
 public struct Arcbox_V1_GetInfoRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -1089,6 +1278,11 @@ public struct Arcbox_V1_SetupStatus: Sendable {
   /// Whether Docker CLI tools are installed.
   public var dockerToolsInstalled: Bool = false
 
+  /// Fatal startup error description. Set only when phase == FAILED,
+  /// so streaming clients learn the cause instead of seeing a bare
+  /// disconnect when the daemon exits.
+  public var error: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Daemon startup phases, ordered by progression.
@@ -1104,6 +1298,10 @@ public struct Arcbox_V1_SetupStatus: Sendable {
     case degraded // = 7
     case downloadingAssets // = 8
     case cleaningUp // = 9
+
+    /// Startup failed fatally; the daemon exits shortly after
+    /// publishing this phase. See the `error` field for the cause.
+    case failed // = 10
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -1122,6 +1320,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       case 7: self = .degraded
       case 8: self = .downloadingAssets
       case 9: self = .cleaningUp
+      case 10: self = .failed
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -1138,6 +1337,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       case .degraded: return 7
       case .downloadingAssets: return 8
       case .cleaningUp: return 9
+      case .failed: return 10
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -1154,6 +1354,7 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       .degraded,
       .downloadingAssets,
       .cleaningUp,
+      .failed,
     ]
 
   }
@@ -1722,6 +1923,270 @@ extension Arcbox_V1_SetSystemVmBackendRequest: SwiftProtobuf.Message, SwiftProto
 
   public static func ==(lhs: Arcbox_V1_SetSystemVmBackendRequest, rhs: Arcbox_V1_SetSystemVmBackendRequest) -> Bool {
     if lhs.backend != rhs.backend {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_VirtioDebugInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".VirtioDebugInfo"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}devices\0\u{1}vcpus\0\u{3}kick_broadcasts\0\u{3}unpark_broadcasts\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.devices) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.vcpus) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.kickBroadcasts) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.unparkBroadcasts) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.devices.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.devices, fieldNumber: 1)
+    }
+    if !self.vcpus.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.vcpus, fieldNumber: 2)
+    }
+    if self.kickBroadcasts != 0 {
+      try visitor.visitSingularUInt64Field(value: self.kickBroadcasts, fieldNumber: 3)
+    }
+    if self.unparkBroadcasts != 0 {
+      try visitor.visitSingularUInt64Field(value: self.unparkBroadcasts, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_VirtioDebugInfo, rhs: Arcbox_V1_VirtioDebugInfo) -> Bool {
+    if lhs.devices != rhs.devices {return false}
+    if lhs.vcpus != rhs.vcpus {return false}
+    if lhs.kickBroadcasts != rhs.kickBroadcasts {return false}
+    if lhs.unparkBroadcasts != rhs.unparkBroadcasts {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_VcpuDebug: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".VcpuDebug"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}vcpu\0\u{3}mmio_reads\0\u{3}mmio_writes\0\u{1}wfi\0\u{1}hvc\0\u{1}smc\0\u{1}vtimer\0\u{3}kicks_received\0\u{1}sysreg\0\u{1}other\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.vcpu) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.mmioReads) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.mmioWrites) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.wfi) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.hvc) }()
+      case 6: try { try decoder.decodeSingularUInt64Field(value: &self.smc) }()
+      case 7: try { try decoder.decodeSingularUInt64Field(value: &self.vtimer) }()
+      case 8: try { try decoder.decodeSingularUInt64Field(value: &self.kicksReceived) }()
+      case 9: try { try decoder.decodeSingularUInt64Field(value: &self.sysreg) }()
+      case 10: try { try decoder.decodeSingularUInt64Field(value: &self.other) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.vcpu != 0 {
+      try visitor.visitSingularUInt32Field(value: self.vcpu, fieldNumber: 1)
+    }
+    if self.mmioReads != 0 {
+      try visitor.visitSingularUInt64Field(value: self.mmioReads, fieldNumber: 2)
+    }
+    if self.mmioWrites != 0 {
+      try visitor.visitSingularUInt64Field(value: self.mmioWrites, fieldNumber: 3)
+    }
+    if self.wfi != 0 {
+      try visitor.visitSingularUInt64Field(value: self.wfi, fieldNumber: 4)
+    }
+    if self.hvc != 0 {
+      try visitor.visitSingularUInt64Field(value: self.hvc, fieldNumber: 5)
+    }
+    if self.smc != 0 {
+      try visitor.visitSingularUInt64Field(value: self.smc, fieldNumber: 6)
+    }
+    if self.vtimer != 0 {
+      try visitor.visitSingularUInt64Field(value: self.vtimer, fieldNumber: 7)
+    }
+    if self.kicksReceived != 0 {
+      try visitor.visitSingularUInt64Field(value: self.kicksReceived, fieldNumber: 8)
+    }
+    if self.sysreg != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sysreg, fieldNumber: 9)
+    }
+    if self.other != 0 {
+      try visitor.visitSingularUInt64Field(value: self.other, fieldNumber: 10)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_VcpuDebug, rhs: Arcbox_V1_VcpuDebug) -> Bool {
+    if lhs.vcpu != rhs.vcpu {return false}
+    if lhs.mmioReads != rhs.mmioReads {return false}
+    if lhs.mmioWrites != rhs.mmioWrites {return false}
+    if lhs.wfi != rhs.wfi {return false}
+    if lhs.hvc != rhs.hvc {return false}
+    if lhs.smc != rhs.smc {return false}
+    if lhs.vtimer != rhs.vtimer {return false}
+    if lhs.kicksReceived != rhs.kicksReceived {return false}
+    if lhs.sysreg != rhs.sysreg {return false}
+    if lhs.other != rhs.other {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_VirtioDeviceDebug: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".VirtioDeviceDebug"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{3}device_type\0\u{1}name\0\u{1}status\0\u{3}interrupt_status\0\u{3}event_idx\0\u{1}interrupts\0\u{1}queues\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.deviceType) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.status) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.interruptStatus) }()
+      case 6: try { try decoder.decodeSingularBoolField(value: &self.eventIdx) }()
+      case 7: try { try decoder.decodeSingularUInt64Field(value: &self.interrupts) }()
+      case 8: try { try decoder.decodeRepeatedMessageField(value: &self.queues) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.id != 0 {
+      try visitor.visitSingularUInt32Field(value: self.id, fieldNumber: 1)
+    }
+    if !self.deviceType.isEmpty {
+      try visitor.visitSingularStringField(value: self.deviceType, fieldNumber: 2)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 3)
+    }
+    if self.status != 0 {
+      try visitor.visitSingularUInt32Field(value: self.status, fieldNumber: 4)
+    }
+    if self.interruptStatus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.interruptStatus, fieldNumber: 5)
+    }
+    if self.eventIdx != false {
+      try visitor.visitSingularBoolField(value: self.eventIdx, fieldNumber: 6)
+    }
+    if self.interrupts != 0 {
+      try visitor.visitSingularUInt64Field(value: self.interrupts, fieldNumber: 7)
+    }
+    if !self.queues.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.queues, fieldNumber: 8)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_VirtioDeviceDebug, rhs: Arcbox_V1_VirtioDeviceDebug) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.deviceType != rhs.deviceType {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.status != rhs.status {return false}
+    if lhs.interruptStatus != rhs.interruptStatus {return false}
+    if lhs.eventIdx != rhs.eventIdx {return false}
+    if lhs.interrupts != rhs.interrupts {return false}
+    if lhs.queues != rhs.queues {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_VirtioQueueDebug: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".VirtioQueueDebug"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}index\0\u{1}size\0\u{1}ready\0\u{1}kicks\0\u{3}avail_idx\0\u{3}used_idx\0\u{3}avail_flags\0\u{3}used_flags\0\u{3}used_event\0\u{3}avail_event\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.index) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.size) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.ready) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.kicks) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self._availIdx) }()
+      case 6: try { try decoder.decodeSingularUInt32Field(value: &self._usedIdx) }()
+      case 7: try { try decoder.decodeSingularUInt32Field(value: &self._availFlags) }()
+      case 8: try { try decoder.decodeSingularUInt32Field(value: &self._usedFlags) }()
+      case 9: try { try decoder.decodeSingularUInt32Field(value: &self._usedEvent) }()
+      case 10: try { try decoder.decodeSingularUInt32Field(value: &self._availEvent) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.index != 0 {
+      try visitor.visitSingularUInt32Field(value: self.index, fieldNumber: 1)
+    }
+    if self.size != 0 {
+      try visitor.visitSingularUInt32Field(value: self.size, fieldNumber: 2)
+    }
+    if self.ready != false {
+      try visitor.visitSingularBoolField(value: self.ready, fieldNumber: 3)
+    }
+    if self.kicks != 0 {
+      try visitor.visitSingularUInt64Field(value: self.kicks, fieldNumber: 4)
+    }
+    try { if let v = self._availIdx {
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 5)
+    } }()
+    try { if let v = self._usedIdx {
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 6)
+    } }()
+    try { if let v = self._availFlags {
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 7)
+    } }()
+    try { if let v = self._usedFlags {
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 8)
+    } }()
+    try { if let v = self._usedEvent {
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 9)
+    } }()
+    try { if let v = self._availEvent {
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_VirtioQueueDebug, rhs: Arcbox_V1_VirtioQueueDebug) -> Bool {
+    if lhs.index != rhs.index {return false}
+    if lhs.size != rhs.size {return false}
+    if lhs.ready != rhs.ready {return false}
+    if lhs.kicks != rhs.kicks {return false}
+    if lhs._availIdx != rhs._availIdx {return false}
+    if lhs._usedIdx != rhs._usedIdx {return false}
+    if lhs._availFlags != rhs._availFlags {return false}
+    if lhs._usedFlags != rhs._usedFlags {return false}
+    if lhs._usedEvent != rhs._usedEvent {return false}
+    if lhs._availEvent != rhs._availEvent {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2991,7 +3456,7 @@ extension Arcbox_V1_TerminalSize: SwiftProtobuf.Message, SwiftProtobuf._MessageI
 
 extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SetupStatus"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0\u{1}error\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3006,6 +3471,7 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       case 5: try { try decoder.decodeSingularBoolField(value: &self.vmRunning) }()
       case 6: try { try decoder.decodeSingularStringField(value: &self.message) }()
       case 7: try { try decoder.decodeSingularBoolField(value: &self.dockerToolsInstalled) }()
+      case 8: try { try decoder.decodeSingularStringField(value: &self.error) }()
       default: break
       }
     }
@@ -3033,6 +3499,9 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     if self.dockerToolsInstalled != false {
       try visitor.visitSingularBoolField(value: self.dockerToolsInstalled, fieldNumber: 7)
     }
+    if !self.error.isEmpty {
+      try visitor.visitSingularStringField(value: self.error, fieldNumber: 8)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -3044,11 +3513,12 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     if lhs.vmRunning != rhs.vmRunning {return false}
     if lhs.message != rhs.message {return false}
     if lhs.dockerToolsInstalled != rhs.dockerToolsInstalled {return false}
+    if lhs.error != rhs.error {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
 extension Arcbox_V1_SetupStatus.Phase: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0\u{1}CLEANING_UP\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0\u{1}CLEANING_UP\0\u{1}FAILED\0")
 }
