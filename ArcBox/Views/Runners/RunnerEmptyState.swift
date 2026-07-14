@@ -2,11 +2,11 @@ import SwiftUI
 
 /// Shown when this Mac is not enrolled in any fleet yet.
 struct RunnerEmptyState: View {
+    let isWorking: Bool
+    let errorMessage: String?
     var onConnect: () -> Void
 
     private let chip = RunnerHostCapability.chipName
-    private let macOSSlots = RunnerHostCapability.macOSGuestLimit
-    private let linuxSlots = RunnerHostCapability.linuxRunnerEstimate
 
     var body: some View {
         EmptyStateView(icon: "hammer", title: "Turn this Mac into a CI runner") {
@@ -16,26 +16,40 @@ struct RunnerEmptyState: View {
                     .foregroundStyle(AppColors.textSecondary)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\u{2022} \(chip), ready for dual-runtime jobs")
-                    Text("\u{2022} Up to \(macOSSlots) macOS VMs (ephemeral, isolated)")
-                    Text("\u{2022} Up to \(linuxSlots) Linux containers via Docker")
+                    Text("\u{2022} \(chip)")
+                    Text("\u{2022} Runtime capabilities are detected by the Fleet Agent")
+                    Text("\u{2022} Jobs and settings stay under local agent control")
                 }
-                .font(.system(size: 11))
+                .font(.caption)
                 .foregroundStyle(AppColors.textSecondary)
 
                 Button(action: onConnect) {
-                    Text("Connect to ArcBox")
-                        .frame(maxWidth: .infinity)
+                    HStack {
+                        if isWorking {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text(isWorking ? "Connecting…" : "Connect to ArcBox")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
                 .controlSize(.large)
                 .buttonStyle(.borderedProminent)
+                .disabled(isWorking)
                 .padding(.top, 8)
+
+                if let errorMessage {
+                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(AppColors.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
 }
 
 #Preview {
-    RunnerEmptyState(onConnect: {})
+    RunnerEmptyState(isWorking: false, errorMessage: nil, onConnect: {})
         .frame(width: 320, height: 520)
 }

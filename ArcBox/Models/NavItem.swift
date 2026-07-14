@@ -21,20 +21,9 @@ enum NavItem: String, CaseIterable, Identifiable {
         switch self {
         case .templates:
             true
-        case .runner:
-            !Self.runnerSectionEnabled
         default:
             false
         }
-    }
-
-    /// The Runner section ships dark outside DEBUG until desktop onboarding (RUN-8) lands.
-    private static var runnerSectionEnabled: Bool {
-        #if DEBUG
-            true
-        #else
-            false
-        #endif
     }
 
     var label: String {
