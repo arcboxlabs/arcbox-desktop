@@ -1,6 +1,5 @@
-import AuthenticationServices
+import AppKit
 import Foundation
-import SwiftUI
 
 extension AuthSession {
     /// Everything needed to finish the code exchange once the browser
@@ -12,36 +11,25 @@ extension AuthSession {
         let endpoints: OIDCEndpoints
     }
 
-    /// Runs the full browser-based Authorization Code + PKCE flow.
+    /// Runs the browser-based Authorization Code + PKCE flow in the user's
+    /// default browser — no `ASWebAuthenticationSession`, so no system
+    /// consent prompt. Launch Services delivers the redirect back as a deep
+    /// link (`handleAuthorizationCallback`). Failures land in `status`
+    /// rather than being thrown.
     ///
-    /// `WebAuthenticationSession` exists only as a SwiftUI environment value,
-    /// so the calling view passes it in; both are MainActor-bound. Failures
-    /// land in `status` rather than being thrown; a user-cancelled browser
-    /// sheet quietly returns to `.signedOut`.
-    ///
-    /// The redirect can come back two ways: the web session returns it
-    /// directly, or — when sign-in finishes in an external browser — Launch
-    /// Services delivers it as a deep link (`handleAuthorizationCallback`).
-    /// Both funnel into `finishAuthorization`; whichever arrives first wins.
-    public func signIn(using webSession: WebAuthenticationSession) async {
+    /// Nothing signals that the user abandoned the browser leg, so the
+    /// session stays `.signingIn` until the callback arrives or the UI
+    /// calls `cancelSignIn()`.
+    public func signIn() async {
         guard status != .signingIn else { return }
         status = .signingIn
         do {
             let authorizationURL = try await beginAuthorization()
-            guard let scheme = OIDCClientConfiguration.redirectURI.scheme else {
-                throw OIDCError.invalidCallbackURL
+            guard NSWorkspace.shared.open(authorizationURL) else {
+                pendingAuthorization = nil
+                status = .error("Could not open the browser to sign in.")
+                return
             }
-            let callbackURL = try await webSession.authenticate(
-                using: authorizationURL,
-                callback: .customScheme(scheme),
-                additionalHeaderFields: [:])
-            await finishAuthorization(callbackURL: callbackURL)
-        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
-            // The user may have dismissed the sheet to finish in an external
-            // browser: keep `pendingAuthorization` so a deep-link callback
-            // can still complete, but stop showing progress. Don't clobber a
-            // session a deep link already established.
-            if status == .signingIn { status = .signedOut }
         } catch let error as OIDCError {
             ClientLog.auth.error("Sign-in failed: \(String(describing: error))")
             status = .error(error.userMessage)
@@ -51,9 +39,17 @@ extension AuthSession {
         }
     }
 
-    /// Completes sign-in from an OAuth redirect delivered as a deep link
-    /// (`onOpenURL`) rather than through the web session — the path taken
-    /// when the authorization leg ends in an external browser.
+    /// Abandons an in-flight browser sign-in: drops the pending
+    /// authorization so a late redirect is ignored, and returns to
+    /// `.signedOut`.
+    public func cancelSignIn() {
+        guard status == .signingIn else { return }
+        pendingAuthorization = nil
+        status = .signedOut
+    }
+
+    /// Completes sign-in from the OAuth redirect delivered as a deep link
+    /// (`onOpenURL`) once the authorization leg finishes in the browser.
     ///
     /// Returns `false` when the URL is not this app's OAuth redirect, so the
     /// caller can route it as an ordinary deep link. A redirect with no
@@ -76,8 +72,8 @@ extension AuthSession {
     }
 
     /// Builds the authorization request and records the context needed to
-    /// finish it. Split from `signIn(using:)` so tests can drive the flow
-    /// without a `WebAuthenticationSession`.
+    /// finish it. Split from `signIn()` so tests can drive the flow without
+    /// opening a browser.
     func beginAuthorization() async throws -> URL {
         let endpoints = try await resolvedEndpoints()
         let pkce = PKCE.generateCodePair()
@@ -94,9 +90,9 @@ extension AuthSession {
         return authorizationURL
     }
 
-    /// Single completion funnel: consumes `pendingAuthorization` exactly once
-    /// (MainActor serialization makes take-then-clear race-free) and maps
-    /// failures into `status`. A second arrival is a no-op.
+    /// Consumes `pendingAuthorization` exactly once (MainActor serialization
+    /// makes take-then-clear race-free) and maps failures into `status`.
+    /// A replayed callback is a no-op.
     private func finishAuthorization(callbackURL: URL) async {
         guard let pending = pendingAuthorization else { return }
         pendingAuthorization = nil
@@ -117,9 +113,8 @@ extension AuthSession {
     }
 
     /// Security-critical completion: validates `state` (CSRF) and `nonce`,
-    /// exchanges the code, persists, and publishes the session. Split from
-    /// `signIn(using:)` so it is unit-testable — `WebAuthenticationSession`
-    /// cannot be constructed in tests.
+    /// exchanges the code, persists, and publishes the session. Split out
+    /// so it is unit-testable without a browser round-trip.
     func completeSignIn(
         callbackURL: URL,
         expectedState: String,

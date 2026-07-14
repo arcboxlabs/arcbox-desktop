@@ -5,7 +5,6 @@ import SwiftUI
 /// Sign-in state for the ArcBox platform: identity, session, sign in/out.
 struct AccountSettingsView: View {
     @Environment(AuthSession.self) private var authSession
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var isConfirmingSignOut = false
 
     var body: some View {
@@ -86,6 +85,7 @@ struct AccountSettingsView: View {
                         Text("Waiting for the browser…")
                             .foregroundStyle(.secondary)
                     }
+                    Button("Cancel") { authSession.cancelSignIn() }
                 } else {
                     Button("Sign In to ArcBox…", action: signIn)
                         .buttonStyle(.borderedProminent)
@@ -100,7 +100,7 @@ struct AccountSettingsView: View {
     // MARK: - Actions
 
     private func signIn() {
-        Task { await authSession.signIn(using: webAuthenticationSession) }
+        Task { await authSession.signIn() }
     }
 
     private func signOut() {

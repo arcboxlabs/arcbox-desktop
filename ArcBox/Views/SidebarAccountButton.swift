@@ -4,12 +4,11 @@ import SwiftUI
 /// Account chip pinned to the bottom of the main-window sidebar.
 ///
 /// Signed out it shows the placeholder avatar and "Sign In" and starts the
-/// browser flow directly; signed in it shows the avatar and display name
-/// and opens Settings > Account.
+/// browser flow directly; signed in (or while a sign-in is in flight) it
+/// shows the current state and opens Settings > Account.
 struct SidebarAccountButton: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(AuthSession.self) private var authSession
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Environment(\.openWindow) private var openWindow
     @State private var isHovered = false
 
@@ -55,22 +54,29 @@ struct SidebarAccountButton: View {
     }
 
     private var isDisabled: Bool {
-        authSession.status == .signingIn
-            || (authSession.status != .signedIn && authSession.configuration.isPlaceholder)
+        authSession.status != .signedIn && authSession.status != .signingIn
+            && authSession.configuration.isPlaceholder
     }
 
     private var helpText: String {
-        if authSession.status == .signedIn { return "Open account settings" }
-        if authSession.configuration.isPlaceholder { return "No OIDC provider is configured" }
-        return "Sign in to ArcBox"
+        switch authSession.status {
+        case .signedIn: return "Open account settings"
+        case .signingIn: return "Waiting for the browser — click to manage"
+        default:
+            return authSession.configuration.isPlaceholder
+                ? "No OIDC provider is configured" : "Sign in to ArcBox"
+        }
     }
 
     private func primaryAction() {
-        if authSession.status == .signedIn {
+        switch authSession.status {
+        case .signedIn, .signingIn:
+            // While signing in, Settings > Account shows progress and offers
+            // Cancel — the only way out of an abandoned browser leg.
             appVM.settingsTab = .account
             openWindow(id: "settings")
-        } else {
-            Task { await authSession.signIn(using: webAuthenticationSession) }
+        default:
+            Task { await authSession.signIn() }
         }
     }
 }

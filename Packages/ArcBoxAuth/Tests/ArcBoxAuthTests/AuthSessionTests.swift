@@ -256,6 +256,28 @@ struct AuthSessionTests {
         #expect(provider.exchangeCalls == 1)
     }
 
+    // MARK: - cancelSignIn
+
+    @Test func cancelSignInDropsPendingAuthorizationAndIgnoresLateCallback() async throws {
+        let session = makeSession()
+        _ = try await session.beginAuthorization()
+        session.status = .signingIn
+        session.cancelSignIn()
+        #expect(session.status == .signedOut)
+        #expect(session.pendingAuthorization == nil)
+        let handled = await session.handleAuthorizationCallback(callback())
+        #expect(handled)
+        #expect(session.status == .signedOut)
+        #expect(provider.exchangeCalls == 0)
+    }
+
+    @Test func cancelSignInIsNoOpWhenNotSigningIn() async throws {
+        try store.save(freshTokens())
+        let session = makeSession()
+        session.cancelSignIn()
+        #expect(session.status == .signedIn)
+    }
+
     // MARK: - accessToken
 
     @Test func accessTokenThrowsWhenSignedOut() async {
