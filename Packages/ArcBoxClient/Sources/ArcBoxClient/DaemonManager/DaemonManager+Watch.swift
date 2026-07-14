@@ -85,7 +85,11 @@ extension DaemonManager {
                         return b
                     }())
 
-                if self?.state.isRunning != true || graceExceeded {
+                // A daemon that reported a fatal FAILED phase keeps its .error
+                // state and .failed phase across the stream drop — resetting to
+                // .registered/.unknown would erase the terminal failure (and its
+                // cause) that startup relies on to show the retryable error.
+                if self?.setupPhase != .failed, self?.state.isRunning != true || graceExceeded {
                     self?.state = .registered
                     self?.setupPhase = .unknown
                     if graceExceeded {
