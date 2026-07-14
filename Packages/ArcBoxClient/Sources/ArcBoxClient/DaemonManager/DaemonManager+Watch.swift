@@ -143,8 +143,17 @@ extension DaemonManager {
             SentrySDK.addBreadcrumb(crumb)
         }
 
-        // Any message from the stream means the daemon is alive.
-        if state != .running {
+        // A FAILED phase means the daemon gave up. Surface its fatal cause —
+        // carried in `error`, not `message` — and mark the connection failed so
+        // startup lands on a retryable error instead of a phantom "running"
+        // state (any other phase means the daemon is alive and making progress).
+        if setupPhase == .failed {
+            let reason = status.error.isEmpty ? status.message : status.error
+            setupMessage = reason
+            state = .error(reason)
+            ClientLog.daemon.error(
+                "Daemon reported fatal setup failure: \(reason, privacy: .private)")
+        } else if state != .running {
             state = .running
             ClientLog.daemon.info("Daemon is running (gRPC stream connected)")
         }
