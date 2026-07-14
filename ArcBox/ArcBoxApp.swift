@@ -32,6 +32,8 @@ struct ArcBoxDesktopApp: App {
     @State private var networksVM = NetworksViewModel()
     // Lightweight init — no network calls until view appears
     @State private var volumesVM = VolumesViewModel()
+    // Lightweight init — no network calls until view appears
+    @State private var systemVmBackendVM = SystemVmBackendModel()
 
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
@@ -160,6 +162,8 @@ struct ArcBoxDesktopApp: App {
                 .environment(daemonManager)
                 .environment(containersVM)
                 .environment(imagesVM)
+                .environment(systemVmBackendVM)
+                .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
         }
         .defaultSize(width: 700, height: 580)
