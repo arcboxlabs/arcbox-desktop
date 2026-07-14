@@ -68,16 +68,16 @@ public enum Arcbox_Fleet_Control_V1_FleetLifecycleService {
                 method: "Resume"
             )
         }
-        /// Namespace for "Disconnect" metadata.
-        public enum Disconnect {
-            /// Request type for "Disconnect".
-            public typealias Input = Arcbox_Fleet_Control_V1_DisconnectRequest
-            /// Response type for "Disconnect".
-            public typealias Output = Arcbox_Fleet_Control_V1_DisconnectResponse
-            /// Descriptor for "Disconnect".
+        /// Namespace for "Unenroll" metadata.
+        public enum Unenroll {
+            /// Request type for "Unenroll".
+            public typealias Input = Arcbox_Fleet_Control_V1_UnenrollRequest
+            /// Response type for "Unenroll".
+            public typealias Output = Arcbox_Fleet_Control_V1_UnenrollResponse
+            /// Descriptor for "Unenroll".
             public static let descriptor = GRPCCore.MethodDescriptor(
                 service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.fleet.control.v1.FleetLifecycleService"),
-                method: "Disconnect"
+                method: "Unenroll"
             )
         }
         /// Namespace for "GetStatus" metadata.
@@ -98,7 +98,7 @@ public enum Arcbox_Fleet_Control_V1_FleetLifecycleService {
             Enroll.descriptor,
             Drain.descriptor,
             Resume.descriptor,
-            Disconnect.descriptor,
+            Unenroll.descriptor,
             GetStatus.descriptor
         ]
     }
@@ -159,7 +159,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > Exchanges an enrollment token for the machine credential via the
         /// > gateway, persists it, and starts attaching. This is the desktop-managed
         /// > handoff: the machine credential is created and persisted here, in the
-        /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+        /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
         /// > enroll` CLI subcommand before this process is even running.
         ///
@@ -211,24 +211,25 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_ResumeResponse>
 
-        /// Handle the "Disconnect" method.
+        /// Handle the "Unenroll" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Removes the machine credential and stops attaching. Returns to the
-        /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+        /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+        /// > credential; the server keeps the machine record (decommissioned), so a
+        /// > later Enroll joins as a new machine.
         ///
         /// - Parameters:
-        ///   - request: A streaming request of `Arcbox_Fleet_Control_V1_DisconnectRequest` messages.
+        ///   - request: A streaming request of `Arcbox_Fleet_Control_V1_UnenrollRequest` messages.
         ///   - context: Context providing information about the RPC.
         /// - Throws: Any error which occurred during the processing of the request. Thrown errors
         ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
         ///     to an internal error.
-        /// - Returns: A streaming response of `Arcbox_Fleet_Control_V1_DisconnectResponse` messages.
-        func disconnect(
-            request: GRPCCore.StreamingServerRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
+        /// - Returns: A streaming response of `Arcbox_Fleet_Control_V1_UnenrollResponse` messages.
+        func unenroll(
+            request: GRPCCore.StreamingServerRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
             context: GRPCCore.ServerContext
-        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>
 
         /// Handle the "GetStatus" method.
         ///
@@ -291,7 +292,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > Exchanges an enrollment token for the machine credential via the
         /// > gateway, persists it, and starts attaching. This is the desktop-managed
         /// > handoff: the machine credential is created and persisted here, in the
-        /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+        /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
         /// > enroll` CLI subcommand before this process is even running.
         ///
@@ -343,24 +344,25 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_ResumeResponse>
 
-        /// Handle the "Disconnect" method.
+        /// Handle the "Unenroll" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Removes the machine credential and stops attaching. Returns to the
-        /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+        /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+        /// > credential; the server keeps the machine record (decommissioned), so a
+        /// > later Enroll joins as a new machine.
         ///
         /// - Parameters:
-        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_DisconnectRequest` message.
+        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_UnenrollRequest` message.
         ///   - context: Context providing information about the RPC.
         /// - Throws: Any error which occurred during the processing of the request. Thrown errors
         ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
         ///     to an internal error.
-        /// - Returns: A response containing a single `Arcbox_Fleet_Control_V1_DisconnectResponse` message.
-        func disconnect(
-            request: GRPCCore.ServerRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
+        /// - Returns: A response containing a single `Arcbox_Fleet_Control_V1_UnenrollResponse` message.
+        func unenroll(
+            request: GRPCCore.ServerRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
             context: GRPCCore.ServerContext
-        ) async throws -> GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>
 
         /// Handle the "GetStatus" method.
         ///
@@ -421,7 +423,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > Exchanges an enrollment token for the machine credential via the
         /// > gateway, persists it, and starts attaching. This is the desktop-managed
         /// > handoff: the machine credential is created and persisted here, in the
-        /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+        /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
         /// > enroll` CLI subcommand before this process is even running.
         ///
@@ -473,24 +475,25 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_Fleet_Control_V1_ResumeResponse
 
-        /// Handle the "Disconnect" method.
+        /// Handle the "Unenroll" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Removes the machine credential and stops attaching. Returns to the
-        /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+        /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+        /// > credential; the server keeps the machine record (decommissioned), so a
+        /// > later Enroll joins as a new machine.
         ///
         /// - Parameters:
-        ///   - request: A `Arcbox_Fleet_Control_V1_DisconnectRequest` message.
+        ///   - request: A `Arcbox_Fleet_Control_V1_UnenrollRequest` message.
         ///   - context: Context providing information about the RPC.
         /// - Throws: Any error which occurred during the processing of the request. Thrown errors
         ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
         ///     to an internal error.
-        /// - Returns: A `Arcbox_Fleet_Control_V1_DisconnectResponse` to respond with.
-        func disconnect(
-            request: Arcbox_Fleet_Control_V1_DisconnectRequest,
+        /// - Returns: A `Arcbox_Fleet_Control_V1_UnenrollResponse` to respond with.
+        func unenroll(
+            request: Arcbox_Fleet_Control_V1_UnenrollRequest,
             context: GRPCCore.ServerContext
-        ) async throws -> Arcbox_Fleet_Control_V1_DisconnectResponse
+        ) async throws -> Arcbox_Fleet_Control_V1_UnenrollResponse
 
         /// Handle the "GetStatus" method.
         ///
@@ -561,11 +564,11 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.StreamingServiceProtocol
             }
         )
         router.registerHandler(
-            forMethod: Arcbox_Fleet_Control_V1_FleetLifecycleService.Method.Disconnect.descriptor,
-            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Fleet_Control_V1_DisconnectRequest>(),
-            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Fleet_Control_V1_DisconnectResponse>(),
+            forMethod: Arcbox_Fleet_Control_V1_FleetLifecycleService.Method.Unenroll.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Fleet_Control_V1_UnenrollRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Fleet_Control_V1_UnenrollResponse>(),
             handler: { request, context in
-                try await self.disconnect(
+                try await self.unenroll(
                     request: request,
                     context: context
                 )
@@ -632,11 +635,11 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ServiceProtocol {
         return GRPCCore.StreamingServerResponse(single: response)
     }
 
-    public func disconnect(
-        request: GRPCCore.StreamingServerRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
+    public func unenroll(
+        request: GRPCCore.StreamingServerRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_DisconnectResponse> {
-        let response = try await self.disconnect(
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_UnenrollResponse> {
+        let response = try await self.unenroll(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -710,12 +713,12 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.SimpleServiceProtocol {
         )
     }
 
-    public func disconnect(
-        request: GRPCCore.ServerRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
+    public func unenroll(
+        request: GRPCCore.ServerRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_DisconnectResponse> {
-        return GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>(
-            message: try await self.disconnect(
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_UnenrollResponse> {
+        return GRPCCore.ServerResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>(
+            message: try await self.unenroll(
                 request: request.message,
                 context: context
             ),
@@ -785,7 +788,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > Exchanges an enrollment token for the machine credential via the
         /// > gateway, persists it, and starts attaching. This is the desktop-managed
         /// > handoff: the machine credential is created and persisted here, in the
-        /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+        /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
         /// > enroll` CLI subcommand before this process is even running.
         ///
@@ -852,28 +855,29 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_ResumeResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
-        /// Call the "Disconnect" method.
+        /// Call the "Unenroll" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Removes the machine credential and stops attaching. Returns to the
-        /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+        /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+        /// > credential; the server keeps the machine record (decommissioned), so a
+        /// > later Enroll joins as a new machine.
         ///
         /// - Parameters:
-        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_DisconnectRequest` message.
-        ///   - serializer: A serializer for `Arcbox_Fleet_Control_V1_DisconnectRequest` messages.
-        ///   - deserializer: A deserializer for `Arcbox_Fleet_Control_V1_DisconnectResponse` messages.
+        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_UnenrollRequest` message.
+        ///   - serializer: A serializer for `Arcbox_Fleet_Control_V1_UnenrollRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_Fleet_Control_V1_UnenrollResponse` messages.
         ///   - options: Options to apply to this RPC.
         ///   - handleResponse: A closure which handles the response, the result of which is
         ///       returned to the caller. Returning from the closure will cancel the RPC if it
         ///       hasn't already finished.
         /// - Returns: The result of `handleResponse`.
-        func disconnect<Result>(
-            request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
-            serializer: some GRPCCore.MessageSerializer<Arcbox_Fleet_Control_V1_DisconnectRequest>,
-            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Fleet_Control_V1_DisconnectResponse>,
+        func unenroll<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_Fleet_Control_V1_UnenrollRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Fleet_Control_V1_UnenrollResponse>,
             options: GRPCCore.CallOptions,
-            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>) async throws -> Result
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "GetStatus" method.
@@ -966,7 +970,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > Exchanges an enrollment token for the machine credential via the
         /// > gateway, persists it, and starts attaching. This is the desktop-managed
         /// > handoff: the machine credential is created and persisted here, in the
-        /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+        /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
         /// > enroll` CLI subcommand before this process is even running.
         ///
@@ -1066,34 +1070,35 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
             )
         }
 
-        /// Call the "Disconnect" method.
+        /// Call the "Unenroll" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Removes the machine credential and stops attaching. Returns to the
-        /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+        /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+        /// > credential; the server keeps the machine record (decommissioned), so a
+        /// > later Enroll joins as a new machine.
         ///
         /// - Parameters:
-        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_DisconnectRequest` message.
-        ///   - serializer: A serializer for `Arcbox_Fleet_Control_V1_DisconnectRequest` messages.
-        ///   - deserializer: A deserializer for `Arcbox_Fleet_Control_V1_DisconnectResponse` messages.
+        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_UnenrollRequest` message.
+        ///   - serializer: A serializer for `Arcbox_Fleet_Control_V1_UnenrollRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_Fleet_Control_V1_UnenrollResponse` messages.
         ///   - options: Options to apply to this RPC.
         ///   - handleResponse: A closure which handles the response, the result of which is
         ///       returned to the caller. Returning from the closure will cancel the RPC if it
         ///       hasn't already finished.
         /// - Returns: The result of `handleResponse`.
-        public func disconnect<Result>(
-            request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
-            serializer: some GRPCCore.MessageSerializer<Arcbox_Fleet_Control_V1_DisconnectRequest>,
-            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Fleet_Control_V1_DisconnectResponse>,
+        public func unenroll<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_Fleet_Control_V1_UnenrollRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Fleet_Control_V1_UnenrollResponse>,
             options: GRPCCore.CallOptions = .defaults,
-            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>) async throws -> Result = { response in
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>) async throws -> Result = { response in
                 try response.message
             }
         ) async throws -> Result where Result: Sendable {
             try await self.client.unary(
                 request: request,
-                descriptor: Arcbox_Fleet_Control_V1_FleetLifecycleService.Method.Disconnect.descriptor,
+                descriptor: Arcbox_Fleet_Control_V1_FleetLifecycleService.Method.Unenroll.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -1176,7 +1181,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
     /// > Exchanges an enrollment token for the machine credential via the
     /// > gateway, persists it, and starts attaching. This is the desktop-managed
     /// > handoff: the machine credential is created and persisted here, in the
-    /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+    /// > agent — never in the desktop. Fails if already enrolled; Unenroll
     /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
     /// > enroll` CLI subcommand before this process is even running.
     ///
@@ -1261,31 +1266,32 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
         )
     }
 
-    /// Call the "Disconnect" method.
+    /// Call the "Unenroll" method.
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Removes the machine credential and stops attaching. Returns to the
-    /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+    /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+    /// > credential; the server keeps the machine record (decommissioned), so a
+    /// > later Enroll joins as a new machine.
     ///
     /// - Parameters:
-    ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_DisconnectRequest` message.
+    ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_UnenrollRequest` message.
     ///   - options: Options to apply to this RPC.
     ///   - handleResponse: A closure which handles the response, the result of which is
     ///       returned to the caller. Returning from the closure will cancel the RPC if it
     ///       hasn't already finished.
     /// - Returns: The result of `handleResponse`.
-    public func disconnect<Result>(
-        request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>,
+    public func unenroll<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>) async throws -> Result = { response in
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>) async throws -> Result = { response in
             try response.message
         }
     ) async throws -> Result where Result: Sendable {
-        try await self.disconnect(
+        try await self.unenroll(
             request: request,
-            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Fleet_Control_V1_DisconnectRequest>(),
-            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Fleet_Control_V1_DisconnectResponse>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Fleet_Control_V1_UnenrollRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Fleet_Control_V1_UnenrollResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -1364,7 +1370,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
     /// > Exchanges an enrollment token for the machine credential via the
     /// > gateway, persists it, and starts attaching. This is the desktop-managed
     /// > handoff: the machine credential is created and persisted here, in the
-    /// > agent — never in the desktop. Fails if already enrolled; Disconnect
+    /// > agent — never in the desktop. Fails if already enrolled; Unenroll
     /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
     /// > enroll` CLI subcommand before this process is even running.
     ///
@@ -1461,12 +1467,13 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
         )
     }
 
-    /// Call the "Disconnect" method.
+    /// Call the "Unenroll" method.
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Removes the machine credential and stops attaching. Returns to the
-    /// > unenrolled state; a fresh Enroll is required to rejoin the fleet.
+    /// > Leaves the fleet — terminal. Stops attaching and removes the machine
+    /// > credential; the server keeps the machine record (decommissioned), so a
+    /// > later Enroll joins as a new machine.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -1476,19 +1483,19 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
     ///       returned to the caller. Returning from the closure will cancel the RPC if it
     ///       hasn't already finished.
     /// - Returns: The result of `handleResponse`.
-    public func disconnect<Result>(
-        _ message: Arcbox_Fleet_Control_V1_DisconnectRequest,
+    public func unenroll<Result>(
+        _ message: Arcbox_Fleet_Control_V1_UnenrollRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_DisconnectResponse>) async throws -> Result = { response in
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Fleet_Control_V1_UnenrollResponse>) async throws -> Result = { response in
             try response.message
         }
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_DisconnectRequest>(
+        let request = GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_UnenrollRequest>(
             message: message,
             metadata: metadata
         )
-        return try await self.disconnect(
+        return try await self.unenroll(
             request: request,
             options: options,
             onResponse: handleResponse
@@ -2405,6 +2412,396 @@ extension Arcbox_Fleet_Control_V1_FleetSettingsService.ClientProtocol {
             metadata: metadata
         )
         return try await self.updateSettings(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+}
+
+// MARK: - arcbox.fleet.control.v1.FleetImageService
+
+/// Namespace containing generated types for the "arcbox.fleet.control.v1.FleetImageService" service.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+public enum Arcbox_Fleet_Control_V1_FleetImageService {
+    /// Service descriptor for the "arcbox.fleet.control.v1.FleetImageService" service.
+    public static let descriptor = GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.fleet.control.v1.FleetImageService")
+    /// Namespace for method metadata.
+    public enum Method {
+        /// Namespace for "Prepare" metadata.
+        public enum Prepare {
+            /// Request type for "Prepare".
+            public typealias Input = Arcbox_Fleet_Control_V1_PrepareRequest
+            /// Response type for "Prepare".
+            public typealias Output = Arcbox_Fleet_Control_V1_PrepareResponse
+            /// Descriptor for "Prepare".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.fleet.control.v1.FleetImageService"),
+                method: "Prepare"
+            )
+        }
+        /// Descriptors for all methods in the "arcbox.fleet.control.v1.FleetImageService" service.
+        public static let descriptors: [GRPCCore.MethodDescriptor] = [
+            Prepare.descriptor
+        ]
+    }
+}
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension GRPCCore.ServiceDescriptor {
+    /// Service descriptor for the "arcbox.fleet.control.v1.FleetImageService" service.
+    public static let arcbox_fleet_control_v1_FleetImageService = GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.fleet.control.v1.FleetImageService")
+}
+
+// MARK: arcbox.fleet.control.v1.FleetImageService (server)
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService {
+    /// Streaming variant of the service protocol for the "arcbox.fleet.control.v1.FleetImageService" service.
+    ///
+    /// This protocol is the lowest-level of the service protocols generated for this service
+    /// giving you the most flexibility over the implementation of your service. This comes at
+    /// the cost of more verbose and less strict APIs. Each RPC requires you to implement it in
+    /// terms of a request stream and response stream. Where only a single request or response
+    /// message is expected, you are responsible for enforcing this invariant is maintained.
+    ///
+    /// Where possible, prefer using the stricter, less-verbose ``ServiceProtocol``
+    /// or ``SimpleServiceProtocol`` instead.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Long-running image preparation, split out of FleetSettingsService so
+    /// > quick state reads/writes never share a service with RPCs that stream a
+    /// > multi-gigabyte transfer's progress.
+    public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
+        /// Handle the "Prepare" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Converge each requested image setting's `current` onto its `target`:
+        /// > fetch and verify the target artifact through the runtime that owns it
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > Cancelling the stream (client disconnect) abandons the promotion;
+        /// > re-running Prepare resumes from whatever the runtime already cached.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_Fleet_Control_V1_PrepareRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_Fleet_Control_V1_PrepareResponse` messages.
+        func prepare(
+            request: GRPCCore.StreamingServerRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_PrepareResponse>
+    }
+
+    /// Service protocol for the "arcbox.fleet.control.v1.FleetImageService" service.
+    ///
+    /// This protocol is higher level than ``StreamingServiceProtocol`` but lower level than
+    /// the ``SimpleServiceProtocol``, it provides access to request and response metadata and
+    /// trailing response metadata. If you don't need these then consider using
+    /// the ``SimpleServiceProtocol``. If you need fine grained control over your RPCs then
+    /// use ``StreamingServiceProtocol``.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Long-running image preparation, split out of FleetSettingsService so
+    /// > quick state reads/writes never share a service with RPCs that stream a
+    /// > multi-gigabyte transfer's progress.
+    public protocol ServiceProtocol: Arcbox_Fleet_Control_V1_FleetImageService.StreamingServiceProtocol {
+        /// Handle the "Prepare" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Converge each requested image setting's `current` onto its `target`:
+        /// > fetch and verify the target artifact through the runtime that owns it
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > Cancelling the stream (client disconnect) abandons the promotion;
+        /// > re-running Prepare resumes from whatever the runtime already cached.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_PrepareRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_Fleet_Control_V1_PrepareResponse` messages.
+        func prepare(
+            request: GRPCCore.ServerRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_PrepareResponse>
+    }
+
+    /// Simple service protocol for the "arcbox.fleet.control.v1.FleetImageService" service.
+    ///
+    /// This is the highest level protocol for the service. The API is the easiest to use but
+    /// doesn't provide access to request or response metadata. If you need access to these
+    /// then use ``ServiceProtocol`` instead.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Long-running image preparation, split out of FleetSettingsService so
+    /// > quick state reads/writes never share a service with RPCs that stream a
+    /// > multi-gigabyte transfer's progress.
+    public protocol SimpleServiceProtocol: Arcbox_Fleet_Control_V1_FleetImageService.ServiceProtocol {
+        /// Handle the "Prepare" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Converge each requested image setting's `current` onto its `target`:
+        /// > fetch and verify the target artifact through the runtime that owns it
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > Cancelling the stream (client disconnect) abandons the promotion;
+        /// > re-running Prepare resumes from whatever the runtime already cached.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_Fleet_Control_V1_PrepareRequest` message.
+        ///   - response: A response stream of `Arcbox_Fleet_Control_V1_PrepareResponse` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func prepare(
+            request: Arcbox_Fleet_Control_V1_PrepareRequest,
+            response: GRPCCore.RPCWriter<Arcbox_Fleet_Control_V1_PrepareResponse>,
+            context: GRPCCore.ServerContext
+        ) async throws
+    }
+}
+
+// Default implementation of 'registerMethods(with:)'.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService.StreamingServiceProtocol {
+    public func registerMethods<Transport>(with router: inout GRPCCore.RPCRouter<Transport>) where Transport: GRPCCore.ServerTransport {
+        router.registerHandler(
+            forMethod: Arcbox_Fleet_Control_V1_FleetImageService.Method.Prepare.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Fleet_Control_V1_PrepareRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Fleet_Control_V1_PrepareResponse>(),
+            handler: { request, context in
+                try await self.prepare(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+    }
+}
+
+// Default implementation of streaming methods from 'StreamingServiceProtocol'.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService.ServiceProtocol {
+    public func prepare(
+        request: GRPCCore.StreamingServerRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_PrepareResponse> {
+        let response = try await self.prepare(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+}
+
+// Default implementation of methods from 'ServiceProtocol'.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService.SimpleServiceProtocol {
+    public func prepare(
+        request: GRPCCore.ServerRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_PrepareResponse> {
+        return GRPCCore.StreamingServerResponse<Arcbox_Fleet_Control_V1_PrepareResponse>(
+            metadata: [:],
+            producer: { writer in
+                try await self.prepare(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+}
+
+// MARK: arcbox.fleet.control.v1.FleetImageService (client)
+
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService {
+    /// Generated client protocol for the "arcbox.fleet.control.v1.FleetImageService" service.
+    ///
+    /// You don't need to implement this protocol directly, use the generated
+    /// implementation, ``Client``.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Long-running image preparation, split out of FleetSettingsService so
+    /// > quick state reads/writes never share a service with RPCs that stream a
+    /// > multi-gigabyte transfer's progress.
+    public protocol ClientProtocol: Sendable {
+        /// Call the "Prepare" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Converge each requested image setting's `current` onto its `target`:
+        /// > fetch and verify the target artifact through the runtime that owns it
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > Cancelling the stream (client disconnect) abandons the promotion;
+        /// > re-running Prepare resumes from whatever the runtime already cached.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_PrepareRequest` message.
+        ///   - serializer: A serializer for `Arcbox_Fleet_Control_V1_PrepareRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_Fleet_Control_V1_PrepareResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func prepare<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_Fleet_Control_V1_PrepareRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Fleet_Control_V1_PrepareResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_Fleet_Control_V1_PrepareResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+    }
+
+    /// Generated client for the "arcbox.fleet.control.v1.FleetImageService" service.
+    ///
+    /// The ``Client`` provides an implementation of ``ClientProtocol`` which wraps
+    /// a `GRPCCore.GRPCCClient`. The underlying `GRPCClient` provides the long-lived
+    /// means of communication with the remote peer.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Long-running image preparation, split out of FleetSettingsService so
+    /// > quick state reads/writes never share a service with RPCs that stream a
+    /// > multi-gigabyte transfer's progress.
+    public struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
+        private let client: GRPCCore.GRPCClient<Transport>
+
+        /// Creates a new client wrapping the provided `GRPCCore.GRPCClient`.
+        ///
+        /// - Parameters:
+        ///   - client: A `GRPCCore.GRPCClient` providing a communication channel to the service.
+        public init(wrapping client: GRPCCore.GRPCClient<Transport>) {
+            self.client = client
+        }
+
+        /// Call the "Prepare" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Converge each requested image setting's `current` onto its `target`:
+        /// > fetch and verify the target artifact through the runtime that owns it
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > Cancelling the stream (client disconnect) abandons the promotion;
+        /// > re-running Prepare resumes from whatever the runtime already cached.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_PrepareRequest` message.
+        ///   - serializer: A serializer for `Arcbox_Fleet_Control_V1_PrepareRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_Fleet_Control_V1_PrepareResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func prepare<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_Fleet_Control_V1_PrepareRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Fleet_Control_V1_PrepareResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_Fleet_Control_V1_PrepareResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_Fleet_Control_V1_FleetImageService.Method.Prepare.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+    }
+}
+
+// Helpers providing default arguments to 'ClientProtocol' methods.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService.ClientProtocol {
+    /// Call the "Prepare" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Converge each requested image setting's `current` onto its `target`:
+    /// > fetch and verify the target artifact through the runtime that owns it
+    /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+    /// > backend lands), then promote `current` — all-or-nothing per kind.
+    /// > Cancelling the stream (client disconnect) abandons the promotion;
+    /// > re-running Prepare resumes from whatever the runtime already cached.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_PrepareRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func prepare<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_PrepareRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_Fleet_Control_V1_PrepareResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.prepare(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Fleet_Control_V1_PrepareRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Fleet_Control_V1_PrepareResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+}
+
+// Helpers providing sugared APIs for 'ClientProtocol' methods.
+@available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+extension Arcbox_Fleet_Control_V1_FleetImageService.ClientProtocol {
+    /// Call the "Prepare" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Converge each requested image setting's `current` onto its `target`:
+    /// > fetch and verify the target artifact through the runtime that owns it
+    /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+    /// > backend lands), then promote `current` — all-or-nothing per kind.
+    /// > Cancelling the stream (client disconnect) abandons the promotion;
+    /// > re-running Prepare resumes from whatever the runtime already cached.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func prepare<Result>(
+        _ message: Arcbox_Fleet_Control_V1_PrepareRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_Fleet_Control_V1_PrepareResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_Fleet_Control_V1_PrepareRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.prepare(
             request: request,
             options: options,
             onResponse: handleResponse

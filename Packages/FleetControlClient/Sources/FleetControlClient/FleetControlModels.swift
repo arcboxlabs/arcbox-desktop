@@ -32,6 +32,8 @@ public enum FleetConnectionState: Equatable, Sendable {
     case unenrolled
     case enrolled
     case draining
+    case detached
+    case credentialRejected
     case unrecognized(Int)
 }
 
@@ -41,6 +43,8 @@ public enum FleetEnrollmentState: Equatable, Sendable {
     case unenrolled
     case attaching
     case attached
+    case detached
+    case credentialRejected
     case unrecognized(Int)
 }
 
@@ -81,34 +85,38 @@ public struct FleetSetting<Value: Equatable & Sendable>: Equatable, Sendable {
 public struct FleetAgentSettings: Equatable, Sendable {
     public var loadCeiling: FleetSetting<Double>?
     public var memFloorMib: FleetSetting<UInt64>?
-    public var runnerImage: FleetSetting<String>?
+    public var linuxRunnerImage: FleetSetting<String>?
     public var gateway: FleetSetting<String>?
     public var dockerMode: FleetSetting<FleetDockerMode>?
     public var runnerScript: FleetSetting<String>?
+    public var participate: FleetSetting<Bool>?
 
     public init(
         loadCeiling: FleetSetting<Double>? = nil,
         memFloorMib: FleetSetting<UInt64>? = nil,
-        runnerImage: FleetSetting<String>? = nil,
+        linuxRunnerImage: FleetSetting<String>? = nil,
         gateway: FleetSetting<String>? = nil,
         dockerMode: FleetSetting<FleetDockerMode>? = nil,
-        runnerScript: FleetSetting<String>? = nil
+        runnerScript: FleetSetting<String>? = nil,
+        participate: FleetSetting<Bool>? = nil
     ) {
         self.loadCeiling = loadCeiling
         self.memFloorMib = memFloorMib
-        self.runnerImage = runnerImage
+        self.linuxRunnerImage = linuxRunnerImage
         self.gateway = gateway
         self.dockerMode = dockerMode
         self.runnerScript = runnerScript
+        self.participate = participate
     }
 
     public var hasPendingChanges: Bool {
         loadCeiling?.isPending == true
             || memFloorMib?.isPending == true
-            || runnerImage?.isPending == true
+            || linuxRunnerImage?.isPending == true
             || gateway?.isPending == true
             || dockerMode?.isPending == true
             || runnerScript?.isPending == true
+            || participate?.isPending == true
     }
 }
 
@@ -116,34 +124,38 @@ public struct FleetAgentSettings: Equatable, Sendable {
 public struct FleetSettingsUpdate: Equatable, Sendable {
     public var loadCeiling: Double?
     public var memFloorMib: UInt64?
-    public var runnerImage: String?
+    public var linuxRunnerImage: String?
     public var gateway: String?
     public var dockerMode: FleetDockerMode?
     public var runnerScript: String?
+    public var participate: Bool?
 
     public init(
         loadCeiling: Double? = nil,
         memFloorMib: UInt64? = nil,
-        runnerImage: String? = nil,
+        linuxRunnerImage: String? = nil,
         gateway: String? = nil,
         dockerMode: FleetDockerMode? = nil,
-        runnerScript: String? = nil
+        runnerScript: String? = nil,
+        participate: Bool? = nil
     ) {
         self.loadCeiling = loadCeiling
         self.memFloorMib = memFloorMib
-        self.runnerImage = runnerImage
+        self.linuxRunnerImage = linuxRunnerImage
         self.gateway = gateway
         self.dockerMode = dockerMode
         self.runnerScript = runnerScript
+        self.participate = participate
     }
 
     public var isEmpty: Bool {
         loadCeiling == nil
             && memFloorMib == nil
-            && runnerImage == nil
+            && linuxRunnerImage == nil
             && gateway == nil
             && dockerMode == nil
             && runnerScript == nil
+            && participate == nil
     }
 }
 
@@ -280,6 +292,10 @@ extension FleetConnectionState {
             self = .enrolled
         case .draining:
             self = .draining
+        case .detached:
+            self = .detached
+        case .credentialRejected:
+            self = .credentialRejected
         case .UNRECOGNIZED(let value):
             self = .unrecognized(value)
         }
@@ -297,6 +313,10 @@ extension FleetEnrollmentState {
             self = .attaching
         case .attached:
             self = .attached
+        case .detached:
+            self = .detached
+        case .credentialRejected:
+            self = .credentialRejected
         case .UNRECOGNIZED(let value):
             self = .unrecognized(value)
         }
@@ -361,8 +381,11 @@ extension FleetAgentSettings {
             memFloorMib: proto.hasMemFloorMib
                 ? FleetSetting(current: proto.memFloorMib.current, target: proto.memFloorMib.target)
                 : nil,
-            runnerImage: proto.hasRunnerImage
-                ? FleetSetting(current: proto.runnerImage.current, target: proto.runnerImage.target)
+            linuxRunnerImage: proto.hasLinuxRunnerImage
+                ? FleetSetting(
+                    current: proto.linuxRunnerImage.current,
+                    target: proto.linuxRunnerImage.target
+                )
                 : nil,
             gateway: proto.hasGateway
                 ? FleetSetting(current: proto.gateway.current, target: proto.gateway.target)
@@ -375,6 +398,9 @@ extension FleetAgentSettings {
                 : nil,
             runnerScript: proto.hasRunnerScript
                 ? FleetSetting(current: proto.runnerScript.current, target: proto.runnerScript.target)
+                : nil,
+            participate: proto.hasParticipate
+                ? FleetSetting(current: proto.participate.current, target: proto.participate.target)
                 : nil
         )
     }
@@ -389,8 +415,8 @@ extension FleetSettingsUpdate {
         if let memFloorMib {
             request.memFloorMib = memFloorMib
         }
-        if let runnerImage {
-            request.runnerImage = runnerImage
+        if let linuxRunnerImage {
+            request.linuxRunnerImage = linuxRunnerImage
         }
         if let gateway {
             request.gateway = gateway
@@ -400,6 +426,9 @@ extension FleetSettingsUpdate {
         }
         if let runnerScript {
             request.runnerScript = runnerScript
+        }
+        if let participate {
+            request.participate = participate
         }
         return request
     }
@@ -466,8 +495,8 @@ extension FleetAgentSnapshot {
     }
 }
 
-private extension String {
-    var nonEmpty: String? {
+extension String {
+    fileprivate var nonEmpty: String? {
         isEmpty ? nil : self
     }
 }
