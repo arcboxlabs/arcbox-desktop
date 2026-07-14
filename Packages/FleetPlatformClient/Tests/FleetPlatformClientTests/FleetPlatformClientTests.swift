@@ -36,7 +36,7 @@ struct FleetPlatformClientTests {
         #expect(workspaces.first?.plan == "free")
     }
 
-    @Test func issueEnrollmentTokenUsesWorkspaceHeaderAndDecodesResponse() async throws {
+    @Test func createEnrollmentTokenUsesWorkspaceHeaderAndDecodesResponse() async throws {
         let json = #"{"token":"flet_secret","expires_at":"2026-07-14T14:34:56.123Z"}"#
         let http = HTTPStub { request in
             #expect(request.httpMethod == "POST")
@@ -51,40 +51,64 @@ struct FleetPlatformClientTests {
         }
         let client = makeClient(http: http)
 
-        let enrollment = try await client.issueEnrollmentToken(workspaceID: "ws_123")
+        let enrollment = try await client.createEnrollmentToken(workspaceID: "ws_123")
 
         #expect(enrollment.token == "flet_secret")
     }
 
-    @Test func mapsUnauthenticatedResponse() async {
+    @Test func requestsAValidAccessTokenEveryTime() async throws {
+        let tokenProvider = CountingTokenProvider()
         let http = HTTPStub { request in
-            (Data(), try response(for: request, statusCode: 401))
+            (Data("[]".utf8), try response(for: request))
         }
-        let client = makeClient(http: http)
+        let client = makeClient(accessTokenProvider: tokenProvider, http: http)
 
-        await #expect(throws: FleetPlatformError.unauthenticated) {
-            try await client.listWorkspaces()
+        _ = try await client.listWorkspaces()
+        _ = try await client.listWorkspaces()
+
+        #expect(await tokenProvider.callCount == 2)
+    }
+
+    @Test func mapsKnownHTTPStatusResponses() async {
+        let cases: [(Int, FleetPlatformError)] = [
+            (401, .authenticationRequired),
+            (403, .forbidden),
+            (404, .notFound),
+            (409, .conflict),
+            (429, .rateLimited),
+            (503, .serverError(statusCode: 503)),
+        ]
+
+        for (statusCode, expectedError) in cases {
+            let http = HTTPStub { request in
+                (Data(), try response(for: request, statusCode: statusCode))
+            }
+            let client = makeClient(http: http)
+
+            await #expect(throws: expectedError) {
+                try await client.listWorkspaces()
+            }
         }
     }
 
-    @Test func preservesAIP193ErrorMessage() async {
+    @Test func serverMessageCannotExposeEnrollmentToken() async {
+        let secret = "flet_super_secret"
         let json = """
-            {"error":[{"code":429,"status":"RESOURCE_EXHAUSTED",\
-            "message":"Fleet enrollment token limit reached"}]}
+            {"error":[{"code":422,"status":"INVALID_ARGUMENT",\
+            "message":"Rejected token: \(secret)"}]}
             """
         let http = HTTPStub { request in
-            (Data(json.utf8), try response(for: request, statusCode: 429))
+            (Data(json.utf8), try response(for: request, statusCode: 422))
         }
         let client = makeClient(http: http)
 
-        await #expect(
-            throws: FleetPlatformError.api(
-                statusCode: 429,
-                status: "RESOURCE_EXHAUSTED",
-                message: "Fleet enrollment token limit reached"
-            )
-        ) {
-            try await client.listWorkspaces()
+        do {
+            _ = try await client.listWorkspaces()
+            Issue.record("Expected the request to fail")
+        } catch {
+            #expect(error as? FleetPlatformError == .api(statusCode: 422))
+            #expect(!error.localizedDescription.contains(secret))
+            #expect(!String(describing: error).contains(secret))
         }
     }
 
@@ -99,11 +123,53 @@ struct FleetPlatformClientTests {
         }
     }
 
+    @Test func rejectsSuccessPayloadMissingRequiredFields() async {
+        let http = HTTPStub { request in
+            (Data(#"{"token":"flet_secret"}"#.utf8), try response(for: request))
+        }
+        let client = makeClient(http: http)
+
+        await #expect(throws: FleetPlatformError.malformedResponse) {
+            try await client.createEnrollmentToken(workspaceID: "ws_123")
+        }
+    }
+
     @Test func propagatesCancellation() async {
         let http = HTTPStub { _ in throw CancellationError() }
         let client = makeClient(http: http)
 
         await #expect(throws: CancellationError.self) {
+            try await client.listWorkspaces()
+        }
+    }
+
+    @Test func mapsURLSessionTransportFailureWithoutRequestDetails() async {
+        let http = HTTPStub { _ in throw URLError(.cannotConnectToHost) }
+        let client = makeClient(http: http)
+
+        await #expect(
+            throws: FleetPlatformError.transport(code: .cannotConnectToHost)
+        ) {
+            try await client.listWorkspaces()
+        }
+    }
+
+    @Test func rejectsNonHTTPResponse() async {
+        let http = HTTPStub { request in
+            let url = try #require(request.url)
+            return (
+                Data("[]".utf8),
+                URLResponse(
+                    url: url,
+                    mimeType: "application/json",
+                    expectedContentLength: 2,
+                    textEncodingName: nil
+                )
+            )
+        }
+        let client = makeClient(http: http)
+
+        await #expect(throws: FleetPlatformError.invalidResponse) {
             try await client.listWorkspaces()
         }
     }
@@ -117,10 +183,13 @@ struct FleetPlatformClientTests {
         )
     }
 
-    private func makeClient(http: any HTTPDataLoading) -> FleetPlatformClient {
+    private func makeClient(
+        accessTokenProvider: any AccessTokenProviding = StubTokenProvider(),
+        http: any HTTPDataLoading
+    ) -> FleetPlatformClient {
         FleetPlatformClient(
             configuration: configuration,
-            accessTokenProvider: StubTokenProvider(),
+            accessTokenProvider: accessTokenProvider,
             http: http
         )
     }
@@ -129,6 +198,15 @@ struct FleetPlatformClientTests {
 private struct StubTokenProvider: AccessTokenProviding {
     func accessToken() async throws -> String {
         "oidc-token"
+    }
+}
+
+private actor CountingTokenProvider: AccessTokenProviding {
+    private(set) var callCount = 0
+
+    func accessToken() async throws -> String {
+        callCount += 1
+        return "oidc-token"
     }
 }
 
