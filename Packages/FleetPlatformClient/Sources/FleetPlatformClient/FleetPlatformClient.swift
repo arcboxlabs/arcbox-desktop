@@ -38,8 +38,9 @@ public final class FleetPlatformClient: Sendable {
         try await send(path: "v1/workspaces", method: "GET")
     }
 
-    /// Rotate and return the workspace's one-hour Fleet enrollment token.
-    public func issueEnrollmentToken(workspaceID: String) async throws -> FleetEnrollmentToken {
+    /// Create and return the workspace's one-hour Fleet enrollment token,
+    /// invalidating any token previously issued for the workspace.
+    public func createEnrollmentToken(workspaceID: String) async throws -> FleetEnrollmentToken {
         try await send(
             path: "v1/fleet/enrollment-token",
             method: "POST",
@@ -54,9 +55,6 @@ public final class FleetPlatformClient: Sendable {
         }
         if error is CancellationError {
             return "The Platform request was cancelled."
-        }
-        if let error = error as? URLError {
-            return "Could not reach the ArcBox Platform: \(error.localizedDescription)"
         }
         return error.localizedDescription
     }
@@ -75,12 +73,22 @@ public final class FleetPlatformClient: Sendable {
             request.setValue(workspaceID, forHTTPHeaderField: "X-Workspace-Id")
         }
 
-        let (data, response) = try await http.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await http.data(for: request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
+        } catch let error as URLError {
+            throw FleetPlatformError.transport(code: error.code)
+        }
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FleetPlatformError.invalidResponse
         }
         guard (200..<300).contains(httpResponse.statusCode) else {
-            throw Self.apiError(statusCode: httpResponse.statusCode, data: data)
+            throw Self.apiError(statusCode: httpResponse.statusCode)
         }
 
         do {
@@ -90,21 +98,22 @@ public final class FleetPlatformClient: Sendable {
         }
     }
 
-    private static func apiError(statusCode: Int, data: Data) -> FleetPlatformError {
-        let entry = try? JSONDecoder().decode(APIErrorEnvelope.self, from: data).error.first
+    private static func apiError(statusCode: Int) -> FleetPlatformError {
         switch statusCode {
         case 401:
-            return .unauthenticated
+            return .authenticationRequired
         case 403:
             return .forbidden
         case 404:
             return .notFound
+        case 409:
+            return .conflict
+        case 429:
+            return .rateLimited
+        case 500..<600:
+            return .serverError(statusCode: statusCode)
         default:
-            return .api(
-                statusCode: statusCode,
-                status: entry?.status,
-                message: entry?.message ?? "ArcBox Platform request failed with HTTP \(statusCode)."
-            )
+            return .api(statusCode: statusCode)
         }
     }
 
@@ -128,13 +137,4 @@ public final class FleetPlatformClient: Sendable {
         }
         return decoder
     }
-}
-
-private struct APIErrorEnvelope: Decodable {
-    let error: [APIErrorEntry]
-}
-
-private struct APIErrorEntry: Decodable {
-    let status: String?
-    let message: String?
 }
