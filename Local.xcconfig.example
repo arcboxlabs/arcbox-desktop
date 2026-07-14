@@ -19,6 +19,10 @@ POSTHOG_API_KEY = YOUR_POSTHOG_API_KEY_HERE
 OIDC_ISSUER_URL = YOUR_OIDC_ISSUER_URL_HERE
 OIDC_CLIENT_ID = YOUR_OIDC_CLIENT_ID_HERE
 
+// Fleet Platform REST API used to list workspaces and issue enrollment tokens.
+// For a local Platform stack, use http:/$()/localhost:2801.
+FLEET_PLATFORM_BASE_URL = https:/$()/api.arcbox.dev
+
 // Optional local-only app identity overrides. Uncomment to use the shared dev preset.
 // ARCBOX_PRODUCT_BUNDLE_IDENTIFIER = $(ARCBOX_DEV_PRODUCT_BUNDLE_IDENTIFIER)
 // ARCBOX_PRODUCT_NAME = $(ARCBOX_DEV_PRODUCT_NAME)

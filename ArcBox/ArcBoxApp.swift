@@ -2,6 +2,7 @@ import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
 import FleetControlClient
+import FleetPlatformClient
 import Foundation
 import OSLog
 import Sparkle
@@ -20,6 +21,7 @@ struct ArcBoxDesktopApp: App {
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     @State private var fleetControlClient: FleetControlClient?
+    @State private var fleetPlatformClient: FleetPlatformClient?
     @State private var fleetControlConnectionTask: Task<Void, Never>?
     // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
@@ -71,6 +73,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.fleetControlClient, fleetControlClient)
+                .environment(\.fleetPlatformClient, fleetPlatformClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .environment(\.accessTokenProvider, authSession)
                 .frame(minWidth: 900, minHeight: 600)
@@ -90,6 +93,7 @@ struct ArcBoxDesktopApp: App {
                             }
                         ))
                     initFleetControlClientIfNeeded()
+                    initFleetPlatformClientIfNeeded()
 
                     guard startupOrchestrator == nil else { return }
 
@@ -195,6 +199,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)
                 .environment(\.fleetControlClient, fleetControlClient)
+                .environment(\.fleetPlatformClient, fleetPlatformClient)
         }
         .defaultSize(width: 700, height: 580)
         .windowResizability(.contentSize)
@@ -211,6 +216,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.fleetControlClient, fleetControlClient)
+                .environment(\.fleetPlatformClient, fleetPlatformClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .environment(\.accessTokenProvider, authSession)
         }
@@ -284,5 +290,19 @@ struct ArcBoxDesktopApp: App {
                 "Fleet control client unavailable: \(error.localizedDescription, privacy: .private)"
             )
         }
+    }
+
+    /// Create the authenticated Platform REST client without starting network work.
+    private func initFleetPlatformClientIfNeeded() {
+        guard fleetPlatformClient == nil else { return }
+
+        let configuration = FleetPlatformConfiguration.current
+        Log.fleet.info(
+            "Creating FleetPlatformClient for \(configuration.baseURL.absoluteString, privacy: .public)"
+        )
+        fleetPlatformClient = FleetPlatformClient(
+            configuration: configuration,
+            accessTokenProvider: authSession
+        )
     }
 }
