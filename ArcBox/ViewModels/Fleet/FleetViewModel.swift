@@ -181,7 +181,7 @@ final class FleetViewModel {
         else { return false }
 
         return await performAction("enroll") {
-            let enrollment = try await platformClient.issueEnrollmentToken(
+            let enrollment = try await platformClient.createEnrollmentToken(
                 workspaceID: workspaceID
             )
             let machineID = try await client.enroll(
