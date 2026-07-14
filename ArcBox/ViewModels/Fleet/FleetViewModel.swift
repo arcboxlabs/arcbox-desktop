@@ -1,4 +1,5 @@
 import FleetControlClient
+import FleetPlatformClient
 import Foundation
 import SwiftUI
 import os
@@ -21,13 +22,19 @@ final class FleetViewModel {
     var status: FleetAgentStatus?
     var snapshot: FleetAgentSnapshot?
     var settings: FleetAgentSettings?
+    var workspaces: [FleetWorkspace] = []
     var lastError: String?
+    var platformError: String?
     var isWatching = false
     var isPerformingAction = false
+    var isLoadingWorkspaces = false
     var reconnectAttempt = 0
 
     @ObservationIgnored
     private var client: FleetControlClient?
+
+    @ObservationIgnored
+    private var platformClient: FleetPlatformClient?
 
     @ObservationIgnored
     private var watchTask: Task<Void, Never>?
@@ -54,9 +61,10 @@ final class FleetViewModel {
     }
 
     /// Begin the handshake and state watch loop.
-    func start(client: FleetControlClient?) {
+    func start(client: FleetControlClient?, platformClient: FleetPlatformClient? = nil) {
         stop()
         self.client = client
+        self.platformClient = platformClient
 
         guard let client else {
             markUnavailable("Fleet control client is unavailable.")
@@ -66,6 +74,24 @@ final class FleetViewModel {
         loadState = .connecting
         watchTask = Task { [weak self, client] in
             await self?.run(client: client)
+        }
+    }
+
+    /// Load the workspaces available to the signed-in Platform identity.
+    @discardableResult
+    func loadWorkspaces() async -> Bool {
+        guard let platformClient = requirePlatformClient() else { return false }
+
+        isLoadingWorkspaces = true
+        platformError = nil
+        defer { isLoadingWorkspaces = false }
+
+        do {
+            workspaces = try await platformClient.listWorkspaces()
+            return true
+        } catch {
+            platformError = FleetPlatformClient.userMessage(for: error)
+            return false
         }
     }
 
@@ -138,6 +164,32 @@ final class FleetViewModel {
                 controlPlane: Self.normalized(controlPlane)
             )
             status = FleetAgentStatus(state: .enrolled, machineID: machineID)
+            await refreshAfterMutation(client: client)
+        }
+    }
+
+    /// Issue a workspace-scoped token and immediately enroll the local Fleet Agent.
+    @discardableResult
+    func enroll(workspaceID: String, controlPlane: String? = nil) async -> Bool {
+        let workspaceID = workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !workspaceID.isEmpty else {
+            platformError = "A workspace is required for enrollment."
+            return false
+        }
+        guard let client = requireClient(),
+            let platformClient = requirePlatformClient()
+        else { return false }
+
+        return await performAction("enroll") {
+            let enrollment = try await platformClient.issueEnrollmentToken(
+                workspaceID: workspaceID
+            )
+            let machineID = try await client.enroll(
+                token: enrollment.token,
+                controlPlane: Self.normalized(controlPlane)
+            )
+            status = FleetAgentStatus(state: .enrolled, machineID: machineID)
+            platformError = nil
             await refreshAfterMutation(client: client)
         }
     }
@@ -299,8 +351,22 @@ final class FleetViewModel {
         return client
     }
 
+    private func requirePlatformClient() -> FleetPlatformClient? {
+        guard let platformClient else {
+            platformError = "Fleet Platform client is unavailable."
+            return nil
+        }
+        return platformClient
+    }
+
     private func handle(_ error: Error) {
-        let message = FleetControlClient.userMessage(for: error)
+        let message: String
+        if error is FleetPlatformError || error is URLError {
+            message = FleetPlatformClient.userMessage(for: error)
+            platformError = message
+        } else {
+            message = FleetControlClient.userMessage(for: error)
+        }
         lastError = message
         loadState = snapshot == nil ? .unavailable(message) : .failed(message)
     }

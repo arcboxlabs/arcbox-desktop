@@ -57,6 +57,7 @@ jobs:
           POSTHOG_API_KEY =
           OIDC_ISSUER_URL =
           OIDC_CLIENT_ID =
+          FLEET_PLATFORM_BASE_URL =
           XCEOF
 
       - name: Generate Xcode project
