@@ -62,6 +62,17 @@ struct ArcBoxDesktopApp: App {
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
+                    appDelegate.deepLinkRouter.configure(
+                        .init(
+                            appVM: appVM,
+                            containersVM: containersVM,
+                            volumesVM: volumesVM,
+                            imagesVM: imagesVM,
+                            networksVM: networksVM,
+                            openMainWindow: { openWindow(id: "main") },
+                            openSettingsWindow: { openWindow(id: "settings") }
+                        ))
+
                     guard startupOrchestrator == nil else { return }
 
                     appDelegate.daemonManager = daemonManager
@@ -97,7 +108,6 @@ struct ArcBoxDesktopApp: App {
                 // ListViews gate their initial load on setupPhase.isDockerReady
                 // (reported via the gRPC WatchSetupStatus stream) to avoid hitting the
                 // Docker API before the daemon has finished initialization.
-                .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         if dockerClient == nil {
@@ -202,18 +212,5 @@ struct ArcBoxDesktopApp: App {
         appDelegate.arcboxClient = client
         appDelegate.connectionTask = task
         return client
-    }
-
-    /// Handle incoming `arcbox://` deep links.
-    /// TODO(ABXD-62): Register URL scheme in Info.plist or project build settings
-    /// (INFOPLIST_KEY_LSApplicationCategoryType / CFBundleURLTypes) once scheme routing is finalized.
-    private func handleDeepLink(_ url: URL) {
-        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
-        guard url.scheme == "arcbox" else {
-            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .private)")
-            return
-        }
-        // TODO(ABXD-62): Route deep link to appropriate view based on host/path.
-        // e.g. arcbox://containers/<id>, arcbox://settings, etc.
     }
 }

@@ -135,6 +135,7 @@
 		B52AB7A6781786A6ECB4B59E /* ArcBoxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57DD9A9FA0D6072FD4476A91 /* ArcBoxApp.swift */; };
 		B8F04FD5D42B1934B13D9D3A /* PodDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B38661BA5859384BCCE61B0C /* PodDetailView.swift */; };
 		B91D470DA46003D64389C7DE /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62FD6244C56EE8E45DF0EC7 /* AppColors.swift */; };
+		BA3195811383AD00D29B32AE /* DeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ADF9F8FFB694C45042664E8 /* DeepLink.swift */; };
 		BA8E4BE30E5FBB6B8548E214 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657D7543F1D47988AEC3339D /* AppDelegate.swift */; };
 		BB31DD543E7E07965B68C0A4 /* ContainerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33B6873C4DDA948830B9EEC /* ContainerRowView.swift */; };
 		BB6DA9C1B509BF12CDA5A92E /* ImageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185A238D021D6C976574528C /* ImageDetailView.swift */; };
@@ -156,6 +157,7 @@
 		D0518D07973520530916560B /* ServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F238F21169A97B94193454CF /* ServiceDetailView.swift */; };
 		D1130C3F57D641955CEE5518 /* MachineCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECF05A96F099B6E80E9077B /* MachineCardView.swift */; };
 		D2F870759080FB9D1DF58A3A /* NewContainerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B011CA693D5A9EFCCF61AA2D /* NewContainerSheet.swift */; };
+		D32166A92BDA2FB6B6037D94 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C649765AA76CFCBFC3302DA /* DeepLinkRouter.swift */; };
 		D49278FBAD2A7E36CD278147 /* MachineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949DB8BB8139F8D3C37503E9 /* MachineRowView.swift */; };
 		D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE313F40E79E409C942B1EE /* AboutWindow.swift */; };
 		D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */; };
@@ -170,6 +172,7 @@
 		E92C8245EE6AE51D99035E4D /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
 		E9B0A374B532221710729A34 /* ContainerTerminalTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1AFAED2CB7429B714C8A06 /* ContainerTerminalTab.swift */; };
 		ED3023CCFF235C0CF302C812 /* MenuBarView+Containers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */; };
+		EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */; };
 		F035F2D21380F9DD531E6B04 /* LocalRootFSOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EDD0CCB1C4698A31FC1ED1 /* LocalRootFSOutlineView.swift */; };
 		F07FF6E8891692D4D8807F3A /* LocalRootFSOutlineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6C627A5BC34C783DAEAC31 /* LocalRootFSOutlineModels.swift */; };
 		F0B6CC9DB9992CE44F2A7F70 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F707491EC9A47AE534822664 /* AppViewModel.swift */; };
@@ -226,6 +229,7 @@
 		1808332CF700CF6900F556F5 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		185A238D021D6C976574528C /* ImageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDetailView.swift; sourceTree = "<group>"; };
 		1B18FDEC4B5AE8513C98D7B4 /* SandboxDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxDetailView.swift; sourceTree = "<group>"; };
+		1C649765AA76CFCBFC3302DA /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		1E17CF68FBBA9447E1B15371 /* ImageTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTypes.swift; sourceTree = "<group>"; };
 		1E6C27E068081F8D598F3D7A /* ImageViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageViewModel+Docker.swift"; sourceTree = "<group>"; };
 		200F15F29A3634EC779554D4 /* ContainerLogsTab+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerLogsTab+Actions.swift"; sourceTree = "<group>"; };
@@ -278,6 +282,7 @@
 		69038D73EF8AC0CC09D4B39C /* NavItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavItem.swift; sourceTree = "<group>"; };
 		699A57392F1D9366CFA78BAF /* VolumesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesViewModel.swift; sourceTree = "<group>"; };
 		6AC42E91F0BCACABF173B87F /* DockerTerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerTerminalSession.swift; sourceTree = "<group>"; };
+		6ADF9F8FFB694C45042664E8 /* DeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLink.swift; sourceTree = "<group>"; };
 		7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWakeManager.swift; sourceTree = "<group>"; };
 		70D9A8B5B6000070B4D69A07 /* SandboxDisabledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxDisabledView.swift; sourceTree = "<group>"; };
 		727A1DD3E8D3B0BB875475A8 /* MachineEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineEmptyState.swift; sourceTree = "<group>"; };
@@ -364,6 +369,7 @@
 		DBEBBF08F0E4AC45D9C0BB83 /* ChangelogParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParser.swift; sourceTree = "<group>"; };
 		DE564AAFEC0EF6D094409728 /* SandboxRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxRowView.swift; sourceTree = "<group>"; };
 		E06B22BB8B92AF78C2B87ADC /* AboutView+LinkButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+LinkButton.swift"; sourceTree = "<group>"; };
+		E18EB65626D97DF7604580DF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E1C6B2F85E39321931CEC3ED /* ContainerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerDetailView.swift; sourceTree = "<group>"; };
 		E37F8C85EB27987F81FFB5F4 /* KubernetesState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesState.swift; sourceTree = "<group>"; };
 		E3A8FF41635473729BF0A36E /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
@@ -378,6 +384,7 @@
 		EFB03A05EDADB4F1FA6E10A1 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		F238F21169A97B94193454CF /* ServiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailView.swift; sourceTree = "<group>"; };
 		F4705819BA2C07E7EADAC37E /* MachineTerminalTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineTerminalTab.swift; sourceTree = "<group>"; };
+		F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkTests.swift; sourceTree = "<group>"; };
 		F5F318A121B0C8EA1A05BFE5 /* InfoRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoRow.swift; sourceTree = "<group>"; };
 		F62FD6244C56EE8E45DF0EC7 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
 		F707491EC9A47AE534822664 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
@@ -580,6 +587,8 @@
 			children = (
 				657D7543F1D47988AEC3339D /* AppDelegate.swift */,
 				43F21DD7BED5D64B93FF062D /* ArcBoxDesktopApp+Telemetry.swift */,
+				6ADF9F8FFB694C45042664E8 /* DeepLink.swift */,
+				1C649765AA76CFCBFC3302DA /* DeepLinkRouter.swift */,
 				794F192F207790B1A137A816 /* EnvironmentValues+Clients.swift */,
 			);
 			path = App;
@@ -842,6 +851,7 @@
 				57DD9A9FA0D6072FD4476A91 /* ArcBoxApp.swift */,
 				68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */,
 				54DE8B823FD1E94B0073AC5A /* ErrorReporting.swift */,
+				E18EB65626D97DF7604580DF /* Info.plist */,
 				06688AB84392716F1108AE36 /* Logging.swift */,
 				EA6DBFBB43078F295AFE54C0 /* PerformanceTracing.swift */,
 				2C7006D22506414C67AC5475 /* App */,
@@ -908,6 +918,7 @@
 			children = (
 				A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */,
 				E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */,
+				F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */,
 				06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */,
 				A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */,
 				7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */,
@@ -1115,6 +1126,8 @@
 				869B14DB25CD44955C7C32AE /* ContainersViewModel.swift in Sources */,
 				9444132595906417360A9D44 /* ContentView.swift in Sources */,
 				172FA4919687A4616E0BC135 /* DaemonLoadingView.swift in Sources */,
+				BA3195811383AD00D29B32AE /* DeepLink.swift in Sources */,
+				D32166A92BDA2FB6B6037D94 /* DeepLinkRouter.swift in Sources */,
 				632810E9B138C535A11E7EBF /* DiagnosticBundleExporter.swift in Sources */,
 				6EE6805F5EC85742CC665575 /* DockerCLIResolver.swift in Sources */,
 				BD99D14EC5ED57BA1FF283CC /* DockerContextManager.swift in Sources */,
@@ -1243,6 +1256,7 @@
 			files = (
 				31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */,
 				4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */,
+				EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */,
 				8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */,
 				0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */,
 				F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */,
@@ -1365,6 +1379,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ArcBox/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
@@ -1507,6 +1522,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ArcBox/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcBox;
 				INFOPLIST_KEY_CFBundleName = ArcBox;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";

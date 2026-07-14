@@ -160,6 +160,12 @@ public final class StartupOrchestrator {
             // full timeout before assuming it's dead.
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
                 if self.daemonManager.state.isRunning { break }
+                // A fatal FAILED phase is terminal — fail fast with the daemon's
+                // reported cause instead of waiting out the poll window (or, in
+                // the recovery poll, mistaking a dead daemon for a live one).
+                if self.daemonManager.setupPhase == .failed {
+                    throw StartupError.stepFailed(self.daemonFailureMessage)
+                }
                 try await Task.sleep(for: StartupConstants.daemonPollInterval)
             }
 
@@ -181,6 +187,12 @@ public final class StartupOrchestrator {
 
             for _ in 0..<StartupConstants.daemonPollMaxAttempts {
                 if self.daemonManager.state.isRunning { break }
+                // A fatal FAILED phase is terminal — fail fast with the daemon's
+                // reported cause instead of waiting out the poll window (or, in
+                // the recovery poll, mistaking a dead daemon for a live one).
+                if self.daemonManager.setupPhase == .failed {
+                    throw StartupError.stepFailed(self.daemonFailureMessage)
+                }
                 try await Task.sleep(for: StartupConstants.daemonPollInterval)
             }
 
@@ -199,6 +211,13 @@ public final class StartupOrchestrator {
     @available(macOS 15.0, *)
     public func retry() async {
         await start()
+    }
+
+    /// Human-readable cause of a daemon `FAILED` setup phase, for the retryable
+    /// failure UI. `setupMessage` already carries the daemon's `error` detail.
+    private var daemonFailureMessage: String {
+        let reason = daemonManager.setupMessage
+        return reason.isEmpty ? "Daemon reported a fatal setup failure" : reason
     }
 
     // MARK: - Step Runner
