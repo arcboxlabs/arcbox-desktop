@@ -4,7 +4,7 @@ import Security
 /// Persists the token set as one generic-password item holding a JSON blob,
 /// so every save is atomic. The app is unsandboxed; the default per-app
 /// keychain access applies without any entitlement.
-public final class KeychainTokenStore: TokenStoring, Sendable {
+public actor KeychainTokenStore: TokenStoring {
     private let service: String
     private let account: String
 

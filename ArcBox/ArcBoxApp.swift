@@ -15,7 +15,7 @@ struct ArcBoxDesktopApp: App {
     @State private var appVM = AppViewModel()
     // Lightweight init — no network calls until view appears
     @State private var daemonManager = DaemonManager()
-    // Lightweight init — restores tokens from the Keychain, no network
+    // Lightweight init — Keychain restoration starts from the scene task
     @State private var authSession = AuthSession()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
@@ -96,13 +96,17 @@ struct ArcBoxDesktopApp: App {
                     fleetAgentConnection.start()
                     appDelegate.fleetAgentConnection = fleetAgentConnection
                     appDelegate.runnersVM = runnersVM
-                    initFleetPlatformClientIfNeeded()
-                    runnersVM.start(
-                        controlClient: fleetAgentConnection.controlClient,
-                        platformClient: fleetPlatformClient,
-                        authentication: authSession,
-                        agentReadiness: fleetAgentConnection
-                    )
+                    Task {
+                        await authSession.restoreSession()
+                        initFleetPlatformClientIfNeeded()
+                        runnersVM.start(
+                            controlClient: fleetAgentConnection.controlClient,
+                            platformClient: fleetPlatformClient,
+                            authentication: authSession,
+                            agentReadiness: fleetAgentConnection
+                        )
+                        await authSession.loadUserInfo()
+                    }
                     Task {
                         do {
                             _ = try await fleetAgentConnection.ensureReady()
@@ -116,11 +120,6 @@ struct ArcBoxDesktopApp: App {
                     }
 
                     guard startupOrchestrator == nil else { return }
-
-                    // Enrich a Keychain-restored session with userinfo
-                    // (name/email/avatar) without delaying daemon startup;
-                    // sign-in fetches it as part of its own flow.
-                    Task { await authSession.loadUserInfo() }
 
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
