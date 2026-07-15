@@ -5,12 +5,18 @@ import SwiftUI
 struct RunnerHostStatusBar: View {
     let host: RunnerHostViewModel
     let isPerformingAction: Bool
+    let isReconnecting: Bool
     var onSetDraining: (Bool) -> Void
+    var onUnenroll: () -> Void
+    @State private var isConfirmingUnenroll = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                StatusBadge(color: host.status.color, label: host.status.label)
+                StatusBadge(
+                    color: isReconnecting ? AppColors.warning : host.status.color,
+                    label: isReconnecting ? "Reconnecting" : host.status.label
+                )
                 Spacer()
                 Button(
                     host.isDraining ? "Resume" : "Drain",
@@ -24,6 +30,27 @@ struct RunnerHostStatusBar: View {
                         ? "Resume accepting new jobs"
                         : "Finish running jobs but accept no new ones"
                 )
+                Menu("Actions", systemImage: "ellipsis.circle") {
+                    Button(
+                        "Unenroll…",
+                        systemImage: "trash",
+                        role: .destructive,
+                        action: { isConfirmingUnenroll = true }
+                    )
+                }
+                .menuStyle(.borderlessButton)
+                .controlSize(.small)
+                .disabled(isPerformingAction)
+                .confirmationDialog(
+                    "Unenroll this Mac?",
+                    isPresented: $isConfirmingUnenroll,
+                    titleVisibility: .visible
+                ) {
+                    Button("Unenroll", role: .destructive, action: onUnenroll)
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text(unenrollMessage)
+                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -33,7 +60,7 @@ struct RunnerHostStatusBar: View {
                     .lineLimit(1)
                     .textSelection(.enabled)
                 Text(agentDescription)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(AppColors.textMuted)
             }
 
@@ -81,6 +108,14 @@ struct RunnerHostStatusBar: View {
         } else {
             host.chip
         }
+    }
+
+    private var unenrollMessage: String {
+        let credentialMessage =
+            "This removes the Fleet credential from the local Agent. It does not stop or uninstall the Agent."
+        guard host.activeJobCount > 0 else { return credentialMessage }
+        let jobLabel = host.activeJobCount == 1 ? "job" : "jobs"
+        return "The Agent reports \(host.activeJobCount) active \(jobLabel). \(credentialMessage)"
     }
 
     private func toggleDrainState() {

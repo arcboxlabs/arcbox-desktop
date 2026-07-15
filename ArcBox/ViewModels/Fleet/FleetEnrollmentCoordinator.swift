@@ -120,6 +120,10 @@ final class FleetEnrollmentCoordinator {
             && !awaitingUnenrolledSnapshot
     }
 
+    var isSignedIn: Bool {
+        authentication.isSignedIn
+    }
+
     var errorMessage: String? {
         switch state {
         case .requiresSignIn:
