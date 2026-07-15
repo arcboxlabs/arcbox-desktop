@@ -3,14 +3,13 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppViewModel.self) private var appVM
-    @Environment(\.fleetControlClient) private var fleetControlClient
-    @Environment(\.fleetPlatformClient) private var fleetPlatformClient
 
     // Shared ViewModels (injected from ArcBoxApp, shared with menu bar)
     @Environment(ContainersViewModel.self) private var containersVM
     @Environment(VolumesViewModel.self) private var volumesVM
     @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(NetworksViewModel.self) private var networksVM
+    @Environment(RunnersViewModel.self) private var runnersVM
 
     // Feature ViewModels -- local to main window
     @State private var k8sState = KubernetesState()
@@ -19,7 +18,6 @@ struct ContentView: View {
     @State private var machinesVM = MachinesViewModel()
     @State private var sandboxesVM = SandboxesViewModel()
     @State private var templatesVM = TemplatesViewModel()
-    @State private var runnersVM = RunnersViewModel()
 
     @State private var lastValidNav: NavItem? = .containers
 
@@ -51,13 +49,6 @@ struct ContentView: View {
                 lastValidNav = newNav
             }
         }
-        .task(id: fleetClientReadiness) {
-            runnersVM.start(
-                controlClient: fleetControlClient,
-                platformClient: fleetPlatformClient
-            )
-        }
-        .onDisappear(perform: runnersVM.stop)
     }
 
     // MARK: - Sidebar
@@ -109,10 +100,6 @@ struct ContentView: View {
         appVM.currentNav == .sandboxes || appVM.currentNav == .templates
     }
 
-    private var fleetClientReadiness: Int {
-        (fleetControlClient == nil ? 0 : 1) | (fleetPlatformClient == nil ? 0 : 2)
-    }
-
     // MARK: - Content column
 
     @ViewBuilder
@@ -143,7 +130,6 @@ struct ContentView: View {
                 .environment(machinesVM)
         case .runner:
             RunnersView()
-                .environment(runnersVM)
         case .sandboxes, .templates:
             // Handled in detail column
             Color.clear
