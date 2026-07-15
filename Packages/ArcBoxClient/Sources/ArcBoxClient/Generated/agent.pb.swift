@@ -243,6 +243,124 @@ public struct Arcbox_V1_ReadinessEvent: Sendable {
   public init() {}
 }
 
+/// Request for a guest-driven memory pressure event stream.
+///
+/// The agent samples in-guest memory signals (`MemAvailable`, workingset
+/// refault rate) and emits an event when a threshold trips, plus periodic
+/// keepalives so the host can distinguish "no pressure" from "guest too
+/// starved to answer". The watch returns after `timeout_ms`; the host
+/// re-issues the request to keep watching.
+public struct Arcbox_V1_WatchMemoryPressureRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Watch window in milliseconds; the agent ends the stream with a
+  /// WINDOW_ELAPSED frame when it passes.
+  public var timeoutMs: UInt32 = 0
+
+  /// Trip when MemAvailable falls below this many bytes. 0 disables.
+  public var minAvailableBytes: UInt64 = 0
+
+  /// Trip when the page refault rate (pages/second) stays at or above this
+  /// for consecutive samples. 0 disables.
+  public var maxRefaultRate: UInt64 = 0
+
+  /// Keepalive cadence in milliseconds (0 = agent default).
+  public var keepaliveMs: UInt32 = 0
+
+  /// PSI trigger threshold: microseconds of full (all non-idle tasks)
+  /// memory stall within the agent's 1s window before pressure fires.
+  /// 0 = agent default. Used only on kernels with CONFIG_PSI; older
+  /// kernels fall back to MemAvailable/refault sampling.
+  public var psiFullStallUs: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// One frame on the memory pressure stream.
+public struct Arcbox_V1_MemoryPressureEvent: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Why this frame was emitted.
+  public var reason: Arcbox_V1_MemoryPressureEvent.Reason = .keepalive
+
+  /// MemAvailable at sample time, in bytes.
+  public var availableBytes: UInt64 = 0
+
+  /// Observed refault rate, pages/second.
+  public var refaultRate: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Reason: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+
+    /// Watch established (first frame) or periodic keepalive.
+    case keepalive // = 0
+
+    /// MemAvailable fell below the requested floor. PSI stall trips
+    /// are also reported under this reason: a new enum value would be
+    /// decoded as KEEPALIVE by older hosts (proto3 open enums), which
+    /// must never happen to a pressure frame. The agent log records
+    /// the true trigger.
+    case lowAvailable // = 1
+
+    /// Page refault rate exceeded the requested threshold.
+    case refaultSpike // = 2
+
+    /// The watch window elapsed without pressure.
+    case windowElapsed // = 3
+
+    /// The detector armed: the guest settled at the current balloon
+    /// target. The host uses this to continue a staged shrink.
+    case settled // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .keepalive
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .keepalive
+      case 1: self = .lowAvailable
+      case 2: self = .refaultSpike
+      case 3: self = .windowElapsed
+      case 4: self = .settled
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .keepalive: return 0
+      case .lowAvailable: return 1
+      case .refaultSpike: return 2
+      case .windowElapsed: return 3
+      case .settled: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_MemoryPressureEvent.Reason] = [
+      .keepalive,
+      .lowAvailable,
+      .refaultSpike,
+      .windowElapsed,
+      .settled,
+    ]
+
+  }
+
+  public init() {}
+}
+
 /// Runtime status report.
 public struct Arcbox_V1_RuntimeStatusResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -905,6 +1023,100 @@ extension Arcbox_V1_ReadinessEvent: SwiftProtobuf.Message, SwiftProtobuf._Messag
 
 extension Arcbox_V1_ReadinessEvent.Kind: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0KIND_UNSPECIFIED\0\u{1}AGENT_READY\0\u{1}RUNTIME_STARTING\0\u{1}RUNTIME_READY\0\u{1}RUNTIME_FAILED\0")
+}
+
+extension Arcbox_V1_WatchMemoryPressureRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".WatchMemoryPressureRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}timeout_ms\0\u{3}min_available_bytes\0\u{3}max_refault_rate\0\u{3}keepalive_ms\0\u{3}psi_full_stall_us\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.timeoutMs) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.minAvailableBytes) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.maxRefaultRate) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.keepaliveMs) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.psiFullStallUs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.timeoutMs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.timeoutMs, fieldNumber: 1)
+    }
+    if self.minAvailableBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.minAvailableBytes, fieldNumber: 2)
+    }
+    if self.maxRefaultRate != 0 {
+      try visitor.visitSingularUInt64Field(value: self.maxRefaultRate, fieldNumber: 3)
+    }
+    if self.keepaliveMs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.keepaliveMs, fieldNumber: 4)
+    }
+    if self.psiFullStallUs != 0 {
+      try visitor.visitSingularUInt64Field(value: self.psiFullStallUs, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_WatchMemoryPressureRequest, rhs: Arcbox_V1_WatchMemoryPressureRequest) -> Bool {
+    if lhs.timeoutMs != rhs.timeoutMs {return false}
+    if lhs.minAvailableBytes != rhs.minAvailableBytes {return false}
+    if lhs.maxRefaultRate != rhs.maxRefaultRate {return false}
+    if lhs.keepaliveMs != rhs.keepaliveMs {return false}
+    if lhs.psiFullStallUs != rhs.psiFullStallUs {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MemoryPressureEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MemoryPressureEvent"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}reason\0\u{3}available_bytes\0\u{3}refault_rate\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.reason) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.availableBytes) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.refaultRate) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.reason != .keepalive {
+      try visitor.visitSingularEnumField(value: self.reason, fieldNumber: 1)
+    }
+    if self.availableBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.availableBytes, fieldNumber: 2)
+    }
+    if self.refaultRate != 0 {
+      try visitor.visitSingularUInt64Field(value: self.refaultRate, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MemoryPressureEvent, rhs: Arcbox_V1_MemoryPressureEvent) -> Bool {
+    if lhs.reason != rhs.reason {return false}
+    if lhs.availableBytes != rhs.availableBytes {return false}
+    if lhs.refaultRate != rhs.refaultRate {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MemoryPressureEvent.Reason: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0KEEPALIVE\0\u{1}LOW_AVAILABLE\0\u{1}REFAULT_SPIKE\0\u{1}WINDOW_ELAPSED\0\u{1}SETTLED\0")
 }
 
 extension Arcbox_V1_RuntimeStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

@@ -201,7 +201,8 @@ extension Arcbox_V1_MachineService {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > MachineService manages virtual machines.
+    /// > MachineService manages Linux virtual machines. macOS guests are disposable,
+    /// > single-purpose VMs with a separate lifecycle and live in MacosService.
     public protocol StreamingServiceProtocol: GRPCCore.RegistrableRPCService {
         /// Handle the "Create" method.
         ///
@@ -413,7 +414,8 @@ extension Arcbox_V1_MachineService {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > MachineService manages virtual machines.
+    /// > MachineService manages Linux virtual machines. macOS guests are disposable,
+    /// > single-purpose VMs with a separate lifecycle and live in MacosService.
     public protocol ServiceProtocol: Arcbox_V1_MachineService.StreamingServiceProtocol {
         /// Handle the "Create" method.
         ///
@@ -623,7 +625,8 @@ extension Arcbox_V1_MachineService {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > MachineService manages virtual machines.
+    /// > MachineService manages Linux virtual machines. macOS guests are disposable,
+    /// > single-purpose VMs with a separate lifecycle and live in MacosService.
     public protocol SimpleServiceProtocol: Arcbox_V1_MachineService.ServiceProtocol {
         /// Handle the "Create" method.
         ///
@@ -1242,7 +1245,8 @@ extension Arcbox_V1_MachineService {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > MachineService manages virtual machines.
+    /// > MachineService manages Linux virtual machines. macOS guests are disposable,
+    /// > single-purpose VMs with a separate lifecycle and live in MacosService.
     public protocol ClientProtocol: Sendable {
         /// Call the "Create" method.
         ///
@@ -1507,7 +1511,8 @@ extension Arcbox_V1_MachineService {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > MachineService manages virtual machines.
+    /// > MachineService manages Linux virtual machines. macOS guests are disposable,
+    /// > single-purpose VMs with a separate lifecycle and live in MacosService.
     public struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
         private let client: GRPCCore.GRPCClient<Transport>
 
