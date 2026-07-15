@@ -2480,8 +2480,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+        /// > promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2518,8 +2518,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+        /// > promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2554,8 +2554,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+        /// > promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2649,8 +2649,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+        /// > promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2700,8 +2700,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-        /// > backend lands), then promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+        /// > promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2742,8 +2742,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService.ClientProtocol {
     /// >
     /// > Converge each requested image setting's `current` onto its `target`:
     /// > fetch and verify the target artifact through the runtime that owns it
-    /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-    /// > backend lands), then promote `current` — all-or-nothing per kind.
+    /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+    /// > promote `current` — all-or-nothing per kind.
     /// > Cancelling the stream (client disconnect) abandons the promotion;
     /// > re-running Prepare resumes from whatever the runtime already cached.
     ///
@@ -2778,8 +2778,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService.ClientProtocol {
     /// >
     /// > Converge each requested image setting's `current` onto its `target`:
     /// > fetch and verify the target artifact through the runtime that owns it
-    /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
-    /// > backend lands), then promote `current` — all-or-nothing per kind.
+    /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
+    /// > promote `current` — all-or-nothing per kind.
     /// > Cancelling the stream (client disconnect) abandons the promotion;
     /// > re-running Prepare resumes from whatever the runtime already cached.
     ///
