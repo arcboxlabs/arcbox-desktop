@@ -28,17 +28,95 @@ enum AuthTestSupport {
 }
 
 final class InMemoryTokenStore: TokenStoring {
-    private let storage = OSAllocatedUnfairLock<StoredTokens?>(initialState: nil)
-
-    var stored: StoredTokens? { storage.withLock { $0 } }
-
-    init(initial: StoredTokens? = nil) {
-        storage.withLock { $0 = initial }
+    private struct State {
+        var stored: StoredTokens?
+        var saveCalls = 0
+        var loadCalls = 0
+        var clearCalls = 0
+        var shouldFailLoading = false
     }
 
-    func save(_ tokens: StoredTokens) throws { storage.withLock { $0 = tokens } }
-    func load() throws -> StoredTokens? { storage.withLock { $0 } }
-    func clear() throws { storage.withLock { $0 = nil } }
+    enum Failure: Error {
+        case loadFailed
+    }
+
+    private let storage: OSAllocatedUnfairLock<State>
+
+    var stored: StoredTokens? { storage.withLock { $0.stored } }
+    var saveCalls: Int { storage.withLock { $0.saveCalls } }
+    var loadCalls: Int { storage.withLock { $0.loadCalls } }
+    var clearCalls: Int { storage.withLock { $0.clearCalls } }
+
+    init(initial: StoredTokens? = nil) {
+        storage = OSAllocatedUnfairLock(initialState: State(stored: initial))
+    }
+
+    func failLoading() {
+        storage.withLock { $0.shouldFailLoading = true }
+    }
+
+    func save(_ tokens: StoredTokens) throws {
+        storage.withLock {
+            $0.saveCalls += 1
+            $0.stored = tokens
+        }
+    }
+
+    func load() throws -> StoredTokens? {
+        let result = storage.withLock {
+            $0.loadCalls += 1
+            return ($0.shouldFailLoading, $0.stored)
+        }
+        if result.0 { throw Failure.loadFailed }
+        return result.1
+    }
+
+    func clear() throws {
+        storage.withLock {
+            $0.clearCalls += 1
+            $0.stored = nil
+        }
+    }
+}
+
+actor SuspendedLoadTokenStore: TokenStoring {
+    private let loadResult: StoredTokens?
+    private var stored: StoredTokens?
+    private var loadContinuation: CheckedContinuation<StoredTokens?, Never>?
+    private var hasStartedLoading = false
+    private(set) var loadCalls = 0
+
+    init(loadResult: StoredTokens?) {
+        self.loadResult = loadResult
+        stored = loadResult
+    }
+
+    func save(_ tokens: StoredTokens) {
+        stored = tokens
+    }
+
+    func load() async -> StoredTokens? {
+        loadCalls += 1
+        return await withCheckedContinuation { continuation in
+            loadContinuation = continuation
+            hasStartedLoading = true
+        }
+    }
+
+    func clear() {
+        stored = nil
+    }
+
+    func waitUntilLoadStarts() async {
+        while !hasStartedLoading {
+            await Task.yield()
+        }
+    }
+
+    func resumeLoad() {
+        loadContinuation?.resume(returning: loadResult)
+        loadContinuation = nil
+    }
 }
 
 final class FakeOIDCProvider: OIDCProviding {

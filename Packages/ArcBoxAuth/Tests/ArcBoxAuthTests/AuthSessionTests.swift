@@ -15,6 +15,12 @@ struct AuthSessionTests {
             tokenStore: store)
     }
 
+    private func makeRestoredSession() async -> AuthSession {
+        let session = makeSession()
+        await session.restoreSession()
+        return session
+    }
+
     private func freshTokens(refreshToken: String? = "refresh-1") -> StoredTokens {
         StoredTokens(
             accessToken: "access-1",
@@ -31,18 +37,119 @@ struct AuthSessionTests {
 
     // MARK: - Restore
 
-    @Test func initRestoresSessionFromStore() throws {
+    @Test func initDoesNotReadFromStore() throws {
         try store.save(freshTokens())
         let session = makeSession()
+
+        #expect(store.loadCalls == 0)
+        #expect(session.status == .signedOut)
+        #expect(session.identity == nil)
+    }
+
+    @Test func restoreSessionRestoresStoredTokens() async throws {
+        try store.save(freshTokens())
+        let session = makeSession()
+        await session.restoreSession()
+
         #expect(session.status == .signedIn)
         #expect(session.identity?.subject == "user-1")
         #expect(session.identity?.email == "april@arcbox.dev")
+        #expect(store.loadCalls == 1)
     }
 
-    @Test func initStaysSignedOutWhenStoreIsEmpty() {
+    @Test func restoreSessionStaysSignedOutWhenStoreIsEmpty() async {
         let session = makeSession()
+        await session.restoreSession()
+
         #expect(session.status == .signedOut)
         #expect(session.identity == nil)
+        #expect(store.loadCalls == 1)
+    }
+
+    @Test func restoreSessionReadsStoreOnlyOnce() async throws {
+        try store.save(freshTokens())
+        let session = makeSession()
+
+        await session.restoreSession()
+        await session.restoreSession()
+
+        #expect(session.status == .signedIn)
+        #expect(store.loadCalls == 1)
+    }
+
+    @Test func restoreSessionReturnsToSignedOutWhenLoadFails() async {
+        store.failLoading()
+        let session = makeSession()
+
+        await session.restoreSession()
+
+        #expect(session.status == .signedOut)
+        #expect(session.identity == nil)
+        #expect(store.loadCalls == 1)
+    }
+
+    @Test func restoreSessionDoesNotOverwriteANewerSignIn() async throws {
+        let suspendedStore = SuspendedLoadTokenStore(loadResult: nil)
+        let session = AuthSession(
+            configuration: AuthTestSupport.configuration,
+            provider: provider,
+            tokenStore: suspendedStore)
+        provider.configure {
+            $0.exchangeResult = .success(
+                TokenResponse(
+                    accessToken: "access-2",
+                    expiresIn: 3600,
+                    refreshToken: "refresh-2",
+                    idToken: AuthTestSupport.idToken(
+                        subject: "user-2", email: "new@arcbox.dev", nonce: "nonce-1")))
+        }
+
+        let restoration = Task { await session.restoreSession() }
+        await suspendedStore.waitUntilLoadStarts()
+        let duplicateRestoration = Task { await session.restoreSession() }
+        #expect(session.status == .restoring)
+        #expect(await suspendedStore.loadCalls == 1)
+
+        try await session.completeSignIn(
+            callbackURL: callback(),
+            expectedState: "state-1",
+            verifier: "verifier",
+            nonce: "nonce-1",
+            endpoints: AuthTestSupport.endpoints)
+        await suspendedStore.resumeLoad()
+        await restoration.value
+        await duplicateRestoration.value
+
+        #expect(session.status == .signedIn)
+        #expect(session.identity?.subject == "user-2")
+        #expect(session.identity?.email == "new@arcbox.dev")
+    }
+
+    @Test func restoreSessionDoesNotReadStoreAfterSignIn() async throws {
+        provider.configure {
+            $0.exchangeResult = .success(
+                TokenResponse(
+                    accessToken: "access-2",
+                    expiresIn: 3600,
+                    refreshToken: "refresh-2",
+                    idToken: AuthTestSupport.idToken(
+                        subject: "user-2", email: "new@arcbox.dev", nonce: "nonce-1")))
+        }
+        let session = makeSession()
+        try await session.completeSignIn(
+            callbackURL: callback(),
+            expectedState: "state-1",
+            verifier: "verifier",
+            nonce: "nonce-1",
+            endpoints: AuthTestSupport.endpoints)
+
+        try store.save(freshTokens())
+        await session.restoreSession()
+
+        #expect(store.loadCalls == 0)
+        #expect(session.status == .signedIn)
+        #expect(session.identity?.subject == "user-2")
+        #expect(session.identity?.email == "new@arcbox.dev")
     }
 
     // MARK: - completeSignIn
@@ -136,7 +243,7 @@ struct AuthSessionTests {
                     emailVerified: true,
                     picture: URL(string: "https://avatars.example.com/user-1.png")))
         }
-        let session = makeSession()
+        let session = await makeRestoredSession()
         await session.loadUserInfo()
         #expect(provider.userInfoCalls == 1)
         #expect(session.identity?.name == "April")
@@ -147,7 +254,7 @@ struct AuthSessionTests {
 
     @Test func loadUserInfoKeepsIdentityOnFailure() async throws {
         try store.save(freshTokens())
-        let session = makeSession()
+        let session = await makeRestoredSession()
         let before = session.identity
         await session.loadUserInfo()
         #expect(provider.userInfoCalls == 1)
@@ -267,7 +374,7 @@ struct AuthSessionTests {
 
     @Test func accessTokenReturnsCachedTokenWhileFresh() async throws {
         try store.save(freshTokens())
-        let session = makeSession()
+        let session = await makeRestoredSession()
         #expect(try await session.accessToken() == "access-1")
         #expect(provider.refreshCalls == 0)
     }
@@ -278,7 +385,7 @@ struct AuthSessionTests {
             $0.refreshResult = .success(
                 TokenResponse(accessToken: "access-2", expiresIn: 3600, refreshToken: "refresh-2"))
         }
-        let session = makeSession()
+        let session = await makeRestoredSession()
         #expect(try await session.accessToken() == "access-2")
         #expect(provider.refreshCalls == 1)
         #expect(store.stored?.accessToken == "access-2")
@@ -290,7 +397,7 @@ struct AuthSessionTests {
         provider.configure {
             $0.refreshResult = .success(TokenResponse(accessToken: "access-2", expiresIn: 3600))
         }
-        let session = makeSession()
+        let session = await makeRestoredSession()
         _ = try await session.accessToken()
         #expect(store.stored?.refreshToken == "refresh-1")
     }
@@ -301,7 +408,7 @@ struct AuthSessionTests {
             $0.refreshResult = .success(TokenResponse(accessToken: "access-2", expiresIn: 3600))
             $0.refreshDelay = .milliseconds(50)
         }
-        let session = makeSession()
+        let session = await makeRestoredSession()
         async let first = session.accessToken()
         async let second = session.accessToken()
         let tokens = try await (first, second)
@@ -311,7 +418,7 @@ struct AuthSessionTests {
 
     @Test func accessTokenThrowsWithoutRefreshToken() async throws {
         try store.save(expiredTokens(refreshToken: nil))
-        let session = makeSession()
+        let session = await makeRestoredSession()
         await #expect(throws: OIDCError.missingRefreshToken) {
             try await session.accessToken()
         }
@@ -323,7 +430,7 @@ struct AuthSessionTests {
             $0.refreshResult = .failure(
                 .tokenRequestFailed(status: 400, body: #"{"error":"invalid_grant"}"#))
         }
-        let session = makeSession()
+        let session = await makeRestoredSession()
         await #expect(throws: OIDCError.notSignedIn) {
             try await session.accessToken()
         }
@@ -336,7 +443,7 @@ struct AuthSessionTests {
         provider.configure {
             $0.refreshResult = .failure(.network("timeout"))
         }
-        let session = makeSession()
+        let session = await makeRestoredSession()
         await #expect(throws: OIDCError.network("timeout")) {
             try await session.accessToken()
         }
@@ -387,7 +494,7 @@ struct AuthSessionTests {
 
     @Test func signOutWithoutDiscoverySkipsRevocation() async throws {
         try store.save(freshTokens())
-        let session = makeSession()
+        let session = await makeRestoredSession()
         await session.signOut()
         #expect(session.status == .signedOut)
         #expect(store.stored == nil)

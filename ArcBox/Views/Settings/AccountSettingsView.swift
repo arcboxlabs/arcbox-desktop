@@ -1,5 +1,6 @@
 import AppKit
 import ArcBoxAuth
+internal import AuthenticationServices
 import SwiftUI
 
 /// Sign-in state for the ArcBox platform: identity, session, sign in/out.
@@ -13,6 +14,8 @@ struct AccountSettingsView: View {
             switch authSession.status {
             case .signedIn:
                 signedInSections
+            case .restoring:
+                restoringSection
             case .signedOut, .signingIn, .error:
                 signedOutSection
             }
@@ -61,6 +64,21 @@ struct AccountSettingsView: View {
     }
 
     // MARK: - Signed out / signing in
+
+    private var restoringSection: some View {
+        Section {
+            ContentUnavailableView {
+                Label("Restoring Session", systemImage: "person.crop.circle.badge.clock")
+            } description: {
+                Text("Checking for a saved ArcBox sign-in.")
+            } actions: {
+                ProgressView()
+                    .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity)
+            .listRowBackground(Color.clear)
+        }
+    }
 
     private var signedOutSection: some View {
         Section {

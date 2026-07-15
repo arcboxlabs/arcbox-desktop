@@ -2,6 +2,7 @@ import Foundation
 
 public enum AuthStatus: Sendable, Equatable {
     case signedOut
+    case restoring
     case signingIn
     case signedIn
     /// Sign-in failed; carries a user-presentable message.
