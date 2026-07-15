@@ -85,7 +85,12 @@ final class RunnersViewModel {
         case .signedOut: return "Sign in required"
         case .unenrolled: return "Not connected"
         case .enrolling(let progress): return progress.title
-        case .enrollmentFailed: return "Enrollment failed"
+        case .enrollmentFailed(_, let recovery):
+            switch recovery {
+            case .retry: return "Enrollment failed"
+            case .waitForAgent: return "Confirming enrollment"
+            case .unenroll: return "Enrollment needs attention"
+            }
         case .failed: return "Fleet integration unavailable"
         case .enrolled(let host, let freshness):
             if case .reconnecting = freshness {
@@ -295,7 +300,10 @@ final class RunnersViewModel {
         case .failed(let failure):
             return .enrollmentFailed(
                 failure.localizedDescription,
-                recovery: enrollmentContext.canBeginEnrollment ? .retry : .waitForAgent
+                recovery: enrollmentRecovery(
+                    for: failure,
+                    canBeginEnrollment: enrollmentContext.canBeginEnrollment
+                )
             )
         case .idle, .requiresSignIn:
             guard enrollmentContext.isSignedIn else { return .signedOut }
@@ -317,6 +325,24 @@ final class RunnersViewModel {
             return .reconnecting("Connecting to Fleet Agent.")
         case .unavailable(let message), .failed(let message):
             return .reconnecting(message)
+        }
+    }
+
+    private static func enrollmentRecovery(
+        for failure: FleetEnrollmentCoordinator.Failure,
+        canBeginEnrollment: Bool
+    ) -> RunnerEnrollmentRecovery {
+        guard !canBeginEnrollment else { return .retry }
+
+        switch failure {
+        case .enrollmentOutcomeUnknown:
+            return .waitForAgent
+        case .credentialRejected, .detached, .stateStreamEnded, .stateStreamFailed,
+            .attachmentTimedOut, .cancelled(machineID: .some):
+            return .unenroll
+        case .workspaceRequired, .agentPreparationFailed, .enrollmentTokenRequestFailed,
+            .cancelled(machineID: nil):
+            return .waitForAgent
         }
     }
 

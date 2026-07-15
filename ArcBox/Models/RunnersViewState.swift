@@ -13,6 +13,7 @@ enum RunnersViewState: Equatable {
 enum RunnerEnrollmentRecovery: Equatable {
     case retry
     case waitForAgent
+    case unenroll
 }
 
 enum RunnerHostFreshness: Equatable {
