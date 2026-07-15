@@ -195,12 +195,7 @@ struct FleetSettingsView: View {
                 Button("Prepare Image") {
                     fleet.beginMacOSRunnerImagePreparation()
                 }
-                .disabled(
-                    !fleet.supportsMacOSImagePreparation
-                        || fleet.isPerformingAction
-                        || fleet.imagePreparationState.isPreparing
-                        || fleet.settings?.macosRunnerImage == nil
-                )
+                .disabled(!fleet.canBeginMacOSRunnerImagePreparation)
             }
 
             if !fleet.supportsMacOSImagePreparation {
@@ -219,7 +214,7 @@ struct FleetSettingsView: View {
         case .preparing(let progress):
             VStack(alignment: .leading, spacing: 6) {
                 ProgressView(value: progress.fraction)
-                Text(Self.progressDescription(progress))
+                Text(progress.displayDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -307,12 +302,6 @@ struct FleetSettingsView: View {
         reference.isEmpty ? "Not prepared" : reference
     }
 
-    private static func progressDescription(_ progress: FleetImagePreparationProgress) -> String {
-        if progress.detail.isEmpty {
-            return progress.stage.capitalized
-        }
-        return "\(progress.stage.capitalized): \(progress.detail)"
-    }
 }
 
 #Preview {
