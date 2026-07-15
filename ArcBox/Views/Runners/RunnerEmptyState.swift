@@ -42,10 +42,13 @@ struct RunnerEmptyState: View {
                 .accessibilityLabel(isWorking ? "Connecting this Mac to ArcBox" : actionTitle)
 
                 if let errorMessage {
+                    // No .fixedSize here: on macOS 26, changes inside a
+                    // fixedSize(vertical:) subtree trigger a window-sizing pass
+                    // that grows the window/split view to screen height.
+                    // The label wraps correctly without it.
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(AppColors.warning)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
