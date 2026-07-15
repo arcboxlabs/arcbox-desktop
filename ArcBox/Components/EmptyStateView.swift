@@ -27,10 +27,11 @@ struct EmptyStateView<Content: View>: View {
                 Image(systemName: icon)
                     .font(.system(size: 26))
                     .foregroundStyle(AppColors.textMuted)
+                    .accessibilityHidden(true)
             }
 
             Text(title)
-                .font(.system(size: 13))
+                .font(.headline)
                 .foregroundStyle(AppColors.textSecondary)
 
             content

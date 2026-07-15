@@ -19,15 +19,17 @@ final class RunnersViewModelTests: XCTestCase {
         XCTAssertEqual(vm.viewState, .unavailable("Fleet control client is unavailable."))
     }
 
-    func testUnenrolledSnapshotShowsOnboarding() {
-        let fleet = FleetViewModel()
-        let snapshot = makeSnapshot(enrollment: .unenrolled)
-        fleet.snapshot = snapshot
-        fleet.loadState = .ready(snapshot)
+    func testValidUnenrolledSnapshotReflectsCurrentAuthentication() {
+        let snapshot = makeSnapshot(enrollment: .unenrolled, machineID: nil)
 
-        let vm = RunnersViewModel(fleet: fleet)
-
-        XCTAssertEqual(vm.viewState, .unenrolled)
+        XCTAssertEqual(
+            resolve(snapshot: snapshot, enrollmentState: .idle, isSignedIn: false),
+            .signedOut
+        )
+        XCTAssertEqual(
+            resolve(snapshot: snapshot, enrollmentState: .idle, isSignedIn: true),
+            .unenrolled
+        )
     }
 
     func testAttachedSnapshotMapsLiveJobsAndCapabilities() throws {
@@ -41,7 +43,7 @@ final class RunnersViewModelTests: XCTestCase {
         )
         fleet.agentInfo = FleetAgentInfo(agentVersion: "0.5.0", apiVersion: 1, features: [])
         fleet.snapshot = snapshot
-        fleet.loadState = .ready(snapshot)
+        fleet.loadState = .ready
 
         let vm = RunnersViewModel(fleet: fleet)
         let host = try XCTUnwrap(enrolledHost(from: vm.viewState))
@@ -58,7 +60,7 @@ final class RunnersViewModelTests: XCTestCase {
         let fleet = FleetViewModel()
         let snapshot = makeSnapshot(enrollment: .attached, isDraining: true)
         fleet.snapshot = snapshot
-        fleet.loadState = .ready(snapshot)
+        fleet.loadState = .ready
 
         let vm = RunnersViewModel(fleet: fleet)
         let host = try XCTUnwrap(enrolledHost(from: vm.viewState))
@@ -67,15 +69,143 @@ final class RunnersViewModelTests: XCTestCase {
         XCTAssertTrue(host.isDraining)
     }
 
+    func testEnrollmentCoordinatorPhasesMapToVisibleProgress() {
+        let snapshot = makeSnapshot(enrollment: .unenrolled, machineID: nil)
+        let cases: [(FleetEnrollmentCoordinator.State, RunnerEnrollmentProgress)] = [
+            (.preparingAgent, .checkingAgent),
+            (.requestingEnrollmentToken, .requestingToken),
+            (.enrolling, .enrollingAgent),
+            (.reconcilingEnrollment, .reconciling),
+            (.attaching(machineID: "fltm_test"), .attaching),
+            (.ready(machineID: "fltm_test"), .synchronizing),
+        ]
+
+        for (coordinatorState, progress) in cases {
+            XCTAssertEqual(
+                resolve(
+                    snapshot: snapshot,
+                    enrollmentState: coordinatorState,
+                    isSignedIn: true
+                ),
+                .enrolling(progress)
+            )
+        }
+    }
+
+    func testCoordinatorFailureIsVisibleInsteadOfLeavingDisabledOnboarding() {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .unenrolled, machineID: nil),
+            enrollmentState: .failed(.workspaceRequired),
+            isSignedIn: true
+        )
+
+        XCTAssertEqual(
+            state,
+            .enrollmentFailed(
+                "An ArcBox workspace is required for enrollment.",
+                recovery: .retry
+            )
+        )
+    }
+
+    func testUnknownEnrollmentOutcomeDoesNotOfferUnsafeRetry() {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .unenrolled, machineID: nil),
+            enrollmentState: .failed(.enrollmentOutcomeUnknown),
+            isSignedIn: true,
+            canBeginEnrollment: false
+        )
+
+        XCTAssertEqual(
+            state,
+            .enrollmentFailed(
+                "The enrollment result is unknown. ArcBox will keep reconciling the Fleet Agent state.",
+                recovery: .waitForAgent
+            )
+        )
+    }
+
+    func testEnrolledSnapshotWinsOverAuthenticationAndCoordinatorState() throws {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .credentialRejected),
+            enrollmentState: .failed(.workspaceRequired),
+            isSignedIn: false
+        )
+        let host = try XCTUnwrap(enrolledHost(from: state))
+
+        XCTAssertEqual(host.status, .credentialRejected)
+    }
+
+    func testInvalidAndUnknownSnapshotsNeverShowOnboarding() {
+        let invalidSnapshots = [
+            makeSnapshot(enrollment: .unenrolled, machineID: "fltm_invalid"),
+            makeSnapshot(enrollment: .attached, machineID: nil),
+            makeSnapshot(enrollment: .unspecified, machineID: nil),
+            makeSnapshot(enrollment: .unrecognized(42), machineID: nil),
+        ]
+
+        for snapshot in invalidSnapshots {
+            let state = resolve(
+                snapshot: snapshot,
+                enrollmentState: .idle,
+                isSignedIn: true
+            )
+
+            guard case .failed = state else {
+                XCTFail("Invalid snapshot must fail closed, got \(state)")
+                continue
+            }
+        }
+    }
+
+    func testRetainedHostIsMarkedReconnectingWhenWatchFails() {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .attached),
+            loadState: .failed("State stream ended."),
+            enrollmentState: .ready(machineID: "fltm_test"),
+            isSignedIn: true
+        )
+
+        guard case .enrolled(_, freshness: .reconnecting(let message)) = state else {
+            XCTFail("Expected a retained host marked as reconnecting, got \(state)")
+            return
+        }
+        XCTAssertEqual(message, "State stream ended.")
+    }
+
+    func testRetainedUnenrolledSnapshotCannotStartEnrollmentWhileWatchReconnects() {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .unenrolled, machineID: nil),
+            loadState: .failed("State stream ended."),
+            enrollmentState: .idle,
+            isSignedIn: true
+        )
+
+        XCTAssertEqual(state, .unavailable("State stream ended."))
+    }
+
+    func testCoordinatorReadyWithoutSnapshotDoesNotSynthesizeHost() {
+        XCTAssertEqual(
+            resolve(
+                snapshot: nil,
+                loadState: .ready,
+                enrollmentState: .ready(machineID: "fltm_test"),
+                isSignedIn: true
+            ),
+            .connecting
+        )
+    }
+
     private func makeSnapshot(
         enrollment: FleetEnrollmentState,
+        machineID: String? = "fltm_test",
         isDraining: Bool = false,
         capabilities: [FleetCapability] = [],
         jobs: [FleetInFlightJob] = []
     ) -> FleetAgentSnapshot {
         FleetAgentSnapshot(
             enrollment: enrollment,
-            machineID: enrollment == .unenrolled ? nil : "fltm_test",
+            machineID: machineID,
             isDraining: isDraining,
             capabilities: capabilities,
             inFlightJobs: jobs,
@@ -85,8 +215,29 @@ final class RunnersViewModelTests: XCTestCase {
         )
     }
 
+    private func resolve(
+        snapshot: FleetAgentSnapshot?,
+        loadState: FleetLoadState = .ready,
+        enrollmentState: FleetEnrollmentCoordinator.State?,
+        isSignedIn: Bool?,
+        canBeginEnrollment: Bool? = true
+    ) -> RunnersViewState {
+        RunnersViewModel.resolveViewState(
+            snapshot: snapshot,
+            agentInfo: nil,
+            loadState: loadState,
+            enrollmentContext: enrollmentState.map {
+                RunnersViewModel.EnrollmentContext(
+                    state: $0,
+                    isSignedIn: isSignedIn ?? false,
+                    canBeginEnrollment: canBeginEnrollment ?? false
+                )
+            }
+        )
+    }
+
     private func enrolledHost(from state: RunnersViewState) -> RunnerHostViewModel? {
-        guard case .enrolled(let host) = state else { return nil }
+        guard case .enrolled(let host, freshness: _) = state else { return nil }
         return host
     }
 }
