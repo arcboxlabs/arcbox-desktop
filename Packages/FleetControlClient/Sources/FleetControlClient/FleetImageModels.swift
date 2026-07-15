@@ -2,6 +2,7 @@
 public enum FleetImageKind: Equatable, Sendable {
     case unspecified
     case linuxRunnerImage
+    case macosRunnerImage
     case unrecognized(Int)
 }
 
@@ -32,6 +33,8 @@ extension FleetImageKind {
             self = .unspecified
         case .linuxRunnerImage:
             self = .linuxRunnerImage
+        case .macosRunnerImage:
+            self = .macosRunnerImage
         case .UNRECOGNIZED(let value):
             self = .unrecognized(value)
         }
@@ -43,6 +46,8 @@ extension FleetImageKind {
             return .unspecified
         case .linuxRunnerImage:
             return .linuxRunnerImage
+        case .macosRunnerImage:
+            return .macosRunnerImage
         case .unrecognized(let value):
             return .UNRECOGNIZED(value)
         }

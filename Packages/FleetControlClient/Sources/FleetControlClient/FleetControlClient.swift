@@ -265,7 +265,9 @@ public final class FleetControlClient: Sendable {
         gateway: String? = nil,
         dockerMode: FleetDockerMode? = nil,
         runnerScript: String? = nil,
-        participate: Bool? = nil
+        participate: Bool? = nil,
+        macosRunnerImage: String? = nil,
+        vmMode: FleetVmMode? = nil
     ) async throws -> FleetAgentSettings {
         try await updateSettings(
             FleetSettingsUpdate(
@@ -275,7 +277,9 @@ public final class FleetControlClient: Sendable {
                 gateway: gateway,
                 dockerMode: dockerMode,
                 runnerScript: runnerScript,
-                participate: participate
+                participate: participate,
+                macosRunnerImage: macosRunnerImage,
+                vmMode: vmMode
             )
         )
     }

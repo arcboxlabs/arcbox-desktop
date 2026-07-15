@@ -7,7 +7,9 @@ import Testing
         loadCeiling: 0,
         linuxRunnerImage: "",
         dockerMode: .disabled,
-        participate: false
+        participate: false,
+        macosRunnerImage: "tahoe-base",
+        vmMode: .enabled
     )
 
     let request = update.protoValue
@@ -23,7 +25,12 @@ import Testing
     #expect(!request.hasRunnerScript)
     #expect(request.hasParticipate)
     #expect(!request.participate)
+    #expect(request.hasMacosRunnerImage)
+    #expect(request.macosRunnerImage == "tahoe-base")
+    #expect(request.hasVmMode)
+    #expect(request.vmMode == .enabled)
     #expect(!update.isEmpty)
+    #expect(FleetSettingsUpdate().isEmpty)
 }
 
 @Test func settingsMappingPreservesCurrentTargetAndPresence() {
@@ -49,6 +56,16 @@ import Testing
     participate.target = true
     proto.participate = participate
 
+    var macosRunnerImage = Arcbox_Fleet_Control_V1_StringSetting()
+    macosRunnerImage.current = "tahoe-base@2026.07.02"
+    macosRunnerImage.target = "tahoe-base"
+    proto.macosRunnerImage = macosRunnerImage
+
+    var vmMode = Arcbox_Fleet_Control_V1_VmModeSetting()
+    vmMode.current = .disabled
+    vmMode.target = .auto
+    proto.vmMode = vmMode
+
     let settings = FleetAgentSettings(proto: proto)
 
     #expect(settings.loadCeiling == FleetSetting(current: 0.7, target: 0.9))
@@ -61,7 +78,23 @@ import Testing
             ))
     #expect(settings.dockerMode == FleetSetting(current: .auto, target: .disabled))
     #expect(settings.participate == FleetSetting(current: false, target: true))
+    #expect(
+        settings.macosRunnerImage
+            == FleetSetting(current: "tahoe-base@2026.07.02", target: "tahoe-base"))
+    #expect(settings.vmMode == FleetSetting(current: .disabled, target: .auto))
     #expect(settings.hasPendingChanges)
+}
+
+@Test func newSettingsFieldsContributeToPendingStateIndependently() {
+    let imagePending = FleetAgentSettings(
+        macosRunnerImage: FleetSetting(current: "tahoe-base@old", target: "tahoe-base")
+    )
+    let vmModePending = FleetAgentSettings(
+        vmMode: FleetSetting(current: .disabled, target: .enabled)
+    )
+
+    #expect(imagePending.hasPendingChanges)
+    #expect(vmModePending.hasPendingChanges)
 }
 
 @Test func newLifecycleStatesMapWithoutLosingMeaning() {
@@ -89,6 +122,8 @@ import Testing
                 fraction: 0.75
             ))
     #expect(event.kind.protoValue == .UNRECOGNIZED(42))
+    #expect(FleetImageKind(proto: .macosRunnerImage) == .macosRunnerImage)
+    #expect(FleetImageKind.macosRunnerImage.protoValue == .macosRunnerImage)
 }
 
 @Test func snapshotMappingPreservesOptionalTelemetryAndSettings() {
@@ -143,11 +178,15 @@ import Testing
     #expect(snapshot.settings == nil)
 }
 
-@Test func unrecognizedEnumsRoundTripForWritableDockerMode() {
-    let mode = FleetDockerMode(proto: .UNRECOGNIZED(42))
-    let request = FleetSettingsUpdate(dockerMode: mode).protoValue
+@Test func unrecognizedWritableModesRoundTripWithoutLosingValues() {
+    let dockerMode = FleetDockerMode(proto: .UNRECOGNIZED(42))
+    let vmMode = FleetVmMode(proto: .UNRECOGNIZED(43))
+    let request = FleetSettingsUpdate(dockerMode: dockerMode, vmMode: vmMode).protoValue
 
-    #expect(mode == .unrecognized(42))
+    #expect(dockerMode == .unrecognized(42))
     #expect(request.hasDockerMode)
     #expect(request.dockerMode == .UNRECOGNIZED(42))
+    #expect(vmMode == .unrecognized(43))
+    #expect(request.hasVmMode)
+    #expect(request.vmMode == .UNRECOGNIZED(43))
 }
