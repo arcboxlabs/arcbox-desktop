@@ -24,7 +24,7 @@ extension AuthSession {
     /// Services delivers it as a deep link (`handleAuthorizationCallback`).
     /// Both funnel into `finishAuthorization`; whichever arrives first wins.
     public func signIn(using webSession: WebAuthenticationSession) async {
-        guard status != .signingIn else { return }
+        guard status != .restoring, status != .signingIn else { return }
         status = .signingIn
         do {
             let authorizationURL = try await beginAuthorization()
@@ -145,7 +145,9 @@ extension AuthSession {
                 throw OIDCError.invalidIDToken
             }
         }
-        adopt(Self.merge(response: response, into: nil), persist: true)
+        let stored = Self.merge(response: response, into: nil)
+        await persist(stored)
+        adopt(stored)
         await loadUserInfo()
     }
 
