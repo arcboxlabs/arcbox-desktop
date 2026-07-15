@@ -12,6 +12,52 @@ enum FleetLoadState: Equatable {
     case failed(String)
 }
 
+/// Whether the connected Agent exposes the complete VM settings contract.
+enum FleetVMSettingsAvailability: Equatable {
+    case loading
+    case unavailable(String)
+    case unsupported
+    case missingSettings
+    case available
+}
+
+/// Progress for the long-running macOS runner image preparation RPC.
+struct FleetImagePreparationProgress: Equatable {
+    let stage: String
+    let detail: String
+    let fraction: Double
+}
+
+/// Observable state for macOS runner image preparation.
+enum FleetImagePreparationState: Equatable {
+    case idle
+    case preparing(FleetImagePreparationProgress)
+    case completed(reference: String)
+    case failed(String)
+
+    var isPreparing: Bool {
+        if case .preparing = self { return true }
+        return false
+    }
+}
+
+private enum FleetAgentFeature {
+    static let vmSettings = "vm-settings"
+    static let macOSImagePrepare = "macos-image-prepare"
+    static let vmBackend = "vm-backend"
+}
+
+private enum FleetImagePreparationError: LocalizedError {
+    case targetDidNotConverge(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .targetDidNotConverge(let reference):
+            "Fleet Agent finished preparing \(reference), but did not report it as the current image."
+        }
+    }
+}
+
 /// View model for the local fleet-agent control surface.
 @MainActor
 @Observable
@@ -25,12 +71,16 @@ final class FleetViewModel {
     var isWatching = false
     var isPerformingAction = false
     var reconnectAttempt = 0
+    var imagePreparationState: FleetImagePreparationState = .idle
 
     @ObservationIgnored
-    private var client: FleetControlClient?
+    private var client: (any FleetControlServicing)?
 
     @ObservationIgnored
     private var watchTask: Task<Void, Never>?
+
+    @ObservationIgnored
+    private var imagePreparationTask: Task<Void, Never>?
 
     @ObservationIgnored
     private var snapshotObserver: (@MainActor @Sendable (FleetAgentSnapshot) -> Void)?
@@ -38,9 +88,55 @@ final class FleetViewModel {
     @ObservationIgnored
     private var watchGeneration = UUID()
 
+    @ObservationIgnored
+    private var imagePreparationGeneration = UUID()
+
     var isReady: Bool {
         if case .ready = loadState { return true }
         return false
+    }
+
+    var vmSettingsAvailability: FleetVMSettingsAvailability {
+        Self.resolveVMSettingsAvailability(
+            agentInfo: agentInfo,
+            settings: settings,
+            loadState: loadState
+        )
+    }
+
+    var supportsMacOSImagePreparation: Bool {
+        agentInfo?.supportsFeature(FleetAgentFeature.macOSImagePrepare) == true
+    }
+
+    var isVMBackendActive: Bool {
+        agentInfo?.supportsFeature(FleetAgentFeature.vmBackend) == true
+    }
+
+    var requiresAgentRestartForVM: Bool {
+        guard let vmMode = settings?.vmMode,
+            let image = settings?.macosRunnerImage
+        else {
+            return false
+        }
+
+        if vmMode.isPending {
+            switch vmMode.target {
+            case .disabled:
+                return true
+            case .auto, .enabled:
+                guard !image.isPending else { return false }
+                return isVMBackendActive || image.current == image.target
+            case .unspecified, .unrecognized:
+                return false
+            }
+        }
+
+        guard vmMode.target != .disabled,
+            image.current == image.target
+        else {
+            return false
+        }
+        return !isVMBackendActive
     }
 
     var machineID: String? {
@@ -61,10 +157,11 @@ final class FleetViewModel {
 
     /// Begin the handshake and state watch loop.
     func start(
-        client: FleetControlClient?,
+        client: (any FleetControlServicing)?,
         onSnapshot: (@MainActor @Sendable (FleetAgentSnapshot) -> Void)? = nil
     ) {
         stop()
+        agentInfo = nil
         self.client = client
         snapshotObserver = onSnapshot
 
@@ -85,6 +182,12 @@ final class FleetViewModel {
         watchGeneration = UUID()
         watchTask?.cancel()
         watchTask = nil
+        imagePreparationGeneration = UUID()
+        imagePreparationTask?.cancel()
+        imagePreparationTask = nil
+        if imagePreparationState.isPreparing {
+            imagePreparationState = .idle
+        }
         isWatching = false
         reconnectAttempt = 0
         snapshotObserver = nil
@@ -96,7 +199,7 @@ final class FleetViewModel {
         guard let client = requireClient() else { return false }
 
         do {
-            agentInfo = try await client.getAgentInfo()
+            agentInfo = try await client.fetchAgentInfo()
             lastError = nil
             return true
         } catch {
@@ -126,7 +229,7 @@ final class FleetViewModel {
         guard let client = requireClient() else { return false }
 
         do {
-            settings = try await client.getSettings()
+            applySettings(try await client.getSettings())
             lastError = nil
             return true
         } catch {
@@ -175,13 +278,25 @@ final class FleetViewModel {
     /// Apply a partial settings update.
     @discardableResult
     func updateSettings(_ update: FleetSettingsUpdate) async -> Bool {
+        let updatesVMSettings = update.macosRunnerImage != nil || update.vmMode != nil
+        if updatesVMSettings {
+            guard vmSettingsAvailability == .available else {
+                lastError = "Fleet VM settings are unavailable."
+                return false
+            }
+            guard !imagePreparationState.isPreparing else {
+                lastError = "Wait for macOS image preparation to finish before changing VM settings."
+                return false
+            }
+        }
+
         guard let client = requireClient() else { return false }
         guard !update.isEmpty else {
             return await getSettings()
         }
 
         return await performAction("update settings") {
-            settings = try await client.updateSettings(update)
+            applySettings(try await client.updateSettings(update))
         }
     }
 
@@ -194,7 +309,9 @@ final class FleetViewModel {
         gateway: String? = nil,
         dockerMode: FleetDockerMode? = nil,
         runnerScript: String? = nil,
-        participate: Bool? = nil
+        participate: Bool? = nil,
+        macosRunnerImage: String? = nil,
+        vmMode: FleetVmMode? = nil
     ) async -> Bool {
         await updateSettings(
             FleetSettingsUpdate(
@@ -204,26 +321,121 @@ final class FleetViewModel {
                 gateway: gateway,
                 dockerMode: dockerMode,
                 runnerScript: runnerScript,
-                participate: participate
+                participate: participate,
+                macosRunnerImage: macosRunnerImage,
+                vmMode: vmMode
             )
         )
     }
 
-    private func run(client: FleetControlClient, generation: UUID) async {
+    /// Begin preparing the configured macOS runner image through the Agent.
+    /// The Agent owns daemon communication; Desktop only consumes this local
+    /// Fleet control stream and never manages either process.
+    func beginMacOSRunnerImagePreparation() {
+        guard !isPerformingAction, imagePreparationTask == nil else { return }
+        guard vmSettingsAvailability == .available else {
+            imagePreparationState = .failed("Fleet VM settings are unavailable.")
+            return
+        }
+        guard supportsMacOSImagePreparation else {
+            imagePreparationState = .failed(
+                "This Fleet Agent does not support macOS image preparation."
+            )
+            return
+        }
+        guard let reference = settings?.macosRunnerImage?.target else {
+            imagePreparationState = .failed("Fleet Agent did not report a macOS runner image.")
+            return
+        }
+        guard let client = requireClient() else {
+            imagePreparationState = .failed("Fleet control client is unavailable.")
+            return
+        }
+
+        let generation = UUID()
+        imagePreparationGeneration = generation
+        imagePreparationState = .preparing(
+            FleetImagePreparationProgress(
+                stage: "starting",
+                detail: "",
+                fraction: 0
+            )
+        )
+        imagePreparationTask = Task { [weak self, client] in
+            await self?.runMacOSRunnerImagePreparation(
+                client: client,
+                generation: generation,
+                reference: reference
+            )
+        }
+    }
+
+    private func run(client: any FleetControlServicing, generation: UUID) async {
         await loadInitialState(client: client, generation: generation)
         guard generation == watchGeneration else { return }
         await watchSnapshots(client: client, generation: generation)
     }
 
-    private func loadInitialState(client: FleetControlClient, generation: UUID) async {
+    private func runMacOSRunnerImagePreparation(
+        client: any FleetControlServicing,
+        generation: UUID,
+        reference: String
+    ) async {
+        defer {
+            if generation == imagePreparationGeneration {
+                imagePreparationTask = nil
+            }
+        }
+
         do {
-            let agentInfo = try await client.getAgentInfo()
+            for try await event in client.prepareImages([.macosRunnerImage]) {
+                guard generation == imagePreparationGeneration else { return }
+                guard event.kind == .macosRunnerImage else { continue }
+
+                imagePreparationState = .preparing(
+                    FleetImagePreparationProgress(
+                        stage: event.stage,
+                        detail: event.detail,
+                        fraction: event.fraction
+                    )
+                )
+            }
+
+            guard generation == imagePreparationGeneration else { return }
+            try Task.checkCancellation()
+            let refreshedSettings = try await client.getSettings()
+            guard generation == imagePreparationGeneration else { return }
+            applySettings(refreshedSettings)
+            guard refreshedSettings.macosRunnerImage?.current == reference,
+                refreshedSettings.macosRunnerImage?.target == reference
+            else {
+                throw FleetImagePreparationError.targetDidNotConverge(reference)
+            }
+            imagePreparationState = .completed(reference: reference)
+            lastError = nil
+        } catch is CancellationError {
+            guard generation == imagePreparationGeneration else { return }
+            imagePreparationState = .idle
+        } catch {
+            guard generation == imagePreparationGeneration else { return }
+            let message = FleetControlClient.userMessage(for: error)
+            Log.fleet.error(
+                "Fleet macOS image preparation failed: \(error.localizedDescription, privacy: .private)"
+            )
+            imagePreparationState = .failed(message)
+            lastError = message
+        }
+    }
+
+    private func loadInitialState(client: any FleetControlServicing, generation: UUID) async {
+        do {
+            let agentInfo = try await client.fetchAgentInfo()
             let status = try await client.getStatus()
             let settings = try await client.getSettings()
             guard generation == watchGeneration else { return }
             self.agentInfo = agentInfo
             self.status = status
-            self.settings = settings
+            applySettings(settings)
             lastError = nil
         } catch {
             guard generation == watchGeneration else { return }
@@ -231,9 +443,14 @@ final class FleetViewModel {
         }
     }
 
-    private func watchSnapshots(client: FleetControlClient, generation: UUID) async {
+    private func watchSnapshots(client: any FleetControlServicing, generation: UUID) async {
         while !Task.isCancelled, generation == watchGeneration {
             do {
+                if agentInfo == nil || reconnectAttempt > 0 {
+                    let agentInfo = try await client.fetchAgentInfo()
+                    guard generation == watchGeneration else { return }
+                    self.agentInfo = agentInfo
+                }
                 isWatching = true
                 for try await snapshot in client.watchSnapshots() {
                     guard generation == watchGeneration else { return }
@@ -258,7 +475,9 @@ final class FleetViewModel {
 
     private func apply(_ snapshot: FleetAgentSnapshot) {
         self.snapshot = snapshot
-        self.settings = snapshot.settings ?? settings
+        if let settings = snapshot.settings {
+            applySettings(settings)
+        }
         self.status = Self.status(from: snapshot)
         self.loadState = .ready
         self.lastError = nil
@@ -267,13 +486,31 @@ final class FleetViewModel {
         snapshotObserver?(snapshot)
     }
 
-    private func refreshAfterMutation(client: FleetControlClient) async {
+    private func refreshAfterMutation(client: any FleetControlServicing) async {
         do {
             status = try await client.getStatus()
-            settings = try await client.getSettings()
+            applySettings(try await client.getSettings())
             lastError = nil
         } catch {
             handle(error)
+        }
+    }
+
+    private func applySettings(_ newSettings: FleetAgentSettings) {
+        let previousTarget = settings?.macosRunnerImage?.target
+        settings = newSettings
+
+        let newTarget = newSettings.macosRunnerImage?.target
+        if previousTarget != newTarget, !imagePreparationState.isPreparing {
+            imagePreparationState = .idle
+        }
+
+        guard case .completed(let reference) = imagePreparationState else { return }
+        guard newSettings.macosRunnerImage?.current == reference,
+            newSettings.macosRunnerImage?.target == reference
+        else {
+            imagePreparationState = .idle
+            return
         }
     }
 
@@ -297,7 +534,7 @@ final class FleetViewModel {
         }
     }
 
-    private func requireClient() -> FleetControlClient? {
+    private func requireClient() -> (any FleetControlServicing)? {
         guard let client else {
             markUnavailable("Fleet control client is unavailable.")
             return nil
@@ -345,5 +582,31 @@ final class FleetViewModel {
             state = .unrecognized(value)
         }
         return FleetAgentStatus(state: state, machineID: snapshot.machineID)
+    }
+
+    static func resolveVMSettingsAvailability(
+        agentInfo: FleetAgentInfo?,
+        settings: FleetAgentSettings?,
+        loadState: FleetLoadState
+    ) -> FleetVMSettingsAvailability {
+        switch loadState {
+        case .idle, .connecting:
+            return .loading
+        case .unavailable(let message), .failed(let message):
+            return .unavailable(message)
+        case .ready:
+            break
+        }
+
+        guard let agentInfo else {
+            return .unavailable("Fleet Agent capability data is unavailable.")
+        }
+        guard agentInfo.supportsFeature(FleetAgentFeature.vmSettings) else {
+            return .unsupported
+        }
+        guard settings?.vmMode != nil, settings?.macosRunnerImage != nil else {
+            return .missingSettings
+        }
+        return .available
     }
 }
