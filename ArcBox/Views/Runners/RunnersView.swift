@@ -25,6 +25,7 @@ struct RunnersView: View {
             case .unenrolled:
                 RunnerEmptyState(
                     isWorking: vm.isBusy,
+                    canConnect: vm.canConnect,
                     errorMessage: vm.errorMessage,
                     onConnect: prepareEnrollment
                 )

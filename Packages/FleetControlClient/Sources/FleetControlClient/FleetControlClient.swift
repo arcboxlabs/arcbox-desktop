@@ -87,10 +87,17 @@ public final class FleetControlClient: Sendable {
     }
 
     /// Reads agent version and capability flags.
-    public func getAgentInfo() async throws -> FleetAgentInfo {
+    ///
+    /// `waitForReady` is useful for bounded startup probes while the agent is
+    /// creating its local socket. Normal UI calls should keep the fail-fast
+    /// default.
+    public func getAgentInfo(
+        timeout: Duration = FleetControlClient.defaultRPCTimeout,
+        waitForReady: Bool = false
+    ) async throws -> FleetAgentInfo {
         let response = try await lifecycle.getAgentInfo(
             .init(),
-            options: Self.defaultCallOptions
+            options: Self.callOptions(timeout: timeout, waitForReady: waitForReady)
         )
         return FleetAgentInfo(proto: response)
     }
@@ -98,7 +105,9 @@ public final class FleetControlClient: Sendable {
     /// Enrolls this host with an enrollment token.
     ///
     /// The machine credential is exchanged and persisted by the fleet agent,
-    /// not by the desktop app.
+    /// not by the desktop app. The deadline bounds a blackholed gateway; after
+    /// handoff, any failure is an unknown outcome that callers must reconcile
+    /// via Watch rather than retry with a fresh token.
     public func enroll(token: String, controlPlane: String? = nil) async throws -> String {
         var request = Arcbox_Fleet_Control_V1_EnrollRequest()
         request.enrollmentToken = token
@@ -108,7 +117,7 @@ public final class FleetControlClient: Sendable {
 
         let response = try await lifecycle.enroll(
             request,
-            options: Self.defaultCallOptions
+            options: Self.enrollmentCallOptions
         )
         return response.machineID
     }
@@ -152,7 +161,7 @@ public final class FleetControlClient: Sendable {
     /// the agent state changes. The stream finishes with an error if the RPC
     /// fails; ViewModels should reconnect with backoff.
     public func watchSnapshots() -> AsyncThrowingStream<FleetAgentSnapshot, Error> {
-        AsyncThrowingStream { continuation in
+        AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
             let task = Task {
                 do {
                     let service = state
@@ -164,11 +173,13 @@ public final class FleetControlClient: Sendable {
                             guard let snapshot = FleetAgentSnapshot(proto: message) else {
                                 continue
                             }
-                            continuation.yield(snapshot)
+                            if case .terminated = continuation.yield(snapshot) {
+                                return
+                            }
                         }
                     }
                     continuation.finish()
-                } catch is CancellationError {
+                } catch  where Task.isCancelled {
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
@@ -305,13 +316,25 @@ public final class FleetControlClient: Sendable {
     }
 
     private static var defaultCallOptions: GRPCCore.CallOptions {
-        var options = CallOptions.defaults
-        options.timeout = defaultRPCTimeout
-        return options
+        callOptions(timeout: defaultRPCTimeout)
     }
 
     private static var streamingCallOptions: GRPCCore.CallOptions {
         .defaults
+    }
+
+    private static var enrollmentCallOptions: GRPCCore.CallOptions {
+        callOptions(timeout: .seconds(30))
+    }
+
+    private static func callOptions(
+        timeout: Duration,
+        waitForReady: Bool = false
+    ) -> GRPCCore.CallOptions {
+        var options = CallOptions.defaults
+        options.timeout = timeout
+        options.waitForReady = waitForReady
+        return options
     }
 
     private static func makeTransport(

@@ -3,6 +3,7 @@ import SwiftUI
 /// Shown when this Mac is not enrolled in any fleet yet.
 struct RunnerEmptyState: View {
     let isWorking: Bool
+    let canConnect: Bool
     let errorMessage: String?
     var onConnect: () -> Void
 
@@ -35,7 +36,7 @@ struct RunnerEmptyState: View {
                 }
                 .controlSize(.large)
                 .buttonStyle(.borderedProminent)
-                .disabled(isWorking)
+                .disabled(!canConnect)
                 .padding(.top, 8)
 
                 if let errorMessage {
@@ -50,6 +51,6 @@ struct RunnerEmptyState: View {
 }
 
 #Preview {
-    RunnerEmptyState(isWorking: false, errorMessage: nil, onConnect: {})
+    RunnerEmptyState(isWorking: false, canConnect: true, errorMessage: nil, onConnect: {})
         .frame(width: 320, height: 520)
 }

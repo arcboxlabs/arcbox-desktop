@@ -1,8 +1,8 @@
 import AppKit
 import ArcBoxClient
 import DockerClient
-import FleetControlClient
 import Foundation
+import os
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var daemonManager: DaemonManager?
@@ -11,8 +11,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var arcboxClient: ArcBoxClient?
     var connectionTask: Task<Void, Never>?
     let deepLinkRouter = DeepLinkRouter()
-    var fleetControlClient: FleetControlClient?
-    var fleetControlConnectionTask: Task<Void, Never>?
+    var fleetAgentConnection: FleetAgentConnection?
+    var runnersVM: RunnersViewModel?
     /// Set to true when the user explicitly requests a full quit (e.g. from menu bar).
     var forceQuit = false
 
@@ -39,13 +39,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DockerContextManager.restorePreviousContext()
         arcboxClient?.close()
         connectionTask?.cancel()
-        fleetControlClient?.close()
-        fleetControlConnectionTask?.cancel()
-        guard let daemonManager else { return .terminateNow }
+        let runnersVM = runnersVM
+        let fleetAgentConnection = fleetAgentConnection
+        let daemonManager = daemonManager
 
         Task { @MainActor in
-            daemonManager.stopWatching()
-            await daemonManager.disableDaemon()
+            let enrollmentSettled = await runnersVM?.prepareForTermination() ?? true
+            if !enrollmentSettled {
+                Log.fleet.warning(
+                    "Fleet enrollment did not settle before the application termination deadline"
+                )
+            }
+
+            let connectionClosedGracefully = await fleetAgentConnection?.shutdown() ?? true
+            if !connectionClosedGracefully {
+                Log.fleet.warning(
+                    "Fleet client transport required forced shutdown during application termination"
+                )
+            }
+
+            if let daemonManager {
+                daemonManager.stopWatching()
+                await daemonManager.disableDaemon()
+            }
             NSApp.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater
