@@ -12,6 +12,7 @@ final class FleetEnrollmentCoordinatorTests: XCTestCase {
             calls: calls,
             enrollmentResult: .success("fltm_123"),
             snapshots: [
+                snapshot(.updating, machineID: "fltm_123"),
                 snapshot(.attaching, machineID: "fltm_123"),
                 snapshot(.attached, machineID: "fltm_123"),
             ]
@@ -227,6 +228,33 @@ final class FleetEnrollmentCoordinatorTests: XCTestCase {
         XCTAssertFalse(retrySucceeded)
         XCTAssertEqual(tokenIssuer.requestedWorkspaceIDs.count, 1)
         XCTAssertFalse(coordinator.canBeginEnrollment)
+    }
+
+    func testUpdatingBaselineDoesNotRequestTokenAndConvergesThroughReconciliation() async {
+        let calls = CallRecorder()
+        let agent = AgentStub(
+            calls: calls,
+            baseline: snapshot(.updating, machineID: "fltm_existing")
+        )
+        let tokenIssuer = TokenIssuerStub(calls: calls)
+        let coordinator = makeCoordinator(
+            calls: calls,
+            agent: agent,
+            tokenIssuer: tokenIssuer
+        )
+
+        let succeeded = await coordinator.enroll(workspaceID: "ws_123")
+
+        XCTAssertFalse(succeeded)
+        XCTAssertEqual(coordinator.state, .attaching(machineID: "fltm_existing"))
+        XCTAssertEqual(calls.entries, ["ensureReady", "watch"])
+        XCTAssertTrue(tokenIssuer.requestedWorkspaceIDs.isEmpty)
+        XCTAssertTrue(agent.receivedTokens.isEmpty)
+        XCTAssertFalse(coordinator.canBeginEnrollment)
+
+        coordinator.reconcile(snapshot(.attached, machineID: "fltm_existing"))
+
+        XCTAssertEqual(coordinator.state, .ready(machineID: "fltm_existing"))
     }
 
     func testGlobalAttachedSnapshotDuringActiveAttemptIsAppliedAfterInternalUnknown() async {

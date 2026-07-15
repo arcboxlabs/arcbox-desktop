@@ -245,7 +245,7 @@ final class FleetEnrollmentCoordinator {
             return
         case .unspecified, .unrecognized:
             return
-        case .attaching, .attached, .credentialRejected, .detached:
+        case .attaching, .attached, .updating, .credentialRejected, .detached:
             break
         }
 
@@ -430,7 +430,7 @@ final class FleetEnrollmentCoordinator {
                             throw Failure.credentialRejected(machineID: machineID)
                         case .detached:
                             throw Failure.detached(machineID: machineID)
-                        case .unspecified, .unenrolled, .attaching, .unrecognized:
+                        case .unspecified, .unenrolled, .attaching, .updating, .unrecognized:
                             continue
                         }
                     }
@@ -509,7 +509,7 @@ final class FleetEnrollmentCoordinator {
         switch snapshot.enrollment {
         case .unenrolled where machineID == nil:
             return true
-        case .attaching:
+        case .attaching, .updating:
             guard let machineID else { return failUnknownOutcome() }
             enrollmentLocked = true
             state = .attaching(machineID: machineID)
@@ -585,7 +585,7 @@ final class FleetEnrollmentCoordinator {
         enrollmentLocked = true
 
         switch snapshot.enrollment {
-        case .attaching:
+        case .attaching, .updating:
             state = .attaching(machineID: machineID)
         case .attached:
             state = .ready(machineID: machineID)
@@ -623,7 +623,7 @@ extension FleetEnrollmentState {
         switch self {
         case .credentialRejected, .detached:
             true
-        case .unenrolled, .attaching, .attached, .unspecified, .unrecognized:
+        case .unenrolled, .attaching, .attached, .updating, .unspecified, .unrecognized:
             false
         }
     }

@@ -6,6 +6,7 @@ enum RunnerHostStatus: Equatable {
     case attaching
     case online
     case draining
+    case updating
     case detached
     case credentialRejected
     case unknown
@@ -16,6 +17,8 @@ enum RunnerHostStatus: Equatable {
             self = .attaching
         case .attached:
             self = snapshot.isDraining ? .draining : .online
+        case .updating:
+            self = .updating
         case .detached:
             self = .detached
         case .credentialRejected:
@@ -30,6 +33,7 @@ enum RunnerHostStatus: Equatable {
         case .attaching: "Attaching"
         case .online: "Online"
         case .draining: "Draining"
+        case .updating: "Updating"
         case .detached: "Detached"
         case .credentialRejected: "Credential Rejected"
         case .unknown: "Unknown"
@@ -39,7 +43,7 @@ enum RunnerHostStatus: Equatable {
     var color: Color {
         switch self {
         case .online: AppColors.running
-        case .attaching, .draining: AppColors.warning
+        case .attaching, .draining, .updating: AppColors.warning
         case .detached, .credentialRejected, .unknown: AppColors.stopped
         }
     }
