@@ -237,7 +237,7 @@ final class RunnersViewModel {
     ) -> RunnersViewState {
         if let snapshot {
             switch snapshot.enrollment {
-            case .attaching, .attached, .detached, .credentialRejected:
+            case .attaching, .attached, .updating, .detached, .credentialRejected:
                 guard normalizedMachineID(snapshot.machineID) != nil else {
                     return .failed("Fleet Agent reported an invalid machine identity.")
                 }

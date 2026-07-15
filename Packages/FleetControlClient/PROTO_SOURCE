@@ -1,4 +1,4 @@
 repository=https://github.com/ArcBoxLabs/arcbox
-commit=58d6e81a87321c5da01185c92b7058187d011937
+commit=224eedbd7a11b41d68a1592593bb505123ea0d8b
 path=fleet/arcbox-fleet-control-proto/proto/arcbox/fleet/control/v1/control.proto
-sha256=25b6e480582be39359882f991f9f57c30c41c28e112513dd052bedc03698942d
+sha256=d9ff764f929db2de49083637a6df11ab41bb97b568ed3d200e2085e4c8a4168e
