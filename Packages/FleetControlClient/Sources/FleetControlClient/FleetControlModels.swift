@@ -66,6 +66,15 @@ public enum FleetDockerMode: Equatable, Sendable {
     case unrecognized(Int)
 }
 
+/// macOS runner VM policy mode.
+public enum FleetVmMode: Equatable, Sendable {
+    case unspecified
+    case auto
+    case enabled
+    case disabled
+    case unrecognized(Int)
+}
+
 /// A setting with an observed current value and a desired target value.
 public struct FleetSetting<Value: Equatable & Sendable>: Equatable, Sendable {
     public var current: Value
@@ -90,6 +99,8 @@ public struct FleetAgentSettings: Equatable, Sendable {
     public var dockerMode: FleetSetting<FleetDockerMode>?
     public var runnerScript: FleetSetting<String>?
     public var participate: FleetSetting<Bool>?
+    public var macosRunnerImage: FleetSetting<String>?
+    public var vmMode: FleetSetting<FleetVmMode>?
 
     public init(
         loadCeiling: FleetSetting<Double>? = nil,
@@ -98,7 +109,9 @@ public struct FleetAgentSettings: Equatable, Sendable {
         gateway: FleetSetting<String>? = nil,
         dockerMode: FleetSetting<FleetDockerMode>? = nil,
         runnerScript: FleetSetting<String>? = nil,
-        participate: FleetSetting<Bool>? = nil
+        participate: FleetSetting<Bool>? = nil,
+        macosRunnerImage: FleetSetting<String>? = nil,
+        vmMode: FleetSetting<FleetVmMode>? = nil
     ) {
         self.loadCeiling = loadCeiling
         self.memFloorMib = memFloorMib
@@ -107,6 +120,8 @@ public struct FleetAgentSettings: Equatable, Sendable {
         self.dockerMode = dockerMode
         self.runnerScript = runnerScript
         self.participate = participate
+        self.macosRunnerImage = macosRunnerImage
+        self.vmMode = vmMode
     }
 
     public var hasPendingChanges: Bool {
@@ -117,6 +132,8 @@ public struct FleetAgentSettings: Equatable, Sendable {
             || dockerMode?.isPending == true
             || runnerScript?.isPending == true
             || participate?.isPending == true
+            || macosRunnerImage?.isPending == true
+            || vmMode?.isPending == true
     }
 }
 
@@ -129,6 +146,8 @@ public struct FleetSettingsUpdate: Equatable, Sendable {
     public var dockerMode: FleetDockerMode?
     public var runnerScript: String?
     public var participate: Bool?
+    public var macosRunnerImage: String?
+    public var vmMode: FleetVmMode?
 
     public init(
         loadCeiling: Double? = nil,
@@ -137,7 +156,9 @@ public struct FleetSettingsUpdate: Equatable, Sendable {
         gateway: String? = nil,
         dockerMode: FleetDockerMode? = nil,
         runnerScript: String? = nil,
-        participate: Bool? = nil
+        participate: Bool? = nil,
+        macosRunnerImage: String? = nil,
+        vmMode: FleetVmMode? = nil
     ) {
         self.loadCeiling = loadCeiling
         self.memFloorMib = memFloorMib
@@ -146,6 +167,8 @@ public struct FleetSettingsUpdate: Equatable, Sendable {
         self.dockerMode = dockerMode
         self.runnerScript = runnerScript
         self.participate = participate
+        self.macosRunnerImage = macosRunnerImage
+        self.vmMode = vmMode
     }
 
     public var isEmpty: Bool {
@@ -156,6 +179,8 @@ public struct FleetSettingsUpdate: Equatable, Sendable {
             && dockerMode == nil
             && runnerScript == nil
             && participate == nil
+            && macosRunnerImage == nil
+            && vmMode == nil
     }
 }
 
@@ -372,6 +397,38 @@ extension FleetDockerMode {
     }
 }
 
+extension FleetVmMode {
+    init(proto: Arcbox_Fleet_Control_V1_VmMode) {
+        switch proto {
+        case .unspecified:
+            self = .unspecified
+        case .auto:
+            self = .auto
+        case .enabled:
+            self = .enabled
+        case .disabled:
+            self = .disabled
+        case .UNRECOGNIZED(let value):
+            self = .unrecognized(value)
+        }
+    }
+
+    var protoValue: Arcbox_Fleet_Control_V1_VmMode {
+        switch self {
+        case .unspecified:
+            return .unspecified
+        case .auto:
+            return .auto
+        case .enabled:
+            return .enabled
+        case .disabled:
+            return .disabled
+        case .unrecognized(let value):
+            return .UNRECOGNIZED(value)
+        }
+    }
+}
+
 extension FleetAgentSettings {
     init(proto: Arcbox_Fleet_Control_V1_AgentSettings) {
         self.init(
@@ -401,6 +458,18 @@ extension FleetAgentSettings {
                 : nil,
             participate: proto.hasParticipate
                 ? FleetSetting(current: proto.participate.current, target: proto.participate.target)
+                : nil,
+            macosRunnerImage: proto.hasMacosRunnerImage
+                ? FleetSetting(
+                    current: proto.macosRunnerImage.current,
+                    target: proto.macosRunnerImage.target
+                )
+                : nil,
+            vmMode: proto.hasVmMode
+                ? FleetSetting(
+                    current: FleetVmMode(proto: proto.vmMode.current),
+                    target: FleetVmMode(proto: proto.vmMode.target)
+                )
                 : nil
         )
     }
@@ -429,6 +498,12 @@ extension FleetSettingsUpdate {
         }
         if let participate {
             request.participate = participate
+        }
+        if let macosRunnerImage {
+            request.macosRunnerImage = macosRunnerImage
+        }
+        if let vmMode {
+            request.vmMode = vmMode.protoValue
         }
         return request
     }
