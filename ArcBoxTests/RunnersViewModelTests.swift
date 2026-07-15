@@ -163,6 +163,11 @@ final class RunnersViewModelTests: XCTestCase {
         let host = try XCTUnwrap(enrolledHost(from: state))
 
         XCTAssertEqual(host.status, .credentialRejected)
+        XCTAssertFalse(host.status.canChangeDrainState)
+        XCTAssertEqual(
+            host.status.recoveryMessage,
+            "The Fleet gateway rejected this Agent credential. Unenroll this Mac from Actions before enrolling again."
+        )
     }
 
     func testInvalidAndUnknownSnapshotsNeverShowOnboarding() {
