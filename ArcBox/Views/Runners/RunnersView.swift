@@ -38,7 +38,9 @@ struct RunnersView: View {
                 case .retry:
                     onboardingView(errorMessage: message, actionTitle: "Try Again")
                 case .waitForAgent:
-                    enrollmentBlockedView(message: vm.errorMessage ?? message)
+                    enrollmentBlockedView(message: message, recovery: recovery)
+                case .unenroll:
+                    enrollmentBlockedView(message: message, recovery: recovery)
                 }
             case .failed(let message):
                 EmptyStateView(icon: "exclamationmark.octagon", title: "Fleet integration unavailable") {
@@ -170,39 +172,63 @@ struct RunnersView: View {
         }
     }
 
-    private func enrollmentBlockedView(message: String) -> some View {
-        EmptyStateView(icon: "clock.arrow.circlepath", title: "Confirming enrollment") {
+    private func enrollmentBlockedView(
+        message: String,
+        recovery: RunnerEnrollmentRecovery
+    ) -> some View {
+        EmptyStateView(
+            icon: recovery == .waitForAgent ? "arrow.triangle.2.circlepath" : "exclamationmark.triangle",
+            title: recovery == .waitForAgent ? "Confirming enrollment" : "Enrollment needs attention"
+        ) {
             VStack(spacing: 12) {
                 VStack(spacing: 6) {
                     Text(message)
-                    Text(
-                        "ArcBox will keep observing the local Fleet Agent. A new enrollment will not start until the Agent reports a conclusive state."
-                    )
+                    if recovery == .waitForAgent {
+                        Text(
+                            "ArcBox will keep observing the local Fleet Agent. A new enrollment will not start until the Agent reports a conclusive state."
+                        )
+                    } else {
+                        Text("Unenroll the local Agent before starting another enrollment attempt.")
+                    }
                 }
                 .font(.caption)
                 .foregroundStyle(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
                 .accessibilityElement(children: .combine)
 
-                Button("Reset Enrollment…", role: .destructive) {
-                    isShowingEnrollmentResetConfirmation = true
+                if recovery == .waitForAgent {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Waiting for Fleet Agent enrollment state")
+                } else {
+                    Button("Unenroll and Start Over…", role: .destructive) {
+                        isShowingEnrollmentResetConfirmation = true
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(vm.isBusy)
+                    .accessibilityHint("Removes the local Agent enrollment so this Mac can enroll again")
+                    .confirmationDialog(
+                        "Unenroll this Mac and start over?",
+                        isPresented: $isShowingEnrollmentResetConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Unenroll", role: .destructive, action: unenroll)
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text(
+                            "This removes the local Fleet Agent's enrollment credentials and allows a new "
+                                + "enrollment attempt. It does not stop or uninstall the Agent."
+                        )
+                    }
                 }
-                .buttonStyle(.bordered)
-                .disabled(vm.isBusy)
-                .accessibilityHint("Removes the local Agent enrollment so this Mac can enroll again")
+
+                if let actionError = vm.errorMessage, actionError != message {
+                    Label(actionError, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(AppColors.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-        }
-        .confirmationDialog(
-            "Reset Fleet enrollment?",
-            isPresented: $isShowingEnrollmentResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Reset Enrollment", role: .destructive, action: unenroll)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(
-                "This removes the local Fleet Agent's enrollment credentials and allows a new enrollment attempt. It does not stop or uninstall the Agent."
-            )
         }
     }
 

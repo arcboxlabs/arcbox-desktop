@@ -125,6 +125,23 @@ final class RunnersViewModelTests: XCTestCase {
         )
     }
 
+    func testKnownPostHandoffFailureOffersUnenrollRecovery() {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .unenrolled, machineID: nil),
+            enrollmentState: .failed(.attachmentTimedOut(machineID: "fltm_test")),
+            isSignedIn: true,
+            canBeginEnrollment: false
+        )
+
+        XCTAssertEqual(
+            state,
+            .enrollmentFailed(
+                "This Mac enrolled, but did not attach to the Fleet gateway in time.",
+                recovery: .unenroll
+            )
+        )
+    }
+
     func testEnrolledSnapshotWinsOverAuthenticationAndCoordinatorState() throws {
         let state = resolve(
             snapshot: makeSnapshot(enrollment: .credentialRejected),
