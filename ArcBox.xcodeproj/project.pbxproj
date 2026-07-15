@@ -13,6 +13,7 @@
 		0720D45362971FA9338BAA53 /* SwiftTermView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEA74DBE71D29DEB680F08E7 /* SwiftTermView.swift */; };
 		07A382D149C73C697CAA1601 /* SandboxRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE564AAFEC0EF6D094409728 /* SandboxRowView.swift */; };
 		096533539D74E8FA5A322C0A /* RunnerJobsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2387BC90EBBF4477B65367E /* RunnerJobsView.swift */; };
+		0992A10AFBEFE1BC32E351DE /* FleetViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 239658775BBC68EB492EF715 /* FleetViewModelTests.swift */; };
 		0999A1C28C17EFD150E56CF8 /* MachinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */; };
 		09FF7CE0E252DAD805077C7E /* ImagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559C97F0CA659149BCBA59A2 /* ImagesViewModel.swift */; };
 		0AF01BD1D2FC14E2F99E9B4C /* FleetPlatformClient in Frameworks */ = {isa = PBXBuildFile; productRef = 1143C225F6C8A5BF7366588B /* FleetPlatformClient */; };
@@ -161,6 +162,7 @@
 		BFA2E94DC17244A06D187331 /* MachineInfoTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791DD121033683719C609B4D /* MachineInfoTab.swift */; };
 		C12978695EDC917704747269 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
 		C19B191AF0DE9179608BF40A /* RunnersViewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6ABF0A0B6218A3FE504C7DA /* RunnersViewState.swift */; };
+		C1CEE635A115E843DF66A65B /* FleetSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E69E766A830CB3A26231BA11 /* FleetSettingsView.swift */; };
 		C415E585DA749E8A19984650 /* MachineFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */; };
 		C50DD2284687B64249F15261 /* CheckForUpdatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C15DE3BBE549F8F86D82642 /* CheckForUpdatesViewModel.swift */; };
 		C63E9B1B9AC8A12C20996A74 /* VolumeRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B56D80B89FFE9A579E86AE /* VolumeRowView.swift */; };
@@ -191,6 +193,7 @@
 		E69436579DA555FA6133A1CF /* ServiceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A147995028C8DB6F49BBD8EF /* ServiceRowView.swift */; };
 		E92C8245EE6AE51D99035E4D /* DockerClient in Frameworks */ = {isa = PBXBuildFile; productRef = 984278376FF4860E6FADC66F /* DockerClient */; };
 		E9B0A374B532221710729A34 /* ContainerTerminalTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1AFAED2CB7429B714C8A06 /* ContainerTerminalTab.swift */; };
+		E9DA27A7255C72A3FE6E5599 /* FleetControlServicing.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8FE218992C260511CE601B8 /* FleetControlServicing.swift */; };
 		ED3023CCFF235C0CF302C812 /* MenuBarView+Containers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */; };
 		EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */; };
 		F035F2D21380F9DD531E6B04 /* LocalRootFSOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EDD0CCB1C4698A31FC1ED1 /* LocalRootFSOutlineView.swift */; };
@@ -259,6 +262,7 @@
 		2022AA30CA121A0876D0B9D5 /* ImagesViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImagesViewModel+Docker.swift"; sourceTree = "<group>"; };
 		209E974D66F4B2D9B5CDA2D9 /* VolumesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesListView.swift; sourceTree = "<group>"; };
 		21565AF3B3606525539AE506 /* SandboxesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxesListView.swift; sourceTree = "<group>"; };
+		239658775BBC68EB492EF715 /* FleetViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetViewModelTests.swift; sourceTree = "<group>"; };
 		23C69EC561EEA79ADE5A9000 /* ContainersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModel.swift; sourceTree = "<group>"; };
 		269B74A3C7704AB81139FA52 /* ContainerLogsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsModels.swift; sourceTree = "<group>"; };
 		297FCAB334AF289575D13F72 /* NetworksListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworksListView.swift; sourceTree = "<group>"; };
@@ -397,6 +401,7 @@
 		C0DD79FCBCF65FAFFBBB61D0 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Containers.swift"; sourceTree = "<group>"; };
 		C33F6D43F3CE2C79F072C7F3 /* DockerClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DockerClient; path = Packages/DockerClient; sourceTree = SOURCE_ROOT; };
+		C8FE218992C260511CE601B8 /* FleetControlServicing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetControlServicing.swift; sourceTree = "<group>"; };
 		CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineFilesTab.swift; sourceTree = "<group>"; };
 		CC98017408ED56AFF734125A /* AboutView+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+Sections.swift"; sourceTree = "<group>"; };
 		CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsViewModel.swift; sourceTree = "<group>"; };
@@ -413,6 +418,7 @@
 		E37F8C85EB27987F81FFB5F4 /* KubernetesState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesState.swift; sourceTree = "<group>"; };
 		E3A8FF41635473729BF0A36E /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
+		E69E766A830CB3A26231BA11 /* FleetSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetSettingsView.swift; sourceTree = "<group>"; };
 		E78A5DD895DA4DA3A83D1269 /* ListResizeHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListResizeHandle.swift; sourceTree = "<group>"; };
 		E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnersViewModelTests.swift; sourceTree = "<group>"; };
 		E992C1D278E4591238514552 /* FleetPlatformClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FleetPlatformClient; path = Packages/FleetPlatformClient; sourceTree = SOURCE_ROOT; };
@@ -661,6 +667,7 @@
 			isa = PBXGroup;
 			children = (
 				9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */,
+				E69E766A830CB3A26231BA11 /* FleetSettingsView.swift */,
 				9F60CF8B8E81089BA2E8DC20 /* GeneralSettingsView.swift */,
 				9BDFF0AA6C2EA05E000003F1 /* NetworkSettingsView.swift */,
 				DAE5A29026FA64A7C0A47122 /* SettingsView.swift */,
@@ -742,6 +749,7 @@
 		4EC21FABED29FDC78DC34D1C /* Fleet */ = {
 			isa = PBXGroup;
 			children = (
+				C8FE218992C260511CE601B8 /* FleetControlServicing.swift */,
 				8619720F1A99E2E6A431585C /* FleetEnrollmentCoordinator.swift */,
 				4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */,
 			);
@@ -1001,6 +1009,7 @@
 				F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */,
 				06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */,
 				92FD51B5947EFEEFD73D00F9 /* FleetEnrollmentCoordinatorTests.swift */,
+				239658775BBC68EB492EF715 /* FleetViewModelTests.swift */,
 				A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */,
 				7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */,
 				E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */,
@@ -1230,7 +1239,9 @@
 				4B14BB17843A552B8D1B51BA /* ExternalTerminalDiscovery.swift in Sources */,
 				97E56AA0BEC7024FEBBE1B75 /* ExternalTerminalLauncher.swift in Sources */,
 				DAA8D86963F68C3BE402619B /* FleetAgentConnection.swift in Sources */,
+				E9DA27A7255C72A3FE6E5599 /* FleetControlServicing.swift in Sources */,
 				0E1E08820992C2853A6F23F3 /* FleetEnrollmentCoordinator.swift in Sources */,
+				C1CEE635A115E843DF66A65B /* FleetSettingsView.swift in Sources */,
 				FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */,
 				F319F8722F145CCFA01650B6 /* GeneralSettingsView.swift in Sources */,
 				FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */,
@@ -1363,6 +1374,7 @@
 				EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */,
 				8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */,
 				868F62A98F4BD1023DD79167 /* FleetEnrollmentCoordinatorTests.swift in Sources */,
+				0992A10AFBEFE1BC32E351DE /* FleetViewModelTests.swift in Sources */,
 				0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */,
 				F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,

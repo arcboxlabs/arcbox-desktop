@@ -207,6 +207,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(authSession)
                 .environment(systemVmBackendVM)
+                .environment(runnersVM.fleet)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)

@@ -6,6 +6,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case account = "Account"
     case system = "System"
+    case fleet = "Fleet"
     // TODO: Implement network settings (ABXD-88)
     // case network = "Network"
     case storage = "Storage"
@@ -21,6 +22,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .account: return "person.circle"
         case .system: return "square.grid.2x2"
+        case .fleet: return "server.rack"
         // case .network: return "globe"
         case .storage: return "externaldrive"
         // case .machines: return "desktopcomputer"
@@ -75,6 +77,8 @@ struct SettingsView: View {
             AccountSettingsView()
         case .system:
             SystemSettingsView()
+        case .fleet:
+            FleetSettingsView()
         // TODO: Implement network settings (ABXD-88)
         // case .network:
         //     NetworkSettingsView()
