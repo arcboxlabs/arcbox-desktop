@@ -1,5 +1,4 @@
 import FleetControlClient
-import FleetPlatformClient
 import Foundation
 import SwiftUI
 import os
@@ -22,22 +21,22 @@ final class FleetViewModel {
     var status: FleetAgentStatus?
     var snapshot: FleetAgentSnapshot?
     var settings: FleetAgentSettings?
-    var workspaces: [FleetWorkspace] = []
     var lastError: String?
-    var platformError: String?
     var isWatching = false
     var isPerformingAction = false
-    var isLoadingWorkspaces = false
     var reconnectAttempt = 0
 
     @ObservationIgnored
     private var client: FleetControlClient?
 
     @ObservationIgnored
-    private var platformClient: FleetPlatformClient?
+    private var watchTask: Task<Void, Never>?
 
     @ObservationIgnored
-    private var watchTask: Task<Void, Never>?
+    private var snapshotObserver: (@MainActor @Sendable (FleetAgentSnapshot) -> Void)?
+
+    @ObservationIgnored
+    private var watchGeneration = UUID()
 
     var isReady: Bool {
         if case .ready = loadState { return true }
@@ -61,10 +60,13 @@ final class FleetViewModel {
     }
 
     /// Begin the handshake and state watch loop.
-    func start(client: FleetControlClient?, platformClient: FleetPlatformClient? = nil) {
+    func start(
+        client: FleetControlClient?,
+        onSnapshot: (@MainActor @Sendable (FleetAgentSnapshot) -> Void)? = nil
+    ) {
         stop()
         self.client = client
-        self.platformClient = platformClient
+        snapshotObserver = onSnapshot
 
         guard let client else {
             markUnavailable("Fleet control client is unavailable.")
@@ -72,35 +74,20 @@ final class FleetViewModel {
         }
 
         loadState = .connecting
+        let generation = watchGeneration
         watchTask = Task { [weak self, client] in
-            await self?.run(client: client)
-        }
-    }
-
-    /// Load the workspaces available to the signed-in Platform identity.
-    @discardableResult
-    func loadWorkspaces() async -> Bool {
-        guard let platformClient = requirePlatformClient() else { return false }
-
-        isLoadingWorkspaces = true
-        platformError = nil
-        defer { isLoadingWorkspaces = false }
-
-        do {
-            workspaces = try await platformClient.listWorkspaces()
-            return true
-        } catch {
-            platformError = FleetPlatformClient.userMessage(for: error)
-            return false
+            await self?.run(client: client, generation: generation)
         }
     }
 
     /// Stop the live watch loop. Existing snapshot data is retained.
     func stop() {
+        watchGeneration = UUID()
         watchTask?.cancel()
         watchTask = nil
         isWatching = false
         reconnectAttempt = 0
+        snapshotObserver = nil
     }
 
     /// Refresh agent handshake metadata without restarting the watch loop.
@@ -148,52 +135,6 @@ final class FleetViewModel {
         }
     }
 
-    /// Enroll this Mac with a platform-issued enrollment token.
-    @discardableResult
-    func enroll(token: String, controlPlane: String? = nil) async -> Bool {
-        let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !token.isEmpty else {
-            lastError = "Enrollment token is required."
-            return false
-        }
-        guard let client = requireClient() else { return false }
-
-        return await performAction("enroll") {
-            let machineID = try await client.enroll(
-                token: token,
-                controlPlane: Self.normalized(controlPlane)
-            )
-            status = FleetAgentStatus(state: .enrolled, machineID: machineID)
-            await refreshAfterMutation(client: client)
-        }
-    }
-
-    /// Issue a workspace-scoped token and immediately enroll the local Fleet Agent.
-    @discardableResult
-    func enroll(workspaceID: String, controlPlane: String? = nil) async -> Bool {
-        let workspaceID = workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !workspaceID.isEmpty else {
-            platformError = "A workspace is required for enrollment."
-            return false
-        }
-        guard let client = requireClient(),
-            let platformClient = requirePlatformClient()
-        else { return false }
-
-        return await performAction("enroll") {
-            let enrollment = try await platformClient.createEnrollmentToken(
-                workspaceID: workspaceID
-            )
-            let machineID = try await client.enroll(
-                token: enrollment.token,
-                controlPlane: Self.normalized(controlPlane)
-            )
-            status = FleetAgentStatus(state: .enrolled, machineID: machineID)
-            platformError = nil
-            await refreshAfterMutation(client: client)
-        }
-    }
-
     /// Drain this host: stop accepting new offers and finish in-flight work.
     @discardableResult
     func drain() async -> Bool {
@@ -223,7 +164,8 @@ final class FleetViewModel {
 
         return await performAction("unenroll") {
             try await client.unenroll()
-            snapshot = nil
+            // Watch publishes the authoritative unenrolled snapshot before
+            // this RPC returns. Retain it for coordinator reconciliation.
             settings = nil
             status = FleetAgentStatus(state: .unenrolled, machineID: nil)
             await refreshAfterMutation(client: client)
@@ -267,38 +209,47 @@ final class FleetViewModel {
         )
     }
 
-    private func run(client: FleetControlClient) async {
-        await loadInitialState(client: client)
-        await watchSnapshots(client: client)
+    private func run(client: FleetControlClient, generation: UUID) async {
+        await loadInitialState(client: client, generation: generation)
+        guard generation == watchGeneration else { return }
+        await watchSnapshots(client: client, generation: generation)
     }
 
-    private func loadInitialState(client: FleetControlClient) async {
+    private func loadInitialState(client: FleetControlClient, generation: UUID) async {
         do {
-            agentInfo = try await client.getAgentInfo()
-            status = try await client.getStatus()
-            settings = try await client.getSettings()
+            let agentInfo = try await client.getAgentInfo()
+            let status = try await client.getStatus()
+            let settings = try await client.getSettings()
+            guard generation == watchGeneration else { return }
+            self.agentInfo = agentInfo
+            self.status = status
+            self.settings = settings
             lastError = nil
         } catch {
+            guard generation == watchGeneration else { return }
             markUnavailable(FleetControlClient.userMessage(for: error))
         }
     }
 
-    private func watchSnapshots(client: FleetControlClient) async {
-        while !Task.isCancelled {
+    private func watchSnapshots(client: FleetControlClient, generation: UUID) async {
+        while !Task.isCancelled, generation == watchGeneration {
             do {
                 isWatching = true
                 for try await snapshot in client.watchSnapshots() {
+                    guard generation == watchGeneration else { return }
                     apply(snapshot)
                 }
 
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, generation == watchGeneration else { return }
                 markWatchDisconnected("Fleet agent state stream ended.")
             } catch is CancellationError {
                 return
             } catch {
+                guard generation == watchGeneration else { return }
                 markWatchDisconnected(FleetControlClient.userMessage(for: error))
             }
 
+            guard generation == watchGeneration else { return }
             isWatching = false
             reconnectAttempt += 1
             try? await Task.sleep(for: .seconds(reconnectDelaySeconds))
@@ -313,6 +264,7 @@ final class FleetViewModel {
         self.lastError = nil
         self.isWatching = true
         self.reconnectAttempt = 0
+        snapshotObserver?(snapshot)
     }
 
     private func refreshAfterMutation(client: FleetControlClient) async {
@@ -351,22 +303,8 @@ final class FleetViewModel {
         return client
     }
 
-    private func requirePlatformClient() -> FleetPlatformClient? {
-        guard let platformClient else {
-            platformError = "Fleet Platform client is unavailable."
-            return nil
-        }
-        return platformClient
-    }
-
     private func handle(_ error: Error) {
-        let message: String
-        if error is FleetPlatformError || error is URLError {
-            message = FleetPlatformClient.userMessage(for: error)
-            platformError = message
-        } else {
-            message = FleetControlClient.userMessage(for: error)
-        }
+        let message = FleetControlClient.userMessage(for: error)
         lastError = message
         loadState = snapshot == nil ? .unavailable(message) : .failed(message)
     }
@@ -384,13 +322,6 @@ final class FleetViewModel {
 
     private var reconnectDelaySeconds: Int64 {
         Int64(min(30, 1 << min(reconnectAttempt, 5)))
-    }
-
-    private static func normalized(_ value: String?) -> String? {
-        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
-            return nil
-        }
-        return trimmed
     }
 
     private static func status(from snapshot: FleetAgentSnapshot) -> FleetAgentStatus {

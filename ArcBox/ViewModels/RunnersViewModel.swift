@@ -1,11 +1,37 @@
+import ArcBoxAuth
 import FleetControlClient
 import FleetPlatformClient
 import Observation
 
 @MainActor
+protocol FleetWorkspaceListing: Sendable {
+    func listWorkspaces() async throws -> [FleetWorkspace]
+}
+
+extension FleetPlatformClient: FleetWorkspaceListing {}
+
+@MainActor
 @Observable
 final class RunnersViewModel {
     let fleet: FleetViewModel
+    private(set) var workspaces: [FleetWorkspace] = []
+    private(set) var platformError: String?
+    private(set) var isLoadingWorkspaces = false
+
+    @ObservationIgnored
+    private var platformClient: (any FleetWorkspaceListing)?
+
+    @ObservationIgnored
+    private var enrollmentCoordinator: FleetEnrollmentCoordinator?
+
+    @ObservationIgnored
+    private var activeControlClient: FleetControlClient?
+
+    @ObservationIgnored
+    private var activePlatformClient: FleetPlatformClient?
+
+    @ObservationIgnored
+    private var hasStarted = false
 
     init(fleet: FleetViewModel = FleetViewModel()) {
         self.fleet = fleet
@@ -35,16 +61,16 @@ final class RunnersViewModel {
         fleet.snapshot?.inFlightJobs.count ?? 0
     }
 
-    var workspaces: [FleetWorkspace] {
-        fleet.workspaces
-    }
-
     var errorMessage: String? {
-        fleet.platformError ?? fleet.lastError
+        platformError ?? enrollmentCoordinator?.errorMessage ?? fleet.lastError
     }
 
     var isBusy: Bool {
-        fleet.isLoadingWorkspaces || fleet.isPerformingAction
+        isLoadingWorkspaces || fleet.isPerformingAction || enrollmentCoordinator?.isBusy == true
+    }
+
+    var canConnect: Bool {
+        !isBusy && enrollmentCoordinator?.canBeginEnrollment == true
     }
 
     var subtitle: String {
@@ -61,19 +87,85 @@ final class RunnersViewModel {
 
     func start(
         controlClient: FleetControlClient?,
-        platformClient: FleetPlatformClient?
+        platformClient: FleetPlatformClient?,
+        authentication: (any FleetAuthenticationChecking)? = nil,
+        agentReadiness: (any FleetAgentReadying)? = nil
     ) {
-        fleet.start(client: controlClient, platformClient: platformClient)
+        self.platformClient = platformClient
+
+        if enrollmentCoordinator == nil || activePlatformClient !== platformClient {
+            if let authentication, let agentReadiness, let platformClient {
+                enrollmentCoordinator = FleetEnrollmentCoordinator(
+                    authentication: authentication,
+                    agentReadiness: agentReadiness,
+                    tokenIssuer: platformClient
+                )
+            } else {
+                enrollmentCoordinator = nil
+            }
+        }
+
+        guard
+            !hasStarted
+                || activeControlClient !== controlClient
+                || activePlatformClient !== platformClient
+        else { return }
+
+        hasStarted = true
+        activeControlClient = controlClient
+        activePlatformClient = platformClient
+        let coordinator = enrollmentCoordinator
+        fleet.start(
+            client: controlClient,
+            onSnapshot: { [weak coordinator] snapshot in
+                coordinator?.reconcile(snapshot)
+            }
+        )
     }
 
     func stop() {
+        enrollmentCoordinator?.cancel()
         fleet.stop()
+        hasStarted = false
+        activeControlClient = nil
+        activePlatformClient = nil
+    }
+
+    func prepareForTermination(gracePeriod: Duration = .seconds(65)) async -> Bool {
+        let settled =
+            await enrollmentCoordinator?.settleForTermination(
+                gracePeriod: gracePeriod
+            ) ?? true
+        fleet.stop()
+        return settled
     }
 
     func prepareEnrollment() async -> Bool {
-        guard await fleet.loadWorkspaces() else { return false }
-        guard !fleet.workspaces.isEmpty else {
-            fleet.platformError = "No ArcBox workspace is available for this account."
+        platformError = nil
+        guard let enrollmentCoordinator else {
+            platformError = "Fleet enrollment is unavailable."
+            return false
+        }
+        guard enrollmentCoordinator.canBeginEnrollment else { return false }
+        guard enrollmentCoordinator.requireSignedIn() else { return false }
+        guard let platformClient else {
+            platformError = "Fleet Platform client is unavailable."
+            return false
+        }
+
+        isLoadingWorkspaces = true
+        platformError = nil
+        defer { isLoadingWorkspaces = false }
+
+        do {
+            workspaces = try await platformClient.listWorkspaces()
+        } catch {
+            platformError = FleetPlatformClient.userMessage(for: error)
+            return false
+        }
+
+        guard !workspaces.isEmpty else {
+            platformError = "No ArcBox workspace is available for this account."
             return false
         }
         return true
@@ -81,7 +173,17 @@ final class RunnersViewModel {
 
     @discardableResult
     func enroll(in workspace: FleetWorkspace) async -> Bool {
-        await fleet.enroll(workspaceID: workspace.id)
+        platformError = nil
+        guard let enrollmentCoordinator else {
+            platformError = "Fleet enrollment is unavailable."
+            return false
+        }
+
+        let succeeded = await enrollmentCoordinator.enroll(workspaceID: workspace.id)
+        if succeeded {
+            platformError = nil
+        }
+        return succeeded
     }
 
     @discardableResult
@@ -91,5 +193,18 @@ final class RunnersViewModel {
         } else {
             await fleet.resume()
         }
+    }
+
+    @discardableResult
+    func unenroll() async -> Bool {
+        guard !isBusy else { return false }
+        let succeeded = await fleet.unenroll()
+        if succeeded {
+            enrollmentCoordinator?.confirmUnenrolled()
+            if let snapshot = fleet.snapshot {
+                enrollmentCoordinator?.reconcile(snapshot)
+            }
+        }
+        return succeeded
     }
 }
