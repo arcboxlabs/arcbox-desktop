@@ -42,6 +42,11 @@ A bare `Bool` like `hasCompletedInitialLoad` cannot distinguish "never started" 
 ### Default tab vs lazy tabs
 The default tab's view renders during startup. Other tabs render lazily when the user switches to them. This means timing bugs in `.task(id:)` only manifest on the default tab — other tabs work by accident because dependencies are already available when they appear. Always test startup behavior on the default tab specifically.
 
+### `fixedSize(horizontal: false, vertical: true)` window blowup (macOS 26)
+Any state change inside a `fixedSize(vertical: true)` subtree in a main-window view triggers a window-sizing pass that resizes the window — or, if the window can't grow, the `NavigationSplitView` content inside it — to the screen's *visible-frame height* (content slides under the title bar, bottom-pinned views disappear). Verified on macOS 26.5 with a minimal repro: inserting, removing, or even changing the text of such a label fires it; the same label without `fixedSize` does not, and still wraps correctly inside width-constrained containers.
+
+**Rule**: don't use `fixedSize(vertical: true)` on labels whose content appears/changes dynamically in the main window (error banners, status text). Text wraps without it in width-bounded layouts; use it only for genuinely static text, ideally in sheets.
+
 ## Code Style
 - Swift 6 strict concurrency (`SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`)
 - ViewModels use `@Observable`; environment injection via custom `EnvironmentKey`
