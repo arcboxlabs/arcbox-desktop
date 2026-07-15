@@ -163,6 +163,7 @@
 		C12978695EDC917704747269 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
 		C19B191AF0DE9179608BF40A /* RunnersViewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6ABF0A0B6218A3FE504C7DA /* RunnersViewState.swift */; };
 		C1CEE635A115E843DF66A65B /* FleetSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E69E766A830CB3A26231BA11 /* FleetSettingsView.swift */; };
+		C38303D18080C9AED2BD8D20 /* FleetRunnerImageReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0656F14604E5C2380BFA93 /* FleetRunnerImageReadiness.swift */; };
 		C415E585DA749E8A19984650 /* MachineFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */; };
 		C50DD2284687B64249F15261 /* CheckForUpdatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C15DE3BBE549F8F86D82642 /* CheckForUpdatesViewModel.swift */; };
 		C63E9B1B9AC8A12C20996A74 /* VolumeRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B56D80B89FFE9A579E86AE /* VolumeRowView.swift */; };
@@ -178,6 +179,7 @@
 		D32166A92BDA2FB6B6037D94 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C649765AA76CFCBFC3302DA /* DeepLinkRouter.swift */; };
 		D49278FBAD2A7E36CD278147 /* MachineRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949DB8BB8139F8D3C37503E9 /* MachineRowView.swift */; };
 		D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE313F40E79E409C942B1EE /* AboutWindow.swift */; };
+		D555C507200C70946F381C91 /* RunnerImagePreparationStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */; };
 		D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */; };
 		D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */; };
 		D7149FCB6052803F6900926B /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
@@ -342,6 +344,7 @@
 		8DB22F8A7AA46286F186A73F /* DockerEventMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitor.swift; sourceTree = "<group>"; };
 		8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesView.swift; sourceTree = "<group>"; };
 		8F5C6F8F92ED8D843FAA6D89 /* PodRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodRowView.swift; sourceTree = "<group>"; };
+		8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerImagePreparationStatusView.swift; sourceTree = "<group>"; };
 		903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewVolumeSheet.swift; sourceTree = "<group>"; };
 		9101DCB26B0BB5B8DE4CAE70 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterDelegate.swift; sourceTree = "<group>"; };
@@ -368,6 +371,7 @@
 		A45A5AAA9B74A59E7543D8D0 /* LocalRootFSOutlineCoordinator+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+Actions.swift"; sourceTree = "<group>"; };
 		A70BE1C3890C5F6A96C6BCBD /* ContainersViewModel+GRPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainersViewModel+GRPC.swift"; sourceTree = "<group>"; };
 		A80B0A0F4FC2E7ECA0B844DD /* ContainerFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerFilesTab.swift; sourceTree = "<group>"; };
+		AA0656F14604E5C2380BFA93 /* FleetRunnerImageReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetRunnerImageReadiness.swift; sourceTree = "<group>"; };
 		AA0C5A43740FFD68902A2F77 /* AboutView+SystemInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+SystemInfo.swift"; sourceTree = "<group>"; };
 		AA88097CAC1929269BE210C5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		ABC372134FDA259C40503AE1 /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArcBox.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -563,6 +567,7 @@
 			isa = PBXGroup;
 			children = (
 				B69A867E81CB7E281682A24D /* ContainerModel.swift */,
+				AA0656F14604E5C2380BFA93 /* FleetRunnerImageReadiness.swift */,
 				BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */,
 				8AD5CF45B00B80D85A778AB4 /* MachineModel.swift */,
 				69038D73EF8AC0CC09D4B39C /* NavItem.swift */,
@@ -848,6 +853,7 @@
 			children = (
 				63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */,
 				D02391823A10B16B12627E6C /* RunnerHostStatusBar.swift */,
+				8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */,
 				080B7568EE5A517F8CC343FE /* RunnerJobRow.swift */,
 				B2387BC90EBBF4477B65367E /* RunnerJobsView.swift */,
 				7BDFC648740B4664FCC1E5E5 /* RunnersView.swift */,
@@ -1241,6 +1247,7 @@
 				DAA8D86963F68C3BE402619B /* FleetAgentConnection.swift in Sources */,
 				E9DA27A7255C72A3FE6E5599 /* FleetControlServicing.swift in Sources */,
 				0E1E08820992C2853A6F23F3 /* FleetEnrollmentCoordinator.swift in Sources */,
+				C38303D18080C9AED2BD8D20 /* FleetRunnerImageReadiness.swift in Sources */,
 				C1CEE635A115E843DF66A65B /* FleetSettingsView.swift in Sources */,
 				FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */,
 				F319F8722F145CCFA01650B6 /* GeneralSettingsView.swift in Sources */,
@@ -1311,6 +1318,7 @@
 				3B817A9A7D75BB17FF688B75 /* RunnerHostStatus.swift in Sources */,
 				DC8E940905BADCF4888BEA0A /* RunnerHostStatusBar.swift in Sources */,
 				510B8922C820BE4607F7817B /* RunnerHostViewModel.swift in Sources */,
+				D555C507200C70946F381C91 /* RunnerImagePreparationStatusView.swift in Sources */,
 				4F2B260760140AEAEDBACBC2 /* RunnerJobRow.swift in Sources */,
 				096533539D74E8FA5A322C0A /* RunnerJobsView.swift in Sources */,
 				6FBDCCAB7F2960C0A0330A04 /* RunnersView.swift in Sources */,

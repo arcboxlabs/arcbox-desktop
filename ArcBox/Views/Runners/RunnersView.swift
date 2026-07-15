@@ -74,6 +74,7 @@ struct RunnersView: View {
                             .padding(.horizontal, 12)
                             .padding(.bottom, 6)
                     }
+                    RunnerImagePreparationStatusView(fleet: vm.fleet)
                     RunnerJobsView(jobs: host.inFlightJobs)
                 }
             }

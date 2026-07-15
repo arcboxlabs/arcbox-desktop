@@ -115,10 +115,15 @@ final class FleetViewModelTests: XCTestCase {
 
     func testMacOSImagePreparationUsesItsOwnCapability() {
         let vm = FleetViewModel()
+        vm.loadState = .ready
+        vm.settings = makeVMSettings(
+            image: FleetSetting(current: "", target: "tahoe-base")
+        )
         vm.agentInfo = makeAgentInfo(features: ["vm-settings"])
 
         XCTAssertFalse(vm.supportsMacOSImagePreparation)
         XCTAssertFalse(vm.isVMBackendActive)
+        XCTAssertEqual(vm.runnerImageReadiness, .hidden)
 
         vm.agentInfo = makeAgentInfo(
             features: ["vm-settings", "macos-image-prepare", "vm-backend"]
@@ -126,6 +131,36 @@ final class FleetViewModelTests: XCTestCase {
 
         XCTAssertTrue(vm.supportsMacOSImagePreparation)
         XCTAssertTrue(vm.isVMBackendActive)
+        XCTAssertTrue(vm.canBeginMacOSRunnerImagePreparation)
+        XCTAssertEqual(vm.runnerImageReadiness, .pending(reference: "tahoe-base"))
+    }
+
+    func testRunnerImageReadinessTracksPreparationAndRestartRequirement() {
+        let vm = FleetViewModel()
+        vm.loadState = .ready
+        vm.agentInfo = makeAgentInfo(features: ["vm-settings", "macos-image-prepare"])
+        vm.settings = makeVMSettings(
+            image: FleetSetting(current: "", target: "tahoe-next")
+        )
+
+        let progress = FleetImagePreparationProgress(
+            stage: "pulling",
+            detail: "Downloading",
+            fraction: 0.5
+        )
+        vm.imagePreparationState = .preparing(progress)
+        XCTAssertEqual(vm.runnerImageReadiness, .preparing(progress))
+
+        vm.settings = makeVMSettings(
+            image: FleetSetting(current: "tahoe-next", target: "tahoe-next")
+        )
+        vm.imagePreparationState = .completed(reference: "tahoe-next")
+        XCTAssertEqual(vm.runnerImageReadiness, .restartRequired)
+
+        vm.agentInfo = makeAgentInfo(
+            features: ["vm-settings", "macos-image-prepare", "vm-backend"]
+        )
+        XCTAssertEqual(vm.runnerImageReadiness, .completed(reference: "tahoe-next"))
     }
 
     func testMacOSImagePreparationConvergesAgainstAuthoritativeSettings() async {
