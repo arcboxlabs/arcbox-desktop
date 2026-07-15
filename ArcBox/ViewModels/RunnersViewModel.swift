@@ -1,6 +1,7 @@
 import ArcBoxAuth
 import FleetControlClient
 import FleetPlatformClient
+import Foundation
 import Observation
 
 @MainActor
@@ -13,6 +14,12 @@ extension FleetPlatformClient: FleetWorkspaceListing {}
 @MainActor
 @Observable
 final class RunnersViewModel {
+    struct EnrollmentContext: Equatable {
+        let state: FleetEnrollmentCoordinator.State
+        let isSignedIn: Bool
+        let canBeginEnrollment: Bool
+    }
+
     let fleet: FleetViewModel
     private(set) var workspaces: [FleetWorkspace] = []
     private(set) var platformError: String?
@@ -38,23 +45,21 @@ final class RunnersViewModel {
     }
 
     var viewState: RunnersViewState {
-        if let snapshot = fleet.snapshot {
-            switch snapshot.enrollment {
-            case .attaching, .attached, .detached, .credentialRejected:
-                return .enrolled(
-                    RunnerHostViewModel(snapshot: snapshot, agentInfo: fleet.agentInfo)
-                )
-            case .unenrolled, .unspecified, .unrecognized:
-                return .unenrolled
-            }
-        }
+        Self.resolveViewState(
+            snapshot: fleet.snapshot,
+            agentInfo: fleet.agentInfo,
+            loadState: fleet.loadState,
+            enrollmentContext: enrollmentContext
+        )
+    }
 
-        switch fleet.loadState {
-        case .idle, .connecting, .ready:
-            return .connecting
-        case .unavailable(let message), .failed(let message):
-            return .unavailable(message)
-        }
+    private var enrollmentContext: EnrollmentContext? {
+        guard let enrollmentCoordinator else { return nil }
+        return EnrollmentContext(
+            state: enrollmentCoordinator.state,
+            isSignedIn: enrollmentCoordinator.isSignedIn,
+            canBeginEnrollment: enrollmentCoordinator.canBeginEnrollment
+        )
     }
 
     var activeJobCount: Int {
@@ -62,7 +67,7 @@ final class RunnersViewModel {
     }
 
     var errorMessage: String? {
-        platformError ?? enrollmentCoordinator?.errorMessage ?? fleet.lastError
+        platformError ?? fleet.lastError ?? enrollmentCoordinator?.errorMessage
     }
 
     var isBusy: Bool {
@@ -75,11 +80,18 @@ final class RunnersViewModel {
 
     var subtitle: String {
         switch viewState {
-        case .connecting: "Connecting"
-        case .unavailable: "Agent unavailable"
-        case .unenrolled: "Not connected"
-        case .enrolled(let host):
-            host.activeJobCount == 1
+        case .connecting: return "Connecting"
+        case .unavailable: return "Agent unavailable"
+        case .signedOut: return "Sign in required"
+        case .unenrolled: return "Not connected"
+        case .enrolling(let progress): return progress.title
+        case .enrollmentFailed: return "Enrollment failed"
+        case .failed: return "Fleet integration unavailable"
+        case .enrolled(let host, let freshness):
+            if case .reconnecting = freshness {
+                return "Reconnecting to Fleet Agent"
+            }
+            return host.activeJobCount == 1
                 ? "\(host.status.label) · 1 active job"
                 : "\(host.status.label) · \(host.activeJobCount) active jobs"
         }
@@ -141,6 +153,8 @@ final class RunnersViewModel {
     }
 
     func prepareEnrollment() async -> Bool {
+        guard !isBusy else { return false }
+
         platformError = nil
         guard let enrollmentCoordinator else {
             platformError = "Fleet enrollment is unavailable."
@@ -188,10 +202,12 @@ final class RunnersViewModel {
 
     @discardableResult
     func setDraining(_ draining: Bool) async -> Bool {
+        guard !isBusy else { return false }
+
         if draining {
-            await fleet.drain()
+            return await fleet.drain()
         } else {
-            await fleet.resume()
+            return await fleet.resume()
         }
     }
 
@@ -206,5 +222,108 @@ final class RunnersViewModel {
             }
         }
         return succeeded
+    }
+
+    static func resolveViewState(
+        snapshot: FleetAgentSnapshot?,
+        agentInfo: FleetAgentInfo?,
+        loadState: FleetLoadState,
+        enrollmentContext: EnrollmentContext?
+    ) -> RunnersViewState {
+        if let snapshot {
+            switch snapshot.enrollment {
+            case .attaching, .attached, .detached, .credentialRejected:
+                guard normalizedMachineID(snapshot.machineID) != nil else {
+                    return .failed("Fleet Agent reported an invalid machine identity.")
+                }
+                return .enrolled(
+                    RunnerHostViewModel(snapshot: snapshot, agentInfo: agentInfo),
+                    freshness: hostFreshness(loadState: loadState)
+                )
+            case .unenrolled:
+                guard normalizedMachineID(snapshot.machineID) == nil else {
+                    return .failed("Fleet Agent reported an invalid unenrolled state.")
+                }
+                switch loadState {
+                case .idle, .connecting:
+                    return .connecting
+                case .unavailable(let message), .failed(let message):
+                    return .unavailable(message)
+                case .ready:
+                    break
+                }
+                return resolveUnenrolledState(
+                    enrollmentContext: enrollmentContext
+                )
+            case .unspecified:
+                return .failed("Fleet Agent did not report a valid enrollment state.")
+            case .unrecognized:
+                return .failed(
+                    "Fleet Agent reported an enrollment state this ArcBox version does not support."
+                )
+            }
+        }
+
+        switch loadState {
+        case .idle, .connecting, .ready:
+            return .connecting
+        case .unavailable(let message), .failed(let message):
+            return .unavailable(message)
+        }
+    }
+
+    private static func resolveUnenrolledState(
+        enrollmentContext: EnrollmentContext?
+    ) -> RunnersViewState {
+        guard let enrollmentContext else {
+            return .failed("Fleet enrollment is unavailable for this build.")
+        }
+
+        switch enrollmentContext.state {
+        case .preparingAgent:
+            return .enrolling(.checkingAgent)
+        case .requestingEnrollmentToken:
+            return .enrolling(.requestingToken)
+        case .enrolling:
+            return .enrolling(.enrollingAgent)
+        case .reconcilingEnrollment:
+            return .enrolling(.reconciling)
+        case .attaching:
+            return .enrolling(.attaching)
+        case .ready:
+            return .enrolling(.synchronizing)
+        case .failed(let failure):
+            return .enrollmentFailed(
+                failure.localizedDescription,
+                recovery: enrollmentContext.canBeginEnrollment ? .retry : .waitForAgent
+            )
+        case .idle, .requiresSignIn:
+            guard enrollmentContext.isSignedIn else { return .signedOut }
+            guard enrollmentContext.canBeginEnrollment else {
+                return .enrollmentFailed(
+                    "ArcBox is waiting for the Fleet Agent to report a conclusive enrollment state.",
+                    recovery: .waitForAgent
+                )
+            }
+            return .unenrolled
+        }
+    }
+
+    private static func hostFreshness(loadState: FleetLoadState) -> RunnerHostFreshness {
+        switch loadState {
+        case .ready:
+            return .live
+        case .idle, .connecting:
+            return .reconnecting("Connecting to Fleet Agent.")
+        case .unavailable(let message), .failed(let message):
+            return .reconnecting(message)
+        }
+    }
+
+    private static func normalizedMachineID(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !value.isEmpty
+        else { return nil }
+        return value
     }
 }

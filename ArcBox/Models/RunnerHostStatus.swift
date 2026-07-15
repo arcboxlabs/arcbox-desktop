@@ -3,7 +3,7 @@ import SwiftUI
 
 /// User-facing state derived from the local Fleet Agent watch snapshot.
 enum RunnerHostStatus: Equatable {
-    case connecting
+    case attaching
     case online
     case draining
     case detached
@@ -13,7 +13,7 @@ enum RunnerHostStatus: Equatable {
     init(snapshot: FleetAgentSnapshot) {
         switch snapshot.enrollment {
         case .attaching:
-            self = .connecting
+            self = .attaching
         case .attached:
             self = snapshot.isDraining ? .draining : .online
         case .detached:
@@ -27,7 +27,7 @@ enum RunnerHostStatus: Equatable {
 
     var label: String {
         switch self {
-        case .connecting: "Connecting"
+        case .attaching: "Attaching"
         case .online: "Online"
         case .draining: "Draining"
         case .detached: "Detached"
@@ -39,7 +39,7 @@ enum RunnerHostStatus: Equatable {
     var color: Color {
         switch self {
         case .online: AppColors.running
-        case .connecting, .draining: AppColors.warning
+        case .attaching, .draining: AppColors.warning
         case .detached, .credentialRejected, .unknown: AppColors.stopped
         }
     }

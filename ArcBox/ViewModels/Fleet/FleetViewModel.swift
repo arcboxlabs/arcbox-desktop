@@ -8,7 +8,7 @@ enum FleetLoadState: Equatable {
     case idle
     case connecting
     case unavailable(String)
-    case ready(FleetAgentSnapshot)
+    case ready
     case failed(String)
 }
 
@@ -260,7 +260,7 @@ final class FleetViewModel {
         self.snapshot = snapshot
         self.settings = snapshot.settings ?? settings
         self.status = Self.status(from: snapshot)
-        self.loadState = .ready(snapshot)
+        self.loadState = .ready
         self.lastError = nil
         self.isWatching = true
         self.reconnectAttempt = 0
@@ -281,6 +281,8 @@ final class FleetViewModel {
         _ label: String,
         operation: () async throws -> Void
     ) async -> Bool {
+        guard !isPerformingAction else { return false }
+
         isPerformingAction = true
         lastError = nil
         defer { isPerformingAction = false }
@@ -306,7 +308,9 @@ final class FleetViewModel {
     private func handle(_ error: Error) {
         let message = FleetControlClient.userMessage(for: error)
         lastError = message
-        loadState = snapshot == nil ? .unavailable(message) : .failed(message)
+        if snapshot == nil {
+            loadState = .unavailable(message)
+        }
     }
 
     private func markUnavailable(_ message: String) {

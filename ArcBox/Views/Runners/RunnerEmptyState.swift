@@ -5,6 +5,7 @@ struct RunnerEmptyState: View {
     let isWorking: Bool
     let canConnect: Bool
     let errorMessage: String?
+    var actionTitle = "Connect to ArcBox"
     var onConnect: () -> Void
 
     private let chip = RunnerHostCapability.chipName
@@ -13,7 +14,7 @@ struct RunnerEmptyState: View {
         EmptyStateView(icon: "hammer", title: "Turn this Mac into a CI runner") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Run GitHub Actions jobs for your organization on this machine:")
-                    .font(.system(size: 11))
+                    .font(.caption)
                     .foregroundStyle(AppColors.textSecondary)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -30,7 +31,7 @@ struct RunnerEmptyState: View {
                             ProgressView()
                                 .controlSize(.small)
                         }
-                        Text(isWorking ? "Connecting…" : "Connect to ArcBox")
+                        Text(isWorking ? "Connecting…" : actionTitle)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -38,6 +39,7 @@ struct RunnerEmptyState: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!canConnect)
                 .padding(.top, 8)
+                .accessibilityLabel(isWorking ? "Connecting this Mac to ArcBox" : actionTitle)
 
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
