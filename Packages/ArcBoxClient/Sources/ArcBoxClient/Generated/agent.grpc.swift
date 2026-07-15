@@ -168,6 +168,18 @@ public enum Arcbox_V1_AgentService {
                 method: "WatchReadiness"
             )
         }
+        /// Namespace for "WatchMemoryPressure" metadata.
+        public enum WatchMemoryPressure {
+            /// Request type for "WatchMemoryPressure".
+            public typealias Input = Arcbox_V1_WatchMemoryPressureRequest
+            /// Response type for "WatchMemoryPressure".
+            public typealias Output = Arcbox_V1_MemoryPressureEvent
+            /// Descriptor for "WatchMemoryPressure".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "WatchMemoryPressure"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.AgentService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Ping.descriptor,
@@ -181,7 +193,8 @@ public enum Arcbox_V1_AgentService {
             GetKubeconfig.descriptor,
             Shutdown.descriptor,
             DiskTrim.descriptor,
-            WatchReadiness.descriptor
+            WatchReadiness.descriptor,
+            WatchMemoryPressure.descriptor
         ]
     }
 }
@@ -428,6 +441,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchReadinessRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent>
+
+        /// Handle the "WatchMemoryPressure" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest memory pressure events while the balloon is shrunk.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_WatchMemoryPressureRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MemoryPressureEvent` messages.
+        func watchMemoryPressure(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent>
     }
 
     /// Service protocol for the "arcbox.v1.AgentService" service.
@@ -659,6 +690,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.ServerRequest<Arcbox_V1_WatchReadinessRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent>
+
+        /// Handle the "WatchMemoryPressure" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest memory pressure events while the balloon is shrunk.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchMemoryPressureRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MemoryPressureEvent` messages.
+        func watchMemoryPressure(
+            request: GRPCCore.ServerRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent>
     }
 
     /// Simple service protocol for the "arcbox.v1.AgentService" service.
@@ -889,6 +938,25 @@ extension Arcbox_V1_AgentService {
             response: GRPCCore.RPCWriter<Arcbox_V1_ReadinessEvent>,
             context: GRPCCore.ServerContext
         ) async throws
+
+        /// Handle the "WatchMemoryPressure" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest memory pressure events while the balloon is shrunk.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_WatchMemoryPressureRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_MemoryPressureEvent` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchMemoryPressure(
+            request: Arcbox_V1_WatchMemoryPressureRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_MemoryPressureEvent>,
+            context: GRPCCore.ServerContext
+        ) async throws
     }
 }
 
@@ -1028,6 +1096,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.WatchMemoryPressure.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_WatchMemoryPressureRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MemoryPressureEvent>(),
+            handler: { request, context in
+                try await self.watchMemoryPressure(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -1160,6 +1239,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReadinessEvent> {
         let response = try await self.watchReadiness(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+
+    public func watchMemoryPressure(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent> {
+        let response = try await self.watchMemoryPressure(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1321,6 +1411,23 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
             metadata: [:],
             producer: { writer in
                 try await self.watchReadiness(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    public func watchMemoryPressure(
+        request: GRPCCore.ServerRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchMemoryPressure(
                     request: request.message,
                     response: writer,
                     context: context
@@ -1620,6 +1727,29 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ReadinessEvent>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ReadinessEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchMemoryPressure" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest memory pressure events while the balloon is shrunk.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchMemoryPressureRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchMemoryPressureRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MemoryPressureEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchMemoryPressure<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchMemoryPressureRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MemoryPressureEvent>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MemoryPressureEvent>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2050,6 +2180,38 @@ extension Arcbox_V1_AgentService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "WatchMemoryPressure" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams guest memory pressure events while the balloon is shrunk.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchMemoryPressureRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchMemoryPressureRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MemoryPressureEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchMemoryPressure<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchMemoryPressureRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MemoryPressureEvent>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MemoryPressureEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.WatchMemoryPressure.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2399,6 +2561,33 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchReadinessRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ReadinessEvent>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchMemoryPressure" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams guest memory pressure events while the balloon is shrunk.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_WatchMemoryPressureRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchMemoryPressure<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_WatchMemoryPressureRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MemoryPressureEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchMemoryPressure(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchMemoryPressureRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MemoryPressureEvent>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2798,6 +2987,37 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.watchReadiness(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchMemoryPressure" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams guest memory pressure events while the balloon is shrunk.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchMemoryPressure<Result>(
+        _ message: Arcbox_V1_WatchMemoryPressureRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MemoryPressureEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_WatchMemoryPressureRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchMemoryPressure(
             request: request,
             options: options,
             onResponse: handleResponse
