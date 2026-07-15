@@ -109,6 +109,11 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
   /// credential on disk until an explicit Unenroll, so a server-side auth
   /// regression can never make agents wipe their own credentials.
   case credentialRejected // = 5
+
+  /// The gateway pinned a different agent build and pushed its download; the
+  /// agent is draining in-flight jobs, then swaps its binary and re-execs.
+  /// Transient: the replacement process reports Attaching → Attached.
+  case updating // = 6
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -123,6 +128,7 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
     case 3: self = .attached
     case 4: self = .detached
     case 5: self = .credentialRejected
+    case 6: self = .updating
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -135,6 +141,7 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
     case .attached: return 3
     case .detached: return 4
     case .credentialRejected: return 5
+    case .updating: return 6
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -147,6 +154,7 @@ public nonisolated enum Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf.Enum, 
     .attached,
     .detached,
     .credentialRejected,
+    .updating,
   ]
 
 }
@@ -359,9 +367,7 @@ public nonisolated struct Arcbox_Fleet_Control_V1_GetAgentInfoResponse: Sendable
   public var apiVersion: UInt32 = 0
 
   /// Forward-compatible capability flags a client can probe for instead of
-  /// gating behavior on `api_version` alone. Stable API capabilities include
-  /// `vm-settings` and, on macOS, `macos-image-prepare`; `vm-backend` is
-  /// runtime readiness and appears only when that backend is active.
+  /// gating behavior on `api_version` alone.
   public var features: [String] = []
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -1035,7 +1041,7 @@ nonisolated extension Arcbox_Fleet_Control_V1_ConnectionState: SwiftProtobuf._Pr
 }
 
 nonisolated extension Arcbox_Fleet_Control_V1_Enrollment: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ENROLLMENT_UNSPECIFIED\0\u{1}ENROLLMENT_UNENROLLED\0\u{1}ENROLLMENT_ATTACHING\0\u{1}ENROLLMENT_ATTACHED\0\u{1}ENROLLMENT_DETACHED\0\u{1}ENROLLMENT_CREDENTIAL_REJECTED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ENROLLMENT_UNSPECIFIED\0\u{1}ENROLLMENT_UNENROLLED\0\u{1}ENROLLMENT_ATTACHING\0\u{1}ENROLLMENT_ATTACHED\0\u{1}ENROLLMENT_DETACHED\0\u{1}ENROLLMENT_CREDENTIAL_REJECTED\0\u{1}ENROLLMENT_UPDATING\0")
 }
 
 nonisolated extension Arcbox_Fleet_Control_V1_Backend: SwiftProtobuf._ProtoNameProviding {

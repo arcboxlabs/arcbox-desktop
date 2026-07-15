@@ -161,7 +161,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > handoff: the machine credential is created and persisted here, in the
         /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-        /// > enroll` CLI subcommand before this process is even running.
+        /// > quick enroll` CLI subcommand before this process is even running.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_Fleet_Control_V1_EnrollRequest` messages.
@@ -294,7 +294,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > handoff: the machine credential is created and persisted here, in the
         /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-        /// > enroll` CLI subcommand before this process is even running.
+        /// > quick enroll` CLI subcommand before this process is even running.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_EnrollRequest` message.
@@ -425,7 +425,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > handoff: the machine credential is created and persisted here, in the
         /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-        /// > enroll` CLI subcommand before this process is even running.
+        /// > quick enroll` CLI subcommand before this process is even running.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_Fleet_Control_V1_EnrollRequest` message.
@@ -790,7 +790,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > handoff: the machine credential is created and persisted here, in the
         /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-        /// > enroll` CLI subcommand before this process is even running.
+        /// > quick enroll` CLI subcommand before this process is even running.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_EnrollRequest` message.
@@ -972,7 +972,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService {
         /// > handoff: the machine credential is created and persisted here, in the
         /// > agent — never in the desktop. Fails if already enrolled; Unenroll
         /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-        /// > enroll` CLI subcommand before this process is even running.
+        /// > quick enroll` CLI subcommand before this process is even running.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_EnrollRequest` message.
@@ -1183,7 +1183,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
     /// > handoff: the machine credential is created and persisted here, in the
     /// > agent — never in the desktop. Fails if already enrolled; Unenroll
     /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-    /// > enroll` CLI subcommand before this process is even running.
+    /// > quick enroll` CLI subcommand before this process is even running.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_Fleet_Control_V1_EnrollRequest` message.
@@ -1372,7 +1372,7 @@ extension Arcbox_Fleet_Control_V1_FleetLifecycleService.ClientProtocol {
     /// > handoff: the machine credential is created and persisted here, in the
     /// > agent — never in the desktop. Fails if already enrolled; Unenroll
     /// > first. The headless/farm path instead uses the `arcbox-fleet-agent
-    /// > enroll` CLI subcommand before this process is even running.
+    /// > quick enroll` CLI subcommand before this process is even running.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -2480,8 +2480,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-        /// > promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2518,8 +2518,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-        /// > promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2554,8 +2554,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-        /// > promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2649,8 +2649,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-        /// > promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2700,8 +2700,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService {
         /// >
         /// > Converge each requested image setting's `current` onto its `target`:
         /// > fetch and verify the target artifact through the runtime that owns it
-        /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-        /// > promote `current` — all-or-nothing per kind.
+        /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+        /// > backend lands), then promote `current` — all-or-nothing per kind.
         /// > Cancelling the stream (client disconnect) abandons the promotion;
         /// > re-running Prepare resumes from whatever the runtime already cached.
         ///
@@ -2742,8 +2742,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService.ClientProtocol {
     /// >
     /// > Converge each requested image setting's `current` onto its `target`:
     /// > fetch and verify the target artifact through the runtime that owns it
-    /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-    /// > promote `current` — all-or-nothing per kind.
+    /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+    /// > backend lands), then promote `current` — all-or-nothing per kind.
     /// > Cancelling the stream (client disconnect) abandons the promotion;
     /// > re-running Prepare resumes from whatever the runtime already cached.
     ///
@@ -2778,8 +2778,8 @@ extension Arcbox_Fleet_Control_V1_FleetImageService.ClientProtocol {
     /// >
     /// > Converge each requested image setting's `current` onto its `target`:
     /// > fetch and verify the target artifact through the runtime that owns it
-    /// > (the Docker socket for Linux; the arcbox-daemon socket for macOS), then
-    /// > promote `current` — all-or-nothing per kind.
+    /// > (the Docker socket today; the arcbox-daemon socket once the macOS VM
+    /// > backend lands), then promote `current` — all-or-nothing per kind.
     /// > Cancelling the stream (client disconnect) abandons the promotion;
     /// > re-running Prepare resumes from whatever the runtime already cached.
     ///

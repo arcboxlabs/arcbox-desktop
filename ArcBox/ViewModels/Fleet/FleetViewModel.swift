@@ -572,6 +572,8 @@ final class FleetViewModel {
             state = .unenrolled
         case .attaching, .attached:
             state = snapshot.isDraining ? .draining : .enrolled
+        case .updating:
+            state = .draining
         case .detached:
             state = .detached
         case .credentialRejected:

@@ -43,6 +43,7 @@ public enum FleetEnrollmentState: Equatable, Sendable {
     case unenrolled
     case attaching
     case attached
+    case updating
     case detached
     case credentialRejected
     case unrecognized(Int)
@@ -338,6 +339,8 @@ extension FleetEnrollmentState {
             self = .attaching
         case .attached:
             self = .attached
+        case .updating:
+            self = .updating
         case .detached:
             self = .detached
         case .credentialRejected:

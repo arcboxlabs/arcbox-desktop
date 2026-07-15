@@ -69,6 +69,18 @@ final class RunnersViewModelTests: XCTestCase {
         XCTAssertTrue(host.isDraining)
     }
 
+    func testUpdatingSnapshotRemainsEnrolledAndDisablesDrainControl() throws {
+        let state = resolve(
+            snapshot: makeSnapshot(enrollment: .updating),
+            enrollmentState: .ready(machineID: "fltm_test"),
+            isSignedIn: true
+        )
+        let host = try XCTUnwrap(enrolledHost(from: state))
+
+        XCTAssertEqual(host.status, .updating)
+        XCTAssertFalse(host.status.canChangeDrainState)
+    }
+
     func testEnrollmentCoordinatorPhasesMapToVisibleProgress() {
         let snapshot = makeSnapshot(enrollment: .unenrolled, machineID: nil)
         let cases: [(FleetEnrollmentCoordinator.State, RunnerEnrollmentProgress)] = [
@@ -157,6 +169,7 @@ final class RunnersViewModelTests: XCTestCase {
         let invalidSnapshots = [
             makeSnapshot(enrollment: .unenrolled, machineID: "fltm_invalid"),
             makeSnapshot(enrollment: .attached, machineID: nil),
+            makeSnapshot(enrollment: .updating, machineID: nil),
             makeSnapshot(enrollment: .unspecified, machineID: nil),
             makeSnapshot(enrollment: .unrecognized(42), machineID: nil),
         ]

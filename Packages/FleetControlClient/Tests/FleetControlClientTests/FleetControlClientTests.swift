@@ -102,6 +102,7 @@ import Testing
     #expect(FleetConnectionState(proto: .credentialRejected) == .credentialRejected)
     #expect(FleetEnrollmentState(proto: .detached) == .detached)
     #expect(FleetEnrollmentState(proto: .credentialRejected) == .credentialRejected)
+    #expect(FleetEnrollmentState(proto: .updating) == .updating)
 }
 
 @Test func imagePreparationMappingPreservesProgressAndUnknownKinds() {
