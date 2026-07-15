@@ -51,4 +51,15 @@ enum RunnerHostStatus: Equatable {
     var canChangeDrainState: Bool {
         self == .online || self == .draining
     }
+
+    var recoveryMessage: String? {
+        switch self {
+        case .credentialRejected:
+            "The Fleet gateway rejected this Agent credential. Unenroll this Mac from Actions before enrolling again."
+        case .detached:
+            "This Mac is detached from Fleet. Unenroll this Mac from Actions before enrolling again."
+        case .attaching, .online, .draining, .updating, .unknown:
+            nil
+        }
+    }
 }

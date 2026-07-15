@@ -21,7 +21,9 @@ struct RunnersView: View {
                 EmptyStateView(icon: "exclamationmark.triangle", title: "Fleet Agent unavailable") {
                     VStack(spacing: 6) {
                         Text(message)
-                        Text("ArcBox will keep trying to reconnect.")
+                        Text(
+                            "Start or repair the Fleet Agent through its service manager. ArcBox will reconnect automatically."
+                        )
                     }
                     .font(.caption)
                     .foregroundStyle(AppColors.textSecondary)
@@ -74,6 +76,13 @@ struct RunnersView: View {
                             .padding(.horizontal, 12)
                             .padding(.bottom, 6)
                     }
+                    if let recoveryMessage = host.status.recoveryMessage {
+                        Label(recoveryMessage, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(AppColors.warning)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 6)
+                    }
                     RunnerImagePreparationStatusView(fleet: vm.fleet)
                     RunnerJobsView(jobs: host.inFlightJobs)
                 }
@@ -116,7 +125,6 @@ struct RunnersView: View {
                     Label(authMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(AppColors.warning)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -227,7 +235,6 @@ struct RunnersView: View {
                     Label(actionError, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(AppColors.warning)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
