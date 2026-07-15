@@ -26,6 +26,10 @@ struct FleetImagePreparationProgress: Equatable {
     let stage: String
     let detail: String
     let fraction: Double
+
+    var displayDescription: String {
+        detail.isEmpty ? stage.capitalized : "\(stage.capitalized): \(detail)"
+    }
 }
 
 /// Observable state for macOS runner image preparation.
@@ -110,6 +114,44 @@ final class FleetViewModel {
 
     var isVMBackendActive: Bool {
         agentInfo?.supportsFeature(FleetAgentFeature.vmBackend) == true
+    }
+
+    var canBeginMacOSRunnerImagePreparation: Bool {
+        vmSettingsAvailability == .available
+            && supportsMacOSImagePreparation
+            && !isPerformingAction
+            && !imagePreparationState.isPreparing
+            && settings?.macosRunnerImage != nil
+    }
+
+    var runnerImageReadiness: FleetRunnerImageReadiness {
+        guard vmSettingsAvailability == .available,
+            supportsMacOSImagePreparation
+        else {
+            return .hidden
+        }
+
+        switch imagePreparationState {
+        case .preparing(let progress):
+            return .preparing(progress)
+        case .failed(let message):
+            return .failed(message)
+        case .completed(let reference):
+            if requiresAgentRestartForVM {
+                return .restartRequired
+            }
+            return .completed(reference: reference)
+        case .idle:
+            if requiresAgentRestartForVM {
+                return .restartRequired
+            }
+            guard let image = settings?.macosRunnerImage,
+                image.isPending
+            else {
+                return .hidden
+            }
+            return .pending(reference: image.target)
+        }
     }
 
     var requiresAgentRestartForVM: Bool {
