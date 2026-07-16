@@ -14,12 +14,9 @@ permissions:
 jobs:
   build:
     name: Build & Test
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -58,13 +55,15 @@ jobs:
           DEVELOPMENT_TEAM = 422ACSY6Y5
           SENTRY_DSN =
           POSTHOG_API_KEY =
+          OIDC_ISSUER_URL =
+          OIDC_CLIENT_ID =
           XCEOF
 
       - name: Generate Xcode project
         run: |
           brew install xcodegen
           xcodegen generate
-          git diff --exit-code ArcBox.xcodeproj project.yml
+          git diff --exit-code ArcBox.xcodeproj ArcBox/Info.plist project.yml
 
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project ArcBox.xcodeproj -scheme ArcBox

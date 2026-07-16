@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.23.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.13...v1.23.0) (2026-07-14)
+
+
+### Features
+
+* **app:** register arcbox:// URL scheme and route deep links ([#271](https://github.com/arcboxlabs/arcbox-desktop/issues/271)) ([62e140e](https://github.com/arcboxlabs/arcbox-desktop/commit/62e140e28ad4c0bd848831bb528f2c1f4a476afd))
+* **settings:** add System VM backend switch (HV/VZ) ([#273](https://github.com/arcboxlabs/arcbox-desktop/issues/273)) ([ac8e253](https://github.com/arcboxlabs/arcbox-desktop/commit/ac8e253dd9921b519057f0a9c3748e22237bac4f))
+
+
+### Bug Fixes
+
+* **k8s:** align toolbar search and switch styling ([#262](https://github.com/arcboxlabs/arcbox-desktop/issues/262)) ([8bebe24](https://github.com/arcboxlabs/arcbox-desktop/commit/8bebe24e4b29f04f55e372d06fc3a644020d0e54))
+* **protobuf:** regenerate client for v0.4.15 ([#269](https://github.com/arcboxlabs/arcbox-desktop/issues/269)) ([21ed0de](https://github.com/arcboxlabs/arcbox-desktop/commit/21ed0de385414e550fb7b5e3b3ab9ba03a5fba0c))
+* **protobuf:** regenerate client for v0.4.17 ([#272](https://github.com/arcboxlabs/arcbox-desktop/issues/272)) ([9314f89](https://github.com/arcboxlabs/arcbox-desktop/commit/9314f89ced70be1637df2acd89976f51e1c235eb))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.4.17 ([#267](https://github.com/arcboxlabs/arcbox-desktop/issues/267)) ([9f43e9a](https://github.com/arcboxlabs/arcbox-desktop/commit/9f43e9a7867d6520c81d2747f19cf76efa106367))
+
 ## [1.22.13](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.22.12...v1.22.13) (2026-07-01)
 
 

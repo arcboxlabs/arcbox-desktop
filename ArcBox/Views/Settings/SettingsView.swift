@@ -4,6 +4,7 @@ import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
+    case account = "Account"
     case system = "System"
     // TODO: Implement network settings (ABXD-88)
     // case network = "Network"
@@ -18,6 +19,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var sfSymbol: String {
         switch self {
         case .general: return "gearshape"
+        case .account: return "person.circle"
         case .system: return "square.grid.2x2"
         // case .network: return "globe"
         case .storage: return "externaldrive"
@@ -31,14 +33,14 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 // MARK: - Settings View
 
 struct SettingsView: View {
-    @State private var selectedTab: SettingsTab? = .general
+    @Environment(AppViewModel.self) private var appVM
 
     var body: some View {
         NavigationSplitView {
             sidebar
         } detail: {
             settingsContent
-                .navigationTitle(selectedTab?.rawValue ?? "")
+                .navigationTitle(appVM.settingsTab?.rawValue ?? "")
                 .background(AppColors.background)
         }
         .frame(minWidth: 700, minHeight: 580)
@@ -46,11 +48,13 @@ struct SettingsView: View {
     }
 
     private var sidebar: some View {
-        ZStack {
+        @Bindable var vm = appVM
+
+        return ZStack {
             AppColors.sidebar
                 .ignoresSafeArea(.container, edges: [.top, .bottom, .leading])
 
-            List(SettingsTab.allCases, selection: $selectedTab) { tab in
+            List(SettingsTab.allCases, selection: $vm.settingsTab) { tab in
                 Label(tab.rawValue, systemImage: tab.sfSymbol)
                     .tag(tab)
             }
@@ -64,9 +68,11 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsContent: some View {
-        switch selectedTab {
+        switch appVM.settingsTab {
         case .general:
             GeneralSettingsView()
+        case .account:
+            AccountSettingsView()
         case .system:
             SystemSettingsView()
         // TODO: Implement network settings (ABXD-88)
@@ -82,4 +88,5 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView()
+        .environment(AppViewModel())
 }

@@ -10,8 +10,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var startupOrchestrator: StartupOrchestrator?
     var arcboxClient: ArcBoxClient?
     var connectionTask: Task<Void, Never>?
+    let deepLinkRouter = DeepLinkRouter()
     /// Set to true when the user explicitly requests a full quit (e.g. from menu bar).
     var forceQuit = false
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            deepLinkRouter.handle(url)
+        }
+    }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let keepRunning = UserDefaults.standard.bool(forKey: "keepRunning")

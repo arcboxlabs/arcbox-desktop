@@ -1,3 +1,4 @@
+import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
 import Foundation
@@ -13,6 +14,8 @@ struct ArcBoxDesktopApp: App {
     @State private var appVM = AppViewModel()
     // Lightweight init — no network calls until view appears
     @State private var daemonManager = DaemonManager()
+    // Lightweight init — restores tokens from the Keychain, no network
+    @State private var authSession = AuthSession()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
     // Lightweight init — no network calls until view appears
@@ -33,6 +36,8 @@ struct ArcBoxDesktopApp: App {
     @State private var networksVM = NetworksViewModel()
     // Lightweight init — no network calls until view appears
     @State private var volumesVM = VolumesViewModel()
+    // Lightweight init — no network calls until view appears
+    @State private var systemVmBackendVM = SystemVmBackendModel()
 
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
@@ -57,12 +62,34 @@ struct ArcBoxDesktopApp: App {
                 .environment(networksVM)
                 .environment(volumesVM)
                 .environment(sandboxEventMonitor)
+                .environment(authSession)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
+                .environment(\.accessTokenProvider, authSession)
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
+                    appDelegate.deepLinkRouter.configure(
+                        .init(
+                            appVM: appVM,
+                            containersVM: containersVM,
+                            volumesVM: volumesVM,
+                            imagesVM: imagesVM,
+                            networksVM: networksVM,
+                            openMainWindow: { openWindow(id: "main") },
+                            openSettingsWindow: { openWindow(id: "settings") },
+                            oauthCallbackScheme: OIDCClientConfiguration.redirectURI.scheme,
+                            onOAuthCallback: { url in
+                                Task { await authSession.handleAuthorizationCallback(url) }
+                            }
+                        ))
+
                     guard startupOrchestrator == nil else { return }
+
+                    // Enrich a Keychain-restored session with userinfo
+                    // (name/email/avatar) without delaying daemon startup;
+                    // sign-in fetches it as part of its own flow.
+                    Task { await authSession.loadUserInfo() }
 
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
@@ -98,7 +125,6 @@ struct ArcBoxDesktopApp: App {
                 // ListViews gate their initial load on setupPhase.isDockerReady
                 // (reported via the gRPC WatchSetupStatus stream) to avoid hitting the
                 // Docker API before the daemon has finished initialization.
-                .onOpenURL { url in handleDeepLink(url) }
                 .onChange(of: daemonManager.state) { _, newState in
                     if newState.isRunning {
                         if dockerClient == nil {
@@ -155,10 +181,15 @@ struct ArcBoxDesktopApp: App {
 
         Window("Settings", id: "settings") {
             SettingsView()
+                .environment(appVM)
                 .environment(daemonManager)
                 .environment(containersVM)
                 .environment(imagesVM)
+                .environment(authSession)
+                .environment(systemVmBackendVM)
+                .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.accessTokenProvider, authSession)
         }
         .defaultSize(width: 700, height: 580)
         .windowResizability(.contentSize)
@@ -171,9 +202,11 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(networksVM)
                 .environment(volumesVM)
+                .environment(authSession)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
+                .environment(\.accessTokenProvider, authSession)
         }
         .menuBarExtraStyle(.window)
     }
@@ -206,18 +239,5 @@ struct ArcBoxDesktopApp: App {
         appDelegate.arcboxClient = client
         appDelegate.connectionTask = task
         return client
-    }
-
-    /// Handle incoming `arcbox://` deep links.
-    /// TODO(ABXD-62): Register URL scheme in Info.plist or project build settings
-    /// (INFOPLIST_KEY_LSApplicationCategoryType / CFBundleURLTypes) once scheme routing is finalized.
-    private func handleDeepLink(_ url: URL) {
-        Log.startup.info("Received deep link: \(url.absoluteString, privacy: .private)")
-        guard url.scheme == "arcbox" else {
-            Log.startup.warning("Ignoring unrecognized URL scheme: \(url.scheme ?? "nil", privacy: .private)")
-            return
-        }
-        // TODO(ABXD-62): Route deep link to appropriate view based on host/path.
-        // e.g. arcbox://containers/<id>, arcbox://settings, etc.
     }
 }

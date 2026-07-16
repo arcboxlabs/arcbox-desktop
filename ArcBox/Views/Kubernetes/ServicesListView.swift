@@ -34,7 +34,7 @@ struct ServicesListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(vm.services) { service in
+                        ForEach(vm.filteredServices) { service in
                             ServiceRowView(
                                 service: service,
                                 isSelected: vm.selectedID == service.id,
@@ -47,14 +47,9 @@ struct ServicesListView: View {
         }
         .navigationTitle("Services")
         .navigationSubtitle(k8s.enabled ? "\(vm.serviceCount) total" : "Disabled")
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(
-                    action: {},
-                    label: {
-                        Image(systemName: "magnifyingglass")
-                    })
-            }
+        .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
+        .onChange(of: vm.isSearching) { _, newValue in
+            if !newValue { vm.searchText = "" }
         }
         .task {
             await k8s.checkStatus(client: arcboxClient)
