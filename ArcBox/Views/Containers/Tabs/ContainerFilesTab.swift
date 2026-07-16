@@ -120,11 +120,13 @@ struct ContainerFilesTab: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
 
-            Text("Container filesystems are browsed through the read-only ~/ArcBox export. A running container's live overlay is not yet exported.")
-                .font(.system(size: 12))
-                .foregroundStyle(AppColors.textMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+            Text(
+                "Container filesystems are browsed through the read-only ~/ArcBox export. A running container's live overlay is not yet exported."
+            )
+            .font(.system(size: 12))
+            .foregroundStyle(AppColors.textMuted)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
 
             Button("Refresh") {
                 refresh()
@@ -150,7 +152,8 @@ struct ContainerFilesTab: View {
             let hostURL = GuestDataMount.hostURL(forGuestPath: guestPath)
         else {
             rootURL = nil
-            errorMessage = container.resolvedRootFSMountPath == nil
+            errorMessage =
+                container.resolvedRootFSMountPath == nil
                 ? "Container has no resolvable filesystem path."
                 : "Container filesystem path is outside the guest data root."
             isLoadingRoot = false

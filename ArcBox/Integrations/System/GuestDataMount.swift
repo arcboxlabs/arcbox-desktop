@@ -35,7 +35,8 @@ enum GuestDataMount {
         guard trimmed == guestDataRoot || trimmed.hasPrefix(guestDataRoot + "/") else {
             return nil
         }
-        let relative = trimmed
+        let relative =
+            trimmed
             .dropFirst(guestDataRoot.count)
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !relative.split(separator: "/").contains(where: { $0 == ".." || $0 == "." }) else {
