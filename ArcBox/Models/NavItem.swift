@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Navigation item in sidebar
 enum NavItem: String, CaseIterable, Identifiable {
+    case activity
     case containers
     case volumes
     case images
@@ -26,6 +27,7 @@ enum NavItem: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
+        case .activity: "Activity"
         case .containers: "Containers"
         case .volumes: "Volumes"
         case .images: "Images"
@@ -40,6 +42,7 @@ enum NavItem: String, CaseIterable, Identifiable {
 
     var sfSymbol: String {
         switch self {
+        case .activity: "waveform.path.ecg"
         case .containers: "cube"
         case .volumes: "internaldrive"
         case .images: "circle.circle"
@@ -54,6 +57,7 @@ enum NavItem: String, CaseIterable, Identifiable {
 
     /// Sidebar sections
     enum Section: String, CaseIterable, Identifiable {
+        case system = "SYSTEM"
         case docker = "DOCKER"
         case kubernetes = "KUBERNETES"
         case linux = "LINUX"
@@ -63,6 +67,7 @@ enum NavItem: String, CaseIterable, Identifiable {
 
         var items: [NavItem] {
             switch self {
+            case .system: [.activity]
             case .docker: [.containers, .volumes, .images, .networks]
             case .kubernetes: [.pods, .services]
             case .linux: [.machines]

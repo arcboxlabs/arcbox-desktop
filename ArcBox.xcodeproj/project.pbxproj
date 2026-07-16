@@ -13,6 +13,7 @@
 		0720D45362971FA9338BAA53 /* SwiftTermView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEA74DBE71D29DEB680F08E7 /* SwiftTermView.swift */; };
 		07A382D149C73C697CAA1601 /* SandboxRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE564AAFEC0EF6D094409728 /* SandboxRowView.swift */; };
 		0999A1C28C17EFD150E56CF8 /* MachinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */; };
+		09A2217B8D33E2BD87D23713 /* ActivityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAC9EE4F067CB69F022C1E0 /* ActivityViewModel.swift */; };
 		09FF7CE0E252DAD805077C7E /* ImagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559C97F0CA659149BCBA59A2 /* ImagesViewModel.swift */; };
 		0AF01BD1D2FC14E2F99E9B4C /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
 		0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */; };
@@ -188,6 +189,7 @@
 		E69436579DA555FA6133A1CF /* ServiceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A147995028C8DB6F49BBD8EF /* ServiceRowView.swift */; };
 		E92C8245EE6AE51D99035E4D /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = B23ADDA7527EDFFFD6615B12 /* SwiftTerm */; };
 		E9B0A374B532221710729A34 /* ContainerTerminalTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1AFAED2CB7429B714C8A06 /* ContainerTerminalTab.swift */; };
+		ECA0B439D329FA52C529ABE8 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3D2AE66CD9DD4A18CADB71 /* ActivityView.swift */; };
 		ED3023CCFF235C0CF302C812 /* MenuBarView+Containers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */; };
 		EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */; };
 		F035F2D21380F9DD531E6B04 /* LocalRootFSOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EDD0CCB1C4698A31FC1ED1 /* LocalRootFSOutlineView.swift */; };
@@ -265,6 +267,7 @@
 		2E8FB9C9E3349126EF773522 /* DaemonLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonLoadingView.swift; sourceTree = "<group>"; };
 		32115BE04C97CECA9C05A273 /* StartupProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupProgressView.swift; sourceTree = "<group>"; };
 		32C86546753C11A9E6CA8CB8 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		3DAC9EE4F067CB69F022C1E0 /* ActivityViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewModel.swift; sourceTree = "<group>"; };
 		3E30F5FC430804013B58C6F1 /* com.arcboxlabs.desktop.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = com.arcboxlabs.desktop.daemon.plist; sourceTree = "<group>"; };
 		3ED1683EF0A3490B8B7B5CF6 /* InfoTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoTableView.swift; sourceTree = "<group>"; };
 		4009DCC81EA64B23A77FB0C4 /* ServicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesViewModel.swift; sourceTree = "<group>"; };
@@ -292,6 +295,7 @@
 		57DD9A9FA0D6072FD4476A91 /* ArcBoxApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcBoxApp.swift; sourceTree = "<group>"; };
 		591B3B9F3D3A0B5C43EC7B55 /* TemplatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesViewModel.swift; sourceTree = "<group>"; };
 		5A87C9445565D341EA85D2F4 /* ExternalTerminalLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalLauncher.swift; sourceTree = "<group>"; };
+		5B3D2AE66CD9DD4A18CADB71 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		5D70EF1BF223C47C7B8E71A5 /* ExternalTerminalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalApp.swift; sourceTree = "<group>"; };
 		5F2D773B0312F0D5695D0ADA /* SandboxesViewModel+Snapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SandboxesViewModel+Snapshots.swift"; sourceTree = "<group>"; };
 		61EE316315F864BA1BF0FFED /* MachinesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesViewModel.swift; sourceTree = "<group>"; };
@@ -680,6 +684,7 @@
 				AA88097CAC1929269BE210C5 /* ContentView.swift */,
 				7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */,
 				FDE4F12642D327661286B8A8 /* About */,
+				8D59468C9CEC7EAAE13C8C83 /* Activity */,
 				93FCB887D6304AC5E61E4D2B /* Containers */,
 				2E2958440C093A8D2A401F92 /* Images */,
 				22980E75C5271DF915A5B85E /* Kubernetes */,
@@ -793,6 +798,7 @@
 		7E0CDD06155210CDD85C4A1B /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				3DAC9EE4F067CB69F022C1E0 /* ActivityViewModel.swift */,
 				F707491EC9A47AE534822664 /* AppViewModel.swift */,
 				7C15DE3BBE549F8F86D82642 /* CheckForUpdatesViewModel.swift */,
 				E37F8C85EB27987F81FFB5F4 /* KubernetesState.swift */,
@@ -833,6 +839,14 @@
 				472F864720948B01C9F5D5A0 /* K8sClient */,
 			);
 			path = Packages;
+			sourceTree = "<group>";
+		};
+		8D59468C9CEC7EAAE13C8C83 /* Activity */ = {
+			isa = PBXGroup;
+			children = (
+				5B3D2AE66CD9DD4A18CADB71 /* ActivityView.swift */,
+			);
+			path = Activity;
 			sourceTree = "<group>";
 		};
 		93FCB887D6304AC5E61E4D2B /* Containers */ = {
@@ -1165,6 +1179,8 @@
 				76F9D4F43F4E73B79D882830 /* AboutView.swift in Sources */,
 				D4B90FF1E30A90C8B962A30B /* AboutWindow.swift in Sources */,
 				801AAF363A7901B7D17F5C55 /* AccountSettingsView.swift in Sources */,
+				ECA0B439D329FA52C529ABE8 /* ActivityView.swift in Sources */,
+				09A2217B8D33E2BD87D23713 /* ActivityViewModel.swift in Sources */,
 				5F8BD0B16CBBDC44080F6EA5 /* Analytics.swift in Sources */,
 				B91D470DA46003D64389C7DE /* AppColors.swift in Sources */,
 				BA8E4BE30E5FBB6B8548E214 /* AppDelegate.swift in Sources */,

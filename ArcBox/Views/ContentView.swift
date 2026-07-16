@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(NetworksViewModel.self) private var networksVM
 
     // Feature ViewModels -- local to main window
+    @State private var activityVM = ActivityViewModel()
     @State private var k8sState = KubernetesState()
     @State private var podsVM = PodsViewModel()
     @State private var servicesVM = ServicesViewModel()
@@ -30,6 +31,12 @@ struct ContentView: View {
                 Color.clear
                     .navigationSplitViewColumnWidth(0)
                     .navigationTitle("Templates")
+            } else if appVM.currentNav == .activity {
+                // Activity is a single full-width dashboard rendered in the
+                // detail column; collapse the content column.
+                Color.clear
+                    .navigationSplitViewColumnWidth(0)
+                    .navigationTitle("Activity")
             } else {
                 contentColumn
                     .background(AppColors.background)
@@ -56,6 +63,12 @@ struct ContentView: View {
         @Bindable var vm = appVM
 
         return List(selection: $vm.currentNav) {
+            Section("System") {
+                ForEach(NavItem.Section.system.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .tag(item)
+                }
+            }
             Section("Docker") {
                 ForEach(NavItem.Section.docker.items) { item in
                     Label(item.label, systemImage: item.sfSymbol)
@@ -97,6 +110,9 @@ struct ContentView: View {
     @ViewBuilder
     private var contentColumn: some View {
         switch appVM.currentNav {
+        case .activity:
+            // Rendered full-width in the detail column.
+            Color.clear
         case .containers:
             ContainersListView()
                 .environment(containersVM)
@@ -137,6 +153,9 @@ struct ContentView: View {
     @ViewBuilder
     private var detailPanel: some View {
         switch appVM.currentNav {
+        case .activity:
+            ActivityView()
+                .environment(activityVM)
         case .containers:
             ContainerDetailView()
                 .environment(containersVM)

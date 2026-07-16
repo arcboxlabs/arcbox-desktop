@@ -82,7 +82,7 @@ final class DeepLinkRouter {
         case .volumes: target.volumesVM.selectedID = id
         case .images: target.imagesVM.selectedID = id
         case .networks: target.networksVM.selectedID = id
-        case .pods, .services, .machines, .sandboxes, .templates:
+        case .activity, .pods, .services, .machines, .sandboxes, .templates:
             Log.deepLink.info("Item selection unsupported for \(item.rawValue, privacy: .public)")
         }
     }
