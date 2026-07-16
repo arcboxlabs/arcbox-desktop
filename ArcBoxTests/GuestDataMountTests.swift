@@ -37,4 +37,16 @@ final class GuestDataMountTests: XCTestCase {
         let url = GuestDataMount.hostURL(forGuestPath: "  /var/lib/docker/volumes/v/_data\n")
         XCTAssertEqual(url, arcboxRoot.appendingPathComponent("volumes/v/_data"))
     }
+
+    func testTraversalComponentsAreRejected() {
+        // Guest paths can come from image labels; ".." must never escape the export.
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/.."))
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/../../Users/x/.ssh"))
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/volumes/../../../etc"))
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/./volumes"))
+    }
+
+    func testDoubleSlashesDoNotBypassTraversalCheck() {
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/docker//..//etc"))
+    }
 }

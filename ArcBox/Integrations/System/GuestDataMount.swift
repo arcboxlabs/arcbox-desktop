@@ -3,7 +3,7 @@ import Foundation
 /// Maps guest docker-data paths to their host location under `~/ArcBox`.
 ///
 /// The ArcBox daemon exports the guest's docker data root (`/var/lib/docker`)
-/// read-only over NFSv3 and mounts it at `~/ArcBox`. Docker reports paths —
+/// read-only over NFSv4 and mounts it at `~/ArcBox`. Docker reports paths —
 /// volume mountpoints, image/container layer directories — as *guest* paths
 /// under that root, so browsing them on the host is a prefix rewrite:
 /// `/var/lib/docker/<rest>` → `~/ArcBox/<rest>`.
@@ -26,6 +26,10 @@ enum GuestDataMount {
 
     /// Rewrites a guest path under the docker data root to its host URL under
     /// `~/ArcBox`, or `nil` if the path is not within the exported root.
+    ///
+    /// Guest paths can come from image/container labels, i.e. untrusted input;
+    /// any `.`/`..` component is rejected so a crafted label cannot escape the
+    /// export once the URL is standardized downstream.
     static func hostURL(forGuestPath guestPath: String) -> URL? {
         let trimmed = guestPath.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed == guestDataRoot || trimmed.hasPrefix(guestDataRoot + "/") else {
@@ -34,6 +38,9 @@ enum GuestDataMount {
         let relative = trimmed
             .dropFirst(guestDataRoot.count)
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !relative.split(separator: "/").contains(where: { $0 == ".." || $0 == "." }) else {
+            return nil
+        }
         return relative.isEmpty ? rootURL : rootURL.appendingPathComponent(relative)
     }
 
