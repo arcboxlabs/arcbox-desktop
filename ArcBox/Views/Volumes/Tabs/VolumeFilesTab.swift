@@ -153,21 +153,19 @@ struct VolumeFilesTab: View {
             return
         }
 
-        do {
-            rootURL = try LocalRootFSService.resolveRootURL(path: mountPoint)
-        } catch let error as LocalRootFSService.RootFSError {
+        // The mount point is a guest path; browse it through the ~/ArcBox export.
+        guard let hostURL = GuestDataMount.hostURL(forGuestPath: mountPoint) else {
             rootURL = nil
-            switch error {
-            case .missingRootPath:
-                errorMessage = "Volume has no mount point."
-            case .pathNotFound(let path):
-                errorMessage = "Volume mount point does not exist: \(path)"
-            case .notDirectory(let path):
-                errorMessage = "Volume mount point is not a directory: \(path)"
-            }
+            errorMessage = "Volume mount point is outside the guest data root."
+            isLoadingRoot = false
+            return
+        }
+
+        do {
+            rootURL = try LocalRootFSService.resolveRootURL(path: hostURL.path)
         } catch {
             rootURL = nil
-            errorMessage = error.localizedDescription
+            errorMessage = GuestDataMount.unavailableMessage(subject: "This volume's data")
         }
 
         isLoadingRoot = false

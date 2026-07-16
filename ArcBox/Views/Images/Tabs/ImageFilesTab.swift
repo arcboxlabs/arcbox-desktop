@@ -144,7 +144,7 @@ struct ImageFilesTab: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
 
-            Text("Set rootfs path via image labels (for example: arcbox.rootfs.mount.path).")
+            Text("Image layers are browsed through the read-only ~/ArcBox export.")
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textMuted)
                 .multilineTextAlignment(.center)
@@ -171,25 +171,20 @@ struct ImageFilesTab: View {
         rootURL = nil
 
         do {
+            // The layer directory is a guest path; browse it via ~/ArcBox.
             let mountPoint = try await resolveImageRootFSMountPath()
             resolvedRootFSMountPath = mountPoint
-            rootURL = try LocalRootFSService.resolveRootURL(path: mountPoint)
+            guard let hostURL = GuestDataMount.hostURL(forGuestPath: mountPoint) else {
+                errorMessage = "Image layer path is outside the guest data root."
+                isLoadingRoot = false
+                return
+            }
+            rootURL = try LocalRootFSService.resolveRootURL(path: hostURL.path)
         } catch let error as ImageFilesTabError {
             resolvedRootFSMountPath = nil
             errorMessage = error.localizedDescription
-        } catch let error as LocalRootFSService.RootFSError {
-            resolvedRootFSMountPath = nil
-            switch error {
-            case .missingRootPath:
-                errorMessage = "Image has no configured rootfs mount path."
-            case .pathNotFound(let path):
-                errorMessage = "Image rootfs path does not exist: \(path)"
-            case .notDirectory(let path):
-                errorMessage = "Image rootfs path is not a directory: \(path)"
-            }
         } catch {
-            resolvedRootFSMountPath = nil
-            errorMessage = "Failed to load image filesystem: \(error.localizedDescription)"
+            errorMessage = GuestDataMount.unavailableMessage(subject: "This image's layers")
         }
 
         isLoadingRoot = false
