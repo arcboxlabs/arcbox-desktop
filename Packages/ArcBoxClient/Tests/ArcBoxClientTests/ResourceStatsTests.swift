@@ -97,6 +97,23 @@ import Testing
         #expect(stats.containers[0].displayName == "arcbox-postgres-1")
     }
 
+    @Test func containerNetworkRateFromDeltas() {
+        var prev = machine(monotonicMs: 10_000, busy: 100, total: 1000)
+        var cur = machine(monotonicMs: 12_000, busy: 150, total: 1200)  // +2s
+        var p = container("net", cpuUsec: 0, memory: 100)
+        p.netRxBytes = 1000
+        p.netTxBytes = 2000
+        prev.containers = [p]
+        var n = container("net", cpuUsec: 0, memory: 100)
+        n.netRxBytes = 1000 + 4096  // +2 KiB/s
+        n.netTxBytes = 2000 + 1024  // +512 B/s
+        cur.containers = [n]
+
+        let stats = ResourceStatsCalculator.compute(previous: prev, current: cur)!
+        #expect(abs(stats.containers[0].networkReceiveBytesPerSecond - 2048.0) < 0.001)
+        #expect(abs(stats.containers[0].networkTransmitBytesPerSecond - 512.0) < 0.001)
+    }
+
     @Test func negativePsiMeansNoPressureGauge() {
         let prev = machine(monotonicMs: 10_000, busy: 100, total: 1000)
         var cur = machine(monotonicMs: 12_000, busy: 150, total: 1200)

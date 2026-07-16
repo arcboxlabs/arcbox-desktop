@@ -41,6 +41,10 @@ public struct ContainerResourceStats: Sendable, Equatable, Identifiable {
     public var memoryLimitBytes: UInt64
     public var diskReadBytesPerSecond: Double
     public var diskWriteBytesPerSecond: Double
+    /// Read from the container's network namespace; 0 for a host-networked
+    /// container (its traffic is the machine's).
+    public var networkReceiveBytesPerSecond: Double
+    public var networkTransmitBytesPerSecond: Double
     public var pids: UInt32
 }
 
@@ -120,6 +124,10 @@ public enum ResourceStatsCalculator {
                     container.diskReadBytes, prior?.diskReadBytes ?? container.diskReadBytes, dt),
                 diskWriteBytesPerSecond: rate(
                     container.diskWrittenBytes, prior?.diskWrittenBytes ?? container.diskWrittenBytes, dt),
+                networkReceiveBytesPerSecond: rate(
+                    container.netRxBytes, prior?.netRxBytes ?? container.netRxBytes, dt),
+                networkTransmitBytesPerSecond: rate(
+                    container.netTxBytes, prior?.netTxBytes ?? container.netTxBytes, dt),
                 pids: container.pids
             )
         }
