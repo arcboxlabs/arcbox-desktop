@@ -127,14 +127,20 @@ extension SandboxesViewModel {
         guard let client else { return }
         let metadata = SandboxMetadata.forMachine(activeMachineID)
         setTransitioning(id, true)
+        // Reflect the in-flight drain immediately. Stop returns only once the
+        // workload has drained and the VM is down, so the terminal .stopped
+        // state arrives via the event stream — setting .stopping after the
+        // await would clobber it and could wedge the row at "Stopping".
+        updateSandbox(id) { $0.state = .stopping }
         var request = Sandbox_V1_StopSandboxRequest()
         request.id = id
         do {
             // No per-call timeout: Stop drains the active workload server-side.
             _ = try await client.sandboxes.stop(request, metadata: metadata)
-            updateSandbox(id) { $0.state = .stopping }
         } catch {
             reportError(error, operation: "stop")
+            // Stop failed — the optimistic .stopping is stale; resync from the daemon.
+            await loadSandboxes(client: client)
         }
         setTransitioning(id, false)
     }

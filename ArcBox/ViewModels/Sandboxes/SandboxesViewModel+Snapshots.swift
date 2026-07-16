@@ -8,6 +8,12 @@ extension SandboxesViewModel {
     /// Load snapshots taken from one sandbox.
     func loadSnapshots(for sandboxID: String, client: ArcBoxClient?) async {
         guard let client else { return }
+        // Drop a previously-selected sandbox's snapshots up front so a slow or
+        // failing load never leaves another sandbox's snapshots on screen.
+        if snapshotsSandboxID != sandboxID {
+            snapshots = []
+            snapshotsSandboxID = sandboxID
+        }
         let metadata = SandboxMetadata.forMachine(activeMachineID)
         var request = Sandbox_V1_ListSnapshotsRequest()
         request.sandboxID = sandboxID

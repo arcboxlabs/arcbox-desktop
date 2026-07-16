@@ -63,7 +63,7 @@ struct SandboxesListView: View {
                 .help("New Sandbox")
             }
         }
-        .task {
+        .task(id: client != nil) {
             await vm.loadSandboxes(client: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .sandboxChanged)) { _ in

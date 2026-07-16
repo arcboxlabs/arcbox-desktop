@@ -79,6 +79,11 @@ class SandboxesViewModel {
     /// Snapshots of the currently selected sandbox (Snapshots tab).
     var snapshots: [SandboxSnapshotViewModel] = []
 
+    /// The sandbox `snapshots` belongs to. Guards the Snapshots tab from
+    /// rendering or acting on another sandbox's snapshots across a selection
+    /// change or a failed reload.
+    var snapshotsSandboxID: String?
+
     /// Ports exposed from this app session, keyed by sandbox ID.
     var exposedPorts: [String: [SandboxExposedPort]] = [:]
 

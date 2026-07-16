@@ -60,7 +60,10 @@ struct SandboxSnapshotsTab: View {
 
     @ViewBuilder
     private var content: some View {
-        if vm.snapshots.isEmpty {
+        // Only render snapshots the view model has confirmed belong to this
+        // sandbox; across a selection change `vm.snapshots` briefly still holds
+        // the previous sandbox's rows.
+        if vm.snapshotsSandboxID != sandbox.id || vm.snapshots.isEmpty {
             VStack(spacing: 10) {
                 Spacer()
                 Image(systemName: "camera")

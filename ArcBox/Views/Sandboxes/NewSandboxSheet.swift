@@ -137,6 +137,11 @@ struct NewSandboxSheet: View {
             .overlay(alignment: .top) { Divider() }
         }
         .frame(width: 480, height: 540)
+        .task {
+            // Populate the image picker even when the Images view hasn't been
+            // opened yet; loadImages no-ops if the Docker client isn't ready.
+            await imagesVM.loadImages(docker: docker, iconClient: client)
+        }
     }
 
     /// Unique image names from Docker, excluding untagged entries.
