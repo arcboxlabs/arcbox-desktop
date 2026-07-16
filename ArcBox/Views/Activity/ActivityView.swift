@@ -237,6 +237,7 @@ private struct ContainerStatsHeader: View {
             cell("CPU", width: 64, alignment: .trailing)
             cell("MEMORY", width: 96, alignment: .trailing)
             cell("DISK R/W", width: 128, alignment: .trailing)
+            cell("NET ↓/↑", width: 128, alignment: .trailing)
             cell("PIDS", width: 48, alignment: .trailing)
         }
         .font(.system(size: 10, weight: .medium))
@@ -269,6 +270,10 @@ private struct ContainerStatsRow: View {
                 .frame(width: 96, alignment: .trailing)
             Text(
                 "\(StatsFormat.rate(container.diskReadBytesPerSecond)) / \(StatsFormat.rate(container.diskWriteBytesPerSecond))"
+            )
+            .frame(width: 128, alignment: .trailing)
+            Text(
+                "\(StatsFormat.rate(container.networkReceiveBytesPerSecond)) / \(StatsFormat.rate(container.networkTransmitBytesPerSecond))"
             )
             .frame(width: 128, alignment: .trailing)
             Text("\(container.pids)")

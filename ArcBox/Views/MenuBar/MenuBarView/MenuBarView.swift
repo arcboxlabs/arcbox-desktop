@@ -15,6 +15,9 @@ struct MenuBarView: View {
     @Environment(\.dockerClient) var docker
 
     @State var containersExpanded = true
+    /// Drives the live CPU/memory tiles while the menu-bar popover is open;
+    /// the stream stops when the popover closes (`.task` cancellation).
+    @State var activityVM = ActivityViewModel()
 
     var body: some View {
         mainPanel
@@ -23,6 +26,10 @@ struct MenuBarView: View {
             .task(id: docker != nil && daemonManager.state.isRunning) {
                 guard docker != nil, daemonManager.state.isRunning else { return }
                 await loadAll()
+            }
+            .task(id: daemonManager.state.isRunning) {
+                guard let client, daemonManager.state.isRunning else { return }
+                await activityVM.run(client: client)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
                 Task { await containersVM.loadContainersFromDocker(docker: docker, iconClient: client) }

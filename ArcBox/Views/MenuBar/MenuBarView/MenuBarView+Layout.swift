@@ -18,6 +18,8 @@ extension MenuBarView {
             header
                 .padding(.bottom, 4)
 
+            liveStatsRow
+
             metricCards
 
             containersSection
