@@ -1,5 +1,4 @@
 import ArcBoxAuth
-internal import AuthenticationServices
 import FleetPlatformClient
 import SwiftUI
 
@@ -7,7 +6,6 @@ import SwiftUI
 struct RunnersView: View {
     @Environment(AuthSession.self) private var authSession
     @Environment(RunnersViewModel.self) private var vm
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var isShowingWorkspaceDialog = false
     @State private var isShowingEnrollmentResetConfirmation = false
 
@@ -120,6 +118,14 @@ struct RunnersView: View {
                 .accessibilityLabel(
                     authSession.status == .signingIn ? "Signing in to ArcBox" : "Sign in to ArcBox"
                 )
+
+                if authSession.status == .signingIn,
+                    let prompt = authSession.deviceAuthorization
+                {
+                    Text("Confirm code \(prompt.userCode) in your browser.")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(AppColors.textSecondary)
+                }
 
                 if let authMessage {
                     Label(authMessage, systemImage: "exclamationmark.triangle.fill")
@@ -268,7 +274,7 @@ struct RunnersView: View {
 
     private func signIn() {
         Task {
-            await authSession.signIn(using: webAuthenticationSession)
+            await authSession.signIn()
         }
     }
 

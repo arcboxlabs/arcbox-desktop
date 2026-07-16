@@ -87,11 +87,7 @@ struct ArcBoxDesktopApp: App {
                             imagesVM: imagesVM,
                             networksVM: networksVM,
                             openMainWindow: { openWindow(id: "main") },
-                            openSettingsWindow: { openWindow(id: "settings") },
-                            oauthCallbackScheme: OIDCClientConfiguration.redirectURI.scheme,
-                            onOAuthCallback: { url in
-                                Task { await authSession.handleAuthorizationCallback(url) }
-                            }
+                            openSettingsWindow: { openWindow(id: "settings") }
                         ))
                     fleetAgentConnection.start()
                     appDelegate.fleetAgentConnection = fleetAgentConnection
@@ -105,7 +101,7 @@ struct ArcBoxDesktopApp: App {
                             authentication: authSession,
                             agentReadiness: fleetAgentConnection
                         )
-                        await authSession.loadUserInfo()
+                        await authSession.refreshSession()
                     }
                     Task {
                         do {

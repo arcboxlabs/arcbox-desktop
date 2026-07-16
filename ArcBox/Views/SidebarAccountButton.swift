@@ -1,5 +1,4 @@
 import ArcBoxAuth
-internal import AuthenticationServices
 import SwiftUI
 
 /// Account chip pinned to the bottom of the main-window sidebar.
@@ -10,7 +9,6 @@ import SwiftUI
 struct SidebarAccountButton: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(AuthSession.self) private var authSession
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Environment(\.openWindow) private var openWindow
     @State private var isHovered = false
 
@@ -70,7 +68,7 @@ struct SidebarAccountButton: View {
     private var helpText: String {
         if authSession.status == .restoring { return "Restoring ArcBox session" }
         if authSession.status == .signedIn { return "Open account settings" }
-        if authSession.configuration.isPlaceholder { return "No OIDC provider is configured" }
+        if authSession.configuration.isPlaceholder { return "No sign-in service is configured" }
         return "Sign in to ArcBox"
     }
 
@@ -79,7 +77,7 @@ struct SidebarAccountButton: View {
             appVM.settingsTab = .account
             openWindow(id: "settings")
         } else {
-            Task { await authSession.signIn(using: webAuthenticationSession) }
+            Task { await authSession.signIn() }
         }
     }
 }

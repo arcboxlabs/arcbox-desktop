@@ -1,49 +1,56 @@
+import AppKit
 import Foundation
 import Observation
 
 /// Observable session state for platform sign-in: restores from the Keychain
-/// when started, hands out valid access tokens (refreshing lazily), and signs out.
+/// when started, hands out the session bearer token, and signs out.
 ///
-/// The interactive browser leg lives in `AuthSession+SignIn.swift`.
+/// The session token has a sliding server-side expiry that the provider
+/// extends on use, so there is no client-side refresh: a token is valid
+/// until the provider says otherwise (`refreshSession()`), and a platform
+/// 401 means the user must sign in again.
+///
+/// The interactive device-authorization leg lives in `AuthSession+SignIn.swift`.
 @Observable
 @MainActor
 public final class AuthSession: AccessTokenProviding {
     public internal(set) var status: AuthStatus = .signedOut
-    public private(set) var identity: AuthIdentity?
-    /// When the current access token expires, for display in the Account UI.
-    public private(set) var accessTokenExpiresAt: Date?
+    public internal(set) var identity: AuthIdentity?
+    /// The browser-approval prompt to display while sign-in is in flight.
+    public internal(set) var deviceAuthorization: DeviceAuthorizationPrompt?
 
-    public let configuration: OIDCClientConfiguration
+    public let configuration: AuthClientConfiguration
 
-    let provider: any OIDCProviding
+    let provider: any AuthProviding
     private let tokenStore: any TokenStoring
-    @ObservationIgnored private var tokens: StoredTokens?
-    @ObservationIgnored private var endpoints: OIDCEndpoints?
-    @ObservationIgnored private var refreshTask: Task<StoredTokens, Error>?
+    @ObservationIgnored var session: StoredSession?
     @ObservationIgnored private var restorationTask: Task<Void, Never>?
     @ObservationIgnored private var didAttemptRestore = false
-    /// Context for the in-flight browser leg, consumed exactly once by
-    /// whichever completion path returns first: the web-session result or a
-    /// deep-link callback (see `AuthSession+SignIn.swift`).
-    @ObservationIgnored var pendingAuthorization: PendingAuthorization?
-
-    /// Refresh this long before nominal expiry to absorb clock skew.
-    private static let expiryLeeway: TimeInterval = 60
-    /// Used when the token response omits the RECOMMENDED `expires_in`.
-    private static let defaultTokenLifetime: TimeInterval = 3600
+    @ObservationIgnored var signInTask: Task<Void, Never>?
+    /// Sleep seam so tests drive the polling loop without real delays.
+    @ObservationIgnored let sleeper: @Sendable (Duration) async throws -> Void
+    /// Browser seam so tests observe the verification URL being opened.
+    @ObservationIgnored let openURL: @MainActor (URL) -> Void
 
     public init(
-        configuration: OIDCClientConfiguration = .current,
-        provider: any OIDCProviding = OIDCClient(),
-        tokenStore: any TokenStoring = KeychainTokenStore()
+        configuration: AuthClientConfiguration = .current,
+        provider: any AuthProviding = BetterAuthClient(),
+        tokenStore: any TokenStoring = KeychainTokenStore(),
+        sleeper: @escaping @Sendable (Duration) async throws -> Void = {
+            try await Task.sleep(for: $0)
+        },
+        openURL: (@MainActor (URL) -> Void)? = nil
     ) {
         self.configuration = configuration
         self.provider = provider
         self.tokenStore = tokenStore
+        self.sleeper = sleeper
+        self.openURL = openURL ?? { NSWorkspace.shared.open($0) }
     }
 
-    /// Rehydrates state from the Keychain; no network. An expired access
-    /// token still restores the session — it refreshes on first use.
+    /// Rehydrates state from the Keychain; no network. The provider owns
+    /// expiry, so any stored token restores the session — `refreshSession()`
+    /// signs out if the provider no longer honors it.
     public func restoreSession() async {
         if let restorationTask {
             await restorationTask.value
@@ -83,62 +90,61 @@ public final class AuthSession: AccessTokenProviding {
     // MARK: - AccessTokenProviding
 
     public func accessToken() async throws -> String {
-        guard let tokens else { throw OIDCError.notSignedIn }
-        if tokens.expiresAt > Date().addingTimeInterval(Self.expiryLeeway) {
-            return tokens.accessToken
-        }
-        return try await refreshedTokens().accessToken
+        guard let session else { throw AuthError.notSignedIn }
+        return session.sessionToken
     }
 
-    // MARK: - UserInfo
+    // MARK: - Session refresh
 
-    /// Fetches profile claims from the userinfo endpoint and publishes them
-    /// as `identity`. The platform IdP never embeds profile claims in ID
-    /// tokens, so this is the only source of name/email/avatar. Best-effort:
-    /// failures log and keep the existing identity. Runs automatically after
-    /// sign-in; the app also calls it after a restored launch.
-    public func loadUserInfo() async {
-        guard status == .signedIn else { return }
+    /// Verifies the session with the provider and publishes the account
+    /// identity (this is the sole source of name/email/avatar). A provider
+    /// that authoritatively reports no session signs the user out; transport
+    /// failures keep the local session. Runs automatically after sign-in;
+    /// the app also calls it after a restored launch.
+    public func refreshSession() async {
+        guard status == .signedIn, let token = session?.sessionToken else { return }
         do {
-            let endpoints = try await resolvedEndpoints()
-            guard let endpoint = endpoints.userinfoEndpoint else {
-                ClientLog.auth.warning("Provider advertises no userinfo endpoint")
+            guard
+                let snapshot = try await provider.session(
+                    token: token, configuration: configuration)
+            else {
+                ClientLog.auth.info("Provider no longer honors the stored session; signing out")
+                await forgetSession()
                 return
             }
-            let info = try await provider.userInfo(
-                accessToken: try await accessToken(), endpoint: endpoint)
+            // The session may have been signed out or replaced while the
+            // request was in flight.
+            guard session?.sessionToken == token else { return }
             identity = AuthIdentity(
-                subject: info.subject,
-                email: info.email ?? identity?.email,
-                name: info.name ?? identity?.name,
-                avatarURL: info.picture,
-                emailVerified: info.emailVerified)
+                subject: snapshot.user.id,
+                email: normalized(snapshot.user.email),
+                name: normalized(snapshot.user.name),
+                avatarURL: normalized(snapshot.user.image).flatMap(URL.init(string:)),
+                emailVerified: snapshot.user.emailVerified)
+            if let expiresAt = snapshot.session.expiresAt {
+                let updated = StoredSession(sessionToken: token, expiresAt: expiresAt)
+                session = updated
+                await persist(updated)
+            }
             ClientLog.auth.info(
-                "UserInfo loaded for \(info.subject, privacy: .private(mask: .hash))")
+                "Session verified for \(snapshot.user.id, privacy: .private(mask: .hash))")
         } catch {
-            ClientLog.auth.warning("UserInfo fetch failed: \(String(describing: error))")
+            ClientLog.auth.warning("Session refresh failed: \(String(describing: error))")
         }
     }
 
     // MARK: - Sign-out
 
-    /// Clears the session locally and best-effort revokes the refresh token.
-    /// Revocation is only attempted when discovery already ran this launch —
-    /// sign-out must never block on an unreachable issuer.
+    /// Revokes the session server-side (best-effort) and clears local state.
+    /// Sign-out must never block on an unreachable provider.
     public func signOut() async {
-        refreshTask?.cancel()
-        refreshTask = nil
-        if let refreshToken = tokens?.refreshToken,
-            let endpoint = endpoints?.revocationEndpoint
-        {
+        cancelSignIn()
+        if let token = session?.sessionToken {
             do {
-                try await provider.revoke(
-                    token: refreshToken,
-                    tokenTypeHint: "refresh_token",
-                    configuration: configuration,
-                    endpoint: endpoint)
+                try await provider.signOut(token: token, configuration: configuration)
             } catch {
-                ClientLog.auth.warning("Token revocation failed: \(String(describing: error))")
+                ClientLog.auth.warning(
+                    "Server-side sign-out failed: \(String(describing: error))")
             }
         }
         await forgetSession()
@@ -146,93 +152,37 @@ public final class AuthSession: AccessTokenProviding {
 
     // MARK: - Internal (shared with AuthSession+SignIn, tested via @testable)
 
-    func resolvedEndpoints() async throws -> OIDCEndpoints {
-        if let endpoints { return endpoints }
-        let discovered = try await provider.discover(issuer: configuration.issuerURL)
-        endpoints = discovered
-        return discovered
-    }
-
-    /// Publishes a token set as the current session.
-    func adopt(_ stored: StoredTokens) {
-        tokens = stored
-        accessTokenExpiresAt = stored.expiresAt
-        if let idToken = stored.idToken,
-            let claims = try? IDTokenClaims.decode(idToken: idToken)
-        {
-            identity = AuthIdentity(subject: claims.subject, email: claims.email, name: claims.name)
-        }
+    /// Publishes a stored session as the current one. Identity arrives
+    /// separately via `refreshSession()`.
+    func adopt(_ stored: StoredSession) {
+        session = stored
         status = .signedIn
     }
 
-    /// Persists a token set without blocking the main actor. Persistence is
+    /// Persists the session without blocking the main actor. Persistence is
     /// best-effort so a Keychain failure does not discard a valid live session.
-    func persist(_ stored: StoredTokens) async {
+    func persist(_ stored: StoredSession) async {
         do {
             try await tokenStore.save(stored)
         } catch {
-            ClientLog.auth.error("Failed to persist tokens: \(String(describing: error))")
+            ClientLog.auth.error("Failed to persist session: \(String(describing: error))")
         }
     }
 
-    static func merge(response: TokenResponse, into current: StoredTokens?) -> StoredTokens {
-        StoredTokens(
-            accessToken: response.accessToken,
-            // Providers may rotate the refresh token; keep the old one when absent.
-            refreshToken: response.refreshToken ?? current?.refreshToken,
-            idToken: response.idToken ?? current?.idToken,
-            expiresAt: Date().addingTimeInterval(response.expiresIn ?? Self.defaultTokenLifetime)
-        )
-    }
-
-    // MARK: - Private
-
-    /// De-duplicates concurrent refreshes: the MainActor serial executor plus
-    /// no `await` between the check and the store makes this race-free.
-    private func refreshedTokens() async throws -> StoredTokens {
-        if let refreshTask { return try await refreshTask.value }
-        let task = Task { try await performRefresh() }
-        refreshTask = task
-        defer { refreshTask = nil }
-        return try await task.value
-    }
-
-    private func performRefresh() async throws -> StoredTokens {
-        guard let current = tokens else { throw OIDCError.notSignedIn }
-        guard let refreshToken = current.refreshToken else {
-            throw OIDCError.missingRefreshToken
-        }
-        let endpoints = try await resolvedEndpoints()
-        do {
-            let response = try await provider.refresh(
-                refreshToken: refreshToken, configuration: configuration, endpoints: endpoints)
-            let updated = Self.merge(response: response, into: current)
-            try Task.checkCancellation()
-            guard tokens == current else { throw CancellationError() }
-            await persist(updated)
-            try Task.checkCancellation()
-            guard tokens == current else { throw CancellationError() }
-            adopt(updated)
-            return updated
-        } catch let error as OIDCError {
-            if case .tokenRequestFailed(let status, _) = error, status == 400 || status == 401 {
-                // invalid_grant: the refresh token is dead — the session is over.
-                await forgetSession()
-                throw OIDCError.notSignedIn
-            }
-            throw error
-        }
-    }
-
-    private func forgetSession() async {
-        tokens = nil
+    func forgetSession() async {
+        session = nil
         identity = nil
-        accessTokenExpiresAt = nil
+        deviceAuthorization = nil
         status = .signedOut
         do {
             try await tokenStore.clear()
         } catch {
             ClientLog.auth.error("Failed to clear Keychain: \(String(describing: error))")
         }
+    }
+
+    private func normalized(_ value: String?) -> String? {
+        guard let value, !value.isEmpty else { return nil }
+        return value
     }
 }

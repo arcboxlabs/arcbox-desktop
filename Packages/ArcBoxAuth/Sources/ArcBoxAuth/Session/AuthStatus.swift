@@ -9,9 +9,8 @@ public enum AuthStatus: Sendable, Equatable {
     case error(String)
 }
 
-/// Who is signed in, for display purposes only. Seeded from the ID token
-/// (which this provider limits to `sub`) and enriched from the userinfo
-/// endpoint via `AuthSession.loadUserInfo()`.
+/// Who is signed in, for display purposes only. Sourced from the provider's
+/// session endpoint via `AuthSession.refreshSession()`.
 public struct AuthIdentity: Sendable, Equatable {
     public let subject: String
     public let email: String?
