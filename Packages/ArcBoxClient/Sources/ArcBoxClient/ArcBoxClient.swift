@@ -149,6 +149,11 @@ public final class ArcBoxClient: Sendable {
         .init(wrapping: grpcClient)
     }
 
+    /// Live machine and per-container resource stats (Activity Monitor).
+    public var stats: Arcbox_V1_StatsService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
     /// Volume management operations.
     public var volumes: Arcbox_V1_VolumeService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)
