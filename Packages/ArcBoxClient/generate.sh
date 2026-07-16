@@ -37,6 +37,7 @@ PROTOS=(
     "image.proto"
     "api.proto"
     "machine.proto"
+    "sandbox.proto"
     "kubernetes.proto"
 )
 

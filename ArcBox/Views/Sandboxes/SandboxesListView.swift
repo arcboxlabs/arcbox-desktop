@@ -1,8 +1,12 @@
+import ArcBoxClient
 import SwiftUI
 
-/// Column 2: sandboxes page with Monitoring and List tabs
+/// Column 2: sandboxes page with List and Monitoring tabs
 struct SandboxesListView: View {
     @Environment(SandboxesViewModel.self) private var vm
+    @Environment(\.arcboxClient) private var client
+
+    @State private var sandboxToRemove: SandboxViewModel?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,23 +53,56 @@ struct SandboxesListView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 if vm.pageTab == .list {
                     SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                    Button(
-                        action: {},
-                        label: {
-                            Image(systemName: "magnifyingglass")
-                        })
                 }
                 Button(
-                    action: {},
+                    action: { vm.showNewSandboxSheet = true },
                     label: {
                         Image(systemName: "plus")
-                    })
+                    }
+                )
+                .help("New Sandbox")
             }
         }
-        .onAppear {
-            #if DEBUG
-                vm.loadSampleData()
-            #endif
+        .task(id: client != nil) {
+            await vm.loadSandboxes(client: client)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .sandboxChanged)) { _ in
+            Task {
+                await vm.loadSandboxes(client: client)
+            }
+        }
+        .confirmationDialog(
+            "Remove Sandbox",
+            isPresented: Binding(
+                get: { sandboxToRemove != nil },
+                set: { if !$0 { sandboxToRemove = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let sandbox = sandboxToRemove {
+                Button("Remove \"\(sandbox.displayName)\"", role: .destructive) {
+                    Task {
+                        await vm.removeSandbox(sandbox.id, force: true, client: client)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { sandboxToRemove = nil }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { vm.lastError != nil },
+                set: { if !$0 { vm.clearError() } }
+            )
+        ) {
+            Button("OK") { vm.clearError() }
+        } message: {
+            Text(vm.lastError ?? "")
+        }
+        .sheet(isPresented: Bindable(vm).showNewSandboxSheet) {
+            NewSandboxSheet()
         }
     }
 
@@ -80,7 +117,13 @@ struct SandboxesListView: View {
                             SandboxRowView(
                                 sandbox: sandbox,
                                 isSelected: vm.selectedID == sandbox.id,
-                                onSelect: { vm.selectSandbox(sandbox.id) }
+                                onSelect: { vm.selectSandbox(sandbox.id) },
+                                onStop: {
+                                    Task { await vm.stopSandbox(sandbox.id, client: client) }
+                                },
+                                onRemove: {
+                                    sandboxToRemove = sandbox
+                                }
                             )
                         }
                     }

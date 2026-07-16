@@ -9,12 +9,12 @@ struct SandboxEmptyState: View {
                     .foregroundStyle(AppColors.textSecondary)
 
                 CommandHint(
-                    command: "e2b sandbox create",
-                    description: "Create from default template"
+                    command: "abctl sandbox create",
+                    description: "Create with the default rootfs"
                 )
                 CommandHint(
-                    command: "e2b sandbox create --template <id>",
-                    description: "Create from specific template"
+                    command: "abctl sandbox create --from-image <ref>",
+                    description: "Create from a local Docker image"
                 )
             }
         }

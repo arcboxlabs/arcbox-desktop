@@ -39,10 +39,28 @@ public struct ContainerInspectSnapshot: Sendable {
 public struct ImageInspectSnapshot: Sendable {
     public let labels: [String: String]
     public let rootfsMountPath: String?
+    /// Raw `GraphDriver.Data.UpperDir` of the image's top overlay2 layer.
+    public let overlayUpperDir: String?
 
-    public init(labels: [String: String], rootfsMountPath: String? = nil) {
+    /// The overlay2 chain-id directory (parent of `UpperDir`, containing
+    /// `diff/`, `link`, `lower`). This is the guest-visible path the arcbox
+    /// sandbox rootfs builder (`oci2rootfs`) expects for `rootfs`.
+    public var overlayChainDirectory: String? {
+        guard let overlayUpperDir else { return nil }
+        if overlayUpperDir.hasSuffix("/diff") {
+            return String(overlayUpperDir.dropLast("/diff".count))
+        }
+        return overlayUpperDir
+    }
+
+    public init(
+        labels: [String: String],
+        rootfsMountPath: String? = nil,
+        overlayUpperDir: String? = nil
+    ) {
         self.labels = labels
         self.rootfsMountPath = rootfsMountPath
+        self.overlayUpperDir = overlayUpperDir
     }
 }
 
