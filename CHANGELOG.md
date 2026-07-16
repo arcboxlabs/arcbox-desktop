@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.23.2...v1.24.0) (2026-07-16)
+
+
+### Features
+
+* **sandbox:** wire the Sandbox section to the sandbox.v1 gRPC API ([#266](https://github.com/arcboxlabs/arcbox-desktop/issues/266)) ([3d11d77](https://github.com/arcboxlabs/arcbox-desktop/commit/3d11d77fd4df0c5a7d57f17a0949b876aad4cade))
+
 ## [1.23.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.23.1...v1.23.2) (2026-07-15)
 
 
