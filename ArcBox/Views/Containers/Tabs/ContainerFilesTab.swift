@@ -120,13 +120,11 @@ struct ContainerFilesTab: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
 
-            if container.resolvedRootFSMountPath == nil {
-                Text("Set a rootfs mount path via container labels.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(AppColors.textMuted)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
-            }
+            Text("Container filesystems are browsed through the read-only ~/ArcBox export. A running container's live overlay is not yet exported.")
+                .font(.system(size: 12))
+                .foregroundStyle(AppColors.textMuted)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
 
             Button("Refresh") {
                 refresh()
@@ -147,11 +145,23 @@ struct ContainerFilesTab: View {
         isLoadingRoot = true
         selectedPath = nil
 
+        // The rootfs path is a guest path; browse it through the ~/ArcBox export.
+        guard let guestPath = container.resolvedRootFSMountPath,
+            let hostURL = GuestDataMount.hostURL(forGuestPath: guestPath)
+        else {
+            rootURL = nil
+            errorMessage = container.resolvedRootFSMountPath == nil
+                ? "Container has no resolvable filesystem path."
+                : "Container filesystem path is outside the guest data root."
+            isLoadingRoot = false
+            return
+        }
+
         do {
-            rootURL = try LocalRootFSService.resolveRootURL(path: container.resolvedRootFSMountPath)
+            rootURL = try LocalRootFSService.resolveRootURL(path: hostURL.path)
         } catch {
             rootURL = nil
-            errorMessage = error.localizedDescription
+            errorMessage = GuestDataMount.unavailableMessage(subject: "This container's filesystem")
         }
 
         isLoadingRoot = false
