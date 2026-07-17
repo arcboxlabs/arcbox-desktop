@@ -776,7 +776,7 @@ jobs:
           echo "arm=$(sha256sum "$dmg_path" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Bump Homebrew cask
-        uses: arcboxlabs/homebrew-tap/.github/actions/bump-cask@master
+        uses: arcboxlabs/homebrew-tap/.github/actions/bump-cask@19f97aa3ca8a15c3fdbbf018c1b79651bfdebb8d
         with:
           token: ${{ steps.app-token.outputs.token }}
           cask: arcbox
