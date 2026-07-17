@@ -523,24 +523,26 @@ fn embed_abctl(app_bundle: &Path, arcbox_dir: &Path, sign_identity: &str) -> Res
     Ok(())
 }
 
-fn embed_agent(app_bundle: &Path, arcbox_dir: &Path) -> Result<()> {
-    let agent_bin = arcbox_dir
+/// Embed the Linux guest binaries — arcbox-agent (System VM agent) and
+/// vm-agent (sandbox microVM init) — which the daemon seeds from
+/// Resources/bin into <data_dir>/bin at startup.
+fn embed_guest_binaries(app_bundle: &Path, arcbox_dir: &Path) -> Result<()> {
+    println!("--- Embedding guest binaries ---");
+    let src_dir = arcbox_dir
         .join("target")
         .join("aarch64-unknown-linux-musl")
-        .join("release")
-        .join("arcbox-agent");
-    if !agent_bin.is_file() {
-        println!(
-            "  Warning: arcbox-agent not found at {}",
-            agent_bin.display()
-        );
-        return Ok(());
+        .join("release");
+    let dest_dir = app_bundle.join("Contents").join("Resources").join("bin");
+    std::fs::create_dir_all(&dest_dir)?;
+    for name in ["arcbox-agent", "vm-agent"] {
+        let src = src_dir.join(name);
+        if !src.is_file() {
+            println!("  Warning: {name} not found at {}", src.display());
+            continue;
+        }
+        std::fs::copy(&src, dest_dir.join(name)).with_context(|| format!("copying {name}"))?;
+        println!("  Copied {name} → Resources/bin/{name}");
     }
-    println!("--- Embedding arcbox-agent ---");
-    let agent_dir = app_bundle.join("Contents").join("Resources").join("bin");
-    std::fs::create_dir_all(&agent_dir)?;
-    std::fs::copy(&agent_bin, agent_dir.join("arcbox-agent")).context("copying arcbox-agent")?;
-    println!("  Copied arcbox-agent → Resources/bin/arcbox-agent");
     Ok(())
 }
 
@@ -990,7 +992,7 @@ pub fn run(args: MacosDmgArgs) -> Result<()> {
     prepare_profile_resources(&desktop_repo, &arcbox_dir, profile, &resource_options)?;
     embed_boot_assets(&app_bundle, &arcbox_dir, profile)?;
     embed_abctl(&app_bundle, &arcbox_dir, &sign_identity)?;
-    embed_agent(&app_bundle, &arcbox_dir)?;
+    embed_guest_binaries(&app_bundle, &arcbox_dir)?;
     embed_docker_tools(&app_bundle, &sign_identity, profile)?;
     embed_runtime(&app_bundle, &sign_identity, profile)?;
     embed_completions(&app_bundle)?;
