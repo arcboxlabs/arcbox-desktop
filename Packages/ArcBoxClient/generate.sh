@@ -106,14 +106,21 @@ fi
 
 echo "Output dir: $OUT_DIR"
 
-# Build protoc plugins from grpc-swift-protobuf
+# Build protoc plugins from grpc-swift-protobuf.
+#
+# The SwiftPM scratch dir must live OUTSIDE Packages/: CI cache keys hash
+# Packages/** (pr.yml/release.yml "Restore Xcode build cache"), and a .build
+# here breaks them — dependency checkouts can carry dangling symlinks that
+# hard-fail hashFiles (sentry-cocoa's .claude/skills did), and checked-out
+# package manifests pollute the swiftpm cache key.
+SCRATCH_DIR="${SCRIPT_DIR}/../../.build/protoc-plugins"
 echo ""
 echo "Building protoc plugins..."
 cd "$SCRIPT_DIR"
-swift build --product protoc-gen-swift 2>&1 | tail -1
-swift build --product protoc-gen-grpc-swift 2>&1 | tail -1
+swift build --scratch-path "$SCRATCH_DIR" --product protoc-gen-swift 2>&1 | tail -1
+swift build --scratch-path "$SCRATCH_DIR" --product protoc-gen-grpc-swift 2>&1 | tail -1
 
-PLUGIN_DIR="$(swift build --show-bin-path)"
+PLUGIN_DIR="$(swift build --scratch-path "$SCRATCH_DIR" --show-bin-path)"
 export PATH="${PLUGIN_DIR}:${PATH}"
 
 echo "Using protoc-gen-swift: $(which protoc-gen-swift)"
