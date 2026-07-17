@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.26.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.26.0...v1.26.1) (2026-07-17)
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.4.21 ([#296](https://github.com/arcboxlabs/arcbox-desktop/issues/296)) ([bcabb54](https://github.com/arcboxlabs/arcbox-desktop/commit/bcabb543b7726ad4aa7b4cce9b936209bb1921a4))
+
+
+### CI
+
+* **release:** use homebrew-tap bump-cask action ([#290](https://github.com/arcboxlabs/arcbox-desktop/issues/290)) ([24886fd](https://github.com/arcboxlabs/arcbox-desktop/commit/24886fd7b0beb98e004b717094670654ced6f7ed))
+
 ## [1.26.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.25.1...v1.26.0) (2026-07-17)
 
 
