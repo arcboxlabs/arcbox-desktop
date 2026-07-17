@@ -82,7 +82,7 @@ final class RunnersViewModel {
         switch viewState {
         case .connecting: return "Connecting"
         case .unavailable: return "Agent unavailable"
-        case .signedOut: return "Sign in required"
+        case .signedOut: return "Not connected"
         case .unenrolled: return "Not connected"
         case .enrolling(let progress): return progress.title
         case .enrollmentFailed(_, let recovery):
@@ -111,7 +111,7 @@ final class RunnersViewModel {
         self.platformClient = platformClient
 
         if enrollmentCoordinator == nil || activePlatformClient !== platformClient {
-            if let authentication, let agentReadiness, let platformClient {
+            if let authentication, let agentReadiness {
                 enrollmentCoordinator = FleetEnrollmentCoordinator(
                     authentication: authentication,
                     agentReadiness: agentReadiness,
@@ -203,6 +203,17 @@ final class RunnersViewModel {
             platformError = nil
         }
         return succeeded
+    }
+
+    @discardableResult
+    func enroll(withToken token: String) async -> Bool {
+        platformError = nil
+        guard let enrollmentCoordinator else {
+            platformError = "Fleet enrollment is unavailable."
+            return false
+        }
+
+        return await enrollmentCoordinator.enroll(token: token)
     }
 
     @discardableResult
@@ -340,8 +351,8 @@ final class RunnersViewModel {
         case .credentialRejected, .detached, .stateStreamEnded, .stateStreamFailed,
             .attachmentTimedOut, .cancelled(machineID: .some):
             return .unenroll
-        case .workspaceRequired, .agentPreparationFailed, .enrollmentTokenRequestFailed,
-            .cancelled(machineID: nil):
+        case .workspaceRequired, .enrollmentTokenRequired, .agentPreparationFailed,
+            .enrollmentTokenRequestFailed, .cancelled(machineID: nil):
             return .waitForAgent
         }
     }

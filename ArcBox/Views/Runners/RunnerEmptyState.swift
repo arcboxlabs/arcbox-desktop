@@ -7,6 +7,7 @@ struct RunnerEmptyState: View {
     let errorMessage: String?
     var actionTitle = "Connect to ArcBox"
     var onConnect: () -> Void
+    var onUseEnrollmentToken: () -> Void
 
     private let chip = RunnerHostCapability.chipName
 
@@ -41,6 +42,11 @@ struct RunnerEmptyState: View {
                 .padding(.top, 8)
                 .accessibilityLabel(isWorking ? "Connecting this Mac to ArcBox" : actionTitle)
 
+                Button("Use Enrollment Token…", action: onUseEnrollmentToken)
+                    .buttonStyle(.bordered)
+                    .disabled(!canConnect)
+                    .frame(maxWidth: .infinity)
+
                 if let errorMessage {
                     // No .fixedSize here: on macOS 26, changes inside a
                     // fixedSize(vertical:) subtree trigger a window-sizing pass
@@ -56,6 +62,12 @@ struct RunnerEmptyState: View {
 }
 
 #Preview {
-    RunnerEmptyState(isWorking: false, canConnect: true, errorMessage: nil, onConnect: {})
-        .frame(width: 320, height: 520)
+    RunnerEmptyState(
+        isWorking: false,
+        canConnect: true,
+        errorMessage: nil,
+        onConnect: {},
+        onUseEnrollmentToken: {}
+    )
+    .frame(width: 320, height: 520)
 }

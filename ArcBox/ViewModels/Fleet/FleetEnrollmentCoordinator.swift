@@ -35,7 +35,7 @@ protocol FleetAgentReadying: Sendable {
     func ensureReady() async throws -> any FleetAgentEnrollmentControlling
 }
 
-/// Coordinates the authenticated Platform-to-Agent enrollment handoff.
+/// Coordinates Platform-issued and manually supplied Agent enrollment handoffs.
 @MainActor
 @Observable
 final class FleetEnrollmentCoordinator {
@@ -63,6 +63,7 @@ final class FleetEnrollmentCoordinator {
 
     enum Failure: Error, Equatable, Sendable {
         case workspaceRequired
+        case enrollmentTokenRequired
         case agentPreparationFailed(message: String)
         case enrollmentTokenRequestFailed(message: String)
         case enrollmentOutcomeUnknown
@@ -79,6 +80,11 @@ final class FleetEnrollmentCoordinator {
     private struct ActiveEnrollment {
         let id: UUID
         let task: Task<Bool, Never>
+    }
+
+    private enum EnrollmentSource: Sendable {
+        case workspace(String)
+        case token(String)
     }
 
     private enum SnapshotBaselineError: LocalizedError {
@@ -143,7 +149,7 @@ final class FleetEnrollmentCoordinator {
     private let agentReadiness: any FleetAgentReadying
 
     @ObservationIgnored
-    private let tokenIssuer: any FleetEnrollmentTokenIssuing
+    private let tokenIssuer: (any FleetEnrollmentTokenIssuing)?
 
     @ObservationIgnored
     private let attachmentTimeout: Duration
@@ -157,7 +163,7 @@ final class FleetEnrollmentCoordinator {
     init(
         authentication: any FleetAuthenticationChecking,
         agentReadiness: any FleetAgentReadying,
-        tokenIssuer: any FleetEnrollmentTokenIssuing,
+        tokenIssuer: (any FleetEnrollmentTokenIssuing)?,
         snapshotBaselineTimeout: Duration = .seconds(5),
         attachmentTimeout: Duration = .seconds(30),
         sleeper: @escaping @Sendable (Duration) async throws -> Void = {
@@ -187,13 +193,23 @@ final class FleetEnrollmentCoordinator {
     /// Enroll this Mac into a selected workspace and wait until its Agent is attached.
     @discardableResult
     func enroll(workspaceID: String, controlPlane: String? = nil) async -> Bool {
+        await enroll(source: .workspace(workspaceID), controlPlane: controlPlane)
+    }
+
+    /// Enroll this Mac with a user-supplied Fleet enrollment token.
+    @discardableResult
+    func enroll(token: String, controlPlane: String? = nil) async -> Bool {
+        await enroll(source: .token(token), controlPlane: controlPlane)
+    }
+
+    private func enroll(source: EnrollmentSource, controlPlane: String?) async -> Bool {
         guard canBeginEnrollment else { return false }
 
         let id = UUID()
         let task = Task { [weak self] in
             guard let self else { return false }
             let result = await self.performEnrollment(
-                workspaceID: workspaceID,
+                source: source,
                 controlPlane: controlPlane
             )
             self.markEnrollmentSettled(id: id)
@@ -284,17 +300,12 @@ final class FleetEnrollmentCoordinator {
         return isSettledForTermination
     }
 
-    private func performEnrollment(workspaceID: String, controlPlane: String?) async -> Bool {
+    private func performEnrollment(source: EnrollmentSource, controlPlane: String?) async -> Bool {
         guard !Task.isCancelled else {
             return fail(.cancelled(machineID: nil))
         }
-        guard requireSignedIn() else { return false }
 
-        let workspaceID = workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !workspaceID.isEmpty else {
-            state = .failed(.workspaceRequired)
-            return false
-        }
+        guard let source = normalizedEnrollmentSource(source) else { return false }
 
         state = .preparingAgent
         let agent: any FleetAgentEnrollmentControlling
@@ -308,7 +319,7 @@ final class FleetEnrollmentCoordinator {
         }
 
         // Watch begins with a full current snapshot. Consume that first value
-        // before requesting a short-lived token, then keep the same buffered
+        // before obtaining or handing off a token, then keep the same buffered
         // stream for post-handoff reconciliation.
         let snapshots = agent.watchSnapshots()
         do {
@@ -321,22 +332,10 @@ final class FleetEnrollmentCoordinator {
             return fail(.agentPreparationFailed(message: error.localizedDescription))
         }
 
-        state = .requestingEnrollmentToken
-        let enrollment: FleetEnrollmentToken
-        do {
-            enrollment = try await tokenIssuer.createEnrollmentToken(workspaceID: workspaceID)
-            try Task.checkCancellation()
-        } catch is CancellationError {
-            return fail(.cancelled(machineID: nil))
-        } catch {
-            return fail(
-                .enrollmentTokenRequestFailed(
-                    message: FleetPlatformClient.userMessage(for: error)
-                ))
-        }
+        guard let enrollmentToken = await enrollmentToken(from: source) else { return false }
 
-        // Another local client may have enrolled while Platform issued the
-        // token. Positive Agent evidence must stop this non-idempotent handoff;
+        // Another local client may have enrolled while this attempt was being
+        // prepared. Positive Agent evidence must stop this non-idempotent handoff;
         // the Agent's enrollment admission gate remains the atomic authority.
         if let reconciledResult = applyPendingBeforeHandoff() {
             return reconciledResult
@@ -351,7 +350,7 @@ final class FleetEnrollmentCoordinator {
         let machineID: String
         do {
             let returnedMachineID = try await agent.enroll(
-                token: enrollment.token,
+                token: enrollmentToken,
                 controlPlane: Self.normalizedControlPlane(controlPlane)
             )
             guard let normalizedMachineID = Self.normalizedMachineID(returnedMachineID) else {
@@ -378,6 +377,58 @@ final class FleetEnrollmentCoordinator {
             return fail(failure)
         } catch {
             return fail(.stateStreamFailed(machineID: machineID))
+        }
+    }
+
+    private func normalizedEnrollmentSource(_ source: EnrollmentSource) -> EnrollmentSource? {
+        switch source {
+        case .workspace(let workspaceID):
+            guard requireSignedIn() else { return nil }
+            let workspaceID = workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !workspaceID.isEmpty else {
+                _ = fail(.workspaceRequired)
+                return nil
+            }
+            return .workspace(workspaceID)
+        case .token(let token):
+            let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !token.isEmpty else {
+                _ = fail(.enrollmentTokenRequired)
+                return nil
+            }
+            return .token(token)
+        }
+    }
+
+    private func enrollmentToken(from source: EnrollmentSource) async -> String? {
+        switch source {
+        case .token(let token):
+            return token
+        case .workspace(let workspaceID):
+            guard let tokenIssuer else {
+                _ = fail(
+                    .enrollmentTokenRequestFailed(
+                        message: "Fleet Platform client is unavailable."
+                    ))
+                return nil
+            }
+
+            state = .requestingEnrollmentToken
+            do {
+                let enrollment = try await tokenIssuer.createEnrollmentToken(
+                    workspaceID: workspaceID
+                )
+                try Task.checkCancellation()
+                return enrollment.token
+            } catch is CancellationError {
+                _ = fail(.cancelled(machineID: nil))
+            } catch {
+                _ = fail(
+                    .enrollmentTokenRequestFailed(
+                        message: FleetPlatformClient.userMessage(for: error)
+                    ))
+            }
+            return nil
         }
     }
 
@@ -651,7 +702,8 @@ extension FleetEnrollmentCoordinator.Failure {
         case .credentialRejected, .detached, .stateStreamEnded, .stateStreamFailed,
             .attachmentTimedOut, .cancelled(machineID: .some):
             true
-        case .workspaceRequired, .agentPreparationFailed, .enrollmentTokenRequestFailed,
+        case .workspaceRequired, .enrollmentTokenRequired, .agentPreparationFailed,
+            .enrollmentTokenRequestFailed,
             .enrollmentOutcomeUnknown, .cancelled(machineID: nil):
             false
         }
@@ -663,6 +715,8 @@ extension FleetEnrollmentCoordinator.Failure: LocalizedError {
         switch self {
         case .workspaceRequired:
             "An ArcBox workspace is required for enrollment."
+        case .enrollmentTokenRequired:
+            "A Fleet enrollment token is required."
         case .agentPreparationFailed(let message):
             message
         case .enrollmentTokenRequestFailed(let message):

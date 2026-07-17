@@ -151,6 +151,7 @@
 		9EAE5E0BF3CB9432D7A228C2 /* ContainersListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA69DFAC30647687529C962A /* ContainersListView.swift */; };
 		A03ACBF5074B007C8CD7B101 /* StartupProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32115BE04C97CECA9C05A273 /* StartupProgressView.swift */; };
 		A2FA1D274C5DADFC199EE437 /* RunnerEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */; };
+		A4D6104C577C44228A83D49E /* ManualFleetEnrollmentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5D12E2E71A4F47981B2AB2 /* ManualFleetEnrollmentSheet.swift */; };
 		A75C60F77B89D7AEE365BC2E /* VolumeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDF2337ED21F8382F7ABB29A /* VolumeModel.swift */; };
 		A9E1DA5DBCAC015D9C41FF18 /* SandboxesViewModel+Snapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D773B0312F0D5695D0ADA /* SandboxesViewModel+Snapshots.swift */; };
 		AA6D71D441665D617EC4597A /* TemplatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591B3B9F3D3A0B5C43EC7B55 /* TemplatesViewModel.swift */; };
@@ -341,6 +342,7 @@
 		620BCE892EDA3E7554384A0E /* NetworkRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkRowView.swift; sourceTree = "<group>"; };
 		6218E84D6C2A8595FE308B5E /* ImageLayerChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLayerChain.swift; sourceTree = "<group>"; };
 		63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerEmptyState.swift; sourceTree = "<group>"; };
+		8B5D12E2E71A4F47981B2AB2 /* ManualFleetEnrollmentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualFleetEnrollmentSheet.swift; sourceTree = "<group>"; };
 		657D7543F1D47988AEC3339D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		66F91CF47E53375781959EC9 /* ServicesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesListView.swift; sourceTree = "<group>"; };
 		68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -941,6 +943,7 @@
 		8F4B93C32E5781E0D3DE5A52 /* Runners */ = {
 			isa = PBXGroup;
 			children = (
+				8B5D12E2E71A4F47981B2AB2 /* ManualFleetEnrollmentSheet.swift */,
 				63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */,
 				D02391823A10B16B12627E6C /* RunnerHostStatusBar.swift */,
 				8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */,
@@ -1419,6 +1422,7 @@
 				0C6B829AD5010FDB0E749471 /* PullImageSheet.swift in Sources */,
 				DAC7224E4BF7F459BB7013CB /* RemoteIconView.swift in Sources */,
 				A2FA1D274C5DADFC199EE437 /* RunnerEmptyState.swift in Sources */,
+				A4D6104C577C44228A83D49E /* ManualFleetEnrollmentSheet.swift in Sources */,
 				7D6BA204C7E5B022B6267289 /* RunnerHostCapability.swift in Sources */,
 				3B817A9A7D75BB17FF688B75 /* RunnerHostStatus.swift in Sources */,
 				DC8E940905BADCF4888BEA0A /* RunnerHostStatusBar.swift in Sources */,

@@ -83,6 +83,45 @@ final class FleetEnrollmentCoordinatorTests: XCTestCase {
         XCTAssertTrue(calls.entries.isEmpty)
     }
 
+    func testManualTokenEnrollmentWorksSignedOutWithoutPlatformTokenIssuer() async {
+        let calls = CallRecorder()
+        let agent = AgentStub(
+            calls: calls,
+            enrollmentResult: .success("fltm_manual"),
+            snapshots: [snapshot(.attached, machineID: "fltm_manual")]
+        )
+        let coordinator = FleetEnrollmentCoordinator(
+            authentication: AuthenticationStub(isSignedIn: false),
+            agentReadiness: AgentReadinessStub(calls: calls, agent: agent),
+            tokenIssuer: nil,
+            sleeper: waitForCancellation
+        )
+
+        let succeeded = await coordinator.enroll(token: "  flet_manual_secret\n")
+
+        XCTAssertTrue(succeeded)
+        XCTAssertEqual(coordinator.state, .ready(machineID: "fltm_manual"))
+        XCTAssertEqual(calls.entries, ["ensureReady", "watch", "enroll"])
+        XCTAssertEqual(agent.receivedTokens, ["flet_manual_secret"])
+    }
+
+    func testManualTokenEnrollmentRejectsEmptyInputBeforeCallingAgent() async {
+        let calls = CallRecorder()
+        let agent = AgentStub(calls: calls)
+        let coordinator = makeCoordinator(
+            calls: calls,
+            agent: agent,
+            isSignedIn: false
+        )
+
+        let succeeded = await coordinator.enroll(token: " \n ")
+
+        XCTAssertFalse(succeeded)
+        XCTAssertEqual(coordinator.state, .failed(.enrollmentTokenRequired))
+        XCTAssertTrue(calls.entries.isEmpty)
+        XCTAssertTrue(agent.receivedTokens.isEmpty)
+    }
+
     func testTokenFailureDoesNotCallAgent() async {
         let calls = CallRecorder()
         let agent = AgentStub(calls: calls)
