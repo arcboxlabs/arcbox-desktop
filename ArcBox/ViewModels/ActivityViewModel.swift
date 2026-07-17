@@ -11,10 +11,25 @@ import Foundation
 @MainActor
 @Observable
 final class ActivityViewModel {
+    /// Lifecycle of the stats stream, explicit so the UI can distinguish
+    /// "no sample yet" from "had samples, connection dropped, retrying".
+    /// There is no terminal failure: the run loop retries until the view
+    /// disappears, so persistent errors surface as a climbing `attempt`.
+    enum StreamPhase: Equatable {
+        /// Connecting; nothing received on this connection yet.
+        case connecting
+        /// Samples are flowing.
+        case live
+        /// The stream ended or errored; retrying (attempt count for the UI).
+        case reconnecting(attempt: Int)
+    }
+
     /// Latest computed machine stats, or `nil` before the first delta.
     private(set) var current: MachineResourceStats?
+    /// Current stream lifecycle phase.
+    private(set) var phase: StreamPhase = .connecting
     /// Whether a sample arrived on the current stream connection.
-    private(set) var isLive = false
+    var isLive: Bool { phase == .live }
 
     /// Rolling per-metric history (oldest first) for the charts.
     private(set) var cpuHistory: [MetricPoint] = []
@@ -39,17 +54,21 @@ final class ActivityViewModel {
     /// lives in `ArcBoxClient.machineStatsStream()`.
     func run(client: ArcBoxClient) async {
         previousSample = nil
-        defer { isLive = false }
+        phase = .connecting
+        defer { phase = .connecting }
 
+        var attempt = 0
         while !Task.isCancelled {
             // A fresh stream each iteration re-reads the client's transport,
             // which it swaps on recovery.
             for await sample in client.machineStatsStream() {
                 guard !Task.isCancelled else { break }
                 ingest(sample)
+                attempt = 0
             }
-            isLive = false
             guard !Task.isCancelled else { return }
+            attempt += 1
+            phase = .reconnecting(attempt: attempt)
             try? await Task.sleep(for: .milliseconds(500))
         }
     }
@@ -63,7 +82,7 @@ final class ActivityViewModel {
             return
         }
         current = computed
-        isLive = true
+        phase = .live
         sequence += 1
         append(&cpuHistory, computed.cpuPercent)
         append(&memoryHistory, computed.memoryUsedPercent)
