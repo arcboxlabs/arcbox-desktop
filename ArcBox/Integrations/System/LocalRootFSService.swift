@@ -1,6 +1,6 @@
 import Foundation
 
-struct LocalFileEntry: Identifiable, Hashable {
+nonisolated struct LocalFileEntry: Identifiable, Hashable {
     let url: URL
     let name: String
     let isDirectory: Bool
@@ -20,13 +20,13 @@ struct LocalFileEntry: Identifiable, Hashable {
         return ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
     }
 
-    var dateDisplay: String {
+    @MainActor var dateDisplay: String {
         guard let modifiedDate else { return "" }
         return LocalRootFSService.modifiedDateFormatter.string(from: modifiedDate)
     }
 }
 
-struct LocalRootFSService {
+nonisolated struct LocalRootFSService {
     enum RootFSError: LocalizedError {
         case missingRootPath
         case pathNotFound(String)
@@ -44,7 +44,7 @@ struct LocalRootFSService {
         }
     }
 
-    static let modifiedDateFormatter: DateFormatter = {
+    @MainActor static let modifiedDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
