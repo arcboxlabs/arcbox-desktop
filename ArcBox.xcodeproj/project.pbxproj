@@ -1495,6 +1495,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				OTHER_SWIFT_FLAGS = "-Werror ActorIsolatedCall";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(ARCBOX_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(ARCBOX_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -1636,6 +1637,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				OTHER_SWIFT_FLAGS = "-Werror ActorIsolatedCall";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(ARCBOX_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(ARCBOX_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
