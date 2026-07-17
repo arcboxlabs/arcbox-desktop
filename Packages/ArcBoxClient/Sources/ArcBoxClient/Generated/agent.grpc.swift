@@ -180,6 +180,18 @@ public enum Arcbox_V1_AgentService {
                 method: "WatchMemoryPressure"
             )
         }
+        /// Namespace for "WatchStats" metadata.
+        public enum WatchStats {
+            /// Request type for "WatchStats".
+            public typealias Input = Arcbox_V1_WatchStatsRequest
+            /// Response type for "WatchStats".
+            public typealias Output = Arcbox_V1_MachineStats
+            /// Descriptor for "WatchStats".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "WatchStats"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.AgentService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Ping.descriptor,
@@ -194,7 +206,8 @@ public enum Arcbox_V1_AgentService {
             Shutdown.descriptor,
             DiskTrim.descriptor,
             WatchReadiness.descriptor,
-            WatchMemoryPressure.descriptor
+            WatchMemoryPressure.descriptor,
+            WatchStats.descriptor
         ]
     }
 }
@@ -459,6 +472,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchMemoryPressureRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent>
+
+        /// Handle the "WatchStats" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams machine-level resource samples (CPU/memory/disk/network).
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_WatchStatsRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineStats` messages.
+        func watchStats(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchStatsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats>
     }
 
     /// Service protocol for the "arcbox.v1.AgentService" service.
@@ -708,6 +739,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.ServerRequest<Arcbox_V1_WatchMemoryPressureRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent>
+
+        /// Handle the "WatchStats" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams machine-level resource samples (CPU/memory/disk/network).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchStatsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineStats` messages.
+        func watchStats(
+            request: GRPCCore.ServerRequest<Arcbox_V1_WatchStatsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats>
     }
 
     /// Simple service protocol for the "arcbox.v1.AgentService" service.
@@ -957,6 +1006,25 @@ extension Arcbox_V1_AgentService {
             response: GRPCCore.RPCWriter<Arcbox_V1_MemoryPressureEvent>,
             context: GRPCCore.ServerContext
         ) async throws
+
+        /// Handle the "WatchStats" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams machine-level resource samples (CPU/memory/disk/network).
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_WatchStatsRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_MachineStats` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchStats(
+            request: Arcbox_V1_WatchStatsRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_MachineStats>,
+            context: GRPCCore.ServerContext
+        ) async throws
     }
 }
 
@@ -1107,6 +1175,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.WatchStats.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_WatchStatsRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineStats>(),
+            handler: { request, context in
+                try await self.watchStats(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -1250,6 +1329,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MemoryPressureEvent> {
         let response = try await self.watchMemoryPressure(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+
+    public func watchStats(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchStatsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats> {
+        let response = try await self.watchStats(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1428,6 +1518,23 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
             metadata: [:],
             producer: { writer in
                 try await self.watchMemoryPressure(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    public func watchStats(
+        request: GRPCCore.ServerRequest<Arcbox_V1_WatchStatsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchStats(
                     request: request.message,
                     response: writer,
                     context: context
@@ -1750,6 +1857,29 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MemoryPressureEvent>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MemoryPressureEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchStats" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams machine-level resource samples (CPU/memory/disk/network).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchStatsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchStatsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineStats` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchStats<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchStatsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchStatsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineStats>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineStats>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2212,6 +2342,38 @@ extension Arcbox_V1_AgentService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "WatchStats" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams machine-level resource samples (CPU/memory/disk/network).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchStatsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchStatsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineStats` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchStats<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchStatsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchStatsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineStats>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineStats>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.WatchStats.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2588,6 +2750,33 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchMemoryPressureRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MemoryPressureEvent>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchStats" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams machine-level resource samples (CPU/memory/disk/network).
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_WatchStatsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchStats<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_WatchStatsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineStats>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchStats(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchStatsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineStats>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3018,6 +3207,37 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.watchMemoryPressure(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchStats" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams machine-level resource samples (CPU/memory/disk/network).
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchStats<Result>(
+        _ message: Arcbox_V1_WatchStatsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineStats>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_WatchStatsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchStats(
             request: request,
             options: options,
             onResponse: handleResponse
