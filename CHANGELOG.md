@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.25.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.24.0...v1.25.0) (2026-07-17)
+
+
+### Features
+
+* **activity:** container network column + menu-bar live gauge ([e7017fd](https://github.com/arcboxlabs/arcbox-desktop/commit/e7017fd85283fa80967f33d2ce62de4b37643388))
+* **activity:** live Activity Monitor dashboard ([75322cf](https://github.com/arcboxlabs/arcbox-desktop/commit/75322cf5b0f5c2019c835b4511c0ec9bf5e6d33b))
+* **client:** per-container network in ResourceStats ([375ae52](https://github.com/arcboxlabs/arcbox-desktop/commit/375ae528fc35e62d8a0ca8e20fb5ad65174d79f2))
+* **client:** StatsService stubs, facade, and rate math ([36da981](https://github.com/arcboxlabs/arcbox-desktop/commit/36da981cfcc96bc81907dcab2ee5bd9881651daf))
+* **files:** browse guest Docker data via the ~/ArcBox export ([#284](https://github.com/arcboxlabs/arcbox-desktop/issues/284)) ([1f2eb5a](https://github.com/arcboxlabs/arcbox-desktop/commit/1f2eb5ac5078c118230838490de3f50896e61f1d))
+
+
+### Bug Fixes
+
+* **activity:** review round — task-id race, busy-tick wrap, explicit stream phase ([d7cc97a](https://github.com/arcboxlabs/arcbox-desktop/commit/d7cc97a0979929b7a9e383aacaca1c0b4a7071d0))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.4.19 ([#287](https://github.com/arcboxlabs/arcbox-desktop/issues/287)) ([a0da6cf](https://github.com/arcboxlabs/arcbox-desktop/commit/a0da6cf86aa70672ba12e55a54375826dd964161))
+
 ## [1.24.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.23.2...v1.24.0) (2026-07-16)
 
 
