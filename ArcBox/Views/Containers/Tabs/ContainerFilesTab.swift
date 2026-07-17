@@ -17,7 +17,10 @@ struct ContainerFilesTab: View {
     @State private var showHiddenFiles = LocalRootFSService.finderDefaultShowHiddenFiles()
 
     private var outlineReloadID: String {
-        "\(container.id)|\(container.resolvedRootFSMountPath ?? "")|\(showHiddenFiles)|\(refreshToken.uuidString)"
+        // Client availability is part of the key: the environment client is
+        // nil during app startup, and the daemon-side resolution must re-run
+        // once it is injected — `.task(id:)` only restarts on an id change.
+        "\(container.id)|\(container.resolvedRootFSMountPath ?? "")|\(arcboxClient != nil)|\(showHiddenFiles)|\(refreshToken.uuidString)"
     }
 
     private var selectedURL: URL? {
