@@ -27,7 +27,11 @@ struct MenuBarView: View {
                 guard docker != nil, daemonManager.state.isRunning else { return }
                 await loadAll()
             }
-            .task(id: daemonManager.state.isRunning) {
+            // Keyed on the client identity as well as daemon state: the
+            // client can be installed (or swapped on recovery) after the
+            // daemon is already running, and only an id change retriggers
+            // the task. Mirrors ActivityView's stream task.
+            .task(id: daemonManager.state.isRunning ? client.map(ObjectIdentifier.init) : nil) {
                 guard let client, daemonManager.state.isRunning else { return }
                 await activityVM.run(client: client)
             }

@@ -55,6 +55,14 @@ import Testing
         #expect(ResourceStatsCalculator.compute(previous: prev, current: cur) == nil)
     }
 
+    @Test func busyTickRegressionAsksForNewBaselineInsteadOfWrapping() {
+        // Busy ticks went backwards while the clock and total ticks kept
+        // advancing: an unsigned wrap here used to report 100% CPU.
+        let prev = machine(monotonicMs: 10_000, busy: 4000, total: 50_000)
+        let cur = machine(monotonicMs: 12_000, busy: 10, total: 50_200)
+        #expect(ResourceStatsCalculator.compute(previous: prev, current: cur) == nil)
+    }
+
     @Test func containerCpuFromUsecDeltaAndSortedDescending() {
         var prev = machine(monotonicMs: 10_000, busy: 100, total: 1000)
         var cur = machine(monotonicMs: 12_000, busy: 150, total: 1200)  // +2s

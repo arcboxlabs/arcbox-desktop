@@ -60,13 +60,14 @@ public enum ResourceStatsCalculator {
         current: Arcbox_V1_MachineStats
     ) -> MachineResourceStats? {
         guard current.monotonicMs > previous.monotonicMs,
-            current.cpuTotalTicks > previous.cpuTotalTicks
+            current.cpuTotalTicks > previous.cpuTotalTicks,
+            current.cpuBusyTicks >= previous.cpuBusyTicks
         else {
             return nil
         }
         let dt = Double(current.monotonicMs - previous.monotonicMs) / 1000.0
         let totalTicks = Double(current.cpuTotalTicks - previous.cpuTotalTicks)
-        let busyTicks = Double(current.cpuBusyTicks.subtractingReportingOverflow(previous.cpuBusyTicks).0)
+        let busyTicks = Double(current.cpuBusyTicks - previous.cpuBusyTicks)
 
         let memoryUsed =
             current.memoryTotalBytes >= current.memoryAvailableBytes

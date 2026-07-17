@@ -43,8 +43,15 @@ struct ActivityView: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(AppColors.text)
             Spacer()
-            if vm.isLive {
+            switch vm.phase {
+            case .live:
                 StatusBadge(color: AppColors.running, label: "LIVE")
+            case .reconnecting:
+                // Charts keep showing the last data; the badge tells the
+                // user it is stale while the stream reconnects.
+                StatusBadge(color: AppColors.warning, label: "RECONNECTING")
+            case .connecting:
+                EmptyView()
             }
         }
     }
@@ -52,11 +59,21 @@ struct ActivityView: View {
     private var waitingForData: some View {
         HStack(spacing: 10) {
             ProgressView().controlSize(.small)
-            Text("Waiting for the first sample…")
+            Text(waitingLabel)
                 .foregroundStyle(AppColors.textSecondary)
                 .font(.system(size: 13))
         }
         .frame(maxWidth: .infinity, minHeight: 160)
+    }
+
+    /// Distinguishes a first connection from a stream that keeps failing
+    /// before its first sample, so persistent errors don't render as an
+    /// eternal "waiting" spinner.
+    private var waitingLabel: String {
+        if case .reconnecting(let attempt) = vm.phase {
+            return "Stats stream unavailable — retrying (attempt \(attempt))…"
+        }
+        return "Waiting for the first sample…"
     }
 
     // MARK: - Charts
