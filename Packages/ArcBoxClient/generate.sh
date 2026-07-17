@@ -39,6 +39,7 @@ PROTOS=(
     "machine.proto"
     "sandbox.proto"
     "kubernetes.proto"
+    "stats.proto"
 )
 
 # Parse arguments

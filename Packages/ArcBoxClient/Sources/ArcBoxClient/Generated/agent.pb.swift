@@ -361,6 +361,137 @@ public struct Arcbox_V1_MemoryPressureEvent: Sendable {
   public init() {}
 }
 
+/// Request for a guest-driven machine resource stats stream.
+///
+/// The agent reads /proc once per interval and emits one MachineStats frame
+/// per tick; every frame doubles as a keepalive. The stream ends after
+/// `timeout_ms`; the host re-issues the request to keep watching.
+public struct Arcbox_V1_WatchStatsRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Watch window in milliseconds (0 = agent default).
+  public var timeoutMs: UInt32 = 0
+
+  /// Sample interval in milliseconds (0 = agent default, 1000).
+  public var intervalMs: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// One machine-level resource sample.
+///
+/// Counter fields are cumulative since guest boot; consumers derive rates
+/// from deltas between samples, which stays correct across missed samples
+/// and stream restarts.
+public struct Arcbox_V1_MachineStats: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Guest monotonic clock at sample time (from /proc/uptime), in
+  /// milliseconds. Rate denominators come from deltas of this field, not
+  /// from host receive times (delivery jitter would distort rates).
+  public var monotonicMs: UInt64 = 0
+
+  /// Aggregate CPU ticks since boot across all CPUs (/proc/stat "cpu"):
+  /// busy = everything except idle + iowait.
+  public var cpuBusyTicks: UInt64 = 0
+
+  public var cpuTotalTicks: UInt64 = 0
+
+  /// Online CPU count.
+  public var onlineCpus: UInt32 = 0
+
+  /// 1-minute load average.
+  public var loadavg1: Double = 0
+
+  /// Bytes, from /proc/meminfo.
+  public var memoryTotalBytes: UInt64 = 0
+
+  public var memoryAvailableBytes: UInt64 = 0
+
+  /// PSI memory "full avg10" percentage (0-100), from
+  /// /proc/pressure/memory. Negative when the kernel lacks CONFIG_PSI.
+  public var memoryPsiFullAvg10: Double = 0
+
+  /// Cumulative bytes across whole physical disks (/proc/diskstats,
+  /// partitions excluded so traffic is not double-counted).
+  public var diskReadBytes: UInt64 = 0
+
+  public var diskWrittenBytes: UInt64 = 0
+
+  /// Cumulative bytes across the VM's physical/uplink interfaces
+  /// (/proc/net/dev; container bridges and veths are excluded so their
+  /// traffic is not counted once per internal hop).
+  public var netRxBytes: UInt64 = 0
+
+  public var netTxBytes: UInt64 = 0
+
+  /// Per-container samples, one per running Docker container (cgroup v2
+  /// tree under /sys/fs/cgroup/docker). Empty when no containers run or
+  /// the subscriber did not request them.
+  public var containers: [Arcbox_V1_ContainerStats] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// One container's cgroup v2 resource sample.
+///
+/// CPU, disk, and network fields are cumulative; memory and pids are
+/// gauges. CPU/memory/disk/pids come from the container's cgroup
+/// (cpu.stat, memory.current, memory.max, io.stat, pids.current). Network
+/// is not a cgroup counter — it lives in the container's network
+/// namespace, read via /proc/<pid>/net/dev for a process in the container.
+public struct Arcbox_V1_ContainerStats: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Full container ID (the cgroup directory name).
+  public var id: String = String()
+
+  /// Human-readable name, filled by the daemon from its container
+  /// registry. Empty on the guest→host hop and when the daemon has no
+  /// name for the ID (the consumer falls back to the short ID).
+  public var name: String = String()
+
+  /// Cumulative CPU time in microseconds (cpu.stat usage_usec).
+  public var cpuUsageUsec: UInt64 = 0
+
+  /// Current memory charge in bytes (memory.current).
+  public var memoryCurrentBytes: UInt64 = 0
+
+  /// Memory limit in bytes (memory.max); 0 means unlimited ("max").
+  public var memoryLimitBytes: UInt64 = 0
+
+  /// Cumulative block I/O bytes summed across devices (io.stat
+  /// rbytes/wbytes).
+  public var diskReadBytes: UInt64 = 0
+
+  public var diskWrittenBytes: UInt64 = 0
+
+  /// Current process/thread count (pids.current).
+  public var pids: UInt32 = 0
+
+  /// Cumulative bytes across the container's non-loopback interfaces,
+  /// from /proc/<pid>/net/dev in its network namespace. Zero for a
+  /// host-networked container (its traffic is the machine's, already
+  /// counted in MachineStats) or when no process is readable.
+  public var netRxBytes: UInt64 = 0
+
+  public var netTxBytes: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Runtime status report.
 public struct Arcbox_V1_RuntimeStatusResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -1117,6 +1248,206 @@ extension Arcbox_V1_MemoryPressureEvent: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Arcbox_V1_MemoryPressureEvent.Reason: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0KEEPALIVE\0\u{1}LOW_AVAILABLE\0\u{1}REFAULT_SPIKE\0\u{1}WINDOW_ELAPSED\0\u{1}SETTLED\0")
+}
+
+extension Arcbox_V1_WatchStatsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".WatchStatsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}timeout_ms\0\u{3}interval_ms\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.timeoutMs) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.intervalMs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.timeoutMs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.timeoutMs, fieldNumber: 1)
+    }
+    if self.intervalMs != 0 {
+      try visitor.visitSingularUInt32Field(value: self.intervalMs, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_WatchStatsRequest, rhs: Arcbox_V1_WatchStatsRequest) -> Bool {
+    if lhs.timeoutMs != rhs.timeoutMs {return false}
+    if lhs.intervalMs != rhs.intervalMs {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineStats: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineStats"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}monotonic_ms\0\u{3}cpu_busy_ticks\0\u{3}cpu_total_ticks\0\u{3}online_cpus\0\u{1}loadavg1\0\u{3}memory_total_bytes\0\u{3}memory_available_bytes\0\u{3}memory_psi_full_avg10\0\u{3}disk_read_bytes\0\u{3}disk_written_bytes\0\u{3}net_rx_bytes\0\u{3}net_tx_bytes\0\u{1}containers\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.monotonicMs) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.cpuBusyTicks) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.cpuTotalTicks) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.onlineCpus) }()
+      case 5: try { try decoder.decodeSingularDoubleField(value: &self.loadavg1) }()
+      case 6: try { try decoder.decodeSingularUInt64Field(value: &self.memoryTotalBytes) }()
+      case 7: try { try decoder.decodeSingularUInt64Field(value: &self.memoryAvailableBytes) }()
+      case 8: try { try decoder.decodeSingularDoubleField(value: &self.memoryPsiFullAvg10) }()
+      case 9: try { try decoder.decodeSingularUInt64Field(value: &self.diskReadBytes) }()
+      case 10: try { try decoder.decodeSingularUInt64Field(value: &self.diskWrittenBytes) }()
+      case 11: try { try decoder.decodeSingularUInt64Field(value: &self.netRxBytes) }()
+      case 12: try { try decoder.decodeSingularUInt64Field(value: &self.netTxBytes) }()
+      case 13: try { try decoder.decodeRepeatedMessageField(value: &self.containers) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.monotonicMs != 0 {
+      try visitor.visitSingularUInt64Field(value: self.monotonicMs, fieldNumber: 1)
+    }
+    if self.cpuBusyTicks != 0 {
+      try visitor.visitSingularUInt64Field(value: self.cpuBusyTicks, fieldNumber: 2)
+    }
+    if self.cpuTotalTicks != 0 {
+      try visitor.visitSingularUInt64Field(value: self.cpuTotalTicks, fieldNumber: 3)
+    }
+    if self.onlineCpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.onlineCpus, fieldNumber: 4)
+    }
+    if self.loadavg1.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.loadavg1, fieldNumber: 5)
+    }
+    if self.memoryTotalBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memoryTotalBytes, fieldNumber: 6)
+    }
+    if self.memoryAvailableBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memoryAvailableBytes, fieldNumber: 7)
+    }
+    if self.memoryPsiFullAvg10.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.memoryPsiFullAvg10, fieldNumber: 8)
+    }
+    if self.diskReadBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.diskReadBytes, fieldNumber: 9)
+    }
+    if self.diskWrittenBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.diskWrittenBytes, fieldNumber: 10)
+    }
+    if self.netRxBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.netRxBytes, fieldNumber: 11)
+    }
+    if self.netTxBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.netTxBytes, fieldNumber: 12)
+    }
+    if !self.containers.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.containers, fieldNumber: 13)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineStats, rhs: Arcbox_V1_MachineStats) -> Bool {
+    if lhs.monotonicMs != rhs.monotonicMs {return false}
+    if lhs.cpuBusyTicks != rhs.cpuBusyTicks {return false}
+    if lhs.cpuTotalTicks != rhs.cpuTotalTicks {return false}
+    if lhs.onlineCpus != rhs.onlineCpus {return false}
+    if lhs.loadavg1 != rhs.loadavg1 {return false}
+    if lhs.memoryTotalBytes != rhs.memoryTotalBytes {return false}
+    if lhs.memoryAvailableBytes != rhs.memoryAvailableBytes {return false}
+    if lhs.memoryPsiFullAvg10 != rhs.memoryPsiFullAvg10 {return false}
+    if lhs.diskReadBytes != rhs.diskReadBytes {return false}
+    if lhs.diskWrittenBytes != rhs.diskWrittenBytes {return false}
+    if lhs.netRxBytes != rhs.netRxBytes {return false}
+    if lhs.netTxBytes != rhs.netTxBytes {return false}
+    if lhs.containers != rhs.containers {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ContainerStats: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ContainerStats"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{3}cpu_usage_usec\0\u{3}memory_current_bytes\0\u{3}memory_limit_bytes\0\u{3}disk_read_bytes\0\u{3}disk_written_bytes\0\u{1}pids\0\u{3}net_rx_bytes\0\u{3}net_tx_bytes\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.cpuUsageUsec) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.memoryCurrentBytes) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.memoryLimitBytes) }()
+      case 6: try { try decoder.decodeSingularUInt64Field(value: &self.diskReadBytes) }()
+      case 7: try { try decoder.decodeSingularUInt64Field(value: &self.diskWrittenBytes) }()
+      case 8: try { try decoder.decodeSingularUInt32Field(value: &self.pids) }()
+      case 9: try { try decoder.decodeSingularUInt64Field(value: &self.netRxBytes) }()
+      case 10: try { try decoder.decodeSingularUInt64Field(value: &self.netTxBytes) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    if self.cpuUsageUsec != 0 {
+      try visitor.visitSingularUInt64Field(value: self.cpuUsageUsec, fieldNumber: 3)
+    }
+    if self.memoryCurrentBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memoryCurrentBytes, fieldNumber: 4)
+    }
+    if self.memoryLimitBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memoryLimitBytes, fieldNumber: 5)
+    }
+    if self.diskReadBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.diskReadBytes, fieldNumber: 6)
+    }
+    if self.diskWrittenBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.diskWrittenBytes, fieldNumber: 7)
+    }
+    if self.pids != 0 {
+      try visitor.visitSingularUInt32Field(value: self.pids, fieldNumber: 8)
+    }
+    if self.netRxBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.netRxBytes, fieldNumber: 9)
+    }
+    if self.netTxBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.netTxBytes, fieldNumber: 10)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ContainerStats, rhs: Arcbox_V1_ContainerStats) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.cpuUsageUsec != rhs.cpuUsageUsec {return false}
+    if lhs.memoryCurrentBytes != rhs.memoryCurrentBytes {return false}
+    if lhs.memoryLimitBytes != rhs.memoryLimitBytes {return false}
+    if lhs.diskReadBytes != rhs.diskReadBytes {return false}
+    if lhs.diskWrittenBytes != rhs.diskWrittenBytes {return false}
+    if lhs.pids != rhs.pids {return false}
+    if lhs.netRxBytes != rhs.netRxBytes {return false}
+    if lhs.netTxBytes != rhs.netTxBytes {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
 }
 
 extension Arcbox_V1_RuntimeStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
