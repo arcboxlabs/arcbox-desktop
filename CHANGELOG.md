@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.26.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.25.1...v1.26.0) (2026-07-17)
+
+
+### Features
+
+* **macos:** add development dmg profile ([48f9cb7](https://github.com/arcboxlabs/arcbox-desktop/commit/48f9cb7eacf5da91afd9d9c10eb0aeda39cdaf4f))
+* **xtask:** embed vm-agent into Resources/bin alongside arcbox-agent ([#291](https://github.com/arcboxlabs/arcbox-desktop/issues/291)) ([0c2802b](https://github.com/arcboxlabs/arcbox-desktop/commit/0c2802be35a60a0085c2e1d1ead0fb82243649cd))
+
+
+### Bug Fixes
+
+* **ci:** move protoc-plugin SwiftPM scratch dir out of Packages/ ([#293](https://github.com/arcboxlabs/arcbox-desktop/issues/293)) ([a4ec45f](https://github.com/arcboxlabs/arcbox-desktop/commit/a4ec45f5752e0170eb0d2c357eb821ab23b6569f))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.4.20 ([#292](https://github.com/arcboxlabs/arcbox-desktop/issues/292)) ([51d6778](https://github.com/arcboxlabs/arcbox-desktop/commit/51d6778b1ab422b7c8339565fff829891c0da3a1))
+* **dev:** add local app identity presets ([2704097](https://github.com/arcboxlabs/arcbox-desktop/commit/2704097209f6c3d747890b65110506b2c55cf621))
+* **devenv:** migrate pre-commit config to prek ([b89d1a9](https://github.com/arcboxlabs/arcbox-desktop/commit/b89d1a941c966bc901c0fe46090a84437d4b8de2))
+
 ## [1.25.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.25.0...v1.25.1) (2026-07-17)
 
 
