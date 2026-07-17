@@ -1,9 +1,13 @@
 import AppKit
+import ArcBoxClient
 import SwiftUI
+import os
 
 /// Files tab backed by an already-mounted local rootfs directory.
 struct ContainerFilesTab: View {
     let container: ContainerViewModel
+
+    @Environment(\.arcboxClient) private var arcboxClient
 
     @State private var selectedPath: String?
     @State private var rootURL: URL?
@@ -121,7 +125,7 @@ struct ContainerFilesTab: View {
                 .padding(.horizontal, 20)
 
             Text(
-                "Container filesystems are browsed through the read-only ~/ArcBox export. A running container's live overlay is not yet exported."
+                "Container filesystems are browsed through the read-only ~/ArcBox export. The view shows the container's own writable layer; image layers stay in their own snapshots."
             )
             .font(.system(size: 12))
             .foregroundStyle(AppColors.textMuted)
@@ -147,13 +151,21 @@ struct ContainerFilesTab: View {
         isLoadingRoot = true
         selectedPath = nil
 
-        // The rootfs path is a guest path; browse it through the ~/ArcBox export.
-        guard let guestPath = container.resolvedRootFSMountPath,
+        // Inspect-provided path (classic graph drivers), else ask the daemon
+        // to resolve the container's snapshot layers (containerd image store,
+        // where inspect carries no GraphDriver paths).
+        var guestPath = container.resolvedRootFSMountPath
+        if guestPath == nil {
+            guestPath = await resolveViaDaemon()
+        }
+
+        // The resolved path is a guest path; browse it through the ~/ArcBox export.
+        guard let guestPath,
             let hostURL = GuestDataMount.hostURL(forGuestPath: guestPath)
         else {
             rootURL = nil
             errorMessage =
-                container.resolvedRootFSMountPath == nil
+                guestPath == nil
                 ? "Container has no resolvable filesystem path."
                 : "Container filesystem path is outside the guest data root."
             isLoadingRoot = false
@@ -168,6 +180,27 @@ struct ContainerFilesTab: View {
         }
 
         isLoadingRoot = false
+    }
+
+    /// Resolves the container's writable snapshot layer via the daemon.
+    ///
+    /// Under the containerd image store the layer directories live in
+    /// containerd's snapshotter, so the daemon queries the guest and returns
+    /// guest paths; the writable (upper) layer holds everything the container
+    /// itself wrote.
+    private func resolveViaDaemon() async -> String? {
+        guard let arcboxClient else { return nil }
+        var request = Arcbox_V1_ResolveContainerFsRequest()
+        request.containerID = container.id
+        do {
+            let response = try await arcboxClient.system.resolveContainerFs(
+                request, options: ArcBoxClient.defaultCallOptions)
+            return response.upperDir.isEmpty ? nil : response.upperDir
+        } catch {
+            Log.daemon.error(
+                "Failed to resolve container fs: \(error.localizedDescription, privacy: .private)")
+            return nil
+        }
     }
 
     private func revealSelectedInFinder() {

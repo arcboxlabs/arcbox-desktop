@@ -49,4 +49,29 @@ final class GuestDataMountTests: XCTestCase {
     func testDoubleSlashesDoNotBypassTraversalCheck() {
         XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/docker//..//etc"))
     }
+
+    func testContainerdSnapshotPathMapsUnderContainerdChildExport() {
+        let url = GuestDataMount.hostURL(
+            forGuestPath:
+                "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/269/fs")
+        XCTAssertEqual(
+            url,
+            arcboxRoot.appendingPathComponent(
+                "containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/269/fs"))
+    }
+
+    func testContainerdRootItselfMapsToChildExportRoot() {
+        XCTAssertEqual(
+            GuestDataMount.hostURL(forGuestPath: "/var/lib/containerd"),
+            arcboxRoot.appendingPathComponent("containerd"))
+    }
+
+    func testContainerdSiblingPrefixIsRejected() {
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/containerdfoo/x"))
+    }
+
+    func testContainerdTraversalComponentsAreRejected() {
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/containerd/../docker"))
+        XCTAssertNil(GuestDataMount.hostURL(forGuestPath: "/var/lib/containerd/./snapshots"))
+    }
 }
