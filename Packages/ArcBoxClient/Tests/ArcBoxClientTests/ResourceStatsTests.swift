@@ -20,7 +20,9 @@ import Testing
         return m
     }
 
-    private func container(_ id: String, cpuUsec: UInt64, memory: UInt64, name: String = "")
+    private func container(
+        _ id: String, cpuUsec: UInt64, memory: UInt64, name: String = ""
+    )
         -> Arcbox_V1_ContainerStats
     {
         var c = Arcbox_V1_ContainerStats()

@@ -86,7 +86,8 @@ struct ActivityView: View {
                 title: "Network",
                 value: StatsFormat.rate(
                     stats.networkReceiveBytesPerSecond + stats.networkTransmitBytesPerSecond),
-                subtitle: "↓ \(StatsFormat.rate(stats.networkReceiveBytesPerSecond))   ↑ \(StatsFormat.rate(stats.networkTransmitBytesPerSecond))",
+                subtitle:
+                    "↓ \(StatsFormat.rate(stats.networkReceiveBytesPerSecond))   ↑ \(StatsFormat.rate(stats.networkTransmitBytesPerSecond))",
                 points: vm.networkHistory,
                 tint: AppColors.warning,
                 yDomain: nil

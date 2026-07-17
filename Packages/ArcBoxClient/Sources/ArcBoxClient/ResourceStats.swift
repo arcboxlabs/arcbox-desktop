@@ -68,7 +68,8 @@ public enum ResourceStatsCalculator {
         let totalTicks = Double(current.cpuTotalTicks - previous.cpuTotalTicks)
         let busyTicks = Double(current.cpuBusyTicks.subtractingReportingOverflow(previous.cpuBusyTicks).0)
 
-        let memoryUsed = current.memoryTotalBytes >= current.memoryAvailableBytes
+        let memoryUsed =
+            current.memoryTotalBytes >= current.memoryAvailableBytes
             ? current.memoryTotalBytes - current.memoryAvailableBytes
             : 0
 
@@ -107,7 +108,8 @@ public enum ResourceStatsCalculator {
             let prior = priors[container.id]
             let cpuPercent: Double
             if let prior, container.cpuUsageUsec > prior.cpuUsageUsec {
-                cpuPercent = Double(container.cpuUsageUsec - prior.cpuUsageUsec)
+                cpuPercent =
+                    Double(container.cpuUsageUsec - prior.cpuUsageUsec)
                     / (dt * 1_000_000) * 100
             } else {
                 cpuPercent = 0
