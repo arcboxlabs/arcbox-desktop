@@ -1158,6 +1158,18 @@ public enum Arcbox_V1_SystemService {
                 method: "GetVirtioDebug"
             )
         }
+        /// Namespace for "ResolveContainerFs" metadata.
+        public enum ResolveContainerFs {
+            /// Request type for "ResolveContainerFs".
+            public typealias Input = Arcbox_V1_ResolveContainerFsRequest
+            /// Response type for "ResolveContainerFs".
+            public typealias Output = Arcbox_V1_ResolveContainerFsResponse
+            /// Descriptor for "ResolveContainerFs".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "ResolveContainerFs"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.SystemService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetInfo.descriptor,
@@ -1169,7 +1181,8 @@ public enum Arcbox_V1_SystemService {
             WatchSetupStatus.descriptor,
             GetSystemVmBackend.descriptor,
             SetSystemVmBackend.descriptor,
-            GetVirtioDebug.descriptor
+            GetVirtioDebug.descriptor,
+            ResolveContainerFs.descriptor
         ]
     }
 }
@@ -1386,6 +1399,28 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_VirtioDebugInfo>
+
+        /// Handle the "ResolveContainerFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves a container's filesystem layer directories from containerd
+        /// > snapshot metadata in the guest. With dockerd's containerd image
+        /// > store `docker inspect` exposes no layer paths, so filesystem
+        /// > browsers call this and read the returned guest paths through the
+        /// > read-only ~/ArcBox NFS export.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ResolveContainerFsRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ResolveContainerFsResponse` messages.
+        func resolveContainerFs(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ResolveContainerFsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ResolveContainerFsResponse>
     }
 
     /// Service protocol for the "arcbox.v1.SystemService" service.
@@ -1587,6 +1622,28 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_VirtioDebugInfo>
+
+        /// Handle the "ResolveContainerFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves a container's filesystem layer directories from containerd
+        /// > snapshot metadata in the guest. With dockerd's containerd image
+        /// > store `docker inspect` exposes no layer paths, so filesystem
+        /// > browsers call this and read the returned guest paths through the
+        /// > read-only ~/ArcBox NFS export.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ResolveContainerFsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ResolveContainerFsResponse` message.
+        func resolveContainerFs(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ResolveContainerFsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ResolveContainerFsResponse>
     }
 
     /// Simple service protocol for the "arcbox.v1.SystemService" service.
@@ -1788,6 +1845,28 @@ extension Arcbox_V1_SystemService {
             request: Arcbox_V1_Empty,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_VirtioDebugInfo
+
+        /// Handle the "ResolveContainerFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves a container's filesystem layer directories from containerd
+        /// > snapshot metadata in the guest. With dockerd's containerd image
+        /// > store `docker inspect` exposes no layer paths, so filesystem
+        /// > browsers call this and read the returned guest paths through the
+        /// > read-only ~/ArcBox NFS export.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ResolveContainerFsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ResolveContainerFsResponse` to respond with.
+        func resolveContainerFs(
+            request: Arcbox_V1_ResolveContainerFsRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ResolveContainerFsResponse
     }
 }
 
@@ -1905,6 +1984,17 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.ResolveContainerFs.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ResolveContainerFsRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ResolveContainerFsResponse>(),
+            handler: { request, context in
+                try await self.resolveContainerFs(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -2015,6 +2105,17 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_VirtioDebugInfo> {
         let response = try await self.getVirtioDebug(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func resolveContainerFs(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ResolveContainerFsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ResolveContainerFsResponse> {
+        let response = try await self.resolveContainerFs(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -2156,6 +2257,19 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_VirtioDebugInfo> {
         return GRPCCore.ServerResponse<Arcbox_V1_VirtioDebugInfo>(
             message: try await self.getVirtioDebug(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func resolveContainerFs(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ResolveContainerFsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ResolveContainerFsResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ResolveContainerFsResponse>(
+            message: try await self.resolveContainerFs(
                 request: request.message,
                 context: context
             ),
@@ -2413,6 +2527,33 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_VirtioDebugInfo>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_VirtioDebugInfo>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ResolveContainerFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves a container's filesystem layer directories from containerd
+        /// > snapshot metadata in the guest. With dockerd's containerd image
+        /// > store `docker inspect` exposes no layer paths, so filesystem
+        /// > browsers call this and read the returned guest paths through the
+        /// > read-only ~/ArcBox NFS export.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ResolveContainerFsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ResolveContainerFsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ResolveContainerFsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func resolveContainerFs<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ResolveContainerFsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ResolveContainerFsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ResolveContainerFsResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveContainerFsResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2779,6 +2920,44 @@ extension Arcbox_V1_SystemService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "ResolveContainerFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves a container's filesystem layer directories from containerd
+        /// > snapshot metadata in the guest. With dockerd's containerd image
+        /// > store `docker inspect` exposes no layer paths, so filesystem
+        /// > browsers call this and read the returned guest paths through the
+        /// > read-only ~/ArcBox NFS export.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ResolveContainerFsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ResolveContainerFsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ResolveContainerFsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func resolveContainerFs<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ResolveContainerFsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ResolveContainerFsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ResolveContainerFsResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveContainerFsResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.ResolveContainerFs.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -3074,6 +3253,39 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_VirtioDebugInfo>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ResolveContainerFs" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Resolves a container's filesystem layer directories from containerd
+    /// > snapshot metadata in the guest. With dockerd's containerd image
+    /// > store `docker inspect` exposes no layer paths, so filesystem
+    /// > browsers call this and read the returned guest paths through the
+    /// > read-only ~/ArcBox NFS export.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ResolveContainerFsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func resolveContainerFs<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ResolveContainerFsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveContainerFsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.resolveContainerFs(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ResolveContainerFsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ResolveContainerFsResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3411,6 +3623,43 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.getVirtioDebug(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ResolveContainerFs" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Resolves a container's filesystem layer directories from containerd
+    /// > snapshot metadata in the guest. With dockerd's containerd image
+    /// > store `docker inspect` exposes no layer paths, so filesystem
+    /// > browsers call this and read the returned guest paths through the
+    /// > read-only ~/ArcBox NFS export.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func resolveContainerFs<Result>(
+        _ message: Arcbox_V1_ResolveContainerFsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveContainerFsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ResolveContainerFsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.resolveContainerFs(
             request: request,
             options: options,
             onResponse: handleResponse

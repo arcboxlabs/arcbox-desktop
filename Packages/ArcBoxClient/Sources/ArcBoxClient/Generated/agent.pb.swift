@@ -819,6 +819,42 @@ public struct Arcbox_V1_MmapReadFileResponse: Sendable {
   public init() {}
 }
 
+/// Resolve a container's filesystem layer directories from containerd's
+/// snapshot metadata. With dockerd's containerd image store the layer
+/// paths are absent from `docker inspect`, so filesystem browsers obtain
+/// them here and read the directories through the read-only NFS export.
+public struct Arcbox_V1_ContainerFsPathsRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Full container ID (also the containerd snapshot key in the moby
+  /// namespace).
+  public var containerID: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response to `ContainerFsPathsRequest`. All paths are guest paths under
+/// the containerd data mount.
+public struct Arcbox_V1_ContainerFsPathsResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Writable layer directory. Empty for read-only snapshots.
+  public var upperDir: String = String()
+
+  /// Read-only layer directories, top-most first.
+  public var lowerDirs: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "arcbox.v1"
@@ -2079,6 +2115,71 @@ extension Arcbox_V1_MmapReadFileResponse: SwiftProtobuf.Message, SwiftProtobuf._
   public static func ==(lhs: Arcbox_V1_MmapReadFileResponse, rhs: Arcbox_V1_MmapReadFileResponse) -> Bool {
     if lhs.data != rhs.data {return false}
     if lhs.bytesRead != rhs.bytesRead {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ContainerFsPathsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ContainerFsPathsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}container_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.containerID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.containerID.isEmpty {
+      try visitor.visitSingularStringField(value: self.containerID, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ContainerFsPathsRequest, rhs: Arcbox_V1_ContainerFsPathsRequest) -> Bool {
+    if lhs.containerID != rhs.containerID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ContainerFsPathsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ContainerFsPathsResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}upper_dir\0\u{3}lower_dirs\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.upperDir) }()
+      case 2: try { try decoder.decodeRepeatedStringField(value: &self.lowerDirs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.upperDir.isEmpty {
+      try visitor.visitSingularStringField(value: self.upperDir, fieldNumber: 1)
+    }
+    if !self.lowerDirs.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.lowerDirs, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ContainerFsPathsResponse, rhs: Arcbox_V1_ContainerFsPathsResponse) -> Bool {
+    if lhs.upperDir != rhs.upperDir {return false}
+    if lhs.lowerDirs != rhs.lowerDirs {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
