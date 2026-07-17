@@ -165,13 +165,14 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
     let arcbox_repo = find_arcbox_repo(&project_dir);
     let profile = BundleProfile::from_environment();
     let daemon_name = profile.daemon_label();
-    let local_dir = arcbox_repo
-        .as_ref()
-        .map(|r| r.join("target").join("release"));
-    let local_agent_dir = arcbox_repo.as_ref().map(|r| {
-        r.join("target")
-            .join("aarch64-unknown-linux-musl")
-            .join("release")
+    // Host binaries dir + guest (Linux musl) binaries dir of a local checkout.
+    let local_dirs = arcbox_repo.as_ref().map(|r| {
+        (
+            r.join("target").join("release"),
+            r.join("target")
+                .join("aarch64-unknown-linux-musl")
+                .join("release"),
+        )
     });
 
     // ── Build (incremental) ──────────────────────────────────────────────────
@@ -193,28 +194,26 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
     }
 
     // ── Resolve source ───────────────────────────────────────────────────────
-    let (src_dir, agent_src): (PathBuf, Option<PathBuf>) = if let Some(local) = &local_dir {
-        if local.join("abctl").is_file() && local.join("arcbox-daemon").is_file() {
-            if !xfs::is_macho(&local.join("arcbox-daemon")) {
-                bail!(
-                    "{}/arcbox-daemon is not a valid Mach-O binary",
+    let (src_dir, guest_bin_dir): (PathBuf, PathBuf) =
+        if let Some((local, local_guest)) = &local_dirs {
+            if local.join("abctl").is_file() && local.join("arcbox-daemon").is_file() {
+                if !xfs::is_macho(&local.join("arcbox-daemon")) {
+                    bail!(
+                        "{}/arcbox-daemon is not a valid Mach-O binary",
+                        local.display()
+                    );
+                }
+                note(&format!(
+                    "Using local arcbox binaries from {}",
                     local.display()
-                );
+                ));
+                (local.clone(), local_guest.clone())
+            } else {
+                resolve_cache(&cache_dir, &version, &project_dir)?
             }
-            note(&format!(
-                "Using local arcbox binaries from {}",
-                local.display()
-            ));
-            (
-                local.clone(),
-                local_agent_dir.as_ref().map(|d| d.join("arcbox-agent")),
-            )
         } else {
             resolve_cache(&cache_dir, &version, &project_dir)?
-        }
-    } else {
-        resolve_cache(&cache_dir, &version, &project_dir)?
-    };
+        };
 
     // ── Embed daemon → Contents/Frameworks/*.app ──────────────────────────────
     let frameworks_dir = built_products.join(&contents_folder).join("Frameworks");
@@ -326,22 +325,28 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
         ));
     }
 
-    // ── Embed arcbox-agent → Contents/Resources/bin/ ──────────────────────────
-    match &agent_src {
-        Some(agent) if agent.is_file() => {
-            let agent_dir = built_products
-                .join(&contents_folder)
-                .join("Resources")
-                .join("bin");
-            std::fs::create_dir_all(&agent_dir)
-                .with_context(|| format!("creating {}", agent_dir.display()))?;
-            if sync_binary(agent, &agent_dir.join("arcbox-agent"))? {
-                note("Embedded arcbox-agent → Resources/bin/arcbox-agent");
-            } else {
-                note("arcbox-agent unchanged, skipping copy");
-            }
+    // ── Embed guest binaries → Contents/Resources/bin/ ────────────────────────
+    // arcbox-agent (System VM agent) and vm-agent (sandbox microVM init); the
+    // daemon seeds both from Resources/bin into <data_dir>/bin at startup.
+    let guest_dest = built_products
+        .join(&contents_folder)
+        .join("Resources")
+        .join("bin");
+    std::fs::create_dir_all(&guest_dest)
+        .with_context(|| format!("creating {}", guest_dest.display()))?;
+    for name in ["arcbox-agent", "vm-agent"] {
+        let src = guest_bin_dir.join(name);
+        if !src.is_file() {
+            // Tolerated: pre-vm-agent release tarballs and partial local
+            // builds; the daemon degrades gracefully without either binary.
+            warn(&format!("{name} not found at {}, skipping", src.display()));
+            continue;
         }
-        _ => warn("arcbox-agent not found, skipping"),
+        if sync_binary(&src, &guest_dest.join(name))? {
+            note(&format!("Embedded {name} → Resources/bin/{name}"));
+        } else {
+            note(&format!("{name} unchanged, skipping copy"));
+        }
     }
 
     Ok(())
@@ -369,11 +374,13 @@ fn embed_signed_cli(
     Ok(())
 }
 
+/// Returns (host binaries dir, guest binaries dir); the release tarball is
+/// flat, so both point at the cache dir.
 fn resolve_cache(
     cache_dir: &Path,
     version: &str,
     project_dir: &Path,
-) -> Result<(PathBuf, Option<PathBuf>)> {
+) -> Result<(PathBuf, PathBuf)> {
     if cache_dir.join("abctl").is_file() && cache_dir.join("arcbox-daemon").is_file() {
         if !xfs::is_macho(&cache_dir.join("arcbox-daemon")) {
             bail!(
@@ -382,10 +389,7 @@ fn resolve_cache(
             );
         }
         note(&format!("Using cached arcbox {version} binaries"));
-        Ok((
-            cache_dir.to_path_buf(),
-            Some(cache_dir.join("arcbox-agent")),
-        ))
+        Ok((cache_dir.to_path_buf(), cache_dir.to_path_buf()))
     } else {
         let arcbox_hint = parent_join(project_dir, "arcbox");
         bail!(
