@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.25.0...v1.25.1) (2026-07-17)
+
+
+### CI
+
+* **release:** build and cache ARM64 DMGs ([3f23b9c](https://github.com/arcboxlabs/arcbox-desktop/commit/3f23b9c91626d2b588410c92aceba5d3f5ded182))
+
 ## [1.25.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.24.0...v1.25.0) (2026-07-17)
 
 
