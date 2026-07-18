@@ -131,6 +131,14 @@ public final class ArcBoxClient: Sendable {
         return options
     }
 
+    /// Call options for machine creation, which downloads the distro image
+    /// from the CDN on first use and can take several minutes.
+    public static var machineCreateCallOptions: GRPCCore.CallOptions {
+        var options = CallOptions.defaults
+        options.timeout = .seconds(600)
+        return options
+    }
+
     /// Container lifecycle operations.
     public var containers: Arcbox_V1_ContainerService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)

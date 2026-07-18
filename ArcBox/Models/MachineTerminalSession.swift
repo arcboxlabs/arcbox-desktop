@@ -3,13 +3,14 @@ import Foundation
 import GRPCCore
 import SwiftTerm
 
-/// Manages an interactive sandbox exec session via gRPC bidirectional streaming.
+/// Manages an interactive machine shell via the gRPC ExecSession
+/// bidirectional stream.
 ///
-/// Connects a SwiftTerm `TerminalView` to the sandbox's Exec RPC,
+/// Connects a SwiftTerm `TerminalView` to the machine's guest agent PTY,
 /// providing full bidirectional terminal I/O with TTY resize support.
 @MainActor
 @Observable
-class SandboxTerminalSession {
+class MachineTerminalSession {
     enum State: Equatable {
         case idle
         case connecting
@@ -22,14 +23,14 @@ class SandboxTerminalSession {
 
     @ObservationIgnored private weak var terminalView: TerminalView?
     @ObservationIgnored private var execTask: Task<Void, Never>?
-    @ObservationIgnored private var inputContinuation: AsyncStream<Sandbox_V1_ExecInput>.Continuation?
+    @ObservationIgnored private var inputContinuation:
+        AsyncStream<Arcbox_V1_MachineExecInput>.Continuation?
     @ObservationIgnored private var sessionGeneration: Int = 0
 
-    /// Connect to a sandbox shell via gRPC Exec.
+    /// Connect to a machine shell via gRPC ExecSession.
     func connect(
-        sandboxID: String,
-        command: [String] = ["/bin/sh"],
         machineID: String,
+        command: [String],
         client: ArcBoxClient,
         terminalView: TerminalView
     ) {
@@ -40,7 +41,7 @@ class SandboxTerminalSession {
         self.terminalView = terminalView
         state = .connecting
 
-        let (inputStream, continuation) = AsyncStream<Sandbox_V1_ExecInput>.makeStream()
+        let (inputStream, continuation) = AsyncStream<Arcbox_V1_MachineExecInput>.makeStream()
         self.inputContinuation = continuation
 
         // Initial terminal size (sensible defaults if not yet laid out).
@@ -48,16 +49,13 @@ class SandboxTerminalSession {
         let cols = UInt32(max(terminalSize.cols, 80))
         let rows = UInt32(max(terminalSize.rows, 24))
 
-        let metadata = SandboxMetadata.forMachine(machineID)
-
         execTask = Task.detached {
             do {
-                try await client.sandboxes.exec(
-                    metadata: metadata,
+                try await client.machines.execSession(
                     requestProducer: { writer in
-                        var initMsg = Sandbox_V1_ExecInput()
-                        var execReq = Sandbox_V1_ExecRequest()
-                        execReq.id = sandboxID
+                        var initMsg = Arcbox_V1_MachineExecInput()
+                        var execReq = Arcbox_V1_MachineExecRequest()
+                        execReq.id = machineID
                         execReq.cmd = command
                         execReq.tty = true
                         execReq.ttySize.width = cols
@@ -111,18 +109,18 @@ class SandboxTerminalSession {
         }
     }
 
-    /// Send terminal input data to the sandbox.
+    /// Send terminal input data to the machine.
     func send(_ data: Data) {
-        var msg = Sandbox_V1_ExecInput()
+        var msg = Arcbox_V1_MachineExecInput()
         msg.stdin = data
         inputContinuation?.yield(msg)
     }
 
-    /// Notify the sandbox of terminal size changes.
+    /// Notify the machine of terminal size changes.
     func resize(cols: Int, rows: Int) {
         guard cols > 0, rows > 0 else { return }
-        var msg = Sandbox_V1_ExecInput()
-        var size = Sandbox_V1_TerminalSize()
+        var msg = Arcbox_V1_MachineExecInput()
+        var size = Arcbox_V1_TerminalSize()
         size.width = UInt32(cols)
         size.height = UInt32(rows)
         msg.resize = size
@@ -142,4 +140,4 @@ class SandboxTerminalSession {
 }
 
 /// Drives the shared SwiftTerm bridge.
-extension SandboxTerminalSession: TerminalIOSession {}
+extension MachineTerminalSession: TerminalIOSession {}

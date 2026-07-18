@@ -1,14 +1,28 @@
 import AppKit
+import Foundation
 import SwiftTerm
 
-/// Bridges SwiftTerm delegate callbacks to SandboxTerminalSession.
+/// An interactive terminal session that `TerminalSessionBridge` can drive.
+///
+/// Conforming classes are `@MainActor`-isolated (and therefore implicitly
+/// `Sendable`), so the bridge can hop from SwiftTerm's delegate threads onto
+/// the main actor.
+@MainActor
+protocol TerminalIOSession: AnyObject, Sendable {
+    /// Send terminal input bytes to the remote end.
+    func send(_ data: Data)
+    /// Propagate a terminal size change to the remote end.
+    func resize(cols: Int, rows: Int)
+}
+
+/// Bridges SwiftTerm delegate callbacks to a `TerminalIOSession`.
 ///
 /// This class is intentionally not MainActor-isolated because SwiftTerm
 /// invokes delegate methods on various threads.
-nonisolated class SandboxTerminalBridge: NSObject, TerminalViewDelegate {
-    private let session: SandboxTerminalSession
+nonisolated final class TerminalSessionBridge: NSObject, TerminalViewDelegate {
+    private let session: any TerminalIOSession
 
-    init(session: SandboxTerminalSession) {
+    init(session: any TerminalIOSession) {
         self.session = session
     }
 
