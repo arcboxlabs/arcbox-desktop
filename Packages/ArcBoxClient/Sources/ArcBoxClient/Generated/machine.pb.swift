@@ -226,7 +226,8 @@ public struct Arcbox_V1_RemoveMachineRequest: Sendable {
   /// Force removal.
   public var force: Bool = false
 
-  /// Remove volumes.
+  /// Ignored: machine removal always deletes the machine directory
+  /// (including the data disk). Retained for wire compatibility.
   public var volumes: Bool = false
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -291,6 +292,12 @@ public struct Arcbox_V1_MachineSummary: Sendable {
 
   /// Creation timestamp.
   public var created: Int64 = 0
+
+  /// Distribution name (e.g., "ubuntu"); empty for plain VMs.
+  public var distro: String = String()
+
+  /// Distribution release (e.g., "noble").
+  public var distroVersion: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -518,7 +525,69 @@ public struct Arcbox_V1_MachineExecRequest: Sendable {
   /// Allocate TTY.
   public var tty: Bool = false
 
+  /// Initial terminal size (interactive sessions).
+  public var ttySize: Arcbox_V1_TerminalSize {
+    get {_ttySize ?? Arcbox_V1_TerminalSize()}
+    set {_ttySize = newValue}
+  }
+  /// Returns true if `ttySize` has been explicitly set.
+  public var hasTtySize: Bool {self._ttySize != nil}
+  /// Clears the value of `ttySize`. Subsequent reads from it will return its default value.
+  public mutating func clearTtySize() {self._ttySize = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _ttySize: Arcbox_V1_TerminalSize? = nil
+}
+
+/// One client message on an interactive machine session.
+public struct Arcbox_V1_MachineExecInput: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var payload: Arcbox_V1_MachineExecInput.OneOf_Payload? = nil
+
+  /// Must be the first message: what to run.
+  public var init_p: Arcbox_V1_MachineExecRequest {
+    get {
+      if case .init_p(let v)? = payload {return v}
+      return Arcbox_V1_MachineExecRequest()
+    }
+    set {payload = .init_p(newValue)}
+  }
+
+  /// Raw stdin bytes; empty means stdin EOF.
+  public var stdin: Data {
+    get {
+      if case .stdin(let v)? = payload {return v}
+      return Data()
+    }
+    set {payload = .stdin(newValue)}
+  }
+
+  /// Terminal resize.
+  public var resize: Arcbox_V1_TerminalSize {
+    get {
+      if case .resize(let v)? = payload {return v}
+      return Arcbox_V1_TerminalSize()
+    }
+    set {payload = .resize(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Payload: Equatable, Sendable {
+    /// Must be the first message: what to run.
+    case init_p(Arcbox_V1_MachineExecRequest)
+    /// Raw stdin bytes; empty means stdin EOF.
+    case stdin(Data)
+    /// Terminal resize.
+    case resize(Arcbox_V1_TerminalSize)
+
+  }
 
   public init() {}
 }
@@ -1052,7 +1121,7 @@ extension Arcbox_V1_ListMachinesResponse: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Arcbox_V1_MachineSummary: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineSummary"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}state\0\u{1}cpus\0\u{1}memory\0\u{3}disk_size\0\u{3}ip_address\0\u{1}created\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}state\0\u{1}cpus\0\u{1}memory\0\u{3}disk_size\0\u{3}ip_address\0\u{1}created\0\u{1}distro\0\u{3}distro_version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1068,6 +1137,8 @@ extension Arcbox_V1_MachineSummary: SwiftProtobuf.Message, SwiftProtobuf._Messag
       case 6: try { try decoder.decodeSingularUInt64Field(value: &self.diskSize) }()
       case 7: try { try decoder.decodeSingularStringField(value: &self.ipAddress) }()
       case 8: try { try decoder.decodeSingularInt64Field(value: &self.created) }()
+      case 9: try { try decoder.decodeSingularStringField(value: &self.distro) }()
+      case 10: try { try decoder.decodeSingularStringField(value: &self.distroVersion) }()
       default: break
       }
     }
@@ -1098,6 +1169,12 @@ extension Arcbox_V1_MachineSummary: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if self.created != 0 {
       try visitor.visitSingularInt64Field(value: self.created, fieldNumber: 8)
     }
+    if !self.distro.isEmpty {
+      try visitor.visitSingularStringField(value: self.distro, fieldNumber: 9)
+    }
+    if !self.distroVersion.isEmpty {
+      try visitor.visitSingularStringField(value: self.distroVersion, fieldNumber: 10)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1110,6 +1187,8 @@ extension Arcbox_V1_MachineSummary: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if lhs.diskSize != rhs.diskSize {return false}
     if lhs.ipAddress != rhs.ipAddress {return false}
     if lhs.created != rhs.created {return false}
+    if lhs.distro != rhs.distro {return false}
+    if lhs.distroVersion != rhs.distroVersion {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1450,7 +1529,7 @@ extension Arcbox_V1_MachineOS: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
 
 extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineExecRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}cmd\0\u{3}working_dir\0\u{1}user\0\u{1}env\0\u{1}tty\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}cmd\0\u{3}working_dir\0\u{1}user\0\u{1}env\0\u{1}tty\0\u{3}tty_size\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1464,12 +1543,17 @@ extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
       case 4: try { try decoder.decodeSingularStringField(value: &self.user) }()
       case 5: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.env) }()
       case 6: try { try decoder.decodeSingularBoolField(value: &self.tty) }()
+      case 7: try { try decoder.decodeSingularMessageField(value: &self._ttySize) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.id.isEmpty {
       try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
     }
@@ -1488,6 +1572,9 @@ extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
     if self.tty != false {
       try visitor.visitSingularBoolField(value: self.tty, fieldNumber: 6)
     }
+    try { if let v = self._ttySize {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1498,6 +1585,86 @@ extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
     if lhs.user != rhs.user {return false}
     if lhs.env != rhs.env {return false}
     if lhs.tty != rhs.tty {return false}
+    if lhs._ttySize != rhs._ttySize {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineExecInput: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineExecInput"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}init\0\u{1}stdin\0\u{1}resize\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Arcbox_V1_MachineExecRequest?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .init_p(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .init_p(v)
+        }
+      }()
+      case 2: try {
+        var v: Data?
+        try decoder.decodeSingularBytesField(value: &v)
+        if let v = v {
+          if self.payload != nil {try decoder.handleConflictingOneOf()}
+          self.payload = .stdin(v)
+        }
+      }()
+      case 3: try {
+        var v: Arcbox_V1_TerminalSize?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .resize(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .resize(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.payload {
+    case .init_p?: try {
+      guard case .init_p(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .stdin?: try {
+      guard case .stdin(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 2)
+    }()
+    case .resize?: try {
+      guard case .resize(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineExecInput, rhs: Arcbox_V1_MachineExecInput) -> Bool {
+    if lhs.payload != rhs.payload {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

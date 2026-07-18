@@ -87,7 +87,7 @@ struct ImageTerminalTab: View {
 
     private var terminalContent: some View {
         SwiftTermView(
-            delegate: TerminalBridge(session: session),
+            delegate: TerminalSessionBridge(session: session),
             onTerminalCreated: { terminalView in
                 configureTerminalAppearance(terminalView)
 

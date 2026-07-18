@@ -274,3 +274,6 @@ class DockerTerminalSession {
     }
 
 }
+
+/// Drives the shared SwiftTerm bridge.
+extension DockerTerminalSession: TerminalIOSession {}

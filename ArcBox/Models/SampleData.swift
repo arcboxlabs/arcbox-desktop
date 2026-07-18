@@ -4,32 +4,7 @@ import Foundation
 enum SampleData {
     // MARK: - Machines
 
-    static let machines: [MachineViewModel] = [
-        MachineViewModel(
-            id: "machine-001",
-            name: "dev-workspace",
-            distro: DistroInfo(name: "ubuntu", version: "22.04", displayName: "Ubuntu 22.04 LTS"),
-            state: .running,
-            cpuCores: 4,
-            memoryGB: 8,
-            diskGB: 64,
-            architecture: "arm64",
-            ipAddress: "192.168.64.2",
-            createdAt: Date().addingTimeInterval(-86400 * 14)
-        ),
-        MachineViewModel(
-            id: "machine-002",
-            name: "test-env",
-            distro: DistroInfo(name: "fedora", version: "39", displayName: "Fedora 39"),
-            state: .stopped,
-            cpuCores: 2,
-            memoryGB: 4,
-            diskGB: 32,
-            architecture: "arm64",
-            ipAddress: nil,
-            createdAt: Date().addingTimeInterval(-86400 * 7)
-        ),
-    ]
+    // Machines come from the live gRPC API; no sample data.
 
     // MARK: - Pods
 

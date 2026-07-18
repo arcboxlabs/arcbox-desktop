@@ -3,6 +3,7 @@ import SwiftUI
 /// Column 3: machine detail with tab-based toolbar (matches ContainerDetailView pattern)
 struct MachineDetailView: View {
     @Environment(MachinesViewModel.self) private var vm
+    @Environment(\.arcboxClient) private var client
 
     var body: some View {
         @Bindable var vm = vm
@@ -29,6 +30,10 @@ struct MachineDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: vm.selectedID) {
+            guard let id = vm.selectedID else { return }
+            await vm.loadMachineDetails(id, client: client)
+        }
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("Tab", selection: $vm.activeTab) {
