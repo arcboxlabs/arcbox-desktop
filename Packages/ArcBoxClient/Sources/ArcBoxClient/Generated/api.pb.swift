@@ -401,6 +401,35 @@ public struct Arcbox_V1_ResolveContainerFsResponse: Sendable {
   public init() {}
 }
 
+/// Request to resolve an image's layer directories.
+public struct Arcbox_V1_ResolveImageFsRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Chain ID of the image's top layer (`sha256:<64 hex>`).
+  public var topChainID: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// An image's layer directories, as guest paths under the containerd data
+/// mount.
+public struct Arcbox_V1_ResolveImageFsResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Read-only layer directories, top-most first.
+  public var lowerDirs: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Diagnostic snapshot of the System VM's virtio devices and vCPUs.
 public struct Arcbox_V1_VirtioDebugInfo: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -2019,6 +2048,66 @@ extension Arcbox_V1_ResolveContainerFsResponse: SwiftProtobuf.Message, SwiftProt
 
   public static func ==(lhs: Arcbox_V1_ResolveContainerFsResponse, rhs: Arcbox_V1_ResolveContainerFsResponse) -> Bool {
     if lhs.upperDir != rhs.upperDir {return false}
+    if lhs.lowerDirs != rhs.lowerDirs {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ResolveImageFsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ResolveImageFsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}top_chain_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.topChainID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.topChainID.isEmpty {
+      try visitor.visitSingularStringField(value: self.topChainID, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ResolveImageFsRequest, rhs: Arcbox_V1_ResolveImageFsRequest) -> Bool {
+    if lhs.topChainID != rhs.topChainID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ResolveImageFsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ResolveImageFsResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}lower_dirs\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedStringField(value: &self.lowerDirs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.lowerDirs.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.lowerDirs, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ResolveImageFsResponse, rhs: Arcbox_V1_ResolveImageFsResponse) -> Bool {
     if lhs.lowerDirs != rhs.lowerDirs {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
