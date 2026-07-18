@@ -71,7 +71,11 @@ struct MachineRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // Action buttons (show on hover or selection)
-            if isHovered || isSelected {
+            if machine.isTransitioning {
+                ProgressView()
+                    .controlSize(.small)
+                    .padding(.trailing, 4)
+            } else if isHovered || isSelected {
                 HStack(spacing: 4) {
                     IconButton(
                         symbol: machine.isRunning ? "stop.fill" : "play.fill",

@@ -87,7 +87,7 @@ struct SandboxTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: SandboxTerminalBridge(session: session)) { terminalView in
+        SwiftTermView(delegate: TerminalSessionBridge(session: session)) { terminalView in
             TerminalAppearance.configure(terminalView)
 
             guard !hasConnected, let client else { return }
