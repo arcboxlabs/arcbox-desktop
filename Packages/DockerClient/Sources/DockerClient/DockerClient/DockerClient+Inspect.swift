@@ -100,12 +100,14 @@ private struct ImageInspectDTO: Decodable {
     let config: ImageConfigDTO?
     let containerConfig: ImageConfigDTO?
     let graphDriver: GraphDriverDTO?
+    let rootFS: RootFSDTO?
 
     var snapshot: ImageInspectSnapshot {
         ImageInspectSnapshot(
             labels: config?.normalizedLabels ?? containerConfig?.normalizedLabels ?? [:],
             rootfsMountPath: graphDriver?.imageRootfsMountPath,
-            overlayUpperDir: graphDriver?.overlayUpperDir
+            overlayUpperDir: graphDriver?.overlayUpperDir,
+            rootfsLayers: rootFS?.layers ?? []
         )
     }
 
@@ -113,6 +115,7 @@ private struct ImageInspectDTO: Decodable {
         case config = "Config"
         case containerConfig = "ContainerConfig"
         case graphDriver = "GraphDriver"
+        case rootFS = "RootFS"
     }
 
     init(from decoder: Decoder) throws {
@@ -120,6 +123,15 @@ private struct ImageInspectDTO: Decodable {
         config = try? container.decodeIfPresent(ImageConfigDTO.self, forKey: .config)
         containerConfig = try? container.decodeIfPresent(ImageConfigDTO.self, forKey: .containerConfig)
         graphDriver = try? container.decodeIfPresent(GraphDriverDTO.self, forKey: .graphDriver)
+        rootFS = try? container.decodeIfPresent(RootFSDTO.self, forKey: .rootFS)
+    }
+}
+
+private struct RootFSDTO: Decodable {
+    let layers: [String]?
+
+    private enum CodingKeys: String, CodingKey {
+        case layers = "Layers"
     }
 }
 

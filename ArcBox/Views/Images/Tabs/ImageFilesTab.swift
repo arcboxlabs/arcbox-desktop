@@ -1,6 +1,8 @@
 import AppKit
+import ArcBoxClient
 import DockerClient
 import SwiftUI
+import os
 
 /// Files tab showing image layer filesystem browser
 struct ImageFilesTab: View {
@@ -14,7 +16,7 @@ struct ImageFilesTab: View {
             case .dockerUnavailable:
                 return "Docker client is unavailable."
             case .missingRootPath:
-                return "Image has no configured rootfs mount path."
+                return "Image has no resolvable filesystem path."
             case .inspectFailed(let reason):
                 return "Failed to inspect image: \(reason)"
             }
@@ -23,6 +25,7 @@ struct ImageFilesTab: View {
 
     let image: ImageViewModel
     @Environment(\.dockerClient) private var docker
+    @Environment(\.arcboxClient) private var arcboxClient
 
     @State private var selectedPath: String?
     @State private var rootURL: URL?
@@ -33,7 +36,10 @@ struct ImageFilesTab: View {
     @State private var showHiddenFiles = LocalRootFSService.finderDefaultShowHiddenFiles()
 
     private var resolveTaskID: String {
-        "\(image.id)|\(refreshToken.uuidString)"
+        // Client availability is part of the key: the environment clients
+        // are nil during app startup, and resolution must re-run once they
+        // are injected — `.task(id:)` only restarts on an id change.
+        "\(image.id)|\(docker != nil)|\(arcboxClient != nil)|\(refreshToken.uuidString)"
     }
 
     private var outlineReloadID: String {
@@ -203,11 +209,36 @@ struct ImageFilesTab: View {
             ) {
                 return resolvedPath
             }
+            // Containerd image store: inspect carries no layer paths; ask
+            // the daemon to resolve the layer chain and browse the top
+            // layer's directory.
+            if let resolvedPath = await resolveViaDaemon(diffIDs: snapshot.rootfsLayers) {
+                return resolvedPath
+            }
             throw ImageFilesTabError.missingRootPath
         } catch let error as ImageFilesTabError {
             throw error
         } catch {
             throw ImageFilesTabError.inspectFailed(error.localizedDescription)
+        }
+    }
+
+    /// Resolves the image's top layer directory via the daemon, keyed by
+    /// the layer chain ID computed from the inspect diff IDs.
+    private func resolveViaDaemon(diffIDs: [String]) async -> String? {
+        guard let arcboxClient,
+            let topChainID = ImageLayerChain.topChainID(diffIDs: diffIDs)
+        else { return nil }
+        var request = Arcbox_V1_ResolveImageFsRequest()
+        request.topChainID = topChainID
+        do {
+            let response = try await arcboxClient.system.resolveImageFs(
+                request, options: ArcBoxClient.defaultCallOptions)
+            return response.lowerDirs.first
+        } catch {
+            Log.daemon.error(
+                "Failed to resolve image fs: \(error.localizedDescription, privacy: .private)")
+            return nil
         }
     }
 

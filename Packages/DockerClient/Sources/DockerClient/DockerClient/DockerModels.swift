@@ -53,14 +53,21 @@ public struct ImageInspectSnapshot: Sendable {
         return overlayUpperDir
     }
 
+    /// `RootFS.Layers` diff IDs, bottom-most first. Present under every
+    /// image store; under the containerd store the layer chain IDs derive
+    /// from these when GraphDriver carries no paths.
+    public let rootfsLayers: [String]
+
     public init(
         labels: [String: String],
         rootfsMountPath: String? = nil,
-        overlayUpperDir: String? = nil
+        overlayUpperDir: String? = nil,
+        rootfsLayers: [String] = []
     ) {
         self.labels = labels
         self.rootfsMountPath = rootfsMountPath
         self.overlayUpperDir = overlayUpperDir
+        self.rootfsLayers = rootfsLayers
     }
 }
 

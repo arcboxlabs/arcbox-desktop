@@ -49,6 +49,7 @@
 		4113241C123BBBBDEC76E5B0 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB03A05EDADB4F1FA6E10A1 /* ToastView.swift */; };
 		41459C0A45497BA629B8C34D /* NetworksViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4ED3EC883A488801DE03195 /* NetworksViewModel.swift */; };
 		415470083B7CD53FB22C4E88 /* MachineModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AD5CF45B00B80D85A778AB4 /* MachineModel.swift */; };
+		43CA6777ECD31C582D9EEB09 /* ImageLayerChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6218E84D6C2A8595FE308B5E /* ImageLayerChain.swift */; };
 		43F19AF62096855162AED4D6 /* TerminalLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B3991292BCEAFE5ED4EF39 /* TerminalLine.swift */; };
 		442BF334C252BDCD3E210745 /* PodRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5C6F8F92ED8D843FAA6D89 /* PodRowView.swift */; };
 		442FF72709337D1BCAA0643D /* SandboxEventMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C68609B67AC82FF386CB92 /* SandboxEventMonitor.swift */; };
@@ -107,6 +108,7 @@
 		85E19535E0F7AC3500E9BAFD /* TemplateEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E3E6C9D6EBE0D9358FB396A /* TemplateEmptyState.swift */; };
 		869B14DB25CD44955C7C32AE /* ContainersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C69EC561EEA79ADE5A9000 /* ContainersViewModel.swift */; };
 		8939A06F20FE4F92A72E3372 /* ImageTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E17CF68FBBA9447E1B15371 /* ImageTypes.swift */; };
+		8BBBA54130403D89D35986F7 /* ImageLayerChainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C964312D5336EE55A8E4680B /* ImageLayerChainTests.swift */; };
 		8BEEBFC0F4E258C46C1A347E /* AboutView+LinkButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06B22BB8B92AF78C2B87ADC /* AboutView+LinkButton.swift */; };
 		8C3C03A50C1B7D97829F9DA5 /* SandboxEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE7897EE0D976BB19ADC2C5 /* SandboxEmptyState.swift */; };
 		8CC7CA0E539BF9E435DA2F36 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = 32C86546753C11A9E6CA8CB8 /* CHANGELOG.md */; };
@@ -308,6 +310,7 @@
 		5F2D773B0312F0D5695D0ADA /* SandboxesViewModel+Snapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SandboxesViewModel+Snapshots.swift"; sourceTree = "<group>"; };
 		61EE316315F864BA1BF0FFED /* MachinesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesViewModel.swift; sourceTree = "<group>"; };
 		620BCE892EDA3E7554384A0E /* NetworkRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkRowView.swift; sourceTree = "<group>"; };
+		6218E84D6C2A8595FE308B5E /* ImageLayerChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLayerChain.swift; sourceTree = "<group>"; };
 		657D7543F1D47988AEC3339D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		66F91CF47E53375781959EC9 /* ServicesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesListView.swift; sourceTree = "<group>"; };
 		68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -406,6 +409,7 @@
 		C0DD79FCBCF65FAFFBBB61D0 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Containers.swift"; sourceTree = "<group>"; };
 		C33F6D43F3CE2C79F072C7F3 /* DockerClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DockerClient; path = Packages/DockerClient; sourceTree = SOURCE_ROOT; };
+		C964312D5336EE55A8E4680B /* ImageLayerChainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLayerChainTests.swift; sourceTree = "<group>"; };
 		CC86E86A85E46B083853A9AA /* MachineFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineFilesTab.swift; sourceTree = "<group>"; };
 		CC98017408ED56AFF734125A /* AboutView+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+Sections.swift"; sourceTree = "<group>"; };
 		CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsViewModel.swift; sourceTree = "<group>"; };
@@ -781,6 +785,7 @@
 			isa = PBXGroup;
 			children = (
 				83FBE0C82E0EB430C69EB944 /* GuestDataMount.swift */,
+				6218E84D6C2A8595FE308B5E /* ImageLayerChain.swift */,
 				85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */,
 				7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */,
 			);
@@ -1019,6 +1024,7 @@
 				F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */,
 				06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */,
 				27130DDA57D2645C7E81D75D /* GuestDataMountTests.swift */,
+				C964312D5336EE55A8E4680B /* ImageLayerChainTests.swift */,
 				A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */,
 				7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */,
 				F0647CCB67160C2509345B5E /* MachineModelTests.swift */,
@@ -1251,6 +1257,7 @@
 				BB6DA9C1B509BF12CDA5A92E /* ImageDetailView.swift in Sources */,
 				FACCEFF5F4CDC1CCDB664C3D /* ImageEmptyState.swift in Sources */,
 				BDE44A1851827C2069778F08 /* ImageFilesTab.swift in Sources */,
+				43CA6777ECD31C582D9EEB09 /* ImageLayerChain.swift in Sources */,
 				7F091F3F3F75F500937DC7BC /* ImageModel.swift in Sources */,
 				614A69F2B70BA6E4CCA4CF0D /* ImageRowView.swift in Sources */,
 				3B38458299F141A08B8C7107 /* ImageTerminalTab.swift in Sources */,
@@ -1383,6 +1390,7 @@
 				EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */,
 				8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */,
 				D2AB4B6BF0723EE12A0DBC83 /* GuestDataMountTests.swift in Sources */,
+				8BBBA54130403D89D35986F7 /* ImageLayerChainTests.swift in Sources */,
 				0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */,
 				F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */,
 				CCD9ABC3F69FE5DA233E85EC /* MachineModelTests.swift in Sources */,
@@ -1518,7 +1526,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				OTHER_SWIFT_FLAGS = "-Werror ActorIsolatedCall";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(ARCBOX_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(ARCBOX_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -1660,7 +1667,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				OTHER_SWIFT_FLAGS = "-Werror ActorIsolatedCall";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(ARCBOX_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(ARCBOX_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
