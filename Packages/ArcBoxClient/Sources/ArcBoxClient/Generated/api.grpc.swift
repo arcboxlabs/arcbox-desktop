@@ -1170,6 +1170,18 @@ public enum Arcbox_V1_SystemService {
                 method: "ResolveContainerFs"
             )
         }
+        /// Namespace for "ResolveImageFs" metadata.
+        public enum ResolveImageFs {
+            /// Request type for "ResolveImageFs".
+            public typealias Input = Arcbox_V1_ResolveImageFsRequest
+            /// Response type for "ResolveImageFs".
+            public typealias Output = Arcbox_V1_ResolveImageFsResponse
+            /// Descriptor for "ResolveImageFs".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "ResolveImageFs"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.SystemService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetInfo.descriptor,
@@ -1182,7 +1194,8 @@ public enum Arcbox_V1_SystemService {
             GetSystemVmBackend.descriptor,
             SetSystemVmBackend.descriptor,
             GetVirtioDebug.descriptor,
-            ResolveContainerFs.descriptor
+            ResolveContainerFs.descriptor,
+            ResolveImageFs.descriptor
         ]
     }
 }
@@ -1421,6 +1434,27 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_ResolveContainerFsRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ResolveContainerFsResponse>
+
+        /// Handle the "ResolveImageFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves an image's layer directories from containerd snapshot
+        /// > metadata in the guest, keyed by the image's top layer chain ID
+        /// > (computed from the image config's diff_ids). Same read path as
+        /// > ResolveContainerFs.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ResolveImageFsRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ResolveImageFsResponse` messages.
+        func resolveImageFs(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ResolveImageFsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ResolveImageFsResponse>
     }
 
     /// Service protocol for the "arcbox.v1.SystemService" service.
@@ -1644,6 +1678,27 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.ServerRequest<Arcbox_V1_ResolveContainerFsRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ResolveContainerFsResponse>
+
+        /// Handle the "ResolveImageFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves an image's layer directories from containerd snapshot
+        /// > metadata in the guest, keyed by the image's top layer chain ID
+        /// > (computed from the image config's diff_ids). Same read path as
+        /// > ResolveContainerFs.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ResolveImageFsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ResolveImageFsResponse` message.
+        func resolveImageFs(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ResolveImageFsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ResolveImageFsResponse>
     }
 
     /// Simple service protocol for the "arcbox.v1.SystemService" service.
@@ -1867,6 +1922,27 @@ extension Arcbox_V1_SystemService {
             request: Arcbox_V1_ResolveContainerFsRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_ResolveContainerFsResponse
+
+        /// Handle the "ResolveImageFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves an image's layer directories from containerd snapshot
+        /// > metadata in the guest, keyed by the image's top layer chain ID
+        /// > (computed from the image config's diff_ids). Same read path as
+        /// > ResolveContainerFs.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ResolveImageFsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ResolveImageFsResponse` to respond with.
+        func resolveImageFs(
+            request: Arcbox_V1_ResolveImageFsRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ResolveImageFsResponse
     }
 }
 
@@ -1995,6 +2071,17 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.ResolveImageFs.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ResolveImageFsRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ResolveImageFsResponse>(),
+            handler: { request, context in
+                try await self.resolveImageFs(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -2116,6 +2203,17 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ResolveContainerFsResponse> {
         let response = try await self.resolveContainerFs(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func resolveImageFs(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ResolveImageFsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ResolveImageFsResponse> {
+        let response = try await self.resolveImageFs(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -2270,6 +2368,19 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ResolveContainerFsResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_ResolveContainerFsResponse>(
             message: try await self.resolveContainerFs(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func resolveImageFs(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ResolveImageFsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ResolveImageFsResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ResolveImageFsResponse>(
+            message: try await self.resolveImageFs(
                 request: request.message,
                 context: context
             ),
@@ -2554,6 +2665,32 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ResolveContainerFsResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveContainerFsResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ResolveImageFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves an image's layer directories from containerd snapshot
+        /// > metadata in the guest, keyed by the image's top layer chain ID
+        /// > (computed from the image config's diff_ids). Same read path as
+        /// > ResolveContainerFs.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ResolveImageFsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ResolveImageFsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ResolveImageFsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func resolveImageFs<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ResolveImageFsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ResolveImageFsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ResolveImageFsResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveImageFsResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2958,6 +3095,43 @@ extension Arcbox_V1_SystemService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "ResolveImageFs" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Resolves an image's layer directories from containerd snapshot
+        /// > metadata in the guest, keyed by the image's top layer chain ID
+        /// > (computed from the image config's diff_ids). Same read path as
+        /// > ResolveContainerFs.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ResolveImageFsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ResolveImageFsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ResolveImageFsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func resolveImageFs<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ResolveImageFsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ResolveImageFsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ResolveImageFsResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveImageFsResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.ResolveImageFs.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -3286,6 +3460,38 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ResolveContainerFsRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ResolveContainerFsResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ResolveImageFs" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Resolves an image's layer directories from containerd snapshot
+    /// > metadata in the guest, keyed by the image's top layer chain ID
+    /// > (computed from the image config's diff_ids). Same read path as
+    /// > ResolveContainerFs.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ResolveImageFsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func resolveImageFs<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ResolveImageFsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveImageFsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.resolveImageFs(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ResolveImageFsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ResolveImageFsResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3660,6 +3866,42 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.resolveContainerFs(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ResolveImageFs" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Resolves an image's layer directories from containerd snapshot
+    /// > metadata in the guest, keyed by the image's top layer chain ID
+    /// > (computed from the image config's diff_ids). Same read path as
+    /// > ResolveContainerFs.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func resolveImageFs<Result>(
+        _ message: Arcbox_V1_ResolveImageFsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ResolveImageFsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ResolveImageFsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.resolveImageFs(
             request: request,
             options: options,
             onResponse: handleResponse

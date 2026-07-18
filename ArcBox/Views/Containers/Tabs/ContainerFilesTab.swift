@@ -128,7 +128,9 @@ struct ContainerFilesTab: View {
                 .padding(.horizontal, 20)
 
             Text(
-                "Container filesystems are browsed through the read-only ~/ArcBox export. The view shows the container's own writable layer; image layers stay in their own snapshots."
+                "Container filesystems are browsed through the read-only ~/ArcBox export. "
+                    + "The view shows the container's own writable layer; "
+                    + "image layers stay in their own snapshots."
             )
             .font(.system(size: 12))
             .foregroundStyle(AppColors.textMuted)
