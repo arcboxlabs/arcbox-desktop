@@ -149,6 +149,18 @@ public enum Arcbox_V1_MachineService {
                 method: "Exec"
             )
         }
+        /// Namespace for "ExecSession" metadata.
+        public enum ExecSession {
+            /// Request type for "ExecSession".
+            public typealias Input = Arcbox_V1_MachineExecInput
+            /// Response type for "ExecSession".
+            public typealias Output = Arcbox_V1_MachineExecOutput
+            /// Descriptor for "ExecSession".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "ExecSession"
+            )
+        }
         /// Namespace for "SSHInfo" metadata.
         public enum SSHInfo {
             /// Request type for "SSHInfo".
@@ -173,6 +185,7 @@ public enum Arcbox_V1_MachineService {
             GetSystemInfo.descriptor,
             CompactDisk.descriptor,
             Exec.descriptor,
+            ExecSession.descriptor,
             SSHInfo.descriptor
         ]
     }
@@ -371,7 +384,7 @@ extension Arcbox_V1_MachineService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Executes a command in a machine.
+        /// > Executes a command in a machine (non-interactive: stdin closed).
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_V1_MachineExecRequest` messages.
@@ -382,6 +395,26 @@ extension Arcbox_V1_MachineService {
         /// - Returns: A streaming response of `Arcbox_V1_MachineExecOutput` messages.
         func exec(
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_MachineExecRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineExecOutput>
+
+        /// Handle the "ExecSession" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Interactive machine session: the first message must carry `init`;
+        /// > subsequent messages stream stdin bytes and terminal resizes. Output
+        /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_MachineExecInput` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineExecOutput` messages.
+        func execSession(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_MachineExecInput>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineExecOutput>
 
@@ -584,7 +617,7 @@ extension Arcbox_V1_MachineService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Executes a command in a machine.
+        /// > Executes a command in a machine (non-interactive: stdin closed).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_MachineExecRequest` message.
@@ -595,6 +628,26 @@ extension Arcbox_V1_MachineService {
         /// - Returns: A streaming response of `Arcbox_V1_MachineExecOutput` messages.
         func exec(
             request: GRPCCore.ServerRequest<Arcbox_V1_MachineExecRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineExecOutput>
+
+        /// Handle the "ExecSession" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Interactive machine session: the first message must carry `init`;
+        /// > subsequent messages stream stdin bytes and terminal resizes. Output
+        /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_MachineExecInput` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineExecOutput` messages.
+        func execSession(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_MachineExecInput>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineExecOutput>
 
@@ -795,7 +848,7 @@ extension Arcbox_V1_MachineService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Executes a command in a machine.
+        /// > Executes a command in a machine (non-interactive: stdin closed).
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_V1_MachineExecRequest` message.
@@ -806,6 +859,27 @@ extension Arcbox_V1_MachineService {
         ///     to an internal error.
         func exec(
             request: Arcbox_V1_MachineExecRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_MachineExecOutput>,
+            context: GRPCCore.ServerContext
+        ) async throws
+
+        /// Handle the "ExecSession" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Interactive machine session: the first message must carry `init`;
+        /// > subsequent messages stream stdin bytes and terminal resizes. Output
+        /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+        ///
+        /// - Parameters:
+        ///   - request: A stream of `Arcbox_V1_MachineExecInput` messages.
+        ///   - response: A response stream of `Arcbox_V1_MachineExecOutput` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func execSession(
+            request: GRPCCore.RPCAsyncSequence<Arcbox_V1_MachineExecInput, any Swift.Error>,
             response: GRPCCore.RPCWriter<Arcbox_V1_MachineExecOutput>,
             context: GRPCCore.ServerContext
         ) async throws
@@ -939,6 +1013,17 @@ extension Arcbox_V1_MachineService.StreamingServiceProtocol {
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineExecOutput>(),
             handler: { request, context in
                 try await self.exec(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.ExecSession.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineExecInput>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineExecOutput>(),
+            handler: { request, context in
+                try await self.execSession(
                     request: request,
                     context: context
                 )
@@ -1220,6 +1305,23 @@ extension Arcbox_V1_MachineService.SimpleServiceProtocol {
         )
     }
 
+    public func execSession(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_MachineExecInput>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineExecOutput> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_MachineExecOutput>(
+            metadata: [:],
+            producer: { writer in
+                try await self.execSession(
+                    request: request.messages,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
     public func sshInfo(
         request: GRPCCore.ServerRequest<Arcbox_V1_SSHInfoRequest>,
         context: GRPCCore.ServerContext
@@ -1460,7 +1562,7 @@ extension Arcbox_V1_MachineService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Executes a command in a machine.
+        /// > Executes a command in a machine (non-interactive: stdin closed).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_MachineExecRequest` message.
@@ -1474,6 +1576,31 @@ extension Arcbox_V1_MachineService {
         func exec<Result>(
             request: GRPCCore.ClientRequest<Arcbox_V1_MachineExecRequest>,
             serializer: some GRPCCore.MessageSerializer<Arcbox_V1_MachineExecRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineExecOutput>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineExecOutput>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ExecSession" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Interactive machine session: the first message must carry `init`;
+        /// > subsequent messages stream stdin bytes and terminal resizes. Output
+        /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request producing `Arcbox_V1_MachineExecInput` messages.
+        ///   - serializer: A serializer for `Arcbox_V1_MachineExecInput` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineExecOutput` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func execSession<Result>(
+            request: GRPCCore.StreamingClientRequest<Arcbox_V1_MachineExecInput>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_MachineExecInput>,
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineExecOutput>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineExecOutput>) async throws -> Result
@@ -1835,7 +1962,7 @@ extension Arcbox_V1_MachineService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Executes a command in a machine.
+        /// > Executes a command in a machine (non-interactive: stdin closed).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_MachineExecRequest` message.
@@ -1856,6 +1983,40 @@ extension Arcbox_V1_MachineService {
             try await self.client.serverStreaming(
                 request: request,
                 descriptor: Arcbox_V1_MachineService.Method.Exec.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "ExecSession" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Interactive machine session: the first message must carry `init`;
+        /// > subsequent messages stream stdin bytes and terminal resizes. Output
+        /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request producing `Arcbox_V1_MachineExecInput` messages.
+        ///   - serializer: A serializer for `Arcbox_V1_MachineExecInput` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineExecOutput` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func execSession<Result>(
+            request: GRPCCore.StreamingClientRequest<Arcbox_V1_MachineExecInput>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_MachineExecInput>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineExecOutput>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineExecOutput>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.bidirectionalStreaming(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.ExecSession.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -2168,7 +2329,7 @@ extension Arcbox_V1_MachineService.ClientProtocol {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Executes a command in a machine.
+    /// > Executes a command in a machine (non-interactive: stdin closed).
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_V1_MachineExecRequest` message.
@@ -2185,6 +2346,35 @@ extension Arcbox_V1_MachineService.ClientProtocol {
         try await self.exec(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineExecRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineExecOutput>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ExecSession" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Interactive machine session: the first message must carry `init`;
+    /// > subsequent messages stream stdin bytes and terminal resizes. Output
+    /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+    ///
+    /// - Parameters:
+    ///   - request: A streaming request producing `Arcbox_V1_MachineExecInput` messages.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func execSession<Result>(
+        request: GRPCCore.StreamingClientRequest<Arcbox_V1_MachineExecInput>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineExecOutput>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.execSession(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineExecInput>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineExecOutput>(),
             options: options,
             onResponse: handleResponse
@@ -2526,7 +2716,7 @@ extension Arcbox_V1_MachineService.ClientProtocol {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Executes a command in a machine.
+    /// > Executes a command in a machine (non-interactive: stdin closed).
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -2547,6 +2737,40 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             metadata: metadata
         )
         return try await self.exec(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ExecSession" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Interactive machine session: the first message must carry `init`;
+    /// > subsequent messages stream stdin bytes and terminal resizes. Output
+    /// > frames mirror Exec, with stdout/stderr merged by the PTY.
+    ///
+    /// - Parameters:
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - producer: A closure producing request messages to send to the server. The request
+    ///       stream is closed when the closure returns.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func execSession<Result>(
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        requestProducer producer: @Sendable @escaping (GRPCCore.RPCWriter<Arcbox_V1_MachineExecInput>) async throws -> Void,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineExecOutput>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.StreamingClientRequest<Arcbox_V1_MachineExecInput>(
+            metadata: metadata,
+            producer: producer
+        )
+        return try await self.execSession(
             request: request,
             options: options,
             onResponse: handleResponse
