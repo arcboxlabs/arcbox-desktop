@@ -53,14 +53,13 @@ enum MachineImageCatalog {
         for stream in index.images.values where stream.arch == hostArch {
             releasesByDistro[stream.distro, default: []].insert(stream.release)
         }
-        return releasesByDistro
-            .map { distro, releases in
-                MachineDistroOption(
-                    distro: distro,
-                    releases: releases.sorted { $0.compare($1, options: .numeric) == .orderedDescending }
-                )
-            }
-            .sorted { rank($0.distro) < rank($1.distro) }
+        let options = releasesByDistro.map { distro, releases in
+            MachineDistroOption(
+                distro: distro,
+                releases: releases.sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+            )
+        }
+        return options.sorted { rank($0.distro) < rank($1.distro) }
     }
 
     private static func rank(_ distro: String) -> Int {

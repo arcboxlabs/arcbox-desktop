@@ -23,8 +23,7 @@ class MachineTerminalSession {
 
     @ObservationIgnored private weak var terminalView: TerminalView?
     @ObservationIgnored private var execTask: Task<Void, Never>?
-    @ObservationIgnored private var inputContinuation:
-        AsyncStream<Arcbox_V1_MachineExecInput>.Continuation?
+    @ObservationIgnored private var inputContinuation: AsyncStream<Arcbox_V1_MachineExecInput>.Continuation?
     @ObservationIgnored private var sessionGeneration: Int = 0
 
     /// Connect to a machine shell via gRPC ExecSession.
