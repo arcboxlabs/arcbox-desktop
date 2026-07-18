@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.27.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.26.1...v1.27.0) (2026-07-18)
+
+
+### Features
+
+* **machines:** wire the Machines tab to the machine gRPC service ([#302](https://github.com/arcboxlabs/arcbox-desktop/issues/302)) ([bf58b4f](https://github.com/arcboxlabs/arcbox-desktop/commit/bf58b4f1b5c5dac26e41d94398760d92e984b125))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.4.22 ([#298](https://github.com/arcboxlabs/arcbox-desktop/issues/298)) ([447aba1](https://github.com/arcboxlabs/arcbox-desktop/commit/447aba10e645860bfcbf55023d171f90532a5350))
+
+
+### CI
+
+* **release:** update Homebrew latest cask ([#303](https://github.com/arcboxlabs/arcbox-desktop/issues/303)) ([b38c695](https://github.com/arcboxlabs/arcbox-desktop/commit/b38c695ecb1b9ad7863bbae691fca0c7dd1c286a))
+
 ## [1.26.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.26.0...v1.26.1) (2026-07-17)
 
 
