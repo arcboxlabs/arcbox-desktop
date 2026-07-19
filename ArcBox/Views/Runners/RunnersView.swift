@@ -7,7 +7,6 @@ struct RunnersView: View {
     @Environment(AuthSession.self) private var authSession
     @Environment(RunnersViewModel.self) private var vm
     @State private var isShowingWorkspaceDialog = false
-    @State private var isShowingManualEnrollment = false
     @State private var isShowingEnrollmentResetConfirmation = false
 
     var body: some View {
@@ -90,20 +89,15 @@ struct RunnersView: View {
         .background(AppColors.background)
         .navigationTitle("This Mac")
         .navigationSubtitle(vm.subtitle)
-        .sheet(isPresented: $isShowingManualEnrollment) {
-            ManualFleetEnrollmentSheet()
-        }
     }
 
     private var signedOutView: some View {
         EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: "Connect this Mac to Fleet") {
             VStack(spacing: 12) {
-                Text(
-                    "Sign in to choose an ArcBox workspace, or enroll directly with a token from the web dashboard."
-                )
-                .font(.caption)
-                .foregroundStyle(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
+                Text("Sign in to choose an ArcBox workspace.")
+                    .font(.caption)
+                    .foregroundStyle(AppColors.textSecondary)
+                    .multilineTextAlignment(.center)
 
                 Button(action: signIn) {
                     HStack {
@@ -124,10 +118,6 @@ struct RunnersView: View {
                 .accessibilityLabel(
                     authSession.status == .signingIn ? "Signing in to ArcBox" : "Sign in to ArcBox"
                 )
-
-                Button("Use Enrollment Token…", action: showManualEnrollment)
-                    .buttonStyle(.bordered)
-                    .disabled(vm.isBusy)
 
                 if authSession.status == .signingIn,
                     let prompt = authSession.deviceAuthorization
@@ -180,8 +170,7 @@ struct RunnersView: View {
             canConnect: vm.canConnect,
             errorMessage: errorMessage,
             actionTitle: actionTitle,
-            onConnect: prepareEnrollment,
-            onUseEnrollmentToken: showManualEnrollment
+            onConnect: prepareEnrollment
         )
         .confirmationDialog(
             "Connect this Mac to a workspace",
@@ -269,10 +258,6 @@ struct RunnersView: View {
         Task {
             await vm.enroll(in: workspace)
         }
-    }
-
-    private func showManualEnrollment() {
-        isShowingManualEnrollment = true
     }
 
     private func setDraining(_ draining: Bool) {

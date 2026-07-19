@@ -205,6 +205,7 @@ final class RunnersViewModel {
         return succeeded
     }
 
+    /// Enrolls with a caller-supplied token; the current Desktop UI does not expose this fallback.
     @discardableResult
     func enroll(withToken token: String) async -> Bool {
         platformError = nil
