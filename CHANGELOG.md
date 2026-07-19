@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.27.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.1...v1.27.2) (2026-07-19)
+
+
+### Bug Fixes
+
+* **settings:** withhold the HV backend until the capacity fix ships ([#306](https://github.com/arcboxlabs/arcbox-desktop/issues/306)) ([af67a5c](https://github.com/arcboxlabs/arcbox-desktop/commit/af67a5cc5f7aa6748830be63de495cc9aa0b8da9))
+
+
+### Miscellaneous
+
+* bump arcbox to v0.4.24 and regenerate client protos ([#308](https://github.com/arcboxlabs/arcbox-desktop/issues/308)) ([8e24392](https://github.com/arcboxlabs/arcbox-desktop/commit/8e24392ec557d17046a82b6b90ca26d7b4267c69))
+
 ## [1.27.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.0...v1.27.1) (2026-07-19)
 
 
