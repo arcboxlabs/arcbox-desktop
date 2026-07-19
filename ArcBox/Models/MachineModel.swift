@@ -85,6 +85,14 @@ struct MachineViewModel: Identifiable, Hashable {
 
     var isRunning: Bool { state.isRunning }
 
+    /// A lifecycle transition is under way — either an RPC this session issued
+    /// (`isTransitioning`) or a daemon-reported starting/stopping state. The
+    /// row shows a spinner instead of a start/stop button while busy, so the
+    /// user can't fire a second lifecycle RPC into a racing one.
+    var isBusy: Bool {
+        isTransitioning || state == .starting || state == .stopping
+    }
+
     var resourcesDisplay: String {
         "\(cpuCores) cores, \(memoryGB) GB RAM, \(diskGB) GB disk"
     }

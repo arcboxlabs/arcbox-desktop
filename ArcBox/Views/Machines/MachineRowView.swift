@@ -71,7 +71,7 @@ struct MachineRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // Action buttons (show on hover or selection)
-            if machine.isTransitioning {
+            if machine.isBusy {
                 ProgressView()
                     .controlSize(.small)
                     .padding(.trailing, 4)

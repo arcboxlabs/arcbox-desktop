@@ -65,6 +65,20 @@ final class MachineModelTests: XCTestCase {
         XCTAssertEqual(MachineViewModel(from: summary).distro.displayName, "Linux")
     }
 
+    // MARK: - Busy state
+
+    func testTransitionStatesAndInFlightRPCAreBusy() {
+        for state in ["starting", "stopping"] {
+            var summary = makeSummary()
+            summary.state = state
+            XCTAssertTrue(MachineViewModel(from: summary).isBusy, "\(state) should be busy")
+        }
+        var running = MachineViewModel(from: makeSummary())
+        XCTAssertFalse(running.isBusy)
+        running.isTransitioning = true
+        XCTAssertTrue(running.isBusy, "an in-flight RPC should mark the row busy")
+    }
+
     func testByteSizesRoundToNearestGB() {
         var summary = makeSummary()
         // 4096 MiB - 512 MiB rounds down; + 512 MiB rounds up.

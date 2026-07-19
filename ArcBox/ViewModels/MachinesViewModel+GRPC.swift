@@ -117,7 +117,10 @@ extension MachinesViewModel {
                 options: ArcBoxClient.systemVmRestartCallOptions
             )
         } catch {
-            reportError(error, operation: "start")
+            // Starting an already-running machine is a no-op, not a failure.
+            if !ArcBoxClient.rpcMessage(error, contains: "already running") {
+                reportError(error, operation: "start")
+            }
         }
         setTransitioning(id, false)
         await loadMachines(client: client)
@@ -135,7 +138,10 @@ extension MachinesViewModel {
                 options: ArcBoxClient.systemVmRestartCallOptions
             )
         } catch {
-            reportError(error, operation: "stop")
+            // Stopping a machine that is not running is a no-op, not a failure.
+            if !ArcBoxClient.rpcMessage(error, contains: "not running") {
+                reportError(error, operation: "stop")
+            }
         }
         setTransitioning(id, false)
         await loadMachines(client: client)
