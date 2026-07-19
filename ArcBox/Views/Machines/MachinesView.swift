@@ -47,7 +47,16 @@ struct MachinesView: View {
             MachineCreateSheet()
         }
         .task(id: client != nil) {
-            await vm.loadMachines(client: client)
+            // Load immediately, then poll while the Machines tab is on screen so
+            // the list tracks out-of-band changes (external CLI, a VM that exits
+            // on its own, a machine reset to stopped after daemon recovery).
+            // MachineService has no event stream, so poll rather than watch.
+            // loadMachines preserves in-flight transition and detail state, so a
+            // poll never clobbers an action the user just triggered.
+            while !Task.isCancelled {
+                await vm.loadMachines(client: client)
+                try? await Task.sleep(for: .seconds(3))
+            }
         }
         .confirmationDialog(
             "Delete machine \(pendingDeleteID ?? "")?",
