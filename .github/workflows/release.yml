@@ -83,17 +83,28 @@ jobs:
           fetch-depth: 1
 
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
+          set -euo pipefail
           # macos runners sometimes ship untrusted third-party taps (e.g. aws/tap)
           # which brew now warns about on every invocation. Drop them before install.
           if brew tap | grep -qx 'aws/tap'; then
             brew untap aws/tap || true
           fi
-          # create-dmg: UDZO packaging.
+
+          # create-dmg: UDZO packaging (homebrew-core).
           # musl-cross: aarch64-linux-musl-strip for guest ELF payloads (dockerd
-          # etc.). Apple's /usr/bin/strip fails on some static Go ELFs.
-          brew install create-dmg musl-cross
+          # etc.). Apple's /usr/bin/strip fails on some static Go ELFs. The
+          # formula lives in a third-party tap, not homebrew-core — bare
+          # `brew install musl-cross` fails with "No available formula".
+          brew tap filosottile/musl-cross
+          # Homebrew 5.x requires explicit trust for non-official taps.
+          brew trust --tap filosottile/musl-cross 2>/dev/null \
+            || brew trust filosottile/musl-cross 2>/dev/null \
+            || true
+          brew install create-dmg filosottile/musl-cross/musl-cross
+          command -v create-dmg
+          command -v aarch64-linux-musl-strip
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v6
