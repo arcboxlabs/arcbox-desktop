@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.28.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.3...v1.28.0) (2026-07-19)
+
+
+### Features
+
+* **machines:** live list via MachineService.Events instead of polling ([2e60c8e](https://github.com/arcboxlabs/arcbox-desktop/commit/2e60c8e71765e5fac4d8202876c2441b856ce29b))
+
+
+### Bug Fixes
+
+* **machines:** re-list on every event-stream (re)connect ([9405568](https://github.com/arcboxlabs/arcbox-desktop/commit/9405568eb965f7b53c5e0766d28a04b19ec24511))
+
+
+### Performance
+
+* **dmg:** drop duplicate host Docker CLI and strip shipped binaries ([#313](https://github.com/arcboxlabs/arcbox-desktop/issues/313)) ([fd4c220](https://github.com/arcboxlabs/arcbox-desktop/commit/fd4c220ee80368ec0b8e650f08378990f8a8e186))
+
+
+### CI
+
+* **release:** clear Node 20 and brew tap annotations ([#314](https://github.com/arcboxlabs/arcbox-desktop/issues/314)) ([ae0b633](https://github.com/arcboxlabs/arcbox-desktop/commit/ae0b633800758b9bcaad0440dddedc3636a21546))
+
 ## [1.27.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.2...v1.27.3) (2026-07-19)
 
 
