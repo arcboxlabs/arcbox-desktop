@@ -569,7 +569,9 @@ fn embed_guest_binaries(app_bundle: &Path, arcbox_dir: &Path) -> Result<()> {
             println!("  Warning: {name} not found at {}", src.display());
             continue;
         }
-        std::fs::copy(&src, dest_dir.join(name)).with_context(|| format!("copying {name}"))?;
+        let dest = dest_dir.join(name);
+        std::fs::copy(&src, &dest).with_context(|| format!("copying {name}"))?;
+        strip_binary_best_effort(&dest);
         println!("  Copied {name} → Resources/bin/{name}");
     }
     Ok(())
@@ -590,6 +592,9 @@ fn embed_docker_tools(
         if src.is_file() {
             let dst = dest_dir.join(tool);
             std::fs::copy(&src, &dst).with_context(|| format!("copying {tool}"))?;
+            // Strip before codesign. Go CLIs often ship with symbol tables;
+            // only keep the stripped file when it actually got smaller.
+            strip_binary_best_effort(&dst);
             sign_binary(&dst, sign_identity)?;
             println!("  Embedded {tool} → MacOS/xbin/{tool}");
             count += 1;
@@ -631,12 +636,27 @@ fn embed_runtime(app_bundle: &Path, sign_identity: &str, profile: BundleProfile)
                 .path()
                 .strip_prefix(&runtime_src)
                 .expect("under runtime_src");
+            // Host Docker CLI tools are installed into ~/.arcbox/runtime/bin by
+            // `abctl docker setup` for non-bundle PATH use, and separately
+            // embedded into MacOS/xbin for /usr/local/bin symlinks. They are
+            // Mach-O and useless inside the guest VirtioFS seed — skip them so
+            // the DMG does not ship a second ~130MB copy.
+            if xfs::is_macho(entry.path()) {
+                println!(
+                    "  Skipping host binary {} (MacOS/xbin holds Docker CLI)",
+                    rel.display()
+                );
+                continue;
+            }
             let dest = runtime_dest.join(rel);
             if let Some(parent) = dest.parent() {
                 std::fs::create_dir_all(parent)?;
             }
             std::fs::copy(entry.path(), &dest)
                 .with_context(|| format!("copying runtime file {}", rel.display()))?;
+            // Drop DWARF / symbol tables from guest ELFs before codesign.
+            // Upstream dockerd/runc/firecracker releases often ship unstripped.
+            strip_binary_best_effort(&dest);
             sign_binary(&dest, sign_identity)?;
             println!("  Embedded {}", rel.display());
             count += 1;
@@ -650,6 +670,85 @@ fn embed_runtime(app_bundle: &Path, sign_identity: &str, profile: BundleProfile)
         let _ = std::fs::remove_dir_all(&runtime_dest);
     }
     Ok(())
+}
+
+/// Prefer Apple's `/usr/bin/strip` (stable Mach-O behaviour); fall back to PATH.
+fn strip_command() -> Command {
+    if Path::new("/usr/bin/strip").is_file() {
+        Command::new("/usr/bin/strip")
+    } else {
+        Command::new("strip")
+    }
+}
+
+/// Best-effort `strip` for Mach-O / ELF payloads embedded in the app bundle.
+///
+/// - No-op for non-binary files (e.g. Linux kernel Image).
+/// - Runs strip on a temp copy and only replaces the original when the result
+///   is strictly smaller, so tools that grow under strip (some Go binaries)
+///   are left alone.
+/// - Failures are logged and ignored — a larger binary beats a broken pack.
+fn strip_binary_best_effort(path: &Path) {
+    if !xfs::is_elf(path) && !xfs::is_macho(path) {
+        return;
+    }
+    let before = match std::fs::metadata(path) {
+        Ok(m) => m.len(),
+        Err(_) => return,
+    };
+    let tmp = path.with_extension("strip-tmp");
+    if let Err(e) = std::fs::copy(path, &tmp) {
+        println!("  Warning: strip prepare {}: {e}", path.display());
+        return;
+    }
+    let status = strip_command().arg(&tmp).status();
+    match status {
+        Ok(s) if s.success() => {
+            let after = std::fs::metadata(&tmp).map(|m| m.len()).unwrap_or(before);
+            if after < before {
+                if let Err(e) = std::fs::rename(&tmp, path) {
+                    println!("  Warning: strip install {}: {e}", path.display());
+                    let _ = std::fs::remove_file(&tmp);
+                    return;
+                }
+                println!(
+                    "  Stripped {} ({:.1} → {:.1} MB)",
+                    path.file_name().and_then(|n| n.to_str()).unwrap_or("?"),
+                    before as f64 / (1024.0 * 1024.0),
+                    after as f64 / (1024.0 * 1024.0)
+                );
+            } else {
+                let _ = std::fs::remove_file(&tmp);
+            }
+        }
+        Ok(s) => {
+            let _ = std::fs::remove_file(&tmp);
+            println!(
+                "  Warning: strip {} exited {}",
+                path.display(),
+                s.code().unwrap_or(-1)
+            );
+        }
+        Err(e) => {
+            let _ = std::fs::remove_file(&tmp);
+            println!("  Warning: strip {}: {e}", path.display());
+        }
+    }
+}
+
+/// Strip the main app executable if Xcode left local symbols in place.
+/// dSYMs (when produced) remain beside DerivedData for crash symbolication.
+fn strip_app_executable(app_bundle: &Path, profile: BundleProfile) {
+    println!("--- Stripping app executable ---");
+    let exe = app_bundle
+        .join("Contents")
+        .join("MacOS")
+        .join(profile.app_name());
+    if exe.is_file() {
+        strip_binary_best_effort(&exe);
+    } else {
+        println!("  Warning: app executable not found at {}", exe.display());
+    }
 }
 
 fn embed_completions(app_bundle: &Path) -> Result<()> {
@@ -1042,6 +1141,10 @@ pub fn run(args: MacosDmgArgs) -> Result<()> {
         args.provisioning_profile.as_deref(),
     )?;
     rewrite_launch_agent_plist(&app_bundle, profile)?;
+    // After all embeds, before codesign — drop local symbols from the Swift
+    // main binary. Xcode Release also sets STRIP_INSTALLED_PRODUCT; this is a
+    // belt-and-suspenders pass that still helps when the build left symbols in.
+    strip_app_executable(&app_bundle, profile);
 
     if !sign_identity.is_empty() {
         sign_app_bundle(

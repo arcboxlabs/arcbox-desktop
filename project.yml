@@ -106,9 +106,15 @@ settings:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG $(inherited)
       SWIFT_OPTIMIZATION_LEVEL: -Onone
     Release:
+      # Keep dSYMs for crash symbolication; strip the installed binary so the
+      # shipped ArcBox Mach-O drops local symbols (~64MB → ~25MB on arm64).
+      COPY_PHASE_STRIP: YES
       DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      DEPLOYMENT_POSTPROCESSING: YES
       ENABLE_NS_ASSERTIONS: NO
       MTL_ENABLE_DEBUG_INFO: NO
+      STRIP_INSTALLED_PRODUCT: YES
+      STRIP_STYLE: all
       SWIFT_COMPILATION_MODE: wholemodule
 
 targets:
