@@ -173,6 +173,18 @@ public enum Arcbox_V1_MachineService {
                 method: "SSHInfo"
             )
         }
+        /// Namespace for "Events" metadata.
+        public enum Events {
+            /// Request type for "Events".
+            public typealias Input = Arcbox_V1_MachineEventsRequest
+            /// Response type for "Events".
+            public typealias Output = Arcbox_V1_MachineEvent
+            /// Descriptor for "Events".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "Events"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.MachineService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Create.descriptor,
@@ -186,7 +198,8 @@ public enum Arcbox_V1_MachineService {
             CompactDisk.descriptor,
             Exec.descriptor,
             ExecSession.descriptor,
-            SSHInfo.descriptor
+            SSHInfo.descriptor,
+            Events.descriptor
         ]
     }
 }
@@ -435,6 +448,28 @@ extension Arcbox_V1_MachineService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_SSHInfoRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SSHInfoResponse>
+
+        /// Handle the "Events" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Subscribes to machine lifecycle events. The stream stays open until the
+        /// > client disconnects. Emitted actions:
+        /// >   "created" | "started" | "idle" | "stopped" | "removed"
+        /// > plus "resync" (empty name) when the server dropped events under load and
+        /// > the client should re-list. Events for the default System VM are included.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_MachineEventsRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineEvent` messages.
+        func events(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_MachineEventsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineEvent>
     }
 
     /// Service protocol for the "arcbox.v1.MachineService" service.
@@ -668,6 +703,28 @@ extension Arcbox_V1_MachineService {
             request: GRPCCore.ServerRequest<Arcbox_V1_SSHInfoRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SSHInfoResponse>
+
+        /// Handle the "Events" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Subscribes to machine lifecycle events. The stream stays open until the
+        /// > client disconnects. Emitted actions:
+        /// >   "created" | "started" | "idle" | "stopped" | "removed"
+        /// > plus "resync" (empty name) when the server dropped events under load and
+        /// > the client should re-list. Events for the default System VM are included.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_MachineEventsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineEvent` messages.
+        func events(
+            request: GRPCCore.ServerRequest<Arcbox_V1_MachineEventsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineEvent>
     }
 
     /// Simple service protocol for the "arcbox.v1.MachineService" service.
@@ -901,6 +958,29 @@ extension Arcbox_V1_MachineService {
             request: Arcbox_V1_SSHInfoRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_SSHInfoResponse
+
+        /// Handle the "Events" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Subscribes to machine lifecycle events. The stream stays open until the
+        /// > client disconnects. Emitted actions:
+        /// >   "created" | "started" | "idle" | "stopped" | "removed"
+        /// > plus "resync" (empty name) when the server dropped events under load and
+        /// > the client should re-list. Events for the default System VM are included.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_MachineEventsRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_MachineEvent` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func events(
+            request: Arcbox_V1_MachineEventsRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_MachineEvent>,
+            context: GRPCCore.ServerContext
+        ) async throws
     }
 }
 
@@ -1040,6 +1120,17 @@ extension Arcbox_V1_MachineService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.Events.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineEventsRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineEvent>(),
+            handler: { request, context in
+                try await self.events(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -1165,6 +1256,17 @@ extension Arcbox_V1_MachineService.ServiceProtocol {
             context: context
         )
         return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func events(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_MachineEventsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineEvent> {
+        let response = try await self.events(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
     }
 }
 
@@ -1332,6 +1434,23 @@ extension Arcbox_V1_MachineService.SimpleServiceProtocol {
                 context: context
             ),
             metadata: [:]
+        )
+    }
+
+    public func events(
+        request: GRPCCore.ServerRequest<Arcbox_V1_MachineEventsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineEvent> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_MachineEvent>(
+            metadata: [:],
+            producer: { writer in
+                try await self.events(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
         )
     }
 }
@@ -1627,6 +1746,33 @@ extension Arcbox_V1_MachineService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SSHInfoResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SSHInfoResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Events" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Subscribes to machine lifecycle events. The stream stays open until the
+        /// > client disconnects. Emitted actions:
+        /// >   "created" | "started" | "idle" | "stopped" | "removed"
+        /// > plus "resync" (empty name) when the server dropped events under load and
+        /// > the client should re-list. Events for the default System VM are included.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_MachineEventsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_MachineEventsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func events<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_MachineEventsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_MachineEventsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineEvent>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineEvent>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2057,6 +2203,42 @@ extension Arcbox_V1_MachineService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "Events" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Subscribes to machine lifecycle events. The stream stays open until the
+        /// > client disconnects. Emitted actions:
+        /// >   "created" | "started" | "idle" | "stopped" | "removed"
+        /// > plus "resync" (empty name) when the server dropped events under load and
+        /// > the client should re-list. Events for the default System VM are included.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_MachineEventsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_MachineEventsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineEvent` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func events<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_MachineEventsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_MachineEventsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineEvent>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineEvent>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.Events.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2405,6 +2587,37 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SSHInfoRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SSHInfoResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Events" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Subscribes to machine lifecycle events. The stream stays open until the
+    /// > client disconnects. Emitted actions:
+    /// >   "created" | "started" | "idle" | "stopped" | "removed"
+    /// > plus "resync" (empty name) when the server dropped events under load and
+    /// > the client should re-list. Events for the default System VM are included.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_MachineEventsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func events<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_MachineEventsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.events(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineEventsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineEvent>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2804,6 +3017,41 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             metadata: metadata
         )
         return try await self.sshInfo(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Events" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Subscribes to machine lifecycle events. The stream stays open until the
+    /// > client disconnects. Emitted actions:
+    /// >   "created" | "started" | "idle" | "stopped" | "removed"
+    /// > plus "resync" (empty name) when the server dropped events under load and
+    /// > the client should re-list. Events for the default System VM are included.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func events<Result>(
+        _ message: Arcbox_V1_MachineEventsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineEvent>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_MachineEventsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.events(
             request: request,
             options: options,
             onResponse: handleResponse
