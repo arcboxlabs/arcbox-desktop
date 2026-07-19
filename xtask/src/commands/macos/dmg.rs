@@ -119,6 +119,7 @@ fn build_swift_app(
     profile: BundleProfile,
     build_number: &str,
     sign_identity: &str,
+    skip_xcode_embed: bool,
 ) -> Result<PathBuf> {
     println!("--- Building Swift app ---");
     let derived_data = desktop_repo.join(".build").join("DerivedData");
@@ -150,6 +151,13 @@ fn build_swift_app(
     if !sign_identity.is_empty() {
         cmd.arg(format!("CODE_SIGN_IDENTITY={sign_identity}"))
             .arg("CODE_SIGN_STYLE=Manual");
+    }
+    // Packaging re-embeds host/guest binaries after the Swift build. Skipping
+    // the Xcode embed phase avoids a second copy/sign pass (and any residual
+    // cargo work) during CI release builds.
+    if skip_xcode_embed {
+        cmd.env("SKIP_RUST_BUILD", "1");
+        println!("  SKIP_RUST_BUILD=1 (packaging will embed binaries)");
     }
 
     let status = cmd.status().context("running xcodebuild")?;
@@ -508,18 +516,39 @@ fn embed_boot_assets(app_bundle: &Path, arcbox_dir: &Path, profile: BundleProfil
     Ok(())
 }
 
-fn embed_abctl(app_bundle: &Path, arcbox_dir: &Path, sign_identity: &str) -> Result<()> {
-    let cli_bin = arcbox_dir.join("target").join("release").join("abctl");
-    if !cli_bin.is_file() {
-        return Ok(());
-    }
-    println!("--- Embedding abctl CLI ---");
+fn embed_host_cli_binaries(
+    app_bundle: &Path,
+    arcbox_dir: &Path,
+    sign_identity: &str,
+) -> Result<()> {
+    let src_dir = arcbox_dir.join("target").join("release");
     let bin_dir = app_bundle.join("Contents").join("MacOS").join("bin");
     std::fs::create_dir_all(&bin_dir)?;
-    let dst = bin_dir.join("abctl");
-    std::fs::copy(&cli_bin, &dst).context("copying abctl")?;
-    sign_binary(&dst, sign_identity)?;
+
+    // abctl is required for boot/docker tooling inside the shipped app.
+    let abctl_src = src_dir.join("abctl");
+    if !abctl_src.is_file() {
+        bail!("abctl not found at {}", abctl_src.display());
+    }
+    println!("--- Embedding host CLI binaries ---");
+    let abctl_dst = bin_dir.join("abctl");
+    std::fs::copy(&abctl_src, &abctl_dst).context("copying abctl")?;
+    sign_binary(&abctl_dst, sign_identity)?;
     println!("  Copied abctl → MacOS/bin/abctl");
+
+    // arcbox-helper is optional in older release tarballs.
+    let helper_src = src_dir.join("arcbox-helper");
+    if helper_src.is_file() {
+        let helper_dst = bin_dir.join("arcbox-helper");
+        std::fs::copy(&helper_src, &helper_dst).context("copying arcbox-helper")?;
+        sign_binary(&helper_dst, sign_identity)?;
+        println!("  Copied arcbox-helper → MacOS/bin/arcbox-helper");
+    } else {
+        println!(
+            "  Warning: arcbox-helper not found at {}, skipping",
+            helper_src.display()
+        );
+    }
     Ok(())
 }
 
@@ -968,6 +997,8 @@ pub fn run(args: MacosDmgArgs) -> Result<()> {
         }
     );
     println!("  Notarize     : {}", args.notarize);
+    println!("  Skip resources: {}", args.skip_resources);
+    println!("  Skip Xcode embed: {}", args.skip_xcode_embed);
 
     // 1. Build Swift app, then copy to staging.
     let built_app = build_swift_app(
@@ -976,6 +1007,7 @@ pub fn run(args: MacosDmgArgs) -> Result<()> {
         profile,
         &build_number,
         &sign_identity,
+        args.skip_xcode_embed,
     )?;
     if app_bundle.exists() {
         std::fs::remove_dir_all(&app_bundle)
@@ -989,9 +1021,13 @@ pub fn run(args: MacosDmgArgs) -> Result<()> {
     inject_telemetry_keys(&app_bundle, &args)?;
     inject_profile_key(&app_bundle, profile)?;
 
-    prepare_profile_resources(&desktop_repo, &arcbox_dir, profile, &resource_options)?;
+    if args.skip_resources {
+        println!("--- Skipping profile resource prefetch (already prepared) ---");
+    } else {
+        prepare_profile_resources(&desktop_repo, &arcbox_dir, profile, &resource_options)?;
+    }
     embed_boot_assets(&app_bundle, &arcbox_dir, profile)?;
-    embed_abctl(&app_bundle, &arcbox_dir, &sign_identity)?;
+    embed_host_cli_binaries(&app_bundle, &arcbox_dir, &sign_identity)?;
     embed_guest_binaries(&app_bundle, &arcbox_dir)?;
     embed_docker_tools(&app_bundle, &sign_identity, profile)?;
     embed_runtime(&app_bundle, &sign_identity, profile)?;

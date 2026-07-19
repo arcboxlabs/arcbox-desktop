@@ -16,8 +16,13 @@ on:
         default: 'master'
         type: string
 
+concurrency:
+  group: release-dmg-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
+  SPARKLE_VERSION: '2.9.0'
 
 jobs:
   build-dmg:
@@ -37,6 +42,8 @@ jobs:
       - name: Checkout arcbox-desktop
         uses: actions/checkout@v6
         with:
+          # Full history only needed for git rev-list --count (build number).
+          # Shallow+unshallow is slower than a single full fetch on this repo.
           fetch-depth: 0
 
       - name: Setup Rust
@@ -72,10 +79,12 @@ jobs:
           repository: arcboxlabs/arcbox
           path: arcbox-core
           ref: ${{ steps.resolve.outputs.ref }}
+          # Only need sources for assets.lock / entitlements / Makefile fallback.
+          fetch-depth: 1
 
       - name: Install dependencies
         timeout-minutes: 5
-        run: brew install protobuf create-dmg
+        run: brew install create-dmg
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v6
@@ -115,6 +124,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           REF="${{ steps.resolve.outputs.ref }}"
 
           # Resolve which release to download:
@@ -148,13 +158,14 @@ jobs:
           done
 
           echo "Extracted contents:"
-          find "$DOWNLOAD_DIR" -type f | head -20
+          find "$DOWNLOAD_DIR" -type f | head -40
 
-          # Find CLI, daemon, and agent binaries
+          # Find host + guest binaries
           mkdir -p arcbox-core/target/release
           mkdir -p arcbox-core/target/aarch64-unknown-linux-musl/release
           CLI_BIN=$(find "$DOWNLOAD_DIR" -type f -name "abctl" | head -1)
           DAEMON_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-daemon" | head -1)
+          HELPER_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-helper" | head -1)
           AGENT_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-agent" | head -1)
           VM_AGENT_BIN=$(find "$DOWNLOAD_DIR" -type f -name "vm-agent" | head -1)
 
@@ -165,6 +176,15 @@ jobs:
 
           cp "$CLI_BIN" arcbox-core/target/release/abctl
           cp "$DAEMON_BIN" arcbox-core/target/release/arcbox-daemon
+          chmod +x arcbox-core/target/release/abctl arcbox-core/target/release/arcbox-daemon
+
+          if [ -n "$HELPER_BIN" ]; then
+            cp "$HELPER_BIN" arcbox-core/target/release/arcbox-helper
+            chmod +x arcbox-core/target/release/arcbox-helper
+            echo "Found arcbox-helper in release assets"
+          else
+            echo "::warning::arcbox-helper not found in release assets"
+          fi
 
           if [ -n "$AGENT_BIN" ]; then
             cp "$AGENT_BIN" arcbox-core/target/aarch64-unknown-linux-musl/release/arcbox-agent
@@ -184,14 +204,25 @@ jobs:
             echo "::warning::vm-agent not found in release assets"
           fi
 
-          # Copy entitlements if present
-          ENTITLEMENTS=$(find "$DOWNLOAD_DIR" -type f -name "entitlements.plist" | head -1)
+          # Prefer the bundle/ tree from the release tarball (source of truth for
+          # daemon entitlements). Fall back to loose entitlements.plist.
+          BUNDLE_DIR=$(find "$DOWNLOAD_DIR" -type d -name "bundle" | head -1)
+          if [ -n "$BUNDLE_DIR" ]; then
+            mkdir -p arcbox-core/bundle
+            cp -R "$BUNDLE_DIR"/. arcbox-core/bundle/
+            echo "Installed bundle/ from release assets"
+          fi
+
+          ENTITLEMENTS=$(find "$DOWNLOAD_DIR" -type f \( -name "arcbox.entitlements" -o -name "entitlements.plist" \) | head -1)
           if [ -n "$ENTITLEMENTS" ]; then
-            mkdir -p arcbox-core/tests/resources
+            mkdir -p arcbox-core/bundle arcbox-core/tests/resources
+            # Canonical path used by xtask packaging.
+            if [ ! -f arcbox-core/bundle/arcbox.entitlements ]; then
+              cp "$ENTITLEMENTS" arcbox-core/bundle/arcbox.entitlements
+            fi
             cp "$ENTITLEMENTS" arcbox-core/tests/resources/entitlements.plist
           fi
 
-          chmod +x arcbox-core/target/release/abctl arcbox-core/target/release/arcbox-daemon
           file arcbox-core/target/release/abctl arcbox-core/target/release/arcbox-daemon
           echo "found=true" >> "$GITHUB_OUTPUT"
 
@@ -200,7 +231,11 @@ jobs:
         if: steps.prebuilt.outputs.found != 'true'
         uses: actions/cache/restore@v6
         with:
-          path: arcbox-core/target/release/
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            arcbox-core/target/
           key: ${{ runner.os }}-${{ runner.arch }}-cargo-arcbox-release-${{ hashFiles('arcbox-core/**/Cargo.lock') }}-${{ steps.checkout_arcbox.outputs.commit }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-cargo-arcbox-release-${{ hashFiles('arcbox-core/**/Cargo.lock') }}-
@@ -208,15 +243,19 @@ jobs:
 
       - name: Build Rust binaries (release)
         if: steps.prebuilt.outputs.found != 'true'
-        timeout-minutes: 15
-        working-directory: arcbox-core
-        run: cargo build --release --locked -p arcbox-cli -p arcbox-daemon -p arcbox-helper
+        timeout-minutes: 30
+        run: |
+          make build-rust ARCBOX_DIR="${{ github.workspace }}/arcbox-core"
 
       - name: Save arcbox Rust build cache
-        if: steps.prebuilt.outputs.found != 'true' && github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && steps.arcbox_rust_cache.outputs.cache-hit != 'true'
+        if: steps.prebuilt.outputs.found != 'true' && steps.arcbox_rust_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
-          path: arcbox-core/target/release/
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            arcbox-core/target/
           key: ${{ steps.arcbox_rust_cache.outputs.cache-primary-key }}
 
       - name: Prefetch boot assets + Docker tools
@@ -243,7 +282,7 @@ jobs:
           file pstramp/target/release/pstramp
 
       - name: Symlink arcbox repo for Xcode build phase
-        run: ln -s "$GITHUB_WORKSPACE/arcbox-core" ../arcbox
+        run: ln -sfn "$GITHUB_WORKSPACE/arcbox-core" ../arcbox
 
       - name: Create Local.xcconfig
         run: |
@@ -305,23 +344,35 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
         run: |
+          set -euo pipefail
           /usr/bin/time -lp make dmg-release \
             ARCBOX_DIR="${{ github.workspace }}/arcbox-core" \
             SKIP_BUILD=1 \
+            SKIP_RESOURCES=1 \
+            SKIP_XCODE_EMBED=1 \
             SIGN_IDENTITY="${{ secrets.APPLE_SIGNING_IDENTITY }}" \
             VERSION="${{ steps.resolve.outputs.version }}" \
             SPARKLE_FEED_URL="https://release.arcboxcdn.com/desktop/appcast/${{ steps.resolve.outputs.channel }}.xml" \
             NOTARIZE=1 \
             PROVISIONING_PROFILE="$RUNNER_TEMP/embedded.provisionprofile"
-          DMG_PATH=$(find "${{ github.workspace }}/arcbox-core/target" \
-            -maxdepth 1 -type f -name 'ArcBox-*.dmg' -print -quit)
-          DMG_NAME=$(basename "$DMG_PATH")
-          BUILD_NUMBER=$(git rev-list --count HEAD)
-          {
-            echo "dmg=$DMG_NAME"
-            echo "dmg_path=$DMG_PATH"
-            echo "build_number=$BUILD_NUMBER"
-          } >> "$GITHUB_OUTPUT"
+
+          # Prefer outputs written by xtask (dmg / dmg_path / build_number).
+          # Fall back to a filesystem scan if GITHUB_OUTPUT was not available.
+          if ! grep -q '^dmg_path=' "$GITHUB_OUTPUT" 2>/dev/null; then
+            DMG_PATH=$(find "${{ github.workspace }}/arcbox-core/target" \
+              -maxdepth 1 -type f -name 'ArcBox-*.dmg' -print -quit)
+            if [ -z "$DMG_PATH" ]; then
+              echo "::error::DMG not found under arcbox-core/target"
+              exit 1
+            fi
+            {
+              echo "dmg=$(basename "$DMG_PATH")"
+              echo "dmg_path=$DMG_PATH"
+            } >> "$GITHUB_OUTPUT"
+          fi
+          if ! grep -q '^build_number=' "$GITHUB_OUTPUT" 2>/dev/null; then
+            echo "build_number=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Verify release architecture
         run: |
@@ -333,6 +384,16 @@ jobs:
             echo "::error::Expected ARM64-only app binary, found: $ARCHITECTURES"
             exit 1
           fi
+          # Confirm packaging embedded the prebuilt host binaries.
+          for bin in abctl arcbox-helper; do
+            path="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/bin/$bin"
+            if [ -f "$path" ]; then
+              file "$path"
+            else
+              echo "::warning::$bin missing from packaged app (optional for older arcbox releases)"
+            fi
+          done
+          test -f "${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/bin/abctl"
 
       - name: Report build cache sizes
         if: always()
@@ -351,6 +412,33 @@ jobs:
             fi
           done
 
+      - name: Save desktop Rust tooling cache
+        if: success() && steps.desktop_rust_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            xtask/target/
+          key: ${{ steps.desktop_rust_cache.outputs.cache-primary-key }}
+
+      - name: Save Swift package cache
+        if: success() && steps.swift_packages_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .build/SourcePackages/
+          key: ${{ steps.swift_packages_cache.outputs.cache-primary-key }}
+
+      - name: Save Xcode build cache
+        if: success() && steps.xcode_build_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .build/DerivedData/Build/
+            .build/DerivedData/ModuleCache.noindex/
+          key: ${{ steps.xcode_build_cache.outputs.cache-primary-key }}
+
       - name: Generate checksum
         run: |
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
@@ -362,12 +450,12 @@ jobs:
         uses: actions/cache@v6
         with:
           path: /tmp/sparkle-bin
-          key: sparkle-sign-update-2.9.0
+          key: sparkle-sign-update-${{ env.SPARKLE_VERSION }}
 
       - name: Download Sparkle sign_update
         if: steps.sparkle_cache.outputs.cache-hit != 'true'
         run: |
-          SPARKLE_VER="2.9.0"
+          SPARKLE_VER="${{ env.SPARKLE_VERSION }}"
           curl -fSL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz" \
             -o "$RUNNER_TEMP/Sparkle.tar.xz"
           tar xJf "$RUNNER_TEMP/Sparkle.tar.xz" -C "$RUNNER_TEMP"
@@ -418,6 +506,27 @@ jobs:
           echo "EdDSA signature: ${ED_SIGNATURE:0:20}..."
           echo "DMG length: $DMG_LENGTH"
 
+      - name: Cache sentry-cli
+        id: sentry_cli_cache
+        if: ${{ vars.SENTRY_ORG != '' }}
+        uses: actions/cache@v6
+        with:
+          path: /tmp/sentry-cli
+          # Bump the suffix when pinning a new sentry-cli release.
+          key: sentry-cli-macos-arm64-2.46.0
+
+      - name: Install sentry-cli
+        if: ${{ vars.SENTRY_ORG != '' && steps.sentry_cli_cache.outputs.cache-hit != 'true' }}
+        run: |
+          set -euo pipefail
+          SENTRY_CLI_VER=2.46.0
+          mkdir -p /tmp/sentry-cli
+          curl -fSL \
+            "https://github.com/getsentry/sentry-cli/releases/download/${SENTRY_CLI_VER}/sentry-cli-Darwin-arm64" \
+            -o /tmp/sentry-cli/sentry-cli
+          chmod +x /tmp/sentry-cli/sentry-cli
+          /tmp/sentry-cli/sentry-cli --version
+
       - name: Upload dSYMs to Sentry
         if: ${{ vars.SENTRY_ORG != '' }}
         env:
@@ -426,22 +535,36 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           VERSION: ${{ steps.resolve.outputs.version }}
         run: |
-          # Install sentry-cli
-          brew install getsentry/tools/sentry-cli
+          set -euo pipefail
+          SENTRY_CLI=/tmp/sentry-cli/sentry-cli
+          if [ ! -x "$SENTRY_CLI" ]; then
+            echo "::error::sentry-cli missing at $SENTRY_CLI"
+            exit 1
+          fi
 
-          # Upload dSYMs from build output
-          DSYM_DIR="${{ steps.dmg.outputs.dmg_path }}"
-          DSYM_DIR="${DSYM_DIR%/*}"
-          find "${DSYM_DIR}" "$HOME/Library/Developer/Xcode/DerivedData" \
-            -name "*.dSYM" -type d 2>/dev/null | head -20 | while read -r dsym; do
-            echo "Uploading dSYM: $dsym"
-            sentry-cli debug-files upload --include-sources "$dsym" || true
+          # Prefer the deterministic DerivedData path used by xtask packaging.
+          DSYM_ROOTS=(
+            "${{ github.workspace }}/.build/DerivedData/Build/Products/Release"
+            "${{ github.workspace }}/arcbox-core/target/dmg-build"
+          )
+          uploaded=0
+          for root in "${DSYM_ROOTS[@]}"; do
+            [ -d "$root" ] || continue
+            while IFS= read -r -d '' dsym; do
+              echo "Uploading dSYM: $dsym"
+              "$SENTRY_CLI" debug-files upload --include-sources "$dsym"
+              uploaded=$((uploaded + 1))
+            done < <(find "$root" -name '*.dSYM' -type d -print0 2>/dev/null)
           done
+          if [ "$uploaded" -eq 0 ]; then
+            echo "::warning::No dSYMs found under packaging output paths"
+          else
+            echo "Uploaded $uploaded dSYM bundle(s)"
+          fi
 
-          # Create Sentry release
-          sentry-cli releases new "$VERSION"
-          sentry-cli releases set-commits "$VERSION" --auto
-          sentry-cli releases finalize "$VERSION"
+          "$SENTRY_CLI" releases new "$VERSION" || true
+          "$SENTRY_CLI" releases set-commits "$VERSION" --auto || true
+          "$SENTRY_CLI" releases finalize "$VERSION" || true
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v6
@@ -508,14 +631,6 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
       - name: Download DMG artifact
         uses: actions/download-artifact@v4
         with:
@@ -548,90 +663,153 @@ jobs:
           [ -s notes.html ]
           echo "found=true" >> "$GITHUB_OUTPUT"
 
-      - name: Download existing appcast from CDN
-        id: existing_appcast
+      - name: Generate appcast + latest.json
+        id: feeds
         uses: actions/github-script@v7
         env:
+          VERSION: ${{ steps.channel.outputs.version }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
+          BUILD_NUMBER: ${{ needs.build-dmg.outputs.build_number }}
+          DMG_NAME: ${{ needs.build-dmg.outputs.dmg }}
+          DMG_LENGTH: ${{ needs.build-dmg.outputs.dmg_length }}
+          ED_SIGNATURE: ${{ needs.build-dmg.outputs.ed_signature }}
+          HAS_NOTES: ${{ steps.release_notes.outputs.found }}
         with:
           script: |
             const fs = require('fs');
-            const { CHANNEL } = process.env;
-            const url = `https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml`;
-            const res = await fetch(url, { signal: AbortSignal.timeout(15000) }).catch(() => null);
-            if (res && res.ok) {
-              fs.mkdirSync('existing', { recursive: true });
-              fs.writeFileSync('existing/appcast.xml', Buffer.from(await res.arrayBuffer()));
-              core.setOutput('found', 'true');
-              core.info(`Fetched existing appcast for channel ${CHANNEL}`);
-            } else {
-              core.setOutput('found', 'false');
-              core.info(`No existing appcast for channel ${CHANNEL} (creating fresh)`);
+            const path = require('path');
+
+            const {
+              VERSION, CHANNEL, BUILD_NUMBER, DMG_NAME, DMG_LENGTH, ED_SIGNATURE, HAS_NOTES,
+            } = process.env;
+            const displayVersion = VERSION.replace(/^v/, '');
+            const dmgUrl = `https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}`;
+            const minMacos = '15.0';
+
+            async function fetchOptional(url) {
+              try {
+                const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+                if (!res.ok) return null;
+                return Buffer.from(await res.arrayBuffer()).toString('utf8');
+              } catch {
+                return null;
+              }
             }
 
-      - name: Download existing latest.json from CDN
-        id: existing_latest
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const url = 'https://release.arcboxcdn.com/desktop/latest.json';
-            const res = await fetch(url, { signal: AbortSignal.timeout(15000) }).catch(() => null);
-            if (res && res.ok) {
-              fs.mkdirSync('existing', { recursive: true });
-              fs.writeFileSync('existing/latest.json', Buffer.from(await res.arrayBuffer()));
-              core.setOutput('found', 'true');
-              core.info('Fetched existing latest.json');
-            } else {
-              core.setOutput('found', 'false');
-              core.info('No existing latest.json (creating fresh)');
+            function cdata(text) {
+              return `<![CDATA[${text.replaceAll(']]>', ']]]]><![CDATA[>')}]]>`;
             }
 
-      - name: Generate appcast
-        run: |
-          VERSION="${{ steps.channel.outputs.version }}"
-          CHANNEL="${{ steps.channel.outputs.channel }}"
-          DMG_NAME="${{ needs.build-dmg.outputs.dmg }}"
-          DMG_URL="https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}"
+            function rfc2822Now() {
+              // Match Python email.utils.formatdate(usegmt=True) / xtask output.
+              return new Date().toUTCString().replace(/GMT$/, 'GMT').replace(/UTC$/, 'GMT');
+            }
 
-          APPCAST_ARGS=(
-            --version "$VERSION"
-            --build-number "${{ needs.build-dmg.outputs.build_number }}"
-            --dmg-url "$DMG_URL"
-            --dmg-length "${{ needs.build-dmg.outputs.dmg_length }}"
-            --ed-signature "${{ needs.build-dmg.outputs.ed_signature }}"
-            --channel "$CHANNEL"
-            --min-macos "15.0"
-            --output "cdn-staging/desktop/appcast/${CHANNEL}.xml"
-          )
+            function buildItem({ releaseNotesHtml }) {
+              const channelElement = CHANNEL !== 'stable'
+                ? `\n        <sparkle:channel>${CHANNEL}</sparkle:channel>`
+                : '';
+              const notesElement = releaseNotesHtml
+                ? `        <description>${cdata(releaseNotesHtml)}</description>`
+                : `        <sparkle:releaseNotesLink>https://github.com/arcboxlabs/arcbox-desktop/releases/tag/v${displayVersion}</sparkle:releaseNotesLink>`;
+              return [
+                '      <item>',
+                `        <title>ArcBox ${displayVersion}</title>`,
+                notesElement,
+                `        <pubDate>${rfc2822Now()}</pubDate>`,
+                `        <sparkle:version>${BUILD_NUMBER}</sparkle:version>`,
+                `        <sparkle:shortVersionString>${displayVersion}</sparkle:shortVersionString>${channelElement}`,
+                `        <sparkle:minimumSystemVersion>${minMacos}</sparkle:minimumSystemVersion>`,
+                '        <enclosure',
+                `          url="${dmgUrl}"`,
+                `          length="${DMG_LENGTH}"`,
+                '          type="application/octet-stream"',
+                `          sparkle:edSignature="${ED_SIGNATURE}"`,
+                '        />',
+                '      </item>',
+              ].join('\n');
+            }
 
-          if [ "${{ steps.existing_appcast.outputs.found }}" = "true" ]; then
-            APPCAST_ARGS+=("--existing" "existing/appcast.xml")
-          fi
+            function newAppcast(item) {
+              return [
+                '<?xml version="1.0" encoding="utf-8"?>',
+                '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">',
+                '  <channel>',
+                '    <title>ArcBox</title>',
+                '    <link>https://arcbox.dev</link>',
+                '    <description>ArcBox release feed</description>',
+                '    <language>en</language>',
+                item,
+                '    </channel>',
+                '  </rss>',
+                '',
+              ].join('\n');
+            }
 
-          if [ "${{ steps.release_notes.outputs.found }}" = "true" ]; then
-            APPCAST_ARGS+=("--release-notes-html" "notes.html")
-          fi
+            function mergeAppcast(existing, item) {
+              // Drop any existing <item> matching this version by shortVersionString or sparkle:version.
+              let merged = existing.replace(/\s*<item>[\s\S]*?<\/item>/g, (itemXml) => {
+                for (const tag of ['sparkle:shortVersionString', 'sparkle:version']) {
+                  if (itemXml.includes(`<${tag}>${displayVersion}</${tag}>`)) {
+                    return '';
+                  }
+                }
+                return itemXml;
+              });
+              // Strip legacy <sparkle:channel>stable</sparkle:channel> tags.
+              merged = merged.replace(/\n\s*<sparkle:channel>stable<\/sparkle:channel>/g, '');
+              if (!merged.includes('    </channel>')) {
+                throw new Error('existing appcast missing </channel> marker');
+              }
+              return merged.replace('    </channel>', `${item}\n    </channel>`);
+            }
 
-          mkdir -p cdn-staging/desktop/appcast
-          cargo xtask release appcast "${APPCAST_ARGS[@]}"
+            let releaseNotesHtml = null;
+            if (HAS_NOTES === 'true' && fs.existsSync('notes.html')) {
+              const raw = fs.readFileSync('notes.html', 'utf8').trim();
+              if (raw) releaseNotesHtml = raw;
+            }
 
-      - name: Update latest.json
-        run: |
-          VERSION="${{ steps.channel.outputs.version }}"
-          CHANNEL="${{ steps.channel.outputs.channel }}"
+            const item = buildItem({ releaseNotesHtml });
+            const existingAppcast = await fetchOptional(
+              `https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml`,
+            );
+            const appcast = existingAppcast
+              ? mergeAppcast(existingAppcast, item)
+              : newAppcast(item);
 
-          LATEST_ARGS=(
-            --version "$VERSION"
-            --channel "$CHANNEL"
-            --output cdn-staging/desktop/latest.json
-          )
+            const existingLatestRaw = await fetchOptional(
+              'https://release.arcboxcdn.com/desktop/latest.json',
+            );
+            let latest = {};
+            if (existingLatestRaw) {
+              try {
+                latest = JSON.parse(existingLatestRaw);
+              } catch {
+                latest = {};
+              }
+            }
+            latest[CHANNEL] = {
+              date: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+              version: displayVersion,
+            };
+            // Pretty-print with sorted top-level keys (matches prior xtask output).
+            const sortedLatest = Object.fromEntries(
+              Object.keys(latest).sort().map((k) => [k, latest[k]]),
+            );
 
-          if [ "${{ steps.existing_latest.outputs.found }}" = "true" ]; then
-            LATEST_ARGS+=(--existing existing/latest.json)
-          fi
-
-          cargo xtask release latest-json "${LATEST_ARGS[@]}"
+            fs.mkdirSync(path.join('cdn-staging', 'desktop', 'appcast'), { recursive: true });
+            fs.mkdirSync(path.join('cdn-staging', 'desktop', VERSION), { recursive: true });
+            fs.writeFileSync(
+              path.join('cdn-staging', 'desktop', 'appcast', `${CHANNEL}.xml`),
+              appcast,
+            );
+            fs.writeFileSync(
+              path.join('cdn-staging', 'desktop', 'latest.json'),
+              `${JSON.stringify(sortedLatest, null, 2)}\n`,
+            );
+            core.info(existingAppcast ? `Merged appcast for ${displayVersion}` : `Created appcast for ${displayVersion}`);
+            core.info(`latest.json channels: ${Object.keys(sortedLatest).join(', ')}`);
 
       - name: Prepare staging directory
         run: |

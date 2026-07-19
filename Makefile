@@ -18,6 +18,10 @@ SIGN_IDENTITY ?= $(shell security find-identity -v -p codesigning 2>/dev/null \
 	| grep -o '"Developer ID Application: ArcBox, Inc\.[^"]*"' \
 	| head -1 | tr -d '"')
 SKIP_BUILD ?= 0
+# CI sets these after a separate `make prefetch` so dmg packaging does not
+# re-download boot assets / re-run the Xcode embed phase.
+SKIP_RESOURCES ?= 0
+SKIP_XCODE_EMBED ?= 0
 NOTARIZE ?= 0
 VERSION ?=
 SPARKLE_FEED_URL ?=
@@ -45,6 +49,8 @@ help:
 	@echo "Environment:"
 	@echo "  ARCBOX_DIR=$(ARCBOX_DIR)"
 	@echo "  SIGN_IDENTITY=$(SIGN_IDENTITY)"
+	@echo "  SKIP_RESOURCES=$(SKIP_RESOURCES)"
+	@echo "  SKIP_XCODE_EMBED=$(SKIP_XCODE_EMBED)"
 
 ## ── Xcode Project ─────────────────────────────────────
 
@@ -89,12 +95,24 @@ prefetch:
 
 ## ── Package ───────────────────────────────────────────
 
+# Common xtask flags shared by signed packaging targets.
+DMG_XTASK_FLAGS = \
+	$(if $(filter 1,$(SKIP_RESOURCES)),--skip-resources) \
+	$(if $(filter 1,$(SKIP_XCODE_EMBED)),--skip-xcode-embed) \
+	$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
+
+# When SKIP_RESOURCES=1 the caller already ran `make prefetch`; don't re-run it
+# as a Make prerequisite (the xtask side is also gated by --skip-resources).
+DMG_PREREQS = $(if $(filter 1,$(SKIP_RESOURCES)),,prefetch)
+
 # Unsigned DMG for local testing.
-dmg: prefetch
-	ARCBOX_DIR="$(ARCBOX_DIR)" cargo xtask macos dmg
+dmg: $(DMG_PREREQS)
+	ARCBOX_DIR="$(ARCBOX_DIR)" cargo xtask macos dmg \
+		$(if $(filter 1,$(SKIP_RESOURCES)),--skip-resources) \
+		$(if $(filter 1,$(SKIP_XCODE_EMBED)),--skip-xcode-embed)
 
 # Signed DMG for local distribution.
-dmg-signed: prefetch
+dmg-signed: $(DMG_PREREQS)
 	@if [ -z "$(SIGN_IDENTITY)" ]; then \
 		echo "ERROR: No Developer ID signing identity found." >&2; \
 		exit 1; \
@@ -103,10 +121,10 @@ dmg-signed: prefetch
 	$(if $(VERSION),VERSION="$(VERSION)") \
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
 	cargo xtask macos dmg --sign "$(SIGN_IDENTITY)" \
-		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
+		$(DMG_XTASK_FLAGS)
 
 # Signed + notarized DMG for CI release.
-dmg-release: prefetch
+dmg-release: $(DMG_PREREQS)
 	@if [ -z "$(SIGN_IDENTITY)" ]; then \
 		echo "ERROR: No signing identity." >&2; \
 		exit 1; \
@@ -116,7 +134,7 @@ dmg-release: prefetch
 	$(if $(SPARKLE_FEED_URL),SPARKLE_FEED_URL="$(SPARKLE_FEED_URL)") \
 	cargo xtask macos dmg --sign "$(SIGN_IDENTITY)" \
 		$(if $(filter 1,$(NOTARIZE)),--notarize) \
-		$(if $(PROVISIONING_PROFILE),--provisioning-profile "$(PROVISIONING_PROFILE)")
+		$(DMG_XTASK_FLAGS)
 
 ## ── Cleanup ───────────────────────────────────────────
 

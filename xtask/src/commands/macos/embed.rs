@@ -176,19 +176,32 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
     });
 
     // ── Build (incremental) ──────────────────────────────────────────────────
+    // Skip cargo when host release binaries are already present (CI prebuilt
+    // path, or a prior local `make build-rust`). Rebuilding here was the main
+    // release-pipeline regression: ~9 minutes of redundant compile after the
+    // workflow had already downloaded release tarballs.
+    let host_bins_ready = local_dirs.as_ref().is_some_and(|(local, _)| {
+        let abctl = local.join("abctl");
+        let daemon = local.join("arcbox-daemon");
+        abctl.is_file() && daemon.is_file() && xfs::is_macho(&daemon)
+    });
     if let Some(repo) = &arcbox_repo {
         if repo.join("Makefile").is_file() {
-            note("Building arcbox binaries (incremental)...");
-            let status = Command::new("make")
-                .args(["-C"])
-                .arg(&project_dir)
-                .arg("build-rust")
-                .arg(format!("ARCBOX_DIR={}", repo.display()))
-                .env("PATH", &path)
-                .status()
-                .context("running make build-rust")?;
-            if !status.success() {
-                bail!("make build-rust failed");
+            if host_bins_ready {
+                note("Local arcbox binaries already present; skipping make build-rust");
+            } else {
+                note("Building arcbox binaries (incremental)...");
+                let status = Command::new("make")
+                    .args(["-C"])
+                    .arg(&project_dir)
+                    .arg("build-rust")
+                    .arg(format!("ARCBOX_DIR={}", repo.display()))
+                    .env("PATH", &path)
+                    .status()
+                    .context("running make build-rust")?;
+                if !status.success() {
+                    bail!("make build-rust failed");
+                }
             }
         }
     }

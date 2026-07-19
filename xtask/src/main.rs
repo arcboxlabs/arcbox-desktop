@@ -121,6 +121,15 @@ struct MacosDmgArgs {
     /// Force re-download/rebuild profile resources before packaging.
     #[arg(long)]
     force_resources: bool,
+    /// Skip boot-assets / docker-tools prefetch (CI already ran `make prefetch`).
+    #[arg(long, env = "SKIP_RESOURCES")]
+    skip_resources: bool,
+    /// Skip the Xcode embed phase's Rust build + binary copy (packaging embeds them).
+    ///
+    /// Distinct from the build-phase `SKIP_RUST_BUILD=1` used by PR Debug builds:
+    /// this only affects the `macos dmg` → xcodebuild invocation.
+    #[arg(long, env = "SKIP_XCODE_EMBED")]
+    skip_xcode_embed: bool,
     /// Build boot assets from this local boot-assets checkout instead of downloading them.
     #[arg(long, env = "BOOT_ASSETS_DIR")]
     boot_assets_dir: Option<PathBuf>,
