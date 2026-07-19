@@ -33,6 +33,13 @@ final class MachineEventMonitor {
                 if await stoppedCheck() { break }
                 do {
                     try await client.machines.events(Arcbox_V1_MachineEventsRequest()) { response in
+                        // Refresh on every (re)connect: events that occur while
+                        // the stream is down during backoff are not replayed
+                        // (the server only sends `resync` for its own drops), so
+                        // re-list once the stream re-establishes to catch up.
+                        await MainActor.run { [weak self] in
+                            self?.debouncedPost()
+                        }
                         for try await _ in response.messages {
                             guard !Task.isCancelled else { break }
                             await MainActor.run { [weak self] in
