@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.2...v1.27.3) (2026-07-19)
+
+
+### Performance
+
+* **ci:** cut Release DMG wall time by skipping redundant work ([#309](https://github.com/arcboxlabs/arcbox-desktop/issues/309)) ([783fcee](https://github.com/arcboxlabs/arcbox-desktop/commit/783fcee0767174caa33e04f8bad1e85be5c7dec8))
+
 ## [1.27.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.1...v1.27.2) (2026-07-19)
 
 
