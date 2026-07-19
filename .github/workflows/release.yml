@@ -84,7 +84,13 @@ jobs:
 
       - name: Install dependencies
         timeout-minutes: 5
-        run: brew install create-dmg
+        run: |
+          # macos runners sometimes ship untrusted third-party taps (e.g. aws/tap)
+          # which brew now warns about on every invocation. Drop them before install.
+          if brew tap | grep -qx 'aws/tap'; then
+            brew untap aws/tap || true
+          fi
+          brew install create-dmg
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v6
@@ -586,7 +592,7 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts/
 
@@ -599,7 +605,7 @@ jobs:
           ls -lh release-assets/
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.build-dmg.outputs.version || github.ref_name }}
           name: ArcBox ${{ needs.build-dmg.outputs.version || github.ref_name }}
@@ -632,7 +638,7 @@ jobs:
 
     steps:
       - name: Download DMG artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: arcbox-desktop-dmg
           path: artifacts/
@@ -665,7 +671,7 @@ jobs:
 
       - name: Generate appcast + latest.json
         id: feeds
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           VERSION: ${{ steps.channel.outputs.version }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
@@ -857,7 +863,7 @@ jobs:
 
       - name: Verify CDN URLs
         id: cdn_verify
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           VERSION: ${{ steps.channel.outputs.version }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
@@ -890,7 +896,7 @@ jobs:
 
       - name: Update Dub download short link
         if: needs.build-dmg.outputs.channel == 'stable' && steps.cdn_verify.outputs.ok == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DUB_API_KEY: ${{ secrets.DUB_API_KEY }}
           DUB_LINK_ID: ${{ secrets.DUB_LINKID_DOWNLOAD_DESKTOP_ARM64 }}
@@ -937,14 +943,14 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
           repositories: homebrew-tap
 
       - name: Download DMG artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: arcbox-desktop-dmg
           path: artifacts/
@@ -965,7 +971,8 @@ jobs:
           echo "arm=$(sha256sum "$dmg_path" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Bump Homebrew cask
-        uses: arcboxlabs/homebrew-tap/.github/actions/bump-cask@6ae026934e8dd30533bbbd73a3be6b7958fe2062
+        # checkout@v6 inside the composite (homebrew-tap#3).
+        uses: arcboxlabs/homebrew-tap/.github/actions/bump-cask@85036c763056a09bfe3e7935815b12ea8eb3404c
         with:
           token: ${{ steps.app-token.outputs.token }}
           cask: arcbox@latest
