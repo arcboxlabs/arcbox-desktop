@@ -99,7 +99,7 @@ struct SystemSettingsView: View {
             Section {
                 LabeledContent {
                     Picker("Virtual machine backend", selection: $selectedBackend) {
-                        ForEach(availableBackends) { backend in
+                        ForEach(SystemVmBackend.allCases) { backend in
                             Text(backend.label).tag(backend)
                         }
                     }
@@ -209,22 +209,8 @@ struct SystemSettingsView: View {
 
     // MARK: - System VM Backend
 
-    private static let backendCaption = """
-        Intel (amd64) code runs via Rosetta on Virtualization.framework, or via FEX on \
-        Hypervisor.framework. Switching restarts the System VM. Hypervisor.framework is \
-        temporarily unavailable pending a data-disk capacity fix.
-        """
-
-    /// Backends the user may switch *to*. Hypervisor.framework is withheld
-    /// because switching to it shrinks the data disk the guest sees and
-    /// permanently breaks Docker until a fixed guest kernel ships (arcbox #453 /
-    /// kernel #13). It stays listed only when the daemon is already on it, so an
-    /// affected user can still switch back to Virtualization.framework.
-    private var availableBackends: [SystemVmBackend] {
-        SystemVmBackend.allCases.filter {
-            $0 != .hv || backendModel.currentBackend == .hv
-        }
-    }
+    private static let backendCaption =
+        "Intel (amd64) code runs via Rosetta on Virtualization.framework, or via FEX on Hypervisor.framework. Switching restarts the System VM."
 
     private func syncBackendSelection() {
         if let current = backendModel.currentBackend {
