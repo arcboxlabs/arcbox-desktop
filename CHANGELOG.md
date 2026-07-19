@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.27.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.0...v1.27.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* **machines:** poll the machine list for live state ([5844e9b](https://github.com/arcboxlabs/arcbox-desktop/commit/5844e9be30a283aeead2e31b6ecca60d46653b0e))
+* **machines:** surface daemon reason and make start/stop idempotent ([4ac4602](https://github.com/arcboxlabs/arcbox-desktop/commit/4ac4602dd2321902d34a87d2b5fc127942cccb03))
+
 ## [1.27.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.26.1...v1.27.0) (2026-07-18)
 
 
