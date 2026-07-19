@@ -47,16 +47,15 @@ struct MachinesView: View {
             MachineCreateSheet()
         }
         .task(id: client != nil) {
-            // Load immediately, then poll while the Machines tab is on screen so
-            // the list tracks out-of-band changes (external CLI, a VM that exits
-            // on its own, a machine reset to stopped after daemon recovery).
-            // MachineService has no event stream, so poll rather than watch.
-            // loadMachines preserves in-flight transition and detail state, so a
-            // poll never clobbers an action the user just triggered.
-            while !Task.isCancelled {
-                await vm.loadMachines(client: client)
-                try? await Task.sleep(for: .seconds(3))
-            }
+            await vm.loadMachines(client: client)
+        }
+        // MachineEventMonitor streams MachineService.Events and posts this on
+        // create/start/idle/stop/remove (and on the server's resync signal), so
+        // the list tracks out-of-band changes — external CLI, a VM that exits on
+        // its own, a machine reset to stopped after daemon recovery — without
+        // polling. loadMachines preserves in-flight transition and detail state.
+        .onReceive(NotificationCenter.default.publisher(for: .machineChanged)) { _ in
+            Task { await vm.loadMachines(client: client) }
         }
         .confirmationDialog(
             "Delete machine \(pendingDeleteID ?? "")?",

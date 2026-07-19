@@ -21,6 +21,7 @@ struct ArcBoxDesktopApp: App {
     // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
     @State private var sandboxEventMonitor = SandboxEventMonitor()
+    @State private var machineEventMonitor = MachineEventMonitor()
     @State private var sleepWakeManager = SleepWakeManager()
     @State private var startupOrchestrator: StartupOrchestrator?
     @AppStorage("showInMenuBar") private var showInMenuBar = false
@@ -94,6 +95,7 @@ struct ArcBoxDesktopApp: App {
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
                     appDelegate.sandboxEventMonitor = sandboxEventMonitor
+                    appDelegate.machineEventMonitor = machineEventMonitor
 
                     let startupStart = CFAbsoluteTimeGetCurrent()
                     let orchestrator = StartupOrchestrator(
@@ -138,11 +140,13 @@ struct ArcBoxDesktopApp: App {
                         if let arcboxClient {
                             sandboxEventMonitor.start(
                                 client: arcboxClient, machineID: "default")
+                            machineEventMonitor.start(client: arcboxClient)
                         }
                         DockerContextManager.switchToArcBox()
                     } else {
                         eventMonitor.stop()
                         sandboxEventMonitor.stop()
+                        machineEventMonitor.stop()
                         sleepWakeManager.stop()
                         DockerContextManager.restorePreviousContext()
                     }
