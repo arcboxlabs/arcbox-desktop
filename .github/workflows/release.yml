@@ -90,7 +90,10 @@ jobs:
           if brew tap | grep -qx 'aws/tap'; then
             brew untap aws/tap || true
           fi
-          brew install create-dmg
+          # create-dmg: UDZO packaging.
+          # musl-cross: aarch64-linux-musl-strip for guest ELF payloads (dockerd
+          # etc.). Apple's /usr/bin/strip fails on some static Go ELFs.
+          brew install create-dmg musl-cross
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v6
