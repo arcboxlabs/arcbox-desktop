@@ -199,27 +199,38 @@ public final class ArcBoxClient: Sendable {
 
     /// Map a gRPC or transport error to a user-friendly message.
     public static func userMessage(for error: Error) -> String {
-        let desc = String(describing: error)
+        // gRPC errors carry a status code plus the daemon's own reason string.
+        // Prefer that reason: it is the most specific, human-readable text
+        // available (e.g. "machine 'foo' is already running"). Reserve canned
+        // copy for connectivity codes, whose raw message is transport noise.
+        if let rpcError = error as? RPCError {
+            switch rpcError.code {
+            case .unavailable:
+                return "Cannot reach ArcBox daemon. Is it running?"
+            case .deadlineExceeded:
+                return "Operation timed out. The daemon may be busy."
+            default:
+                let message = rpcError.message.trimmingCharacters(in: .whitespacesAndNewlines)
+                return message.isEmpty
+                    ? "The daemon reported an error (\(rpcError.code))." : message
+            }
+        }
 
-        if desc.contains("unavailable") || desc.contains("UNAVAILABLE") {
-            return "Cannot reach ArcBox daemon. Is it running?"
-        }
-        if desc.contains("deadline") || desc.contains("DEADLINE_EXCEEDED") {
-            return "Operation timed out. The daemon may be busy."
-        }
-        if desc.contains("not found") || desc.contains("NOT_FOUND") {
-            return "Resource not found. It may have been removed."
-        }
-        if desc.contains("already exists") || desc.contains("ALREADY_EXISTS") {
-            return "A resource with that name already exists."
-        }
-        if desc.contains("permission") || desc.contains("PERMISSION_DENIED") {
-            return "Permission denied. Check daemon privileges."
-        }
+        // Non-gRPC (transport/URL) errors: fall back to substring heuristics.
+        let desc = String(describing: error)
         if desc.contains("ECONNREFUSED") || desc.contains("Connection refused") {
             return "Connection refused. Is the ArcBox daemon running?"
         }
-
         return error.localizedDescription
+    }
+
+    /// True when `error` is a gRPC error whose reason contains `phrase`.
+    ///
+    /// Lets callers recognize a specific daemon rejection (e.g. an idempotent
+    /// "already running") without matching against the opaque bridged
+    /// `localizedDescription`.
+    public static func rpcMessage(_ error: Error, contains phrase: String) -> Bool {
+        guard let rpcError = error as? RPCError else { return false }
+        return rpcError.message.range(of: phrase, options: .caseInsensitive) != nil
     }
 }
