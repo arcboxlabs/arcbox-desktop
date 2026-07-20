@@ -429,6 +429,11 @@ jobs:
           }
 
           APP="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app"
+          HELPER_VERSION=$("$APP/Contents/MacOS/bin/arcbox-helper" --version)
+          if [[ ! "$HELPER_VERSION" =~ ^arcbox-helper[[:space:]][0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::arcbox-helper --version did not return semver on stdout: '$HELPER_VERSION'"
+            exit 1
+          fi
           verify_code_identity "$APP/Contents/MacOS/bin/abctl" "com.arcboxlabs.desktop.cli"
           verify_code_identity "$APP/Contents/MacOS/bin/arcbox-helper" "com.arcboxlabs.desktop.helper"
           verify_code_identity \
