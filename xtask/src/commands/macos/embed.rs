@@ -14,6 +14,7 @@ use regex::Regex;
 use xtask_kit::apple::{self, CodesignOptions};
 
 use super::bundle::{self, BundleOptions, BundleProfile};
+use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER};
 use crate::MacosEmbedArgs;
 use crate::support::fs as xfs;
 
@@ -316,27 +317,24 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
     embed_signed_cli(
         &src_dir.join("abctl"),
         &cli_dir.join("abctl"),
-        "com.arcboxlabs.desktop.abctl",
+        ABCTL_CODE_SIGN_IDENTIFIER,
         "abctl",
-        true,
     )?;
 
     // ── Embed arcbox-helper → Contents/MacOS/bin/ ─────────────────────────────
     let helper_src = src_dir.join("arcbox-helper");
-    if helper_src.is_file() {
-        embed_signed_cli(
-            &helper_src,
-            &cli_dir.join("arcbox-helper"),
-            "com.arcboxlabs.desktop.helper",
-            "arcbox-helper",
-            false,
-        )?;
-    } else {
-        warn(&format!(
-            "arcbox-helper not found at {}, skipping",
+    if !helper_src.is_file() {
+        bail!(
+            "required arcbox-helper not found at {}; Desktop startup cannot continue without it",
             helper_src.display()
-        ));
+        );
     }
+    embed_signed_cli(
+        &helper_src,
+        &cli_dir.join("arcbox-helper"),
+        HELPER_CODE_SIGN_IDENTIFIER,
+        "arcbox-helper",
+    )?;
 
     // ── Embed guest binaries → Contents/Resources/bin/ ────────────────────────
     // arcbox-agent (System VM agent) and vm-agent (sandbox microVM init); the
@@ -365,13 +363,7 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
     Ok(())
 }
 
-fn embed_signed_cli(
-    src: &Path,
-    dst: &Path,
-    identifier: &str,
-    label: &str,
-    required: bool,
-) -> Result<()> {
+fn embed_signed_cli(src: &Path, dst: &Path, identifier: &str, label: &str) -> Result<()> {
     if sync_binary(src, dst)? {
         sign_with_xcode_identity(dst, identifier)?;
         note(&format!("Embedded and signed {label} → MacOS/bin/{label}"));
@@ -383,7 +375,6 @@ fn embed_signed_cli(
         }
         note(&format!("{label} unchanged, skipping copy"));
     }
-    let _ = required;
     Ok(())
 }
 

@@ -18,6 +18,7 @@ use xtask_kit::dmg::{self, CreateDmgOptions};
 use xtask_kit::{github_actions, process, repo};
 
 use super::bundle::{self, BundleOptions, BundleProfile};
+use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER};
 use crate::support::fs as xfs;
 use crate::{MacosDmgArgs, MacosPrepareResourcesArgs};
 
@@ -53,6 +54,16 @@ fn sign_binary(target: &Path, identity: &str) -> Result<()> {
         return Ok(());
     }
     apple::codesign(&CodesignOptions::runtime(identity, target))
+}
+
+/// Sign a binary with the stable identifier expected by helper peer auth.
+fn sign_binary_with_identifier(target: &Path, identity: &str, identifier: &str) -> Result<()> {
+    if identity.is_empty() {
+        return Ok(());
+    }
+    let mut options = CodesignOptions::runtime(identity, target);
+    options.identifier = Some(identifier);
+    apple::codesign(&options)
 }
 
 fn desktop_repo() -> Result<PathBuf> {
@@ -533,22 +544,22 @@ fn embed_host_cli_binaries(
     println!("--- Embedding host CLI binaries ---");
     let abctl_dst = bin_dir.join("abctl");
     std::fs::copy(&abctl_src, &abctl_dst).context("copying abctl")?;
-    sign_binary(&abctl_dst, sign_identity)?;
+    sign_binary_with_identifier(&abctl_dst, sign_identity, ABCTL_CODE_SIGN_IDENTIFIER)?;
     println!("  Copied abctl → MacOS/bin/abctl");
 
-    // arcbox-helper is optional in older release tarballs.
+    // Desktop startup requires the bundled helper for installation and version
+    // verification, so release packaging must fail rather than ship without it.
     let helper_src = src_dir.join("arcbox-helper");
-    if helper_src.is_file() {
-        let helper_dst = bin_dir.join("arcbox-helper");
-        std::fs::copy(&helper_src, &helper_dst).context("copying arcbox-helper")?;
-        sign_binary(&helper_dst, sign_identity)?;
-        println!("  Copied arcbox-helper → MacOS/bin/arcbox-helper");
-    } else {
-        println!(
-            "  Warning: arcbox-helper not found at {}, skipping",
+    if !helper_src.is_file() {
+        bail!(
+            "required arcbox-helper not found at {}; Desktop startup cannot continue without it",
             helper_src.display()
         );
     }
+    let helper_dst = bin_dir.join("arcbox-helper");
+    std::fs::copy(&helper_src, &helper_dst).context("copying arcbox-helper")?;
+    sign_binary_with_identifier(&helper_dst, sign_identity, HELPER_CODE_SIGN_IDENTIFIER)?;
+    println!("  Copied arcbox-helper → MacOS/bin/arcbox-helper");
     Ok(())
 }
 
@@ -976,6 +987,21 @@ fn sign_app_bundle(
         println!("  Restored pre-signed daemon bundle");
     }
 
+    // `codesign --deep` derives standalone executable identifiers from their
+    // basenames. Restore the stable identifiers that helper peer auth checks.
+    let host_bin_dir = app_bundle.join("Contents").join("MacOS").join("bin");
+    for (name, identifier) in [
+        ("abctl", ABCTL_CODE_SIGN_IDENTIFIER),
+        ("arcbox-helper", HELPER_CODE_SIGN_IDENTIFIER),
+    ] {
+        let binary = host_bin_dir.join(name);
+        if !binary.is_file() {
+            bail!("required bundled binary missing at {}", binary.display());
+        }
+        sign_binary_with_identifier(&binary, sign_identity, identifier)?;
+        println!("  Re-signed {name} as {identifier}");
+    }
+
     // Re-sign ArcBoxHelper.
     let helper = app_bundle
         .join("Contents")
@@ -987,7 +1013,7 @@ fn sign_app_bundle(
             .join("ArcBoxHelper")
             .join("ArcBoxHelper.entitlements");
         let mut options = CodesignOptions::runtime(sign_identity, &helper);
-        options.identifier = Some("com.arcboxlabs.desktop.helper");
+        options.identifier = Some(HELPER_CODE_SIGN_IDENTIFIER);
         options.entitlements = Some(&entitlements);
         apple::codesign(&options)?;
         println!("  Signed ArcBoxHelper with hardened runtime");

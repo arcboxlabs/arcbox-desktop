@@ -3,6 +3,11 @@ use anyhow::Result;
 use crate::MacosArgs;
 
 #[cfg(target_os = "macos")]
+pub(super) const ABCTL_CODE_SIGN_IDENTIFIER: &str = "com.arcboxlabs.desktop.cli";
+#[cfg(target_os = "macos")]
+pub(super) const HELPER_CODE_SIGN_IDENTIFIER: &str = "com.arcboxlabs.desktop.helper";
+
+#[cfg(target_os = "macos")]
 pub mod bundle;
 #[cfg(target_os = "macos")]
 pub mod dmg;

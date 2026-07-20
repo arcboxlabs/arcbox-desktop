@@ -394,7 +394,7 @@ jobs:
             echo "build_number=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Verify release architecture
+      - name: Verify release artifact contracts
         run: |
           APP_BINARY="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/ArcBox"
           ARCHITECTURES=$(lipo -archs "$APP_BINARY")
@@ -404,16 +404,36 @@ jobs:
             echo "::error::Expected ARM64-only app binary, found: $ARCHITECTURES"
             exit 1
           fi
-          # Confirm packaging embedded the prebuilt host binaries.
+          # Confirm packaging embedded the required prebuilt host binaries.
           for bin in abctl arcbox-helper; do
             path="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/bin/$bin"
-            if [ -f "$path" ]; then
-              file "$path"
-            else
-              echo "::warning::$bin missing from packaged app (optional for older arcbox releases)"
-            fi
+            test -f "$path"
+            file "$path"
           done
-          test -f "${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/bin/abctl"
+
+          verify_code_identity() {
+            local path="$1"
+            local expected_identifier="$2"
+            local details identifier team
+            details=$(codesign -dvv "$path" 2>&1)
+            identifier=$(printf '%s\n' "$details" | sed -n 's/^Identifier=//p')
+            team=$(printf '%s\n' "$details" | sed -n 's/^TeamIdentifier=//p')
+            if [ "$identifier" != "$expected_identifier" ]; then
+              echo "::error::$path identifier is '$identifier', expected '$expected_identifier'"
+              exit 1
+            fi
+            if [ "$team" != "422ACSY6Y5" ]; then
+              echo "::error::$path TeamIdentifier is '$team', expected '422ACSY6Y5'"
+              exit 1
+            fi
+          }
+
+          APP="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app"
+          verify_code_identity "$APP/Contents/MacOS/bin/abctl" "com.arcboxlabs.desktop.cli"
+          verify_code_identity "$APP/Contents/MacOS/bin/arcbox-helper" "com.arcboxlabs.desktop.helper"
+          verify_code_identity \
+            "$APP/Contents/Frameworks/com.arcboxlabs.desktop.daemon.app/Contents/MacOS/com.arcboxlabs.desktop.daemon" \
+            "com.arcboxlabs.desktop.daemon"
 
       - name: Report build cache sizes
         if: always()
