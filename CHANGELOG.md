@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.29.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.28.0...v1.29.0) (2026-07-20)
+
+
+### Features
+
+* **files:** browse image layers via daemon resolution under the containerd image store ([8115d0b](https://github.com/arcboxlabs/arcbox-desktop/commit/8115d0ba504d1c19944d2ce90a059e8d212a1a09))
+
+
+### Bug Fixes
+
+* **ci:** install musl-cross from FiloSottile tap ([06afffe](https://github.com/arcboxlabs/arcbox-desktop/commit/06afffe3028f218e117e6b4ff3e94fc978a1b9b2))
+* **dmg:** preserve manifest runtime payloads ([2d5cbd7](https://github.com/arcboxlabs/arcbox-desktop/commit/2d5cbd7dfdb1f1122cde510ae088d6c67c666eaf))
+* **helper:** enforce packaging and semver contracts ([e3df18b](https://github.com/arcboxlabs/arcbox-desktop/commit/e3df18ba96f4f01b860311b7f1fa86867b15c42b))
+* **helper:** harden install version handling ([956dd36](https://github.com/arcboxlabs/arcbox-desktop/commit/956dd36582ac174b109646b0f2019dbc29dbb220))
+* **helper:** reinstall on major version mismatch ([11e60f7](https://github.com/arcboxlabs/arcbox-desktop/commit/11e60f79ffae29abc2c05c642b6a45f96097433a))
+* **release:** preserve helper peer identities ([e51a5b8](https://github.com/arcboxlabs/arcbox-desktop/commit/e51a5b8d98be27947d856bd9e4ec29df3c54082e))
+* **startup:** compare helper by independent semver, not full string ([c4c7a20](https://github.com/arcboxlabs/arcbox-desktop/commit/c4c7a20f8b7729b12db4ec8bf629eed8d8b47f59))
+* **startup:** fail visibly when privileged helper is missing or outdated ([20e987d](https://github.com/arcboxlabs/arcbox-desktop/commit/20e987d884c9f980efbc05e2e1cd5d3af88337df))
+
+
+### Miscellaneous
+
+* regenerate pbxproj to match project.yml after rebase ([b0851f5](https://github.com/arcboxlabs/arcbox-desktop/commit/b0851f5700c3be6c663c3c3708093c884195bc56))
+
+
+### CI
+
+* **release:** verify contracts inside final DMG ([ca4eba4](https://github.com/arcboxlabs/arcbox-desktop/commit/ca4eba476de9c8c4415359bd7b254763478419c5))
+* **release:** verify helper version contract ([fde5eef](https://github.com/arcboxlabs/arcbox-desktop/commit/fde5eef75844550f18b703c1eb74f70ce75137fc))
+
 ## [1.28.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.27.3...v1.28.0) (2026-07-19)
 
 
