@@ -396,7 +396,17 @@ jobs:
 
       - name: Verify release artifact contracts
         run: |
-          APP_BINARY="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/ArcBox"
+          DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
+          MOUNT_POINT="$RUNNER_TEMP/arcbox-release-verify"
+          mkdir -p "$MOUNT_POINT"
+          hdiutil attach -nobrowse -readonly -mountpoint "$MOUNT_POINT" "$DMG_PATH"
+          cleanup() {
+            hdiutil detach "$MOUNT_POINT" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          APP="$MOUNT_POINT/ArcBox.app"
+          APP_BINARY="$APP/Contents/MacOS/ArcBox"
           ARCHITECTURES=$(lipo -archs "$APP_BINARY")
           file "$APP_BINARY"
           echo "Architectures: $ARCHITECTURES"
@@ -406,7 +416,7 @@ jobs:
           fi
           # Confirm packaging embedded the required prebuilt host binaries.
           for bin in abctl arcbox-helper; do
-            path="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app/Contents/MacOS/bin/$bin"
+            path="$APP/Contents/MacOS/bin/$bin"
             test -f "$path"
             file "$path"
           done
@@ -428,7 +438,6 @@ jobs:
             fi
           }
 
-          APP="${{ github.workspace }}/arcbox-core/target/dmg-build/ArcBox.app"
           HELPER_VERSION=$("$APP/Contents/MacOS/bin/arcbox-helper" --version)
           if [[ ! "$HELPER_VERSION" =~ ^arcbox-helper[[:space:]][0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::arcbox-helper --version did not return semver on stdout: '$HELPER_VERSION'"
