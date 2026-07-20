@@ -13,8 +13,10 @@ extension DaemonManager {
     /// standard macOS "wants to make changes" password dialog, the same
     /// approach used by Docker Desktop and OrbStack.
     ///
-    /// Skips the password prompt when the installed helper version already
-    /// matches the bundled one. Always refreshes user-space shell integration
+    /// Skips the password prompt when the installed helper's **own crate
+    /// version** is already ≥ the bundled one. That version is independent of
+    /// the arcbox workspace version, so ordinary runtime bumps do not force an
+    /// admin reinstall. Always refreshes user-space shell integration
     /// (`~/.arcbox/bin` Docker CLI links + PATH) so terminals keep working even
     /// when the privileged helper path is deferred or fails.
     ///
@@ -40,14 +42,25 @@ extension DaemonManager {
 
         let installedVersion = binaryVersion(Self.installedHelperPath)
         let bundledVersion = binaryVersion(helper)
-        let needsInstall =
-            installedVersion == nil
-            || bundledVersion == nil
-            || installedVersion != bundledVersion
+        let installedSemver = HelperVersion.parse(installedVersion)
+        let bundledSemver = HelperVersion.parse(bundledVersion)
 
-        if !needsInstall, let version = installedVersion {
+        // Reinstall only when installed is missing or strictly older than the
+        // bundle. Equal/newer keeps the on-disk binary (no password).
+        let needsInstall = HelperVersion.needsReinstall(
+            installed: installedSemver,
+            bundled: bundledSemver
+        )
+
+        if !needsInstall {
             helperInstalled = true
-            ClientLog.daemon.info("Helper \(version, privacy: .public) already installed")
+            ClientLog.daemon.info(
+                """
+                Helper already sufficient \
+                (installed=\(installedVersion ?? "none", privacy: .public), \
+                bundled=\(bundledVersion ?? "unknown", privacy: .public))
+                """
+            )
             await installShellIntegration(abctl: abctl)
             return
         }
@@ -70,14 +83,15 @@ extension DaemonManager {
             throw installError
         }
 
-        // Verify the on-disk helper actually matches the bundle. AppleScript can
-        // report success while the copy/bootstrap silently no-ops (or an older
-        // launchd-managed binary is still what --version reports).
+        // Verify the on-disk helper version is now ≥ the bundle. AppleScript
+        // can report success while the copy/bootstrap silently no-ops.
         let postInstallVersion = binaryVersion(Self.installedHelperPath)
-        if let bundledVersion, let postInstallVersion, postInstallVersion == bundledVersion {
+        let postInstallSemver = HelperVersion.parse(postInstallVersion)
+        if !HelperVersion.needsReinstall(installed: postInstallSemver, bundled: bundledSemver) {
             helperInstalled = true
             ClientLog.daemon.info(
-                "Helper installed successfully (\(postInstallVersion, privacy: .public))")
+                "Helper installed successfully (\(postInstallVersion ?? "unknown", privacy: .public))"
+            )
             await installShellIntegration(abctl: abctl)
             return
         }
@@ -92,7 +106,8 @@ extension DaemonManager {
 
     /// Run the elevated `abctl _install` AppleScript. Returns `nil` on success
     /// or a typed error describing the failure.
-    private func runPrivilegedHelperInstall(abctl: String, helper: String) async -> HelperInstallError? {
+    private func runPrivilegedHelperInstall(abctl: String, helper: String) async -> HelperInstallError?
+    {
         func shellQuote(_ s: String) -> String {
             "'\(s.replacingOccurrences(of: "'", with: "'\\''"))'"
         }
@@ -238,7 +253,7 @@ public enum HelperInstallError: LocalizedError, Sendable, Equatable {
             let have = installed ?? "none"
             let want = expected ?? "unknown"
             return """
-                Helper service is outdated (\(have); expected \(want)). \
+                Helper service is outdated (\(have); need \(want)). \
                 Click Retry and approve the administrator prompt, or run: \
                 sudo abctl _install --no-daemon --no-shell
                 """
@@ -246,9 +261,56 @@ public enum HelperInstallError: LocalizedError, Sendable, Equatable {
     }
 }
 
-/// Runs `<binary> --version` and returns the trimmed stdout (e.g. "arcbox-helper 0.3.1").
+// MARK: - Helper version parsing
+
+/// Parses `arcbox-helper --version` / RPC output into a comparable semver triple.
+///
+/// Formats:
+/// - Independent helper: `arcbox-helper 1.0.0`
+/// - Legacy workspace-tied: `arcbox-helper 0.4.12`
+enum HelperVersion {
+    typealias Triple = (major: UInt64, minor: UInt64, patch: UInt64)
+
+    /// Extract major.minor.patch from a version line.
+    static func parse(_ versionOutput: String?) -> Triple? {
+        guard var raw = versionOutput?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !raw.isEmpty
+        else {
+            return nil
+        }
+        if raw.hasPrefix("arcbox-helper") {
+            raw = raw.dropFirst("arcbox-helper".count).trimmingCharacters(in: .whitespaces)
+        }
+        // Drop pre-release / build metadata.
+        if let cut = raw.firstIndex(where: { $0 == "-" || $0 == "+" }) {
+            raw = String(raw[..<cut])
+        }
+        let parts = raw.split(separator: ".", maxSplits: 2, omittingEmptySubsequences: false)
+        guard let major = parts.first.flatMap({ UInt64($0) }) else { return nil }
+        let minor = parts.count > 1 ? UInt64(parts[1]) ?? 0 : 0
+        let patch = parts.count > 2 ? UInt64(parts[2]) ?? 0 : 0
+        return (major, minor, patch)
+    }
+
+    /// Whether the on-disk helper should be replaced by the bundled one.
+    ///
+    /// - Missing install → reinstall
+    /// - Unknown bundled version → reinstall (safe default)
+    /// - Installed < bundled → reinstall
+    /// - Installed ≥ bundled → keep (no password)
+    static func needsReinstall(installed: Triple?, bundled: Triple?) -> Bool {
+        guard let bundled else { return true }
+        guard let installed else { return true }
+        if installed.major != bundled.major { return installed.major < bundled.major }
+        if installed.minor != bundled.minor { return installed.minor < bundled.minor }
+        return installed.patch < bundled.patch
+    }
+}
+
+/// Runs `<binary> --version` and returns the trimmed stdout
+/// (e.g. "arcbox-helper 1.0.0").
 /// Returns nil if the binary doesn't exist or the command fails.
-private func binaryVersion(_ path: String) -> String? {
+func binaryVersion(_ path: String) -> String? {
     guard FileManager.default.isExecutableFile(atPath: path) else { return nil }
     let process = Process()
     process.executableURL = URL(fileURLWithPath: path)
