@@ -296,12 +296,15 @@ enum HelperVersion {
     ///
     /// - Missing install → reinstall
     /// - Unknown bundled version → reinstall (safe default)
-    /// - Installed < bundled → reinstall
-    /// - Installed ≥ bundled → keep (no password)
+    /// - **Major differs** either way → reinstall (tarpc / error wire break)
+    /// - Same major and installed < bundled → reinstall
+    /// - Same major and installed ≥ bundled → keep (no password on app downgrade)
     static func needsReinstall(installed: Triple?, bundled: Triple?) -> Bool {
         guard let bundled else { return true }
         guard let installed else { return true }
-        if installed.major != bundled.major { return installed.major < bundled.major }
+        // Wire major must match. A leftover 2.x helper after downgrading the
+        // app to 1.x is not "newer is fine" — force replace.
+        if installed.major != bundled.major { return true }
         if installed.minor != bundled.minor { return installed.minor < bundled.minor }
         return installed.patch < bundled.patch
     }
