@@ -74,13 +74,21 @@ struct StartupProgressView: View {
     private func stepRow(_ step: StartupStep) -> some View {
         let status = orchestrator.stepStatuses[step] ?? .pending
 
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             statusIcon(status)
                 .frame(width: 14, height: 14)
+                .padding(.top, 1)
 
-            Text(step.label)
-                .font(.system(size: 12))
-                .foregroundStyle(textColor(for: status))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(step.label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(textColor(for: status))
+                if let detail = step.detail, case .failed = status {
+                    Text(detail)
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppColors.textMuted)
+                }
+            }
         }
     }
 

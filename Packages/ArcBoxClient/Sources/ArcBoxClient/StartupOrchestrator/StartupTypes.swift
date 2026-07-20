@@ -34,6 +34,16 @@ public enum StartupStep: Int, CaseIterable, Sendable, Identifiable {
         case .connectAndWatch: return "Connecting to daemon"
         }
     }
+
+    /// Short explanation shown under the step label in the startup UI.
+    public var detail: String? {
+        switch self {
+        case .installHelper:
+            return "Required for /usr/local/bin/docker and DNS integration"
+        case .enableDaemon, .connectAndWatch:
+            return nil
+        }
+    }
 }
 
 // MARK: - Step Status

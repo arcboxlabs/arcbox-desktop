@@ -13,37 +13,86 @@ extension DaemonManager {
     /// standard macOS "wants to make changes" password dialog, the same
     /// approach used by Docker Desktop and OrbStack.
     ///
-    /// Skips silently if the installed helper version matches the bundled one.
-    /// Only prompts for password on first install or upgrade.
+    /// Skips the password prompt when the installed helper version already
+    /// matches the bundled one. Always refreshes user-space shell integration
+    /// (`~/.arcbox/bin` Docker CLI links + PATH) so terminals keep working even
+    /// when the privileged helper path is deferred or fails.
+    ///
+    /// - Throws: when the helper is missing/outdated and the privileged install
+    ///   fails or does not leave a matching binary on disk. Callers surface this
+    ///   in the startup UI so the user can retry (password cancel used to be
+    ///   silent, leaving `/usr/local/bin/docker*` unlinked forever).
+    ///
     /// Installed helper binary path (must match arcbox-constants privileged::HELPER_BINARY).
     nonisolated static let installedHelperPath = "/usr/local/libexec/arcbox-helper"
 
-    public func installHelper() async {
+    public func installHelper() async throws {
         // Find abctl and helper in the app bundle.
         let bundle = Bundle.main.bundleURL
         let abctl = bundle.appendingPathComponent("Contents/MacOS/bin/abctl").path
         let helper = bundle.appendingPathComponent("Contents/MacOS/bin/arcbox-helper").path
         guard FileManager.default.isExecutableFile(atPath: abctl) else {
-            ClientLog.daemon.warning("abctl not found in bundle, skipping helper install")
-            return
+            throw HelperInstallError.bundledBinaryMissing("abctl")
         }
         guard FileManager.default.isExecutableFile(atPath: helper) else {
-            ClientLog.daemon.warning("arcbox-helper not found in bundle, skipping helper install")
-            return
+            throw HelperInstallError.bundledBinaryMissing("arcbox-helper")
         }
 
-        // Skip if installed helper is the same version as the bundled one.
         let installedVersion = binaryVersion(Self.installedHelperPath)
         let bundledVersion = binaryVersion(helper)
-        if let iv = installedVersion, let bv = bundledVersion, iv == bv {
+        let needsInstall =
+            installedVersion == nil
+            || bundledVersion == nil
+            || installedVersion != bundledVersion
+
+        if !needsInstall, let version = installedVersion {
             helperInstalled = true
-            ClientLog.daemon.info("Helper \(iv, privacy: .public) already installed")
+            ClientLog.daemon.info("Helper \(version, privacy: .public) already installed")
             await installShellIntegration(abctl: abctl)
             return
         }
 
-        ClientLog.daemon.info("Installing helper via abctl _install")
+        ClientLog.daemon.info(
+            """
+            Installing helper via abctl _install \
+            (installed=\(installedVersion ?? "none", privacy: .public), \
+            bundled=\(bundledVersion ?? "unknown", privacy: .public))
+            """
+        )
 
+        let installError = await runPrivilegedHelperInstall(abctl: abctl, helper: helper)
+        if let installError {
+            helperInstalled = false
+            // Still refresh user-space PATH/CLI links — these do not need root
+            // and keep `docker` available via ~/.arcbox/bin when the user has
+            // shell integration sourced.
+            await installShellIntegration(abctl: abctl)
+            throw installError
+        }
+
+        // Verify the on-disk helper actually matches the bundle. AppleScript can
+        // report success while the copy/bootstrap silently no-ops (or an older
+        // launchd-managed binary is still what --version reports).
+        let postInstallVersion = binaryVersion(Self.installedHelperPath)
+        if let bundledVersion, let postInstallVersion, postInstallVersion == bundledVersion {
+            helperInstalled = true
+            ClientLog.daemon.info(
+                "Helper installed successfully (\(postInstallVersion, privacy: .public))")
+            await installShellIntegration(abctl: abctl)
+            return
+        }
+
+        helperInstalled = false
+        await installShellIntegration(abctl: abctl)
+        throw HelperInstallError.versionMismatch(
+            installed: postInstallVersion,
+            expected: bundledVersion
+        )
+    }
+
+    /// Run the elevated `abctl _install` AppleScript. Returns `nil` on success
+    /// or a typed error describing the failure.
+    private func runPrivilegedHelperInstall(abctl: String, helper: String) async -> HelperInstallError? {
         func shellQuote(_ s: String) -> String {
             "'\(s.replacingOccurrences(of: "'", with: "'\\''"))'"
         }
@@ -52,24 +101,31 @@ extension DaemonManager {
             "\(shellQuote(abctl)) \(profileArgs) _install --no-daemon --no-shell --helper-path \(shellQuote(helper))"
         let script = "do shell script \"\(cmd)\" with administrator privileges"
 
-        let result = await Task.detached { () -> Bool in
+        return await Task.detached { () -> HelperInstallError? in
             var error: NSDictionary?
-            if let appleScript = NSAppleScript(source: script) {
-                appleScript.executeAndReturnError(&error)
-                if let error {
-                    ClientLog.daemon.warning("Helper install failed: \(error, privacy: .private)")
-                    return false
-                }
-                return true
+            guard let appleScript = NSAppleScript(source: script) else {
+                return .appleScriptUnavailable
             }
-            return false
+            appleScript.executeAndReturnError(&error)
+            if let error {
+                // NSAppleScript error dictionary keys (Foundation string constants).
+                let message =
+                    (error["NSAppleScriptErrorMessage"] as? String)
+                    ?? String(describing: error)
+                let code = error["NSAppleScriptErrorNumber"] as? Int
+                ClientLog.daemon.warning(
+                    "Helper install failed (code=\(code.map(String.init) ?? "?", privacy: .public)): \(message, privacy: .private)"
+                )
+                // -128 is userCanceledErr from Authorization Services / AppleScript.
+                if code == -128 || message.localizedCaseInsensitiveContains("user canceled")
+                    || message.localizedCaseInsensitiveContains("user cancelled")
+                {
+                    return .userCanceled
+                }
+                return .installFailed(message)
+            }
+            return nil
         }.value
-
-        helperInstalled = result
-        if result {
-            ClientLog.daemon.info("Helper installed successfully")
-            await installShellIntegration(abctl: abctl)
-        }
     }
 
     /// Run `abctl setup install` as the current user to set up shell
@@ -130,7 +186,8 @@ extension DaemonManager {
                     try fm.createDirectory(at: destDir, withIntermediateDirectories: true)
                 } catch {
                     ClientLog.daemon.warning(
-                        "Failed to create completions dir \(destDir.path): \(error, privacy: .public)")
+                        "Failed to create completions dir \(destDir.path): \(error, privacy: .public)"
+                    )
                     continue
                 }
                 for file in files {
@@ -152,6 +209,41 @@ extension DaemonManager {
         }.value
     }
 
+}
+
+// MARK: - Errors
+
+/// Failures while installing or verifying the privileged helper.
+public enum HelperInstallError: LocalizedError, Sendable, Equatable {
+    case bundledBinaryMissing(String)
+    case appleScriptUnavailable
+    case userCanceled
+    case installFailed(String)
+    case versionMismatch(installed: String?, expected: String?)
+
+    public var errorDescription: String? {
+        switch self {
+        case .bundledBinaryMissing(let name):
+            return "Bundled \(name) is missing from the app. Reinstall ArcBox."
+        case .appleScriptUnavailable:
+            return "Could not start the administrator prompt to install the helper service."
+        case .userCanceled:
+            return """
+                Administrator approval is required to install the helper service \
+                (needed for /usr/local/bin/docker and DNS). Click Retry and enter your password.
+                """
+        case .installFailed(let message):
+            return "Helper install failed: \(message)"
+        case .versionMismatch(let installed, let expected):
+            let have = installed ?? "none"
+            let want = expected ?? "unknown"
+            return """
+                Helper service is outdated (\(have); expected \(want)). \
+                Click Retry and approve the administrator prompt, or run: \
+                sudo abctl _install --no-daemon --no-shell
+                """
+        }
+    }
 }
 
 /// Runs `<binary> --version` and returns the trimmed stdout (e.g. "arcbox-helper 0.3.1").

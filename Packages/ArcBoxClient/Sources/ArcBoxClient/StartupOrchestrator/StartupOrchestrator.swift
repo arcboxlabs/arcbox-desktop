@@ -94,10 +94,18 @@ public final class StartupOrchestrator {
             stepStatuses[step] = .pending
         }
 
-        // Step 1: Install privileged helper (one-time, macOS prompts for admin).
-        // Non-critical: daemon works without it, just no DNS/socket integration.
-        await runStep(.installHelper) {
-            await self.daemonManager.installHelper()
+        // Step 1: Install / upgrade the privileged helper (macOS prompts for admin).
+        // Critical for /usr/local/bin/docker* symlinks, DNS resolver, and the
+        // docker.sock convenience link. Failures used to be swallowed, leaving
+        // an ancient helper on disk and no CLI tools on PATH.
+        let helperOK = await runStep(.installHelper) {
+            try await self.daemonManager.installHelper()
+        }
+
+        guard helperOK else {
+            stepStatuses[.enableDaemon] = .skipped
+            stepStatuses[.connectAndWatch] = .skipped
+            return
         }
 
         // Pre-check: verify daemon binary signature and entitlements.
