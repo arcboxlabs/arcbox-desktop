@@ -93,9 +93,9 @@ jobs:
           fi
 
           # create-dmg: UDZO packaging (homebrew-core).
-          # musl-cross: aarch64-linux-musl-strip for guest ELF payloads (dockerd
-          # etc.). Apple's /usr/bin/strip fails on some static Go ELFs. The
-          # formula lives in a third-party tap, not homebrew-core — bare
+          # musl-cross: aarch64-linux-musl-strip for bundled guest agents.
+          # Apple's /usr/bin/strip is not a reliable ELF stripper. The formula
+          # lives in a third-party tap, not homebrew-core — bare
           # `brew install musl-cross` fails with "No available formula".
           brew tap filosottile/musl-cross
           # Homebrew 5.x requires explicit trust for non-official taps.
@@ -443,6 +443,31 @@ jobs:
             echo "::error::arcbox-helper --version did not return semver on stdout: '$HELPER_VERSION'"
             exit 1
           fi
+
+          MANIFEST=$(find "$APP/Contents/Resources/assets" -name manifest.json -print -quit)
+          test -n "$MANIFEST"
+          python3 - "$MANIFEST" "$APP/Contents/Resources/runtime" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          manifest_path = pathlib.Path(sys.argv[1])
+          runtime_root = pathlib.Path(sys.argv[2])
+          manifest = json.loads(manifest_path.read_text())
+          for binary in manifest["binaries"]:
+              target = binary["targets"]["arm64"]
+              install_dir = binary.get("install_dir") or "bin"
+              path = runtime_root / install_dir / binary["name"]
+              if not path.is_file():
+                  raise SystemExit(f"missing manifest runtime binary: {path}")
+              actual = hashlib.sha256(path.read_bytes()).hexdigest()
+              if actual != target["sha256"]:
+                  raise SystemExit(
+                      f"runtime hash mismatch for {path}: expected {target['sha256']}, got {actual}"
+                  )
+          PY
+
           verify_code_identity "$APP/Contents/MacOS/bin/abctl" "com.arcboxlabs.desktop.cli"
           verify_code_identity "$APP/Contents/MacOS/bin/arcbox-helper" "com.arcboxlabs.desktop.helper"
           verify_code_identity \
