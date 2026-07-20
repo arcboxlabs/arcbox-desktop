@@ -51,11 +51,15 @@ struct HelperVersionTests {
         let v100: HelperVersion.Triple = (1, 0, 0)
         let v012: HelperVersion.Triple = (0, 4, 12)
         let v101: HelperVersion.Triple = (1, 0, 1)
+        let v200: HelperVersion.Triple = (2, 0, 0)
 
         #expect(HelperVersion.needsReinstall(installed: nil, bundled: v100))
         #expect(HelperVersion.needsReinstall(installed: v012, bundled: v100))
         #expect(!HelperVersion.needsReinstall(installed: v100, bundled: v100))
         #expect(!HelperVersion.needsReinstall(installed: v101, bundled: v100))
         #expect(HelperVersion.needsReinstall(installed: v100, bundled: nil))
+        // Major mismatch either way is a wire break — always reinstall.
+        #expect(HelperVersion.needsReinstall(installed: v200, bundled: v100))
+        #expect(HelperVersion.needsReinstall(installed: v100, bundled: v200))
     }
 }
