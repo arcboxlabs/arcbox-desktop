@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import ArcBoxClient
@@ -47,11 +48,18 @@ struct HelperVersionTests {
         #expect(HelperVersion.parse("not-a-helper") == nil)
     }
 
+    @Test func rejectsMalformedSemverComponents() {
+        #expect(HelperVersion.parse("arcbox-helper 1.garbage.9") == nil)
+        #expect(HelperVersion.parse("arcbox-helper 1.2.garbage") == nil)
+        #expect(HelperVersion.parse("arcbox-helper 1.2") == nil)
+        #expect(HelperVersion.parse("arcbox-helper 1.2.3.4") == nil)
+    }
+
     @Test func reinstallOnlyWhenStrictlyOlder() {
-        let v100: HelperVersion.Triple = (1, 0, 0)
-        let v012: HelperVersion.Triple = (0, 4, 12)
-        let v101: HelperVersion.Triple = (1, 0, 1)
-        let v200: HelperVersion.Triple = (2, 0, 0)
+        let v100 = HelperVersion(major: 1, minor: 0, patch: 0)
+        let v012 = HelperVersion(major: 0, minor: 4, patch: 12)
+        let v101 = HelperVersion(major: 1, minor: 0, patch: 1)
+        let v200 = HelperVersion(major: 2, minor: 0, patch: 0)
 
         #expect(HelperVersion.needsReinstall(installed: nil, bundled: v100))
         #expect(HelperVersion.needsReinstall(installed: v012, bundled: v100))
@@ -61,5 +69,19 @@ struct HelperVersionTests {
         // Major mismatch either way is a wire break — always reinstall.
         #expect(HelperVersion.needsReinstall(installed: v200, bundled: v100))
         #expect(HelperVersion.needsReinstall(installed: v100, bundled: v200))
+    }
+}
+
+struct AppleScriptStringLiteralTests {
+    @Test func untrustedPathCharactersRoundTripAsData() throws {
+        let value = "ArcBox\" & (do shell script \"printf injected\") & \\.app\nnext\rline\ttab"
+        let source = "return \(appleScriptStringLiteral(value))"
+        var error: NSDictionary?
+
+        let script = try #require(NSAppleScript(source: source))
+        let result = script.executeAndReturnError(&error)
+
+        #expect(error == nil)
+        #expect(result.stringValue == value)
     }
 }

@@ -117,7 +117,8 @@ extension DaemonManager {
         let profileArgs = Self.profileArguments.map(shellQuote).joined(separator: " ")
         let cmd =
             "\(shellQuote(abctl)) \(profileArgs) _install --no-daemon --no-shell --helper-path \(shellQuote(helper))"
-        let script = "do shell script \"\(cmd)\" with administrator privileges"
+        let script =
+            "do shell script \(appleScriptStringLiteral(cmd)) with administrator privileges"
 
         return await Task.detached { () -> HelperInstallError? in
             var error: NSDictionary?
@@ -231,6 +232,27 @@ extension DaemonManager {
 
 // MARK: - Errors
 
+/// Encodes an arbitrary string as one AppleScript string literal.
+///
+/// Shell quoting alone is insufficient because the shell command is first
+/// parsed as AppleScript source. App bundle paths may contain every escaped
+/// character handled here, including quotes and newlines.
+func appleScriptStringLiteral(_ value: String) -> String {
+    var literal = "\""
+    for character in value {
+        switch character {
+        case "\\": literal += "\\\\"
+        case "\"": literal += "\\\""
+        case "\n": literal += "\\n"
+        case "\r": literal += "\\r"
+        case "\t": literal += "\\t"
+        default: literal.append(character)
+        }
+    }
+    literal.append("\"")
+    return literal
+}
+
 /// Failures while installing or verifying the privileged helper.
 public enum HelperInstallError: LocalizedError, Sendable, Equatable {
     case bundledBinaryMissing(String)
@@ -271,11 +293,13 @@ public enum HelperInstallError: LocalizedError, Sendable, Equatable {
 /// Formats:
 /// - Independent helper: `arcbox-helper 1.0.0`
 /// - Legacy workspace-tied: `arcbox-helper 0.4.12`
-enum HelperVersion {
-    typealias Triple = (major: UInt64, minor: UInt64, patch: UInt64)
+struct HelperVersion: Comparable, Sendable {
+    let major: UInt64
+    let minor: UInt64
+    let patch: UInt64
 
     /// Extract major.minor.patch from a version line.
-    static func parse(_ versionOutput: String?) -> Triple? {
+    static func parse(_ versionOutput: String?) -> Self? {
         guard var raw = versionOutput?.trimmingCharacters(in: .whitespacesAndNewlines),
             !raw.isEmpty
         else {
@@ -288,11 +312,21 @@ enum HelperVersion {
         if let cut = raw.firstIndex(where: { $0 == "-" || $0 == "+" }) {
             raw = String(raw[..<cut])
         }
-        let parts = raw.split(separator: ".", maxSplits: 2, omittingEmptySubsequences: false)
-        guard let major = parts.first.flatMap({ UInt64($0) }) else { return nil }
-        let minor = parts.count > 1 ? UInt64(parts[1]) ?? 0 : 0
-        let patch = parts.count > 2 ? UInt64(parts[2]) ?? 0 : 0
-        return (major, minor, patch)
+        let parts = raw.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3,
+            let major = UInt64(parts[0]),
+            let minor = UInt64(parts[1]),
+            let patch = UInt64(parts[2])
+        else {
+            return nil
+        }
+        return Self(major: major, minor: minor, patch: patch)
+    }
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        if lhs.major != rhs.major { return lhs.major < rhs.major }
+        if lhs.minor != rhs.minor { return lhs.minor < rhs.minor }
+        return lhs.patch < rhs.patch
     }
 
     /// Whether the on-disk helper should be replaced by the bundled one.
@@ -302,14 +336,13 @@ enum HelperVersion {
     /// - **Major differs** either way → reinstall (tarpc / error wire break)
     /// - Same major and installed < bundled → reinstall
     /// - Same major and installed ≥ bundled → keep (no password on app downgrade)
-    static func needsReinstall(installed: Triple?, bundled: Triple?) -> Bool {
+    static func needsReinstall(installed: Self?, bundled: Self?) -> Bool {
         guard let bundled else { return true }
         guard let installed else { return true }
         // Wire major must match. A leftover 2.x helper after downgrading the
         // app to 1.x is not "newer is fine" — force replace.
         if installed.major != bundled.major { return true }
-        if installed.minor != bundled.minor { return installed.minor < bundled.minor }
-        return installed.patch < bundled.patch
+        return installed < bundled
     }
 }
 
