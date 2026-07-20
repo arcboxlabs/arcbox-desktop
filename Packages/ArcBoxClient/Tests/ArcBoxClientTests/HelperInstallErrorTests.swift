@@ -53,6 +53,9 @@ struct HelperVersionTests {
         #expect(HelperVersion.parse("arcbox-helper 1.2.garbage") == nil)
         #expect(HelperVersion.parse("arcbox-helper 1.2") == nil)
         #expect(HelperVersion.parse("arcbox-helper 1.2.3.4") == nil)
+        #expect(HelperVersion.parse("arcbox-helper 1.0.0-01") == nil)
+        #expect(HelperVersion.parse("arcbox-helper 1.0.0-beta..1") == nil)
+        #expect(HelperVersion.parse("arcbox-helper 1.0.0+") == nil)
     }
 
     @Test func reinstallOnlyWhenStrictlyOlder() {
@@ -69,6 +72,41 @@ struct HelperVersionTests {
         // Major mismatch either way is a wire break — always reinstall.
         #expect(HelperVersion.needsReinstall(installed: v200, bundled: v100))
         #expect(HelperVersion.needsReinstall(installed: v100, bundled: v200))
+    }
+
+    @Test func stableBundleReplacesPrereleaseInstall() throws {
+        let prerelease = try #require(HelperVersion.parse("arcbox-helper 1.0.0-beta"))
+        let stable = try #require(HelperVersion.parse("arcbox-helper 1.0.0"))
+
+        #expect(HelperVersion.needsReinstall(installed: prerelease, bundled: stable))
+        #expect(!HelperVersion.needsReinstall(installed: stable, bundled: prerelease))
+    }
+
+    @Test func prereleaseIdentifiersFollowSemverPrecedence() throws {
+        let alpha = try #require(HelperVersion.parse("arcbox-helper 1.0.0-alpha"))
+        let alphaOne = try #require(HelperVersion.parse("arcbox-helper 1.0.0-alpha.1"))
+        let alphaBeta = try #require(HelperVersion.parse("arcbox-helper 1.0.0-alpha.beta"))
+        let beta = try #require(HelperVersion.parse("arcbox-helper 1.0.0-beta"))
+        let betaTwo = try #require(HelperVersion.parse("arcbox-helper 1.0.0-beta.2"))
+        let betaEleven = try #require(HelperVersion.parse("arcbox-helper 1.0.0-beta.11"))
+        let releaseCandidate = try #require(HelperVersion.parse("arcbox-helper 1.0.0-rc.1"))
+
+        #expect(alpha < alphaOne)
+        #expect(alphaOne < alphaBeta)
+        #expect(alphaBeta < beta)
+        #expect(beta < betaTwo)
+        #expect(betaTwo < betaEleven)
+        #expect(betaEleven < releaseCandidate)
+    }
+
+    @Test func buildMetadataDoesNotAffectPrecedence() throws {
+        let plain = try #require(HelperVersion.parse("arcbox-helper 1.0.0-beta.1"))
+        let withMetadata = try #require(
+            HelperVersion.parse("arcbox-helper 1.0.0-beta.1+build.007")
+        )
+
+        #expect(plain == withMetadata)
+        #expect(!HelperVersion.needsReinstall(installed: withMetadata, bundled: plain))
     }
 }
 

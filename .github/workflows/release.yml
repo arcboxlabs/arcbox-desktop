@@ -189,22 +189,18 @@ jobs:
           AGENT_BIN=$(find "$DOWNLOAD_DIR" -type f -name "arcbox-agent" | head -1)
           VM_AGENT_BIN=$(find "$DOWNLOAD_DIR" -type f -name "vm-agent" | head -1)
 
-          if [ -z "$CLI_BIN" ] || [ -z "$DAEMON_BIN" ]; then
-            echo "Could not find pre-built binaries in release assets"
+          if [ -z "$CLI_BIN" ] || [ -z "$DAEMON_BIN" ] || [ -z "$HELPER_BIN" ]; then
+            echo "Could not find required pre-built host binaries (abctl, arcbox-daemon, arcbox-helper) in release assets"
             exit 1
           fi
 
           cp "$CLI_BIN" arcbox-core/target/release/abctl
           cp "$DAEMON_BIN" arcbox-core/target/release/arcbox-daemon
-          chmod +x arcbox-core/target/release/abctl arcbox-core/target/release/arcbox-daemon
-
-          if [ -n "$HELPER_BIN" ]; then
-            cp "$HELPER_BIN" arcbox-core/target/release/arcbox-helper
-            chmod +x arcbox-core/target/release/arcbox-helper
-            echo "Found arcbox-helper in release assets"
-          else
-            echo "::warning::arcbox-helper not found in release assets"
-          fi
+          cp "$HELPER_BIN" arcbox-core/target/release/arcbox-helper
+          chmod +x \
+            arcbox-core/target/release/abctl \
+            arcbox-core/target/release/arcbox-daemon \
+            arcbox-core/target/release/arcbox-helper
 
           if [ -n "$AGENT_BIN" ]; then
             cp "$AGENT_BIN" arcbox-core/target/aarch64-unknown-linux-musl/release/arcbox-agent
@@ -439,7 +435,7 @@ jobs:
           }
 
           HELPER_VERSION=$("$APP/Contents/MacOS/bin/arcbox-helper" --version)
-          if [[ ! "$HELPER_VERSION" =~ ^arcbox-helper[[:space:]][0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+          if [[ ! "$HELPER_VERSION" =~ ^arcbox-helper[[:space:]][0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::arcbox-helper --version did not return semver on stdout: '$HELPER_VERSION'"
             exit 1
           fi
