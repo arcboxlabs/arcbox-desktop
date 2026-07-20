@@ -106,7 +106,8 @@ extension DaemonManager {
 
     /// Run the elevated `abctl _install` AppleScript. Returns `nil` on success
     /// or a typed error describing the failure.
-    private func runPrivilegedHelperInstall(abctl: String, helper: String) async -> HelperInstallError?
+    private func runPrivilegedHelperInstall(abctl: String, helper: String) async
+        -> HelperInstallError?
     {
         func shellQuote(_ s: String) -> String {
             "'\(s.replacingOccurrences(of: "'", with: "'\\''"))'"
