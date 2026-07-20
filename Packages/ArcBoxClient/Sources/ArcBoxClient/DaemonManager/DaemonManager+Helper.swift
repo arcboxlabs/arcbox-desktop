@@ -288,17 +288,53 @@ public enum HelperInstallError: LocalizedError, Sendable, Equatable {
 
 // MARK: - Helper version parsing
 
-/// Parses `arcbox-helper --version` / RPC output into a comparable semver triple.
+/// Parses `arcbox-helper --version` / RPC output into a comparable semantic version.
 ///
 /// Formats:
 /// - Independent helper: `arcbox-helper 1.0.0`
 /// - Legacy workspace-tied: `arcbox-helper 0.4.12`
 struct HelperVersion: Comparable, Sendable {
+    private enum PrereleaseIdentifier: Comparable, Sendable {
+        case numeric(String)
+        case alphanumeric(String)
+
+        static func < (lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+            case (.numeric(let lhs), .numeric(let rhs)):
+                if lhs.count != rhs.count { return lhs.count < rhs.count }
+                return lhs < rhs
+            case (.numeric, .alphanumeric):
+                return true
+            case (.alphanumeric, .numeric):
+                return false
+            case (.alphanumeric(let lhs), .alphanumeric(let rhs)):
+                return lhs < rhs
+            }
+        }
+    }
+
     let major: UInt64
     let minor: UInt64
     let patch: UInt64
+    private let prerelease: [PrereleaseIdentifier]
 
-    /// Extract major.minor.patch from a version line.
+    init(major: UInt64, minor: UInt64, patch: UInt64) {
+        self.init(major: major, minor: minor, patch: patch, prerelease: [])
+    }
+
+    private init(
+        major: UInt64,
+        minor: UInt64,
+        patch: UInt64,
+        prerelease: [PrereleaseIdentifier]
+    ) {
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+        self.prerelease = prerelease
+    }
+
+    /// Extract a semantic version from a version line.
     static func parse(_ versionOutput: String?) -> Self? {
         guard var raw = versionOutput?.trimmingCharacters(in: .whitespacesAndNewlines),
             !raw.isEmpty
@@ -308,25 +344,77 @@ struct HelperVersion: Comparable, Sendable {
         if raw.hasPrefix("arcbox-helper") {
             raw = raw.dropFirst("arcbox-helper".count).trimmingCharacters(in: .whitespaces)
         }
-        // Drop pre-release / build metadata.
-        if let cut = raw.firstIndex(where: { $0 == "-" || $0 == "+" }) {
-            raw = String(raw[..<cut])
+
+        let buildParts = raw.split(separator: "+", maxSplits: 1, omittingEmptySubsequences: false)
+        if buildParts.count == 2, !validIdentifiers(buildParts[1], allowLeadingZeroes: true) {
+            return nil
         }
-        let parts = raw.split(separator: ".", omittingEmptySubsequences: false)
+
+        let versionParts = buildParts[0].split(
+            separator: "-", maxSplits: 1, omittingEmptySubsequences: false)
+        let parts = versionParts[0].split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count == 3,
-            let major = UInt64(parts[0]),
-            let minor = UInt64(parts[1]),
-            let patch = UInt64(parts[2])
+            let major = parseCoreIdentifier(parts[0]),
+            let minor = parseCoreIdentifier(parts[1]),
+            let patch = parseCoreIdentifier(parts[2])
         else {
             return nil
         }
-        return Self(major: major, minor: minor, patch: patch)
+
+        var prerelease: [PrereleaseIdentifier] = []
+        if versionParts.count == 2 {
+            let rawPrerelease = versionParts[1]
+            guard validIdentifiers(rawPrerelease, allowLeadingZeroes: false) else { return nil }
+            prerelease = rawPrerelease.split(separator: ".").map { identifier in
+                if identifier.utf8.allSatisfy(Self.isASCIIDigit) {
+                    return .numeric(String(identifier))
+                }
+                return .alphanumeric(String(identifier))
+            }
+        }
+
+        return Self(major: major, minor: minor, patch: patch, prerelease: prerelease)
     }
 
     static func < (lhs: Self, rhs: Self) -> Bool {
         if lhs.major != rhs.major { return lhs.major < rhs.major }
         if lhs.minor != rhs.minor { return lhs.minor < rhs.minor }
-        return lhs.patch < rhs.patch
+        if lhs.patch != rhs.patch { return lhs.patch < rhs.patch }
+        if lhs.prerelease.isEmpty { return false }
+        if rhs.prerelease.isEmpty { return true }
+        return lhs.prerelease.lexicographicallyPrecedes(rhs.prerelease)
+    }
+
+    private static func parseCoreIdentifier(_ value: Substring) -> UInt64? {
+        guard value.utf8.allSatisfy(isASCIIDigit),
+            value.count == 1 || value.first != "0"
+        else {
+            return nil
+        }
+        return UInt64(value)
+    }
+
+    private static func validIdentifiers(
+        _ value: Substring,
+        allowLeadingZeroes: Bool
+    ) -> Bool {
+        let identifiers = value.split(separator: ".", omittingEmptySubsequences: false)
+        return !identifiers.isEmpty
+            && identifiers.allSatisfy { identifier in
+                guard !identifier.isEmpty,
+                    identifier.utf8.allSatisfy({
+                        isASCIIDigit($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 45
+                    })
+                else {
+                    return false
+                }
+                return allowLeadingZeroes || !identifier.utf8.allSatisfy(isASCIIDigit)
+                    || identifier.count == 1 || identifier.first != "0"
+            }
+    }
+
+    private static func isASCIIDigit(_ byte: UInt8) -> Bool {
+        (48...57).contains(byte)
     }
 
     /// Whether the on-disk helper should be replaced by the bundled one.
