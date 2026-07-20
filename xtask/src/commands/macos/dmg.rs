@@ -22,6 +22,9 @@ use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER};
 use crate::support::fs as xfs;
 use crate::{MacosDmgArgs, MacosPrepareResourcesArgs};
 
+#[cfg(test)]
+mod tests;
+
 const SCHEME_NAME: &str = "ArcBox";
 const PRODUCTION_DAEMON_NAME: &str = "com.arcboxlabs.desktop.daemon";
 const DOCKER_TOOLS: [&str; 4] = [
@@ -665,9 +668,8 @@ fn embed_runtime(app_bundle: &Path, sign_identity: &str, profile: BundleProfile)
             }
             std::fs::copy(entry.path(), &dest)
                 .with_context(|| format!("copying runtime file {}", rel.display()))?;
-            // Drop DWARF / symbol tables from guest ELFs before codesign.
-            // Upstream dockerd/runc/firecracker releases often ship unstripped.
-            strip_binary_best_effort(&dest);
+            // Runtime binaries are pinned by the boot manifest. Preserve their
+            // exact bytes so the bundled seed still matches its declared hash.
             sign_binary(&dest, sign_identity)?;
             println!("  Embedded {}", rel.display());
             count += 1;
@@ -701,9 +703,8 @@ fn command_exists(name: &str) -> bool {
 /// Candidate strip tools for `path`, ordered by preference for its format.
 ///
 /// - Mach-O: Apple `/usr/bin/strip` first.
-/// - ELF (Linux guest): prefer ELF-capable cross/LLVM strippers. Apple's
-///   cctools `strip` handles some simple ELFs but fails on others (e.g.
-///   statically-linked Go `dockerd` with a broken `.rela.plt` link field).
+/// - ELF (Linux guest agents): prefer ELF-capable cross/LLVM strippers because
+///   Apple's cctools `strip` only handles some simple ELFs.
 fn strip_tool_candidates(path: &Path) -> Vec<&'static str> {
     let candidates: &[&str] = if xfs::is_macho(path) {
         &["/usr/bin/strip", "strip"]
@@ -733,6 +734,8 @@ fn strip_tool_candidates(path: &Path) -> Vec<&'static str> {
 /// - Tries each candidate tool on a temp copy; keeps the first result that is
 ///   strictly smaller than the original (so tools that grow under strip, or
 ///   that fail on a particular binary, are skipped).
+/// - Uses an RAII-managed unique temp file beside the destination so every
+///   preparation, execution, and installation failure cleans itself up.
 /// - Failures are logged and ignored — a larger binary beats a broken pack.
 fn strip_binary_best_effort(path: &Path) {
     let tools = strip_tool_candidates(path);
@@ -743,21 +746,24 @@ fn strip_binary_best_effort(path: &Path) {
         Ok(m) => m.len(),
         Err(_) => return,
     };
-    let tmp = path.with_extension("strip-tmp");
     let mut last_err: Option<String> = None;
 
     for tool in tools {
-        if let Err(e) = std::fs::copy(path, &tmp) {
-            println!("  Warning: strip prepare {}: {e}", path.display());
-            return;
-        }
-        match Command::new(tool).arg(&tmp).status() {
+        let tmp = match prepare_strip_copy(path) {
+            Ok(tmp) => tmp,
+            Err(e) => {
+                println!("  Warning: strip prepare {}: {e}", path.display());
+                return;
+            }
+        };
+        match Command::new(tool).arg(tmp.path()).status() {
             Ok(s) if s.success() => {
-                let after = std::fs::metadata(&tmp).map(|m| m.len()).unwrap_or(before);
+                let after = std::fs::metadata(tmp.path())
+                    .map(|m| m.len())
+                    .unwrap_or(before);
                 if after < before {
-                    if let Err(e) = std::fs::rename(&tmp, path) {
-                        println!("  Warning: strip install {}: {e}", path.display());
-                        let _ = std::fs::remove_file(&tmp);
+                    if let Err(e) = tmp.persist(path) {
+                        println!("  Warning: strip install {}: {}", path.display(), e.error);
                         return;
                     }
                     println!(
@@ -769,14 +775,11 @@ fn strip_binary_best_effort(path: &Path) {
                     return;
                 }
                 // Tool ran but did not shrink — try the next candidate.
-                let _ = std::fs::remove_file(&tmp);
             }
             Ok(s) => {
-                let _ = std::fs::remove_file(&tmp);
                 last_err = Some(format!("{tool} exited {}", s.code().unwrap_or(-1)));
             }
             Err(e) => {
-                let _ = std::fs::remove_file(&tmp);
                 last_err = Some(format!("{tool}: {e}"));
             }
         }
@@ -785,6 +788,15 @@ fn strip_binary_best_effort(path: &Path) {
     if let Some(err) = last_err {
         println!("  Warning: could not strip {}: {err}", path.display());
     }
+}
+
+fn prepare_strip_copy(path: &Path) -> std::io::Result<tempfile::NamedTempFile> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let tmp = tempfile::Builder::new()
+        .prefix(".strip-")
+        .tempfile_in(parent)?;
+    std::fs::copy(path, tmp.path())?;
+    Ok(tmp)
 }
 
 /// Strip the main app executable if Xcode left local symbols in place.
