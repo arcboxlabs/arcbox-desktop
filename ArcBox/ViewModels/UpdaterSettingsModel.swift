@@ -1,4 +1,5 @@
-import Combine
+import Foundation
+import Observation
 import Sparkle
 
 /// Bridges Sparkle's auto-update settings to SwiftUI.
@@ -21,7 +22,7 @@ final class UpdaterSettingsModel {
     @ObservationIgnored
     private let updater: SPUUpdater
     @ObservationIgnored
-    private var cancellables: Set<AnyCancellable> = []
+    private var observations: [NSKeyValueObservation] = []
 
     init(updater: SPUUpdater) {
         self.updater = updater
@@ -33,17 +34,15 @@ final class UpdaterSettingsModel {
         // dialog). Setting `automaticallyChecksForUpdates` also re-derives the
         // gated download/allows properties, so observing all three keeps the
         // mirrors consistent.
-        let observedKeyPaths: [KeyPath<SPUUpdater, Bool>] = [
+        let keyPaths: [KeyPath<SPUUpdater, Bool>] = [
             \.automaticallyChecksForUpdates,
             \.automaticallyDownloadsUpdates,
             \.allowsAutomaticUpdates,
         ]
-        for keyPath in observedKeyPaths {
-            updater.publisher(for: keyPath)
-                .sink { [weak self] _ in
-                    Task { @MainActor in self?.refresh() }
-                }
-                .store(in: &cancellables)
+        observations = keyPaths.map { keyPath in
+            updater.observe(keyPath, options: [.new]) { [weak self] _, _ in
+                Task { @MainActor in self?.refresh() }
+            }
         }
     }
 
