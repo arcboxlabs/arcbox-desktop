@@ -37,5 +37,12 @@
 	<string>$(POSTHOG_API_KEY)</string>
 	<key>SentryDSN</key>
 	<string>$(SENTRY_DSN)</string>
+	<!-- Sparkle initial defaults: automatically check for and download+install
+	     updates out of the box. User changes persist to UserDefaults and take
+	     precedence over these Info.plist seeds. -->
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
 </dict>
 </plist>

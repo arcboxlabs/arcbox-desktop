@@ -25,7 +25,6 @@ struct ArcBoxDesktopApp: App {
     @State private var sleepWakeManager = SleepWakeManager()
     @State private var startupOrchestrator: StartupOrchestrator?
     @AppStorage("showInMenuBar") private var showInMenuBar = false
-    @AppStorage("autoUpdate") private var autoUpdate = false
     @AppStorage("updateChannel") private var updateChannel = "stable"
 
     // Shared ViewModels used by both main window and menu bar
@@ -42,6 +41,7 @@ struct ArcBoxDesktopApp: App {
 
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
+    private let updaterSettings: UpdaterSettingsModel
 
     init() {
         Self.initSentry()
@@ -51,6 +51,7 @@ struct ArcBoxDesktopApp: App {
             updaterDelegate: updaterDelegate,
             userDriverDelegate: nil
         )
+        updaterSettings = UpdaterSettingsModel(updater: updaterController.updater)
     }
 
     var body: some Scene {
@@ -151,13 +152,6 @@ struct ArcBoxDesktopApp: App {
                         DockerContextManager.restorePreviousContext()
                     }
                 }
-                .onAppear {
-                    // Sync auto-update preference to Sparkle
-                    updaterController.updater.automaticallyChecksForUpdates = autoUpdate
-                }
-                .onChange(of: autoUpdate) { _, newValue in
-                    updaterController.updater.automaticallyChecksForUpdates = newValue
-                }
                 .onChange(of: updateChannel) { _, _ in
                     // Force Sparkle to re-fetch the feed URL (which reads updateChannel via UpdaterDelegate)
                     updaterController.updater.resetUpdateCycle()
@@ -191,6 +185,7 @@ struct ArcBoxDesktopApp: App {
                 .environment(imagesVM)
                 .environment(authSession)
                 .environment(systemVmBackendVM)
+                .environment(updaterSettings)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)

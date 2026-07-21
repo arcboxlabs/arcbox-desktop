@@ -1,6 +1,7 @@
 import ArcBoxClient
 import PostHog
 import ServiceManagement
+import Sparkle
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,11 +11,11 @@ struct GeneralSettingsView: View {
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(ContainersViewModel.self) private var containersVM
     @Environment(ImagesViewModel.self) private var imagesVM
+    @Environment(UpdaterSettingsModel.self) private var updaterSettings
 
     @AppStorage("startAtLogin") private var startAtLogin = false
     @AppStorage("showInMenuBar") private var showInMenuBar = false
     @AppStorage("keepRunning") private var keepRunning = false
-    @AppStorage("autoUpdate") private var autoUpdate = false
     @AppStorage("updateChannel") private var updateChannel = "stable"
     @AppStorage("terminalTheme") private var terminalTheme = "system"
     @AppStorage("externalTerminal") private var externalTerminal = ExternalTerminalApp.terminalBundleIdentifier
@@ -40,7 +41,22 @@ struct GeneralSettingsView: View {
             }
 
             Section("Updates") {
-                Toggle("Automatically check for updates", isOn: $autoUpdate)
+                Toggle(
+                    "Automatically check for updates",
+                    isOn: Binding(
+                        get: { updaterSettings.automaticallyChecksForUpdates },
+                        set: { updaterSettings.setAutomaticallyChecksForUpdates($0) }
+                    )
+                )
+                Toggle(
+                    "Automatically download and install updates",
+                    isOn: Binding(
+                        get: { updaterSettings.automaticallyDownloadsUpdates },
+                        set: { updaterSettings.setAutomaticallyDownloadsUpdates($0) }
+                    )
+                )
+                .disabled(!updaterSettings.allowsAutomaticUpdates)
+                .padding(.leading, 20)
                 Picker("Update channel", selection: $updateChannel) {
                     Text("Stable").tag("stable")
                     Text("Beta").tag("beta")
@@ -236,9 +252,13 @@ struct GeneralSettingsView: View {
 }
 
 #Preview {
-    GeneralSettingsView()
+    let updater = SPUStandardUpdaterController(
+        startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil
+    ).updater
+    return GeneralSettingsView()
         .environment(DaemonManager())
         .environment(ContainersViewModel())
         .environment(ImagesViewModel())
+        .environment(UpdaterSettingsModel(updater: updater))
         .frame(width: 500, height: 400)
 }
