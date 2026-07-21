@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.30.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.29.1...v1.30.0) (2026-07-21)
+
+
+### Features
+
+* **updater:** default new installs to auto-download and install updates ([5b9b0de](https://github.com/arcboxlabs/arcbox-desktop/commit/5b9b0de7f36241681ac1ae6871514def0abcc1eb))
+
+
+### Bug Fixes
+
+* **ui:** stop NavigationSplitView content column collapsing to vertical text ([6823c1e](https://github.com/arcboxlabs/arcbox-desktop/commit/6823c1ec63547fea47daa0dc0b2fcf3a052e97a4))
+
+
+### Refactoring
+
+* **updater:** replace Combine KVO bridge with Foundation observe ([d070db4](https://github.com/arcboxlabs/arcbox-desktop/commit/d070db411491c1e913f4ac7ffc33c8fbd126de6a))
+
 ## [1.29.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.29.0...v1.29.1) (2026-07-21)
 
 
