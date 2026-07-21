@@ -99,6 +99,7 @@
 		7910184754585B4CF647FA92 /* ContainerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C6B2F85E39321931CEC3ED /* ContainerDetailView.swift */; };
 		79C5F3DA19E7431F8B28B6F0 /* MenuBarView+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC010DD9F0AEC7E4EA778C59 /* MenuBarView+Actions.swift */; };
 		7DABE0FBDD17F88D47333964 /* CommandHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65698313C3204F5F23E099B /* CommandHint.swift */; };
+		7DFC19087BE929DDF207A677 /* UpdaterSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */; };
 		7F091F3F3F75F500937DC7BC /* ImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */; };
 		801AAF363A7901B7D17F5C55 /* AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */; };
 		807479D85C38FEE5E53218DD /* LocalRootFSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */; };
@@ -353,6 +354,7 @@
 		9101DCB26B0BB5B8DE4CAE70 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		920C9CA81449FA23CEC17EF6 /* SandboxFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxFilesTab.swift; sourceTree = "<group>"; };
 		9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterDelegate.swift; sourceTree = "<group>"; };
+		93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterSettingsModel.swift; sourceTree = "<group>"; };
 		949DB8BB8139F8D3C37503E9 /* MachineRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineRowView.swift; sourceTree = "<group>"; };
 		95F593FF4C1C56EBF378883E /* MachineLogsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLogsTab.swift; sourceTree = "<group>"; };
 		9730C66B6A04B33F7DA3448B /* NetworkEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkEmptyState.swift; sourceTree = "<group>"; };
@@ -827,6 +829,7 @@
 				C0BC46E06601AA9D330AF049 /* SystemVmBackendModel.swift */,
 				591B3B9F3D3A0B5C43EC7B55 /* TemplatesViewModel.swift */,
 				9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */,
+				93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */,
 				3DCBC0E44C2DBB3064D4A759 /* Containers */,
 				7D89C26DD9B6BEB015B28923 /* Images */,
 				46C6E77D6FA08BC8D86F3C3B /* Sandboxes */,
@@ -1366,6 +1369,7 @@
 				ED5B6539D3909308DA1C4AE4 /* TerminalSessionBridge.swift in Sources */,
 				4113241C123BBBBDEC76E5B0 /* ToastView.swift in Sources */,
 				525ECDE24CB1E8ADC7AADB49 /* UpdaterDelegate.swift in Sources */,
+				7DFC19087BE929DDF207A677 /* UpdaterSettingsModel.swift in Sources */,
 				96C7FFF79579D1B999ABAF3F /* Utilities.swift in Sources */,
 				6F8362D2C8129F7BBF6E9635 /* VolumeDetailView.swift in Sources */,
 				33821C4E5444A595520CCCB0 /* VolumeEmptyState.swift in Sources */,
