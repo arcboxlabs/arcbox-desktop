@@ -27,21 +27,19 @@ struct ContentView: View {
         NavigationSplitView {
             sidebar
         } content: {
-            if isTemplatesSection {
-                Color.clear
-                    .navigationSplitViewColumnWidth(0)
-                    .navigationTitle("Templates")
-            } else if appVM.currentNav == .activity {
-                // Activity is a single full-width dashboard rendered in the
-                // detail column; collapse the content column.
-                Color.clear
-                    .navigationSplitViewColumnWidth(0)
-                    .navigationTitle("Activity")
-            } else {
-                contentColumn
-                    .background(AppColors.background)
-                    .navigationSplitViewColumnWidth(min: 150, ideal: 320, max: 600)
-            }
+            // Always render `contentColumn` and vary only the numeric width
+            // through the SAME flexible overload. Mixing the fixed
+            // `navigationSplitViewColumnWidth(0)` overload with the flexible
+            // `(min:ideal:max:)` one across sibling branches makes the column
+            // width latch near 0 on navigation, collapsing the list content to
+            // one-character-per-line text (Activity/Templates collapse to 0).
+            contentColumn
+                .background(AppColors.background)
+                .navigationSplitViewColumnWidth(
+                    min: isContentColumnCollapsed ? 0 : 150,
+                    ideal: isContentColumnCollapsed ? 0 : 320,
+                    max: isContentColumnCollapsed ? 0 : 600
+                )
         } detail: {
             detailPanel
                 .background(AppColors.sidebar)
@@ -101,8 +99,10 @@ struct ContentView: View {
         .navigationSplitViewColumnWidth(180)
     }
 
-    private var isTemplatesSection: Bool {
-        appVM.currentNav == .templates
+    /// Sections rendered full-width in the detail column collapse the content
+    /// column to zero width instead of showing a list.
+    private var isContentColumnCollapsed: Bool {
+        appVM.currentNav == .activity || appVM.currentNav == .templates
     }
 
     // MARK: - Content column
@@ -111,8 +111,9 @@ struct ContentView: View {
     private var contentColumn: some View {
         switch appVM.currentNav {
         case .activity:
-            // Rendered full-width in the detail column.
+            // Rendered full-width in the detail column; content column collapses.
             Color.clear
+                .navigationTitle("Activity")
         case .containers:
             ContainersListView()
                 .environment(containersVM)
@@ -140,8 +141,9 @@ struct ContentView: View {
             SandboxesListView()
                 .environment(sandboxesVM)
         case .templates:
-            // Handled in detail column
+            // Rendered full-width in the detail column; content column collapses.
             Color.clear
+                .navigationTitle("Templates")
         case nil:
             ContainersListView()
                 .environment(containersVM)
