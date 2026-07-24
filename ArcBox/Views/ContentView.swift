@@ -9,6 +9,7 @@ struct ContentView: View {
     @Environment(VolumesViewModel.self) private var volumesVM
     @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(NetworksViewModel.self) private var networksVM
+    @Environment(RunnersViewModel.self) private var runnersVM
 
     // Feature ViewModels -- local to main window
     @State private var activityVM = ActivityViewModel()
@@ -91,6 +92,13 @@ struct ContentView: View {
                         .tag(item)
                 }
             }
+            Section("CI Runners") {
+                ForEach(NavItem.Section.runners.items) { item in
+                    Label(item.label, systemImage: item.sfSymbol)
+                        .badge(runnersVM.activeJobCount)
+                        .tag(item)
+                }
+            }
         }
         .listStyle(.sidebar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -137,6 +145,8 @@ struct ContentView: View {
         case .machines:
             MachinesView()
                 .environment(machinesVM)
+        case .runner:
+            RunnersView()
         case .sandboxes:
             SandboxesListView()
                 .environment(sandboxesVM)
@@ -182,6 +192,9 @@ struct ContentView: View {
         case .machines:
             MachineDetailView()
                 .environment(machinesVM)
+        case .runner:
+            // Job / host detail arrives with RUN-12 / RUN-13.
+            DetailPlaceholderView()
         case .sandboxes:
             SandboxDetailView()
                 .environment(sandboxesVM)

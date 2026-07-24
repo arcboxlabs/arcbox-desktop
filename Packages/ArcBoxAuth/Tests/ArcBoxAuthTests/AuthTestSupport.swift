@@ -4,114 +4,183 @@ import os
 @testable import ArcBoxAuth
 
 enum AuthTestSupport {
-    static let configuration = OIDCClientConfiguration(
-        issuerURL: URL(string: "https://idp.example.com")!,
+    static let configuration = AuthClientConfiguration(
+        issuerURL: URL(string: "https://idp.example.com/api/auth")!,
         clientID: "test-client"
     )
 
-    static let endpoints = OIDCEndpoints(
-        authorizationEndpoint: URL(string: "https://idp.example.com/auth")!,
-        tokenEndpoint: URL(string: "https://idp.example.com/token")!,
-        revocationEndpoint: URL(string: "https://idp.example.com/revoke")!,
-        userinfoEndpoint: URL(string: "https://idp.example.com/userinfo")!
-    )
+    static func grant(
+        expiresIn: TimeInterval = 1800,
+        interval: TimeInterval? = 5
+    ) -> DeviceCodeGrant {
+        DeviceCodeGrant(
+            deviceCode: "device-1",
+            userCode: "ABCD1234",
+            verificationURI: URL(string: "https://idp.example.com/device")!,
+            verificationURIComplete: URL(
+                string: "https://idp.example.com/device?user_code=ABCD1234"),
+            expiresIn: expiresIn,
+            interval: interval
+        )
+    }
 
-    /// Unsigned JWT with the given payload, shaped like a real ID token.
-    static func idToken(subject: String, email: String? = nil, nonce: String? = nil) -> String {
-        var claims = ["\"sub\":\"\(subject)\"", "\"exp\":4102444800"]
-        if let email { claims.append("\"email\":\"\(email)\"") }
-        if let nonce { claims.append("\"nonce\":\"\(nonce)\"") }
-        let header = Data("{\"alg\":\"RS256\"}".utf8).base64URLEncodedString()
-        let payload = Data("{\(claims.joined(separator: ","))}".utf8).base64URLEncodedString()
-        return "\(header).\(payload).signature"
+    static func snapshot(
+        subject: String = "user-1",
+        name: String? = "Ada",
+        email: String? = "ada@example.com",
+        expiresAt: Date? = Date(timeIntervalSince1970: 4_102_444_800)
+    ) -> SessionSnapshot {
+        SessionSnapshot(
+            session: SessionDetails(expiresAt: expiresAt),
+            user: SessionUser(
+                id: subject, name: name, email: email, emailVerified: true, image: nil)
+        )
     }
 }
 
 final class InMemoryTokenStore: TokenStoring {
-    private let storage = OSAllocatedUnfairLock<StoredTokens?>(initialState: nil)
-
-    var stored: StoredTokens? { storage.withLock { $0 } }
-
-    init(initial: StoredTokens? = nil) {
-        storage.withLock { $0 = initial }
+    private struct State {
+        var stored: StoredSession?
+        var saveCalls = 0
+        var loadCalls = 0
+        var clearCalls = 0
+        var shouldFailLoading = false
     }
 
-    func save(_ tokens: StoredTokens) throws { storage.withLock { $0 = tokens } }
-    func load() throws -> StoredTokens? { storage.withLock { $0 } }
-    func clear() throws { storage.withLock { $0 = nil } }
+    enum Failure: Error {
+        case loadFailed
+    }
+
+    private let storage: OSAllocatedUnfairLock<State>
+
+    var stored: StoredSession? { storage.withLock { $0.stored } }
+    var saveCalls: Int { storage.withLock { $0.saveCalls } }
+    var loadCalls: Int { storage.withLock { $0.loadCalls } }
+    var clearCalls: Int { storage.withLock { $0.clearCalls } }
+
+    init(initial: StoredSession? = nil) {
+        storage = OSAllocatedUnfairLock(initialState: State(stored: initial))
+    }
+
+    func failLoading() {
+        storage.withLock { $0.shouldFailLoading = true }
+    }
+
+    func save(_ session: StoredSession) throws {
+        storage.withLock {
+            $0.saveCalls += 1
+            $0.stored = session
+        }
+    }
+
+    func load() throws -> StoredSession? {
+        let result = storage.withLock {
+            $0.loadCalls += 1
+            return ($0.shouldFailLoading, $0.stored)
+        }
+        if result.0 { throw Failure.loadFailed }
+        return result.1
+    }
+
+    func clear() throws {
+        storage.withLock {
+            $0.clearCalls += 1
+            $0.stored = nil
+        }
+    }
 }
 
-final class FakeOIDCProvider: OIDCProviding {
+/// Scripted provider: poll outcomes are consumed in order; the last entry
+/// repeats for any further polls.
+final class FakeAuthProvider: AuthProviding {
     struct State {
-        var exchangeResult: Result<TokenResponse, OIDCError> = .failure(.notSignedIn)
-        var refreshResult: Result<TokenResponse, OIDCError> = .failure(.notSignedIn)
-        var userInfoResult: Result<OIDCUserInfo, OIDCError> = .failure(
-            .userInfoFailed(status: 401, body: "unconfigured"))
-        var refreshDelay: Duration?
-        var revokeError: OIDCError?
-        var exchangeCalls = 0
-        var refreshCalls = 0
-        var revokeCalls = 0
-        var userInfoCalls = 0
+        var deviceCodeResult: Result<DeviceCodeGrant, AuthError> = .success(
+            AuthTestSupport.grant())
+        var pollScript: [Result<DevicePollOutcome, AuthError>] = [
+            .success(.granted(DeviceTokenGrant(sessionToken: "session-1", expiresAt: nil)))
+        ]
+        var sessionResult: Result<SessionSnapshot?, AuthError> = .success(
+            AuthTestSupport.snapshot())
+        var signOutError: AuthError?
+        var deviceCodeCalls = 0
+        var pollCalls = 0
+        var sessionCalls = 0
+        var signOutCalls = 0
+        var signOutTokens: [String] = []
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
 
-    var exchangeCalls: Int { state.withLock { $0.exchangeCalls } }
-    var refreshCalls: Int { state.withLock { $0.refreshCalls } }
-    var revokeCalls: Int { state.withLock { $0.revokeCalls } }
-    var userInfoCalls: Int { state.withLock { $0.userInfoCalls } }
+    var deviceCodeCalls: Int { state.withLock { $0.deviceCodeCalls } }
+    var pollCalls: Int { state.withLock { $0.pollCalls } }
+    var sessionCalls: Int { state.withLock { $0.sessionCalls } }
+    var signOutCalls: Int { state.withLock { $0.signOutCalls } }
+    var signOutTokens: [String] { state.withLock { $0.signOutTokens } }
 
     func configure(_ change: @Sendable (inout State) -> Void) {
         state.withLock { change(&$0) }
     }
 
-    func discover(issuer: URL) async throws -> OIDCEndpoints {
-        AuthTestSupport.endpoints
-    }
-
-    func exchangeCode(
-        _ code: String,
-        verifier: String,
-        configuration: OIDCClientConfiguration,
-        endpoints: OIDCEndpoints
-    ) async throws -> TokenResponse {
+    func requestDeviceCode(
+        configuration: AuthClientConfiguration
+    ) async throws -> DeviceCodeGrant {
         try state.withLock { s in
-            s.exchangeCalls += 1
-            return s.exchangeResult
+            s.deviceCodeCalls += 1
+            return s.deviceCodeResult
         }.get()
     }
 
-    func refresh(
-        refreshToken: String,
-        configuration: OIDCClientConfiguration,
-        endpoints: OIDCEndpoints
-    ) async throws -> TokenResponse {
-        let (delay, result) = state.withLock { s in
-            s.refreshCalls += 1
-            return (s.refreshDelay, s.refreshResult)
-        }
-        if let delay { try await Task.sleep(for: delay) }
-        return try result.get()
+    func pollDeviceToken(
+        deviceCode: String,
+        configuration: AuthClientConfiguration
+    ) async throws -> DevicePollOutcome {
+        try state.withLock { s in
+            s.pollCalls += 1
+            let result = s.pollScript.first ?? .failure(.notSignedIn)
+            if s.pollScript.count > 1 { s.pollScript.removeFirst() }
+            return result
+        }.get()
     }
 
-    func revoke(
+    func session(
         token: String,
-        tokenTypeHint: String,
-        configuration: OIDCClientConfiguration,
-        endpoint: URL
-    ) async throws {
+        configuration: AuthClientConfiguration
+    ) async throws -> SessionSnapshot? {
+        try state.withLock { s in
+            s.sessionCalls += 1
+            return s.sessionResult
+        }.get()
+    }
+
+    func signOut(token: String, configuration: AuthClientConfiguration) async throws {
         let error = state.withLock { s in
-            s.revokeCalls += 1
-            return s.revokeError
+            s.signOutCalls += 1
+            s.signOutTokens.append(token)
+            return s.signOutError
         }
         if let error { throw error }
     }
+}
 
-    func userInfo(accessToken: String, endpoint: URL) async throws -> OIDCUserInfo {
-        try state.withLock { s in
-            s.userInfoCalls += 1
-            return s.userInfoResult
-        }.get()
+/// Records slept intervals; can gate the loop so tests observe mid-poll state.
+final class RecordingSleeper: Sendable {
+    private let state = OSAllocatedUnfairLock(initialState: [Duration]())
+
+    var slept: [Duration] { state.withLock { $0 } }
+
+    @Sendable func sleep(_ duration: Duration) async throws {
+        state.withLock { $0.append(duration) }
+        await Task.yield()
+        try Task.checkCancellation()
+    }
+}
+
+/// Captures URLs the session asked the browser to open.
+@MainActor
+final class BrowserSpy {
+    private(set) var opened: [URL] = []
+
+    func open(_ url: URL) {
+        opened.append(url)
     }
 }

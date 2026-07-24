@@ -313,6 +313,7 @@ jobs:
           #include "Version.xcconfig"
           OIDC_ISSUER_URL = https:/$()/auth.arcbox.dev/api/auth
           OIDC_CLIENT_ID = arcbox-desktop
+          FLEET_PLATFORM_BASE_URL = https:/$()/api.arcbox.dev
           XCEOF
 
       - name: Trust SwiftPM plugins
