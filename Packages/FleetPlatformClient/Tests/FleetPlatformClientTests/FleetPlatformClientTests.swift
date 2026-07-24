@@ -58,6 +58,172 @@ struct FleetPlatformClientTests {
         #expect(enrollment.token == "flet_secret")
     }
 
+    @Test func listMachinesUsesWorkspaceHeaderAndDecodesResponse() async throws {
+        let json = """
+            [{
+              "id":"fltm_123",
+              "name":"Shuo's Mac",
+              "status":"online",
+              "arch":"arm64",
+              "cpu":12,
+              "mem_mib":24576,
+              "host_info":{"hostname":"studio"},
+              "tags":["desktop"],
+              "created_at":"2026-07-24T08:00:00Z",
+              "enrolled_at":"2026-07-24T08:01:00Z",
+              "last_seen":"2026-07-24T08:02:00.123Z",
+              "agent_version":"0.5.1",
+              "pools":[{"os":"darwin","arch":"arm64","backed_by":"vm"}],
+              "telemetry":{
+                "load_avg_1m":1.25,
+                "cpu_count":12,
+                "mem_total_mib":24576,
+                "mem_available_mib":16384
+              }
+            }]
+            """
+        let http = HTTPStub { request in
+            #expect(request.httpMethod == "GET")
+            #expect(request.url?.absoluteString == "https://api.example.com/root/v1/fleet/machines")
+            #expect(request.value(forHTTPHeaderField: "X-Workspace-Id") == "ws_123")
+            return (Data(json.utf8), try response(for: request))
+        }
+        let client = makeClient(http: http)
+
+        let machines = try await client.listMachines(workspaceID: "ws_123")
+
+        let machine = try #require(machines.first)
+        #expect(machine.id == "fltm_123")
+        #expect(machine.status == .online)
+        #expect(machine.agentVersion == "0.5.1")
+        #expect(machine.pools == [.init(os: .darwin, arch: .arm64, backedBy: .vm)])
+        #expect(machine.telemetry?.memAvailableMib == 16384)
+    }
+
+    @Test func getMachineUsesOpaquePrefixedID() async throws {
+        let json = """
+            {
+              "id":"fltm_abc",
+              "name":"This Mac",
+              "status":"enrolled",
+              "arch":"arm64",
+              "cpu":8,
+              "mem_mib":16384,
+              "host_info":{},
+              "tags":[],
+              "created_at":"2026-07-24T08:00:00Z",
+              "pools":[]
+            }
+            """
+        let http = HTTPStub { request in
+            #expect(
+                request.url?.absoluteString
+                    == "https://api.example.com/root/v1/fleet/machines/fltm_abc"
+            )
+            #expect(request.value(forHTTPHeaderField: "X-Workspace-Id") == "ws_123")
+            return (Data(json.utf8), try response(for: request))
+        }
+        let client = makeClient(http: http)
+
+        let machine = try await client.getMachine(id: "fltm_abc", workspaceID: "ws_123")
+
+        #expect(machine.id == "fltm_abc")
+    }
+
+    @Test func listJobsBuildsFiltersAndDecodesCursorPage() async throws {
+        let json = """
+            {
+              "jobs":[{
+                "id":"5ce49702-bb18-4a15-9ee5-91a62619799a",
+                "repo":"arcboxlabs/arcbox",
+                "status":"running",
+                "os":"linux",
+                "arch":"amd64",
+                "gh_run_id":123,
+                "gh_job_id":456,
+                "labels":["self-hosted","linux"],
+                "machine_id":"fltm_abc",
+                "jit_runner_name":"arcbox-123",
+                "created_at":"2026-07-24T08:00:00Z",
+                "started_at":"2026-07-24T08:00:05Z"
+              }],
+              "next_cursor":"next-page"
+            }
+            """
+        let http = HTTPStub { request in
+            #expect(request.httpMethod == "GET")
+            let url = try #require(request.url)
+            let components = try #require(
+                URLComponents(url: url, resolvingAgainstBaseURL: false)
+            )
+            #expect(components.path == "/root/v1/fleet/jobs")
+            #expect(
+                components.queryItems
+                    == [
+                        URLQueryItem(name: "machine_id", value: "fltm_abc"),
+                        URLQueryItem(name: "status", value: "running"),
+                        URLQueryItem(name: "cursor", value: "older"),
+                        URLQueryItem(name: "limit", value: "25"),
+                    ]
+            )
+            #expect(request.value(forHTTPHeaderField: "X-Workspace-Id") == "ws_123")
+            return (Data(json.utf8), try response(for: request))
+        }
+        let client = makeClient(http: http)
+
+        let page = try await client.listJobs(
+            workspaceID: "ws_123",
+            machineID: "fltm_abc",
+            status: .running,
+            cursor: "older",
+            limit: 25
+        )
+
+        let job = try #require(page.jobs.first)
+        #expect(job.machineID == "fltm_abc")
+        #expect(job.githubRunID == 123)
+        #expect(job.githubJobID == 456)
+        #expect(job.status == .running)
+        #expect(job.os == .linux)
+        #expect(job.arch == .amd64)
+        #expect(page.nextCursor == "next-page")
+    }
+
+    @Test func getJobBuildsWorkspaceScopedRequest() async throws {
+        let json = """
+            {
+              "id":"5ce49702-bb18-4a15-9ee5-91a62619799a",
+              "repo":"arcboxlabs/arcbox",
+              "status":"completed",
+              "os":"darwin",
+              "arch":"arm64",
+              "gh_run_id":123,
+              "gh_job_id":456,
+              "labels":[],
+              "created_at":"2026-07-24T08:00:00Z",
+              "finished_at":"2026-07-24T08:01:00Z"
+            }
+            """
+        let http = HTTPStub { request in
+            #expect(
+                request.url?.absoluteString
+                    == "https://api.example.com/root/v1/fleet/jobs/"
+                    + "5ce49702-bb18-4a15-9ee5-91a62619799a"
+            )
+            #expect(request.value(forHTTPHeaderField: "X-Workspace-Id") == "ws_123")
+            return (Data(json.utf8), try response(for: request))
+        }
+        let client = makeClient(http: http)
+
+        let job = try await client.getJob(
+            id: "5ce49702-bb18-4a15-9ee5-91a62619799a",
+            workspaceID: "ws_123"
+        )
+
+        #expect(job.status == .completed)
+        #expect(job.finishedAt != nil)
+    }
+
     @Test func requestsAValidAccessTokenEveryTime() async throws {
         let tokenProvider = CountingTokenProvider()
         let http = HTTPStub { request in

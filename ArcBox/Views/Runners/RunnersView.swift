@@ -6,6 +6,8 @@ import SwiftUI
 struct RunnersView: View {
     @Environment(AuthSession.self) private var authSession
     @Environment(RunnersViewModel.self) private var vm
+    @Environment(RunnerPlatformStore.self) private var platformStore
+    @Environment(\.fleetPlatformClient) private var platformClient
     @State private var isShowingWorkspaceDialog = false
     @State private var isShowingEnrollmentResetConfirmation = false
 
@@ -89,6 +91,27 @@ struct RunnersView: View {
         .background(AppColors.background)
         .navigationTitle("This Mac")
         .navigationSubtitle(vm.subtitle)
+        .task(id: platformRefreshContext) {
+            guard
+                let platformClient,
+                let machineID = platformRefreshContext.machineID
+            else {
+                platformStore.reset()
+                return
+            }
+
+            await platformStore.observe(client: platformClient, machineID: machineID)
+        }
+    }
+
+    private var platformRefreshContext: RunnerPlatformRefreshContext {
+        guard case .enrolled(let host, _) = vm.viewState else {
+            return RunnerPlatformRefreshContext(machineID: nil, hasClient: platformClient != nil)
+        }
+        return RunnerPlatformRefreshContext(
+            machineID: host.machineID,
+            hasClient: platformClient != nil
+        )
     }
 
     private var signedOutView: some View {
@@ -286,6 +309,11 @@ struct RunnersView: View {
     private func workspaceButtonTitle(_ workspace: FleetWorkspace) -> String {
         "\(workspace.name) · \(workspace.plan)"
     }
+}
+
+private struct RunnerPlatformRefreshContext: Equatable {
+    let machineID: String?
+    let hasClient: Bool
 }
 
 extension RunnerHostFreshness {

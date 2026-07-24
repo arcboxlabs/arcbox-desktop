@@ -45,6 +45,7 @@ struct ContentView: View {
     @State private var k8sState = KubernetesState()
     @State private var machinesVM = MachinesViewModel()
     @State private var sandboxesVM = SandboxesViewModel()
+    @State private var runnerPlatformStore = RunnerPlatformStore()
 
     @ViewBuilder
     var body: some View {
@@ -329,6 +330,7 @@ struct ContentView: View {
                 .environment(machinesVM)
         case .runner:
             RunnersView()
+                .environment(runnerPlatformStore)
         case .sandboxes:
             SandboxesListView()
                 .environment(sandboxesVM)
