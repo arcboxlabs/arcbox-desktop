@@ -1,3 +1,4 @@
+import FleetControlClient
 import FleetPlatformClient
 import SwiftUI
 
@@ -10,10 +11,14 @@ struct RunnerSelectionDetailView: View {
         case .host:
             hostDetail
         case .job(let jobID):
-            ContentUnavailableView {
-                Label(selectedJobTitle(jobID: jobID), systemImage: "hammer")
-            } description: {
-                Text("Job details are not implemented yet.")
+            if let job = selectedJob(id: jobID) {
+                RunnerJobDetailView(job: job)
+            } else {
+                ContentUnavailableView {
+                    Label("Job unavailable", systemImage: "hammer")
+                } description: {
+                    Text("This job is no longer reported by Platform or the local Fleet Agent.")
+                }
             }
         case nil:
             DetailPlaceholderView()
@@ -33,7 +38,17 @@ struct RunnerSelectionDetailView: View {
         }
     }
 
-    private func selectedJobTitle(jobID: String) -> String {
-        store.jobs.first(where: { $0.id == jobID })?.repo ?? jobID
+    private func selectedJob(id: String) -> RunnerJobDetailModel? {
+        let liveJobs: [FleetInFlightJob] =
+            if case .enrolled(let host, _) = runners.viewState {
+                host.inFlightJobs
+            } else {
+                []
+            }
+        return RunnerJobDetailModel.resolve(
+            id: id,
+            platformJobs: store.jobs,
+            liveJobs: liveJobs
+        )
     }
 }

@@ -47,6 +47,7 @@
 		1CA50DB029E0C7A18CAF87A2 /* LocalRootFSOutlineCoordinator+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45A5AAA9B74A59E7543D8D0 /* LocalRootFSOutlineCoordinator+Actions.swift */; };
 		1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */; };
 		1E07B971374B4CE76D32DBC2 /* RunnerHostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F1497910C2DE7F04BA5528 /* RunnerHostDetailView.swift */; };
+		1E08F7DA3B549BAE7F5ECBFC /* RunnerJobDetailModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1F4663B38FDFB64EBE74EAC /* RunnerJobDetailModelTests.swift */; };
 		1E6D14685602844F41F2F2C8 /* ContainerLogsDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A3EDCCF0839B20D620BA92 /* ContainerLogsDiagnostics.swift */; };
 		1FB4D8B5B61B82155960542D /* NetworksListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 089AAF447EC30EF108B76EF7 /* NetworksListViewController.swift */; };
 		20C4C1664AC3D1942C7D72CD /* SandboxesViewModel+GRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829D8DC499E6339D13A2ADE7 /* SandboxesViewModel+GRPC.swift */; };
@@ -67,6 +68,7 @@
 		2EB062B1093D6873AC615C6E /* LogPrivacyLintRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100F8312160AEA1F62F0DB61 /* LogPrivacyLintRuleTests.swift */; };
 		2EF530EFB8AE3160CB2F661A /* ContainerLogsBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1EA205D194BB48AE6894CF9 /* ContainerLogsBatchTests.swift */; };
 		2EFFFF0AEC16386829FAC491 /* AuthSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA33C724456FCDF5A3E52AD /* AuthSessionTests.swift */; };
+		30E9F74DC5FA96D1B1023EC2 /* RunnerJobDetailTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1CB07080BD71955DCF864A /* RunnerJobDetailTab.swift */; };
 		31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */; };
 		315909E3D7D52873CD5BD0C1 /* BodyEvaluationCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004B3C3354EDE44B3792796A /* BodyEvaluationCounter.swift */; };
 		31A9DB06B08CC74D635ECB8A /* NetworksListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297FCAB334AF289575D13F72 /* NetworksListView.swift */; };
@@ -109,6 +111,7 @@
 		4D2FB362066EF19A8C5983F1 /* FleetControlClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0631A4C3410E8D6E9CFDDA2E /* FleetControlClient */; };
 		4DF1A85E96002569D24CCF66 /* OnboardingMigrationModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912DD5CF669A1B8EB0F5734C /* OnboardingMigrationModelTests.swift */; };
 		4F2B260760140AEAEDBACBC2 /* RunnerJobRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 080B7568EE5A517F8CC343FE /* RunnerJobRow.swift */; };
+		50BAFC716B373FD97055B801 /* FleetRunnerJobStatus+Display.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AB846BC41EE075896CD5598 /* FleetRunnerJobStatus+Display.swift */; };
 		50CCDEFCA186BCD1E99D291F /* ChangelogParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBEBBF08F0E4AC45D9C0BB83 /* ChangelogParser.swift */; };
 		510B8922C820BE4607F7817B /* RunnerHostViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6BC28A842D0A91FA84517CC /* RunnerHostViewModel.swift */; };
 		519C116D9CC62268CE4859D4 /* ExternalTerminalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D70EF1BF223C47C7B8E71A5 /* ExternalTerminalApp.swift */; };
@@ -175,6 +178,7 @@
 		7D6BA204C7E5B022B6267289 /* RunnerHostCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FE07EA71512ACEE609B537 /* RunnerHostCapability.swift */; };
 		7DABE0FBDD17F88D47333964 /* CommandHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65698313C3204F5F23E099B /* CommandHint.swift */; };
 		7DB0F638AAD7DCB4F8349402 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
+		7DD53D9600A91363E177DE2D /* RunnerJobLogsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0888CBDEF33130735BA648 /* RunnerJobLogsTab.swift */; };
 		7DFC19087BE929DDF207A677 /* UpdaterSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */; };
 		7F091F3F3F75F500937DC7BC /* ImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */; };
 		7F8FB0C66C04AEF7895A85AD /* NetworkDetailViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA3C6B6F10198DFC435A33E /* NetworkDetailViewControllerTests.swift */; };
@@ -204,6 +208,7 @@
 		8ED7BA2FEE7010BDBD4BAEDC /* VolumesViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420516961E57589A91B445DA /* VolumesViewModel+Docker.swift */; };
 		8FB67BF11BF2A3194A28BD32 /* SandboxTerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0841C2969EC1A1BC07489C8 /* SandboxTerminalSession.swift */; };
 		9010BB836D577FF81084FAAA /* ToolbarSeparator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 823F87591055C314EC29BF67 /* ToolbarSeparator.swift */; };
+		90CB65EA852B32711B9418B0 /* RunnerJobRuntimeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EDC6099569584471CD2FEC /* RunnerJobRuntimeTab.swift */; };
 		927458F82097ECF1A07412FD /* StatePlaceholderTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD1F83B573C40DFA09E5633 /* StatePlaceholderTestSupport.swift */; };
 		931763946B40148917024A02 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = E3B0A98EBADEEAA76280EF06 /* K8sClient */; };
 		932BD3DB61039B6A7B298661 /* ApplicationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78827F9105251AF033577933 /* ApplicationCoordinator.swift */; };
@@ -268,6 +273,7 @@
 		BD99D14EC5ED57BA1FF283CC /* DockerContextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064086AEC8C204E8224DF45A /* DockerContextManager.swift */; };
 		BDE44A1851827C2069778F08 /* ImageFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BE02225F61EF92333916B1 /* ImageFilesTab.swift */; };
 		BECE57281BC047E471893209 /* AuthClientConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D8365238BDE73993270477 /* AuthClientConfigurationTests.swift */; };
+		BF0046600965F7A52FCDEB8F /* RunnerJobInfoTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53A3591FEDEA055FFA59367 /* RunnerJobInfoTab.swift */; };
 		BF22080E6092E730A9DD1424 /* ContainerTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */; };
 		BFA2E94DC17244A06D187331 /* MachineInfoTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791DD121033683719C609B4D /* MachineInfoTab.swift */; };
 		C12978695EDC917704747269 /* K8sClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8DA5BF5FF6E9CABB1BAAD3A /* K8sClient */; };
@@ -316,6 +322,7 @@
 		DC8E940905BADCF4888BEA0A /* RunnerHostStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02391823A10B16B12627E6C /* RunnerHostStatusBar.swift */; };
 		DC9E1747A0F6F6574688BBD0 /* arcbox.version in Resources */ = {isa = PBXBuildFile; fileRef = AC70A79B919D909CF6D811B4 /* arcbox.version */; };
 		DDF9F74BA0638A51322686DE /* PodsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */; };
+		DF8E90AA48D1B41916F87C5E /* RunnerJobDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B99162EF318CE94662C54BA /* RunnerJobDetailView.swift */; };
 		E0C997A42E6F8D8B4D9C26FF /* ImagesListViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35969670AC4F826B4A3BB567 /* ImagesListViewControllerTests.swift */; };
 		E12C55C4C275DCBAB9DA8150 /* VolumeFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDFA2EDA7A3AC8448696F91 /* VolumeFilesTab.swift */; };
 		E3D54052EC2DC4A127D8B822 /* ProcessSupportTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 6A9B792E10E1FEDE53AC72F1 /* ProcessSupportTesting */; };
@@ -339,6 +346,7 @@
 		F0B924B312EABA596C870505 /* LayeredRootFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33250D1306B30B4E3D4C9B0E /* LayeredRootFS.swift */; };
 		F189AA650ACF2CE9C585743F /* OffscreenHostTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ACDFCB6B6EAE03C448FB05E /* OffscreenHostTestSupport.swift */; };
 		F319F8722F145CCFA01650B6 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F60CF8B8E81089BA2E8DC20 /* GeneralSettingsView.swift */; };
+		F3B97C8B5BDF2AF98BB2F0B3 /* RunnerJobDetailModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06F86AD3D61B9D443086AA78 /* RunnerJobDetailModel.swift */; };
 		F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */; };
 		F5350A9E11B4C65AAE8BD569 /* ServiceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13203BD67479A8191C1A3BD6 /* ServiceModel.swift */; };
 		F65C1148B776397730836A3D /* TerminalViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454ED6CBDC3B851667C70AF8 /* TerminalViewController.swift */; };
@@ -397,6 +405,7 @@
 		064086AEC8C204E8224DF45A /* DockerContextManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerContextManager.swift; sourceTree = "<group>"; };
 		06688AB84392716F1108AE36 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
 		06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
+		06F86AD3D61B9D443086AA78 /* RunnerJobDetailModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobDetailModel.swift; sourceTree = "<group>"; };
 		080B7568EE5A517F8CC343FE /* RunnerJobRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobRow.swift; sourceTree = "<group>"; };
 		089AAF447EC30EF108B76EF7 /* NetworksListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworksListViewController.swift; sourceTree = "<group>"; };
 		08A76C0B459745654F31B3B2 /* PodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListView.swift; sourceTree = "<group>"; };
@@ -432,6 +441,7 @@
 		209E974D66F4B2D9B5CDA2D9 /* VolumesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesListView.swift; sourceTree = "<group>"; };
 		2110402B2013A53E306B4E43 /* MainWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowControllerTests.swift; sourceTree = "<group>"; };
 		21565AF3B3606525539AE506 /* SandboxesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxesListView.swift; sourceTree = "<group>"; };
+		21EDC6099569584471CD2FEC /* RunnerJobRuntimeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobRuntimeTab.swift; sourceTree = "<group>"; };
 		239658775BBC68EB492EF715 /* FleetViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetViewModelTests.swift; sourceTree = "<group>"; };
 		23C69EC561EEA79ADE5A9000 /* ContainersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModel.swift; sourceTree = "<group>"; };
 		24D2CE72E40718D37B0293D1 /* StatePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatePlaceholderView.swift; sourceTree = "<group>"; };
@@ -479,6 +489,7 @@
 		496FD50DEB793E0F91A70DA4 /* RunnerHostSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostSettingsTab.swift; sourceTree = "<group>"; };
 		49A8DDE58F61A6B736A63E11 /* SandboxMonitoringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxMonitoringView.swift; sourceTree = "<group>"; };
 		4A4B5E95EA5A894B19867570 /* LocalRootFSOutlineCoordinator+Columns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+Columns.swift"; sourceTree = "<group>"; };
+		4AB846BC41EE075896CD5598 /* FleetRunnerJobStatus+Display.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FleetRunnerJobStatus+Display.swift"; sourceTree = "<group>"; };
 		4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetViewModel.swift; sourceTree = "<group>"; };
 		4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesWatchRetryTests.swift; sourceTree = "<group>"; };
 		4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerTypes.swift; sourceTree = "<group>"; };
@@ -523,6 +534,7 @@
 		699A57392F1D9366CFA78BAF /* VolumesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesViewModel.swift; sourceTree = "<group>"; };
 		6AC42E91F0BCACABF173B87F /* DockerTerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerTerminalSession.swift; sourceTree = "<group>"; };
 		6ADF9F8FFB694C45042664E8 /* DeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLink.swift; sourceTree = "<group>"; };
+		6B0888CBDEF33130735BA648 /* RunnerJobLogsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobLogsTab.swift; sourceTree = "<group>"; };
 		6BAA25DBCDC3E69B079695A9 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		6DFE1C88F20E40C1A36A384C /* CreateOperationErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateOperationErrorTests.swift; sourceTree = "<group>"; };
 		7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWakeManager.swift; sourceTree = "<group>"; };
@@ -570,6 +582,7 @@
 		8AD5CF45B00B80D85A778AB4 /* MachineModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineModel.swift; sourceTree = "<group>"; };
 		8B61204F020CDD2B21D6D55D /* BinaryVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryVersionTests.swift; sourceTree = "<group>"; };
 		8B81497897F5306643CC2AD1 /* FleetBackend+DisplayName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FleetBackend+DisplayName.swift"; sourceTree = "<group>"; };
+		8B99162EF318CE94662C54BA /* RunnerJobDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobDetailView.swift; sourceTree = "<group>"; };
 		8DB22F8A7AA46286F186A73F /* DockerEventMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitor.swift; sourceTree = "<group>"; };
 		8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesView.swift; sourceTree = "<group>"; };
 		8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerImagePreparationStatusView.swift; sourceTree = "<group>"; };
@@ -597,6 +610,7 @@
 		9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSettingsView.swift; sourceTree = "<group>"; };
 		9BC18756B780D1B7FB6B0F4F /* OnboardingMigrationLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingMigrationLifecycleTests.swift; sourceTree = "<group>"; };
 		9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
+		9F1CB07080BD71955DCF864A /* RunnerJobDetailTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobDetailTab.swift; sourceTree = "<group>"; };
 		9F60CF8B8E81089BA2E8DC20 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParserTests.swift; sourceTree = "<group>"; };
 		A1FE07EA71512ACEE609B537 /* RunnerHostCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostCapability.swift; sourceTree = "<group>"; };
@@ -628,6 +642,7 @@
 		B4B46E6B6A77930CEF86997A /* ContainersListIncrementalUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListIncrementalUpdateTests.swift; sourceTree = "<group>"; };
 		B4BAE047B96D10B4716BA1A2 /* VolumesListViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesListViewControllerTests.swift; sourceTree = "<group>"; };
 		B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceStatsTests.swift; sourceTree = "<group>"; };
+		B53A3591FEDEA055FFA59367 /* RunnerJobInfoTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobInfoTab.swift; sourceTree = "<group>"; };
 		B5A780F10224ACC8C1B53D1E /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		B65698313C3204F5F23E099B /* CommandHint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHint.swift; sourceTree = "<group>"; };
 		B69A867E81CB7E281682A24D /* ContainerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerModel.swift; sourceTree = "<group>"; };
@@ -670,6 +685,7 @@
 		D02391823A10B16B12627E6C /* RunnerHostStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostStatusBar.swift; sourceTree = "<group>"; };
 		D0A680191505746F5F6F5A0B /* SandboxTemplateModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxTemplateModelTests.swift; sourceTree = "<group>"; };
 		D12C2D038DE6CC49702F85F0 /* ContainersViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainersViewModel+Docker.swift"; sourceTree = "<group>"; };
+		D1F4663B38FDFB64EBE74EAC /* RunnerJobDetailModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobDetailModelTests.swift; sourceTree = "<group>"; };
 		D3F1497910C2DE7F04BA5528 /* RunnerHostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostDetailView.swift; sourceTree = "<group>"; };
 		D4CE179496F58DB669A5A929 /* ContainerCrashDigestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerCrashDigestTests.swift; sourceTree = "<group>"; };
 		D4ED3EC883A488801DE03195 /* NetworksViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworksViewModel.swift; sourceTree = "<group>"; };
@@ -860,6 +876,8 @@
 				2759FD2E220699E0BB1153A3 /* RunnerHostJobSummary.swift */,
 				3F3DBF7CBDB3176071B996D3 /* RunnerHostStatus.swift */,
 				B6BC28A842D0A91FA84517CC /* RunnerHostViewModel.swift */,
+				06F86AD3D61B9D443086AA78 /* RunnerJobDetailModel.swift */,
+				9F1CB07080BD71955DCF864A /* RunnerJobDetailTab.swift */,
 				7BCD10A967FC56763AAAD3AD /* RunnerJobListItem.swift */,
 				844E4C199E51918262A8C14F /* RunnerSelection.swift */,
 				F6ABF0A0B6218A3FE504C7DA /* RunnersViewState.swift */,
@@ -1243,6 +1261,7 @@
 			children = (
 				8B81497897F5306643CC2AD1 /* FleetBackend+DisplayName.swift */,
 				E1F4B62DCEFF676208ACD162 /* FleetMachineStatus+DisplayName.swift */,
+				4AB846BC41EE075896CD5598 /* FleetRunnerJobStatus+Display.swift */,
 				63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */,
 				7EFC35C028AEC068D062C12F /* RunnerHostCapacityTab.swift */,
 				D3F1497910C2DE7F04BA5528 /* RunnerHostDetailView.swift */,
@@ -1254,7 +1273,11 @@
 				496FD50DEB793E0F91A70DA4 /* RunnerHostSettingsTab.swift */,
 				D02391823A10B16B12627E6C /* RunnerHostStatusBar.swift */,
 				8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */,
+				8B99162EF318CE94662C54BA /* RunnerJobDetailView.swift */,
+				B53A3591FEDEA055FFA59367 /* RunnerJobInfoTab.swift */,
+				6B0888CBDEF33130735BA648 /* RunnerJobLogsTab.swift */,
 				080B7568EE5A517F8CC343FE /* RunnerJobRow.swift */,
+				21EDC6099569584471CD2FEC /* RunnerJobRuntimeTab.swift */,
 				B2387BC90EBBF4477B65367E /* RunnerJobsView.swift */,
 				16087ADE0B07FDD6E3D719F4 /* RunnerSelectionDetailView.swift */,
 				7BDFC648740B4664FCC1E5E5 /* RunnersView.swift */,
@@ -1507,6 +1530,7 @@
 				A517313E1085B62A40075622 /* OnboardingWindowControllerTests.swift */,
 				B084B3E5BD66E2DA018764E8 /* QuitWindowControllerTests.swift */,
 				E5758E839E4363E54EEECD99 /* RunnerHostJobSummaryTests.swift */,
+				D1F4663B38FDFB64EBE74EAC /* RunnerJobDetailModelTests.swift */,
 				62D737D532B4BB4169914591 /* RunnerJobListItemTests.swift */,
 				DA8937BC21E9813E2F8AA7F2 /* RunnerPlatformStoreTests.swift */,
 				E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */,
@@ -1820,6 +1844,7 @@
 				0E1E08820992C2853A6F23F3 /* FleetEnrollmentCoordinator.swift in Sources */,
 				975051DCB1D5B9738AEF3661 /* FleetMachineStatus+DisplayName.swift in Sources */,
 				C38303D18080C9AED2BD8D20 /* FleetRunnerImageReadiness.swift in Sources */,
+				50BAFC716B373FD97055B801 /* FleetRunnerJobStatus+Display.swift in Sources */,
 				C1CEE635A115E843DF66A65B /* FleetSettingsView.swift in Sources */,
 				FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */,
 				F319F8722F145CCFA01650B6 /* GeneralSettingsView.swift in Sources */,
@@ -1915,8 +1940,14 @@
 				DC8E940905BADCF4888BEA0A /* RunnerHostStatusBar.swift in Sources */,
 				510B8922C820BE4607F7817B /* RunnerHostViewModel.swift in Sources */,
 				D555C507200C70946F381C91 /* RunnerImagePreparationStatusView.swift in Sources */,
+				F3B97C8B5BDF2AF98BB2F0B3 /* RunnerJobDetailModel.swift in Sources */,
+				30E9F74DC5FA96D1B1023EC2 /* RunnerJobDetailTab.swift in Sources */,
+				DF8E90AA48D1B41916F87C5E /* RunnerJobDetailView.swift in Sources */,
+				BF0046600965F7A52FCDEB8F /* RunnerJobInfoTab.swift in Sources */,
 				F9DFD7D1A67ECB96BEEC3D6F /* RunnerJobListItem.swift in Sources */,
+				7DD53D9600A91363E177DE2D /* RunnerJobLogsTab.swift in Sources */,
 				4F2B260760140AEAEDBACBC2 /* RunnerJobRow.swift in Sources */,
+				90CB65EA852B32711B9418B0 /* RunnerJobRuntimeTab.swift in Sources */,
 				096533539D74E8FA5A322C0A /* RunnerJobsView.swift in Sources */,
 				A32149C2AC3A6B3A7BE1B8EC /* RunnerPlatformStore.swift in Sources */,
 				F9B2E0EFEECE4F44B659E8D5 /* RunnerSelection.swift in Sources */,
@@ -2076,6 +2107,7 @@
 				D4ECBBCAC3D4631041F292D5 /* QuitWindowControllerTests.swift in Sources */,
 				1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */,
 				7B40CC08EA615C5CB027380A /* RunnerHostJobSummaryTests.swift in Sources */,
+				1E08F7DA3B549BAE7F5ECBFC /* RunnerJobDetailModelTests.swift in Sources */,
 				FD81DD803F100451034B3384 /* RunnerJobListItemTests.swift in Sources */,
 				A45901889EB62F97532D443E /* RunnerPlatformStoreTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,
