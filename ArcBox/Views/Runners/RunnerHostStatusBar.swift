@@ -4,8 +4,10 @@ import SwiftUI
 /// Persistent host header showing live Fleet Agent status, capabilities, telemetry, and controls.
 struct RunnerHostStatusBar: View {
     let host: RunnerHostViewModel
+    let isSelected: Bool
     let isPerformingAction: Bool
     let isReconnecting: Bool
+    var onSelect: () -> Void
     var onSetDraining: (Bool) -> Void
     var onUnenroll: () -> Void
     @State private var isConfirmingUnenroll = false
@@ -13,10 +15,14 @@ struct RunnerHostStatusBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                StatusBadge(
-                    color: isReconnecting ? AppColors.warning : host.status.color,
-                    label: isReconnecting ? "Reconnecting" : host.status.label
-                )
+                Button(action: onSelect) {
+                    StatusBadge(
+                        color: isReconnecting ? AppColors.warning : host.status.color,
+                        label: isReconnecting ? "Reconnecting" : host.status.label
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Show details for this Mac")
                 Spacer()
                 Button(
                     host.isDraining ? "Resume" : "Drain",
@@ -53,52 +59,67 @@ struct RunnerHostStatusBar: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(host.machineID ?? "Machine ID pending")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(AppColors.textSecondary)
-                    .lineLimit(1)
-                    .textSelection(.enabled)
-                Text(agentDescription)
-                    .font(.caption)
-                    .foregroundStyle(AppColors.textMuted)
-            }
-
-            if !host.capabilities.isEmpty {
-                ScrollView(.horizontal) {
-                    HStack(spacing: 6) {
-                        ForEach(host.capabilities) { capability in
-                            Label(
-                                "\(capability.os)/\(capability.arch) · \(capability.backend.label)",
-                                systemImage: capability.backend.systemImage
-                            )
+            Button(action: onSelect) {
+                VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(host.machineID ?? "Machine ID pending")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(AppColors.textSecondary)
+                            .lineLimit(1)
+                        Text(agentDescription)
                             .font(.caption)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(AppColors.surfaceElevated, in: Capsule())
+                            .foregroundStyle(AppColors.textMuted)
+                    }
+
+                    if !host.capabilities.isEmpty {
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 6) {
+                                ForEach(host.capabilities) { capability in
+                                    Label(
+                                        "\(capability.os)/\(capability.arch) · \(capability.backend.label)",
+                                        systemImage: capability.backend.systemImage
+                                    )
+                                    .font(.caption)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 4)
+                                    .background(AppColors.surfaceElevated, in: Capsule())
+                                }
+                            }
                         }
+                        .scrollIndicators(.hidden)
+                    }
+
+                    if let telemetry = host.telemetry {
+                        HStack(spacing: 12) {
+                            Label("\(telemetry.cpuCount) cores", systemImage: "cpu")
+                            Label(
+                                "\(telemetry.memoryAvailableMib.formatted()) MiB free",
+                                systemImage: "memorychip"
+                            )
+                            Text(
+                                "Load \(telemetry.loadAverage1Minute, format: .number.precision(.fractionLength(2)))"
+                            )
+                        }
+                        .font(.caption)
+                        .foregroundStyle(AppColors.textSecondary)
                     }
                 }
-                .scrollIndicators(.hidden)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-
-            if let telemetry = host.telemetry {
-                HStack(spacing: 12) {
-                    Label("\(telemetry.cpuCount) cores", systemImage: "cpu")
-                    Label(
-                        "\(telemetry.memoryAvailableMib.formatted()) MiB free",
-                        systemImage: "memorychip"
-                    )
-                    Text("Load \(telemetry.loadAverage1Minute, format: .number.precision(.fractionLength(2)))")
-                }
-                .font(.caption)
-                .foregroundStyle(AppColors.textSecondary)
-            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Show details for this Mac")
         }
         .padding(10)
-        .background(AppColors.surfaceCard)
+        .background(isSelected ? AppColors.selection.opacity(0.12) : AppColors.surfaceCard)
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border, lineWidth: 0.5))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    isSelected ? AppColors.selection : AppColors.border,
+                    lineWidth: isSelected ? 2 : 0.5
+                )
+        )
         .padding(8)
     }
 

@@ -55,11 +55,17 @@ struct RunnersView: View {
                     .multilineTextAlignment(.center)
                 }
             case .enrolled(let host, let freshness):
+                let jobItems = RunnerJobListItem.merge(
+                    platformJobs: platformStore.jobs,
+                    liveJobs: host.inFlightJobs
+                )
                 VStack(spacing: 0) {
                     RunnerHostStatusBar(
                         host: host,
+                        isSelected: platformStore.selection == .host,
                         isPerformingAction: vm.isBusy || freshness.isReconnecting,
                         isReconnecting: freshness.isReconnecting,
+                        onSelect: platformStore.selectHost,
                         onSetDraining: setDraining,
                         onUnenroll: unenroll
                     )
@@ -84,7 +90,15 @@ struct RunnersView: View {
                             .padding(.bottom, 6)
                     }
                     RunnerImagePreparationStatusView(fleet: vm.fleet)
-                    RunnerJobsView(jobs: host.inFlightJobs)
+                    RunnerJobsView(
+                        jobs: jobItems,
+                        platformLoadState: platformStore.loadState,
+                        selectedJobID: platformStore.selectedJobID,
+                        onSelect: platformStore.selectJob
+                    )
+                    .onChange(of: jobItems.map(\.id), initial: true) { _, jobIDs in
+                        platformStore.reconcileSelection(validJobIDs: Set(jobIDs))
+                    }
                 }
             }
         }

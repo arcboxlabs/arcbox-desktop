@@ -100,6 +100,42 @@ final class RunnerPlatformStoreTests: XCTestCase {
         XCTAssertEqual(store.jobs.map(\.id), ["job_new"])
     }
 
+    func testSelectionSwitchesBetweenHostAndJob() {
+        let store = RunnerPlatformStore()
+
+        store.selectHost()
+        XCTAssertEqual(store.selection, .host)
+        XCTAssertNil(store.selectedJobID)
+
+        store.selectJob(id: "job_123")
+        XCTAssertEqual(store.selection, .job("job_123"))
+        XCTAssertEqual(store.selectedJobID, "job_123")
+    }
+
+    func testReconcileClearsOnlyMissingJobSelection() {
+        let store = RunnerPlatformStore()
+
+        store.selectJob(id: "job_123")
+        store.reconcileSelection(validJobIDs: ["job_123"])
+        XCTAssertEqual(store.selection, .job("job_123"))
+
+        store.reconcileSelection(validJobIDs: ["job_other"])
+        XCTAssertNil(store.selection)
+
+        store.selectHost()
+        store.reconcileSelection(validJobIDs: [])
+        XCTAssertEqual(store.selection, .host)
+    }
+
+    func testResetClearsSelection() {
+        let store = RunnerPlatformStore()
+        store.selectHost()
+
+        store.reset()
+
+        XCTAssertNil(store.selection)
+    }
+
     private func workspace(id: String, name: String) -> FleetWorkspace {
         FleetWorkspace(
             id: id,

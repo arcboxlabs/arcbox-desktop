@@ -116,6 +116,7 @@
 		55AB33B6859FE22D5FE1DF88 /* SparklineGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B815C17A01F8774E97227499 /* SparklineGeometry.swift */; };
 		57A8D35B23CC870EDEAF7605 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98123C19CE4AB275C8D899E2 /* AppNotification.swift */; };
 		57DFBD423CA735B3A7BEB227 /* KubernetesWatchRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */; };
+		592084F442E916A94A8B9CBA /* RunnerSelectionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16087ADE0B07FDD6E3D719F4 /* RunnerSelectionDetailView.swift */; };
 		592D8D15F0AD149B578AC661 /* VolumesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209E974D66F4B2D9B5CDA2D9 /* VolumesListView.swift */; };
 		593269294B66A331F9D9F744 /* ContainerLogsFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E865C1248DD29069506046 /* ContainerLogsFixtures.swift */; };
 		5C24B61DEC9BC6CE303FF52A /* AppMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0084D4B147FA59C7CCC0F5 /* AppMetrics.swift */; };
@@ -330,11 +331,14 @@
 		F5350A9E11B4C65AAE8BD569 /* ServiceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13203BD67479A8191C1A3BD6 /* ServiceModel.swift */; };
 		F65C1148B776397730836A3D /* TerminalViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454ED6CBDC3B851667C70AF8 /* TerminalViewController.swift */; };
 		F8334019E0F0EC1A5270EB0C /* ContainersListIncrementalUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B46E6B6A77930CEF86997A /* ContainersListIncrementalUpdateTests.swift */; };
+		F9B2E0EFEECE4F44B659E8D5 /* RunnerSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 844E4C199E51918262A8C14F /* RunnerSelection.swift */; };
+		F9DFD7D1A67ECB96BEEC3D6F /* RunnerJobListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCD10A967FC56763AAAD3AD /* RunnerJobListItem.swift */; };
 		FA3C75C980F16DF31DC99FAF /* OffscreenHostScrollingSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB46AB0A8DB6C47F74A9D3C /* OffscreenHostScrollingSupport.swift */; };
 		FA631E839B38C6D0DBDBA928 /* ArcBoxAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1EEA05F99067212B54970FA5 /* ArcBoxAuth */; };
 		FBDBF39F818DDE35E0B7D0DF /* ProcessSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 27FFE6B93982392C59070F5F /* ProcessSupport */; };
 		FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */; };
 		FBE7E964F895EFE9C7818256 /* ContainerViewModel+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5BDCAAF11D1A6B52990E28 /* ContainerViewModel+Mapping.swift */; };
+		FD81DD803F100451034B3384 /* RunnerJobListItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D737D532B4BB4169914591 /* RunnerJobListItemTests.swift */; };
 		FF70A2FA2732211E1C4F7297 /* FleetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */; };
 		FFAB94A328F83148EC0ED794 /* LocalRootFSOutlineCoordinator+Columns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A4B5E95EA5A894B19867570 /* LocalRootFSOutlineCoordinator+Columns.swift */; };
 /* End PBXBuildFile section */
@@ -394,6 +398,7 @@
 		12240648D65030A504A21CC6 /* UserNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationService.swift; sourceTree = "<group>"; };
 		13203BD67479A8191C1A3BD6 /* ServiceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceModel.swift; sourceTree = "<group>"; };
 		13FD9C27ABD090B7DBA435AA /* ImagesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesListViewController.swift; sourceTree = "<group>"; };
+		16087ADE0B07FDD6E3D719F4 /* RunnerSelectionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerSelectionDetailView.swift; sourceTree = "<group>"; };
 		17FDC0D5C9B6F0255C332484 /* AccessibilityAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityAuditTests.swift; sourceTree = "<group>"; };
 		185A238D021D6C976574528C /* ImageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDetailView.swift; sourceTree = "<group>"; };
 		18DFEA7126F89956523019B4 /* KeychainTokenStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStoreTests.swift; sourceTree = "<group>"; };
@@ -489,6 +494,7 @@
 		61EE316315F864BA1BF0FFED /* MachinesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesViewModel.swift; sourceTree = "<group>"; };
 		61F15E941FF769135D0AA218 /* ActivityMetricStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityMetricStrip.swift; sourceTree = "<group>"; };
 		6218E84D6C2A8595FE308B5E /* ImageLayerChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLayerChain.swift; sourceTree = "<group>"; };
+		62D737D532B4BB4169914591 /* RunnerJobListItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobListItemTests.swift; sourceTree = "<group>"; };
 		63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerEmptyState.swift; sourceTree = "<group>"; };
 		657D7543F1D47988AEC3339D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		665F6200AEC097082B2C43CA /* SandboxNotificationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxNotificationRules.swift; sourceTree = "<group>"; };
@@ -520,6 +526,7 @@
 		7AB1B1CD1D5E0E961CD17118 /* MachinesViewModel+GRPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MachinesViewModel+GRPC.swift"; sourceTree = "<group>"; };
 		7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sModelsTests.swift; sourceTree = "<group>"; };
 		7BC24B8A6E422D834614E5D5 /* ArcBoxAuth */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArcBoxAuth; path = Packages/ArcBoxAuth; sourceTree = SOURCE_ROOT; };
+		7BCD10A967FC56763AAAD3AD /* RunnerJobListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobListItem.swift; sourceTree = "<group>"; };
 		7BDFC648740B4664FCC1E5E5 /* RunnersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnersView.swift; sourceTree = "<group>"; };
 		7CD5F80A65CA7E59F453286D /* VolumeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeDetailView.swift; sourceTree = "<group>"; };
 		7D5BDCAAF11D1A6B52990E28 /* ContainerViewModel+Mapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerViewModel+Mapping.swift"; sourceTree = "<group>"; };
@@ -533,6 +540,7 @@
 		829D8DC499E6339D13A2ADE7 /* SandboxesViewModel+GRPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SandboxesViewModel+GRPC.swift"; sourceTree = "<group>"; };
 		8357344FFAC2AB6F56EE95EC /* MachinesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesListViewController.swift; sourceTree = "<group>"; };
 		83FBE0C82E0EB430C69EB944 /* GuestDataMount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestDataMount.swift; sourceTree = "<group>"; };
+		844E4C199E51918262A8C14F /* RunnerSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerSelection.swift; sourceTree = "<group>"; };
 		845946FC9C9F5412C9179939 /* DockerContextCLI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerContextCLI.swift; sourceTree = "<group>"; };
 		85296C05DC9D33C7930366D7 /* ServicesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesListViewController.swift; sourceTree = "<group>"; };
 		85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSService.swift; sourceTree = "<group>"; };
@@ -824,6 +832,8 @@
 				A1FE07EA71512ACEE609B537 /* RunnerHostCapability.swift */,
 				3F3DBF7CBDB3176071B996D3 /* RunnerHostStatus.swift */,
 				B6BC28A842D0A91FA84517CC /* RunnerHostViewModel.swift */,
+				7BCD10A967FC56763AAAD3AD /* RunnerJobListItem.swift */,
+				844E4C199E51918262A8C14F /* RunnerSelection.swift */,
 				F6ABF0A0B6218A3FE504C7DA /* RunnersViewState.swift */,
 				BA990161E9F1709745BE5796 /* SandboxModel.swift */,
 				B0841C2969EC1A1BC07489C8 /* SandboxTerminalSession.swift */,
@@ -1208,6 +1218,7 @@
 				8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */,
 				080B7568EE5A517F8CC343FE /* RunnerJobRow.swift */,
 				B2387BC90EBBF4477B65367E /* RunnerJobsView.swift */,
+				16087ADE0B07FDD6E3D719F4 /* RunnerSelectionDetailView.swift */,
 				7BDFC648740B4664FCC1E5E5 /* RunnersView.swift */,
 			);
 			path = Runners;
@@ -1457,6 +1468,7 @@
 				912DD5CF669A1B8EB0F5734C /* OnboardingMigrationModelTests.swift */,
 				A517313E1085B62A40075622 /* OnboardingWindowControllerTests.swift */,
 				B084B3E5BD66E2DA018764E8 /* QuitWindowControllerTests.swift */,
+				62D737D532B4BB4169914591 /* RunnerJobListItemTests.swift */,
 				DA8937BC21E9813E2F8AA7F2 /* RunnerPlatformStoreTests.swift */,
 				E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */,
 				816C59570B7C65B9288056A8 /* SandboxNotificationRulesTests.swift */,
@@ -1852,9 +1864,12 @@
 				DC8E940905BADCF4888BEA0A /* RunnerHostStatusBar.swift in Sources */,
 				510B8922C820BE4607F7817B /* RunnerHostViewModel.swift in Sources */,
 				D555C507200C70946F381C91 /* RunnerImagePreparationStatusView.swift in Sources */,
+				F9DFD7D1A67ECB96BEEC3D6F /* RunnerJobListItem.swift in Sources */,
 				4F2B260760140AEAEDBACBC2 /* RunnerJobRow.swift in Sources */,
 				096533539D74E8FA5A322C0A /* RunnerJobsView.swift in Sources */,
 				A32149C2AC3A6B3A7BE1B8EC /* RunnerPlatformStore.swift in Sources */,
+				F9B2E0EFEECE4F44B659E8D5 /* RunnerSelection.swift in Sources */,
+				592084F442E916A94A8B9CBA /* RunnerSelectionDetailView.swift in Sources */,
 				6FBDCCAB7F2960C0A0330A04 /* RunnersView.swift in Sources */,
 				BA69D54C021A974036846623 /* RunnersViewModel.swift in Sources */,
 				C19B191AF0DE9179608BF40A /* RunnersViewState.swift in Sources */,
@@ -2009,6 +2024,7 @@
 				CF4427547A1E682D1C9D2EAE /* ProcessRunningTests.swift in Sources */,
 				D4ECBBCAC3D4631041F292D5 /* QuitWindowControllerTests.swift in Sources */,
 				1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */,
+				FD81DD803F100451034B3384 /* RunnerJobListItemTests.swift in Sources */,
 				A45901889EB62F97532D443E /* RunnerPlatformStoreTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,
 				7B785AFCDAE28EF6B5064527 /* SandboxNotificationRulesTests.swift in Sources */,

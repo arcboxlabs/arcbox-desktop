@@ -36,6 +36,7 @@ final class RunnerPlatformStore {
     private(set) var jobs: [FleetRunnerJob] = []
     private(set) var nextCursor: String?
     private(set) var isRefreshing = false
+    private(set) var selection: RunnerSelection?
 
     @ObservationIgnored
     private var workspaceByMachineID: [String: FleetWorkspace] = [:]
@@ -65,6 +66,7 @@ final class RunnerPlatformStore {
         let sequence = refreshSequence
         isRefreshing = true
         if machine == nil || machine?.id != machineID {
+            selection = nil
             loadState = .loading
         }
 
@@ -109,6 +111,27 @@ final class RunnerPlatformStore {
         nextCursor = nil
         loadState = .idle
         isRefreshing = false
+        selection = nil
+    }
+
+    var selectedJobID: String? {
+        guard case .job(let jobID) = selection else { return nil }
+        return jobID
+    }
+
+    func selectHost() {
+        selection = .host
+    }
+
+    func selectJob(id: String) {
+        selection = .job(id)
+    }
+
+    func reconcileSelection(validJobIDs: Set<String>) {
+        guard case .job(let jobID) = selection else { return }
+        if !validJobIDs.contains(jobID) {
+            selection = nil
+        }
     }
 
     private func loadSnapshot(

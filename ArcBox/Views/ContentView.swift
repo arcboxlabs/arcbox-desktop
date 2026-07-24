@@ -373,8 +373,8 @@ struct ContentView: View {
             MachineDetailView()
                 .environment(machinesVM)
         case .runner:
-            // Job / host detail arrives with RUN-12 / RUN-13.
-            ContentUnavailableView("No Selection", systemImage: "square.dashed")
+            RunnerSelectionDetailView()
+                .environment(runnerPlatformStore)
         case .sandboxes:
             SandboxDetailView()
                 .environment(sandboxesVM)
