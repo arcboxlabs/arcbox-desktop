@@ -244,6 +244,30 @@ final class FleetViewModelTests: XCTestCase {
         XCTAssertEqual(vm.imagePreparationState, .idle)
     }
 
+    func testDrainAndResumeForwardToAgentAndRefreshStatus() async {
+        let settings = makeVMSettings()
+        let client = FleetControlStub(
+            initialSettings: settings,
+            refreshedSettings: settings,
+            preparation: .finished([])
+        )
+        let vm = FleetViewModel()
+        vm.start(client: client)
+        await waitUntil { vm.isReady }
+
+        let drained = await vm.drain()
+        XCTAssertTrue(drained)
+        XCTAssertEqual(client.drainCallCount, 1)
+        XCTAssertEqual(vm.status?.state, .draining)
+
+        let resumed = await vm.resume()
+        XCTAssertTrue(resumed)
+        XCTAssertEqual(client.resumeCallCount, 1)
+        XCTAssertEqual(vm.status?.state, .enrolled)
+        XCTAssertNil(vm.lastError)
+        vm.stop()
+    }
+
     private func makeAgentInfo(features: [String]) -> FleetAgentInfo {
         FleetAgentInfo(agentVersion: "0.5.0", apiVersion: 1, features: features)
     }
@@ -280,6 +304,9 @@ private final class FleetControlStub: FleetControlServicing, @unchecked Sendable
 
     private struct State {
         var settingsReadCount = 0
+        var connectionState = FleetConnectionState.enrolled
+        var drainCallCount = 0
+        var resumeCallCount = 0
         var watchContinuation: AsyncThrowingStream<FleetAgentSnapshot, Error>.Continuation?
         var preparationContinuation: AsyncThrowingStream<FleetImagePreparationEvent, Error>.Continuation?
         var preparationStarted = false
@@ -309,6 +336,14 @@ private final class FleetControlStub: FleetControlServicing, @unchecked Sendable
         state.withLock { $0.preparationTerminated }
     }
 
+    var drainCallCount: Int {
+        state.withLock { $0.drainCallCount }
+    }
+
+    var resumeCallCount: Int {
+        state.withLock { $0.resumeCallCount }
+    }
+
     func fetchAgentInfo() async throws -> FleetAgentInfo {
         FleetAgentInfo(
             agentVersion: "test",
@@ -318,7 +353,12 @@ private final class FleetControlStub: FleetControlServicing, @unchecked Sendable
     }
 
     func getStatus() async throws -> FleetAgentStatus {
-        FleetAgentStatus(state: .unenrolled, machineID: nil)
+        state.withLock {
+            FleetAgentStatus(
+                state: $0.connectionState,
+                machineID: $0.connectionState == .unenrolled ? nil : "fltm_test"
+            )
+        }
     }
 
     func watchSnapshots() -> AsyncThrowingStream<FleetAgentSnapshot, Error> {
@@ -326,8 +366,8 @@ private final class FleetControlStub: FleetControlServicing, @unchecked Sendable
             state.withLock { $0.watchContinuation = continuation }
             continuation.yield(
                 FleetAgentSnapshot(
-                    enrollment: .unenrolled,
-                    machineID: nil,
+                    enrollment: .attached,
+                    machineID: "fltm_test",
                     isDraining: false,
                     capabilities: [],
                     inFlightJobs: [],
@@ -342,9 +382,25 @@ private final class FleetControlStub: FleetControlServicing, @unchecked Sendable
         }
     }
 
-    func drain() async throws {}
-    func resume() async throws {}
-    func unenroll() async throws {}
+    func drain() async throws {
+        state.withLock {
+            $0.drainCallCount += 1
+            $0.connectionState = .draining
+        }
+    }
+
+    func resume() async throws {
+        state.withLock {
+            $0.resumeCallCount += 1
+            $0.connectionState = .enrolled
+        }
+    }
+
+    func unenroll() async throws {
+        state.withLock {
+            $0.connectionState = .unenrolled
+        }
+    }
 
     func prepareImages(
         _ kinds: [FleetImageKind]

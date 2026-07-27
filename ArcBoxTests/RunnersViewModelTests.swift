@@ -56,6 +56,32 @@ final class RunnersViewModelTests: XCTestCase {
         XCTAssertEqual(vm.activeJobCount, 1)
     }
 
+    func testHostNormalizesMacOSPoolNamesAndCountsLiveJobs() throws {
+        let fleet = FleetViewModel()
+        let snapshot = makeSnapshot(
+            enrollment: .attached,
+            capabilities: [
+                FleetCapability(os: "macos", arch: "arm64", backend: .vm),
+                FleetCapability(os: "darwin", arch: "arm64", backend: .hostRunner),
+                FleetCapability(os: "linux", arch: "arm64", backend: .docker),
+            ],
+            jobs: [
+                FleetInFlightJob(jobID: "macos", os: "macos", arch: "arm64"),
+                FleetInFlightJob(jobID: "darwin", os: "darwin", arch: "arm64"),
+                FleetInFlightJob(jobID: "linux", os: "linux", arch: "arm64"),
+            ]
+        )
+        fleet.snapshot = snapshot
+        fleet.loadState = .ready
+
+        let host = try XCTUnwrap(enrolledHost(from: RunnersViewModel(fleet: fleet).viewState))
+
+        XCTAssertEqual(host.capabilities(for: .macOS).count, 2)
+        XCTAssertEqual(host.capabilities(for: .linux).count, 1)
+        XCTAssertEqual(host.activeJobCount(for: .macOS), 2)
+        XCTAssertEqual(host.activeJobCount(for: .linux), 1)
+    }
+
     func testDrainingSnapshotOverridesAttachedStatus() throws {
         let fleet = FleetViewModel()
         let snapshot = makeSnapshot(enrollment: .attached, isDraining: true)

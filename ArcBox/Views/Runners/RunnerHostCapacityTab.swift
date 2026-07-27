@@ -11,13 +11,12 @@ struct RunnerHostCapacityTab: View {
             VStack(alignment: .leading, spacing: 16) {
                 poolSection(
                     title: "macOS runners",
-                    os: "darwin",
-                    concurrency: "Up to 2"
+                    pool: .macOS,
+                    policyLimit: "Up to 2 concurrent VMs"
                 )
                 poolSection(
                     title: "Linux runners",
-                    os: "linux",
-                    concurrency: "Managed by Fleet Agent"
+                    pool: .linux
                 )
                 hardwareSection
             }
@@ -27,10 +26,10 @@ struct RunnerHostCapacityTab: View {
 
     private func poolSection(
         title: String,
-        os: String,
-        concurrency: String
+        pool: RunnerPoolOS,
+        policyLimit: String? = nil
     ) -> some View {
-        let capabilities = host.capabilities.filter { $0.os == os }
+        let capabilities = host.capabilities(for: pool)
 
         return VStack(alignment: .leading, spacing: 8) {
             Text(title)
@@ -41,22 +40,33 @@ struct RunnerHostCapacityTab: View {
                     label: "Availability",
                     value: capabilities.isEmpty ? "Not reported" : "Available"
                 )
-                InfoRow(label: "Concurrency", value: concurrency)
+                InfoRow(
+                    label: "Active jobs",
+                    value: host.activeJobCount(for: pool).formatted()
+                )
+                InfoRow(
+                    label: policyLimit == nil ? "Concurrency limit" : "Policy limit",
+                    value: policyLimit ?? "Not reported by Agent"
+                )
                 InfoRow(
                     label: "Backends",
                     value: capabilities.isEmpty
                         ? "None"
-                        : capabilities.map { $0.backend.displayName }.joined(separator: ", ")
+                        : unique(capabilities.map { $0.backend.displayName }).joined(separator: ", ")
                 )
                 InfoRow(
                     label: "Architectures",
                     value: capabilities.isEmpty
                         ? "None"
-                        : capabilities.map(\.arch).joined(separator: ", ")
+                        : unique(capabilities.map(\.arch)).joined(separator: ", ")
                 )
             }
             .infoSectionStyle()
         }
+    }
+
+    private func unique(_ values: [String]) -> [String] {
+        Array(Set(values)).sorted()
     }
 
     private var hardwareSection: some View {
