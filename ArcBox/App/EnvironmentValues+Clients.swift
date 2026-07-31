@@ -1,6 +1,8 @@
 import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
+import FleetControlClient
+import FleetPlatformClient
 import SwiftUI
 
 private struct ArcBoxClientKey: EnvironmentKey {
@@ -13,6 +15,14 @@ private struct AccessTokenProviderKey: EnvironmentKey {
 
 private struct DockerClientKey: EnvironmentKey {
     static let defaultValue: DockerClient? = nil
+}
+
+private struct FleetControlClientKey: EnvironmentKey {
+    static let defaultValue: FleetControlClient? = nil
+}
+
+private struct FleetPlatformClientKey: EnvironmentKey {
+    static let defaultValue: FleetPlatformClient? = nil
 }
 
 private struct StartupOrchestratorKey: EnvironmentKey {
@@ -28,6 +38,16 @@ extension EnvironmentValues {
     var dockerClient: DockerClient? {
         get { self[DockerClientKey.self] }
         set { self[DockerClientKey.self] = newValue }
+    }
+
+    var fleetControlClient: FleetControlClient? {
+        get { self[FleetControlClientKey.self] }
+        set { self[FleetControlClientKey.self] = newValue }
+    }
+
+    var fleetPlatformClient: FleetPlatformClient? {
+        get { self[FleetPlatformClientKey.self] }
+        set { self[FleetPlatformClientKey.self] = newValue }
     }
 
     var startupOrchestrator: StartupOrchestrator? {

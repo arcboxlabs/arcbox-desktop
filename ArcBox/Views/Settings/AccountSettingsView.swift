@@ -5,7 +5,6 @@ import SwiftUI
 /// Sign-in state for the ArcBox platform: identity, session, sign in/out.
 struct AccountSettingsView: View {
     @Environment(AuthSession.self) private var authSession
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var isConfirmingSignOut = false
 
     var body: some View {
@@ -13,14 +12,16 @@ struct AccountSettingsView: View {
             switch authSession.status {
             case .signedIn:
                 signedInSections
+            case .restoring:
+                restoringSection
             case .signedOut, .signingIn, .error:
                 signedOutSection
             }
         }
         .formStyle(.grouped)
-        // Sign-in fetches userinfo itself; this covers sessions restored
+        // Sign-in verifies the session itself; this covers sessions restored
         // from the Keychain at launch.
-        .task { await authSession.loadUserInfo() }
+        .task { await authSession.refreshSession() }
     }
 
     // MARK: - Signed in
@@ -62,6 +63,21 @@ struct AccountSettingsView: View {
 
     // MARK: - Signed out / signing in
 
+    private var restoringSection: some View {
+        Section {
+            ContentUnavailableView {
+                Label("Restoring Session", systemImage: "person.crop.circle.badge.clock")
+            } description: {
+                Text("Checking for a saved ArcBox sign-in.")
+            } actions: {
+                ProgressView()
+                    .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity)
+            .listRowBackground(Color.clear)
+        }
+    }
+
     private var signedOutSection: some View {
         Section {
             ContentUnavailableView {
@@ -69,7 +85,7 @@ struct AccountSettingsView: View {
             } description: {
                 if authSession.configuration.isPlaceholder {
                     Text(
-                        "No OIDC provider is configured for this build. See Local.xcconfig.example."
+                        "No sign-in service is configured for this build. See Local.xcconfig.example."
                     )
                 } else {
                     Text("Sign in to your ArcBox account to use platform features.")
@@ -80,12 +96,7 @@ struct AccountSettingsView: View {
                 }
             } actions: {
                 if authSession.status == .signingIn {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text("Waiting for the browser…")
-                            .foregroundStyle(.secondary)
-                    }
+                    signingInPrompt
                 } else {
                     Button("Sign In to ArcBox…", action: signIn)
                         .buttonStyle(.borderedProminent)
@@ -97,10 +108,44 @@ struct AccountSettingsView: View {
         }
     }
 
+    /// Browser-approval progress: the confirmation code to match in the
+    /// browser, a way to reopen the page, and an escape hatch.
+    @ViewBuilder
+    private var signingInPrompt: some View {
+        VStack(spacing: 10) {
+            if let prompt = authSession.deviceAuthorization {
+                Text(prompt.userCode)
+                    .font(.title2.monospaced().bold())
+                    .textSelection(.enabled)
+                    .accessibilityLabel("Sign-in confirmation code")
+                Text("Confirm this code in your browser to finish signing in.")
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    Button("Open Browser") {
+                        NSWorkspace.shared.open(prompt.browserURL)
+                    }
+                    Button("Cancel", role: .cancel) {
+                        authSession.cancelSignIn()
+                    }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Contacting the sign-in service…")
+                        .foregroundStyle(.secondary)
+                }
+                Button("Cancel", role: .cancel) {
+                    authSession.cancelSignIn()
+                }
+            }
+        }
+    }
+
     // MARK: - Actions
 
     private func signIn() {
-        Task { await authSession.signIn(using: webAuthenticationSession) }
+        Task { await authSession.signIn() }
     }
 
     private func signOut() {

@@ -11,7 +11,7 @@ struct StatusBadge: View {
                 .fill(color)
                 .frame(width: 8, height: 8)
             Text(label)
-                .font(.system(size: 13))
+                .font(.callout)
                 .foregroundStyle(color)
         }
         .accessibilityElement(children: .combine)

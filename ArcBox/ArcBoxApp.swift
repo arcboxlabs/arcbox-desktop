@@ -1,6 +1,7 @@
 import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
+import FleetPlatformClient
 import Foundation
 import OSLog
 import Sparkle
@@ -14,10 +15,12 @@ struct ArcBoxDesktopApp: App {
     @State private var appVM = AppViewModel()
     // Lightweight init — no network calls until view appears
     @State private var daemonManager = DaemonManager()
-    // Lightweight init — restores tokens from the Keychain, no network
+    // Lightweight init — Keychain restoration starts from the scene task
     @State private var authSession = AuthSession()
     @State private var arcboxClient: ArcBoxClient?
     @State private var dockerClient: DockerClient?
+    @State private var fleetAgentConnection = FleetAgentConnection()
+    @State private var fleetPlatformClient: FleetPlatformClient?
     // Lightweight init — no network calls until view appears
     @State private var eventMonitor = DockerEventMonitor()
     @State private var sandboxEventMonitor = SandboxEventMonitor()
@@ -38,6 +41,8 @@ struct ArcBoxDesktopApp: App {
     @State private var volumesVM = VolumesViewModel()
     // Lightweight init — no network calls until view appears
     @State private var systemVmBackendVM = SystemVmBackendModel()
+    // App-scoped so the Fleet Watch survives closing the main window.
+    @State private var runnersVM = RunnersViewModel()
 
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
@@ -65,8 +70,11 @@ struct ArcBoxDesktopApp: App {
                 .environment(volumesVM)
                 .environment(sandboxEventMonitor)
                 .environment(authSession)
+                .environment(runnersVM)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.fleetControlClient, fleetAgentConnection.controlClient)
+                .environment(\.fleetPlatformClient, fleetPlatformClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .environment(\.accessTokenProvider, authSession)
                 .frame(minWidth: 900, minHeight: 600)
@@ -79,19 +87,35 @@ struct ArcBoxDesktopApp: App {
                             imagesVM: imagesVM,
                             networksVM: networksVM,
                             openMainWindow: { openWindow(id: "main") },
-                            openSettingsWindow: { openWindow(id: "settings") },
-                            oauthCallbackScheme: OIDCClientConfiguration.redirectURI.scheme,
-                            onOAuthCallback: { url in
-                                Task { await authSession.handleAuthorizationCallback(url) }
-                            }
+                            openSettingsWindow: { openWindow(id: "settings") }
                         ))
+                    fleetAgentConnection.start()
+                    appDelegate.fleetAgentConnection = fleetAgentConnection
+                    appDelegate.runnersVM = runnersVM
+                    Task {
+                        await authSession.restoreSession()
+                        initFleetPlatformClientIfNeeded()
+                        runnersVM.start(
+                            controlClient: fleetAgentConnection.controlClient,
+                            platformClient: fleetPlatformClient,
+                            authentication: authSession,
+                            agentReadiness: fleetAgentConnection
+                        )
+                        await authSession.refreshSession()
+                    }
+                    Task {
+                        do {
+                            _ = try await fleetAgentConnection.ensureReady()
+                        } catch is CancellationError {
+                            Log.fleet.info("Fleet Agent readiness probe cancelled")
+                        } catch {
+                            Log.fleet.info(
+                                "Fleet Agent is not ready: \(error.localizedDescription, privacy: .private)"
+                            )
+                        }
+                    }
 
                     guard startupOrchestrator == nil else { return }
-
-                    // Enrich a Keychain-restored session with userinfo
-                    // (name/email/avatar) without delaying daemon startup;
-                    // sign-in fetches it as part of its own flow.
-                    Task { await authSession.loadUserInfo() }
 
                     appDelegate.daemonManager = daemonManager
                     appDelegate.eventMonitor = eventMonitor
@@ -186,9 +210,12 @@ struct ArcBoxDesktopApp: App {
                 .environment(authSession)
                 .environment(systemVmBackendVM)
                 .environment(updaterSettings)
+                .environment(runnersVM.fleet)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)
+                .environment(\.fleetControlClient, fleetAgentConnection.controlClient)
+                .environment(\.fleetPlatformClient, fleetPlatformClient)
         }
         .defaultSize(width: 700, height: 580)
         .windowResizability(.contentSize)
@@ -202,8 +229,11 @@ struct ArcBoxDesktopApp: App {
                 .environment(networksVM)
                 .environment(volumesVM)
                 .environment(authSession)
+                .environment(runnersVM)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
+                .environment(\.fleetControlClient, fleetAgentConnection.controlClient)
+                .environment(\.fleetPlatformClient, fleetPlatformClient)
                 .environment(\.startupOrchestrator, startupOrchestrator)
                 .environment(\.accessTokenProvider, authSession)
         }
@@ -238,5 +268,19 @@ struct ArcBoxDesktopApp: App {
         appDelegate.arcboxClient = client
         appDelegate.connectionTask = task
         return client
+    }
+
+    /// Create the authenticated Platform REST client without starting network work.
+    private func initFleetPlatformClientIfNeeded() {
+        guard fleetPlatformClient == nil else { return }
+
+        let configuration = FleetPlatformConfiguration.current
+        Log.fleet.info(
+            "Creating FleetPlatformClient for \(configuration.baseURL.absoluteString, privacy: .public)"
+        )
+        fleetPlatformClient = FleetPlatformClient(
+            configuration: configuration,
+            accessTokenProvider: authSession
+        )
     }
 }

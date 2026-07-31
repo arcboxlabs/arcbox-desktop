@@ -2,6 +2,6 @@
 /// token — refreshed under the hood when needed — without depending on
 /// SwiftUI or Observation.
 public protocol AccessTokenProviding: Sendable {
-    /// Throws `OIDCError.notSignedIn` when there is no session to refresh.
+    /// Throws `AuthError.notSignedIn` when there is no session.
     func accessToken() async throws -> String
 }

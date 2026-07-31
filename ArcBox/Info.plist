@@ -33,6 +33,8 @@
 	<string>$(OIDC_CLIENT_ID)</string>
 	<key>OIDCIssuerURL</key>
 	<string>$(OIDC_ISSUER_URL)</string>
+	<key>FleetPlatformBaseURL</key>
+	<string>$(FLEET_PLATFORM_BASE_URL)</string>
 	<key>PostHogAPIKey</key>
 	<string>$(POSTHOG_API_KEY)</string>
 	<key>SentryDSN</key>

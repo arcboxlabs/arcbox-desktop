@@ -4,7 +4,7 @@ included:
   - Packages
 
 excluded:
-  - Packages/ArcBoxClient/Sources/ArcBoxClient/Generated
+  - Packages/*/Sources/*/Generated
   - Packages/*/.build
   - .build
   - .claude

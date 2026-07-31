@@ -5,19 +5,23 @@ DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
 SENTRY_DSN = YOUR_SENTRY_DSN_HERE
 POSTHOG_API_KEY = YOUR_POSTHOG_API_KEY_HERE
 
-// OIDC sign-in for the ArcBox platform. Leave the placeholders to run with
-// sign-in unconfigured, or point at a local Dex instance for development
-// (see OIDCClientConfiguration.swift in Packages/ArcBoxAuth for the exact
-// Dex static-client shape). The $() below is required: xcconfig treats "//"
-// as a comment even inside values, so an empty expansion splits the slashes;
-// the resolved value is a normal http:// URL.
-//   OIDC_ISSUER_URL = http:/$()/localhost:5556/dex
-//   OIDC_CLIENT_ID = arcbox-desktop
+// Sign-in for the ArcBox platform, via the Better Auth device-authorization
+// grant. The issuer is the Better Auth base URL; its device endpoints and
+// approval page live under it (see AuthClientConfiguration.swift in
+// Packages/ArcBoxAuth). Leave the placeholders to run with sign-in
+// unconfigured. The variable names predate the device-grant flow and stay
+// stable so CI and release configuration keep working. The $() below is
+// required: xcconfig treats "//" as a comment even inside values, so an
+// empty expansion splits the slashes; the resolved value is a normal URL.
 // Production (what release builds ship with, see release.yml):
 //   OIDC_ISSUER_URL = https:/$()/auth.arcbox.dev/api/auth
 //   OIDC_CLIENT_ID = arcbox-desktop
 OIDC_ISSUER_URL = YOUR_OIDC_ISSUER_URL_HERE
 OIDC_CLIENT_ID = YOUR_OIDC_CLIENT_ID_HERE
+
+// Fleet Platform REST API used to list workspaces and issue enrollment tokens.
+// For a local Platform stack, use http:/$()/localhost:2801.
+FLEET_PLATFORM_BASE_URL = https:/$()/api.arcbox.dev
 
 // Optional local-only app identity overrides. Uncomment to use the shared dev preset.
 // ARCBOX_PRODUCT_BUNDLE_IDENTIFIER = $(ARCBOX_DEV_PRODUCT_BUNDLE_IDENTIFIER)

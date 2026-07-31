@@ -9,14 +9,19 @@ import SwiftUI
 struct SidebarAccountButton: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(AuthSession.self) private var authSession
-    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Environment(\.openWindow) private var openWindow
     @State private var isHovered = false
 
     var body: some View {
         Button(action: primaryAction) {
             HStack(spacing: 8) {
-                if authSession.status == .signingIn {
+                if authSession.status == .restoring {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 24, height: 24)
+                    Text("Restoring…")
+                        .foregroundStyle(.secondary)
+                } else if authSession.status == .signingIn {
                     ProgressView()
                         .controlSize(.small)
                         .frame(width: 24, height: 24)
@@ -55,13 +60,15 @@ struct SidebarAccountButton: View {
     }
 
     private var isDisabled: Bool {
-        authSession.status == .signingIn
+        authSession.status == .restoring
+            || authSession.status == .signingIn
             || (authSession.status != .signedIn && authSession.configuration.isPlaceholder)
     }
 
     private var helpText: String {
+        if authSession.status == .restoring { return "Restoring ArcBox session" }
         if authSession.status == .signedIn { return "Open account settings" }
-        if authSession.configuration.isPlaceholder { return "No OIDC provider is configured" }
+        if authSession.configuration.isPlaceholder { return "No sign-in service is configured" }
         return "Sign in to ArcBox"
     }
 
@@ -70,7 +77,7 @@ struct SidebarAccountButton: View {
             appVM.settingsTab = .account
             openWindow(id: "settings")
         } else {
-            Task { await authSession.signIn(using: webAuthenticationSession) }
+            Task { await authSession.signIn() }
         }
     }
 }
