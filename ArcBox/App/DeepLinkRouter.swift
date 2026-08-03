@@ -39,6 +39,13 @@ final class DeepLinkRouter {
         }
     }
 
+    /// Apply a link produced in-process — a notification click — rather than
+    /// parsed from an incoming URL. Unlike `handle(_ url:)` this is not
+    /// buffered: nothing in-process can produce a link before configuration.
+    func handle(_ link: DeepLink) {
+        apply(link)
+    }
+
     private func dispatch(_ url: URL) {
         guard let target else { return }
         if let scheme = target.oauthCallbackScheme,

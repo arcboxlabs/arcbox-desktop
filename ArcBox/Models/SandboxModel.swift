@@ -289,10 +289,19 @@ struct SandboxEventRecord: Identifiable, Hashable {
         kind.label
     }
 
+    init(sandboxID: String, kind: SandboxEventKind, timestamp: Date, attributes: [String: String] = [:]) {
+        self.sandboxID = sandboxID
+        self.kind = kind
+        self.timestamp = timestamp
+        self.attributes = attributes
+    }
+
     init(from event: Arcbox_Sandbox_V1_SandboxEvent) {
-        self.sandboxID = event.sandboxID
-        self.kind = SandboxEventKind(apiKind: event.kind)
-        self.timestamp = event.time.date
-        self.attributes = event.attributes
+        self.init(
+            sandboxID: event.sandboxID,
+            kind: SandboxEventKind(apiKind: event.kind),
+            timestamp: event.time.date,
+            attributes: event.attributes
+        )
     }
 }

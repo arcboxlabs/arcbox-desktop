@@ -18,6 +18,11 @@ final class SandboxEventMonitor {
     /// Most recent events, oldest first. Bounded to `maxRecentEvents`.
     private(set) var recentEvents: [SandboxEventRecord] = []
 
+    /// Called for every event as it arrives, before the debounced list refresh.
+    /// `.sandboxChanged` carries no payload, so consumers that need the event
+    /// itself — notifications — take it from here.
+    @ObservationIgnored var onEvent: ((SandboxEventRecord) -> Void)?
+
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var isStopped = true
 
@@ -100,10 +105,12 @@ final class SandboxEventMonitor {
     // MARK: - Private
 
     private func record(_ event: Arcbox_Sandbox_V1_SandboxEvent) {
-        recentEvents.append(SandboxEventRecord(from: event))
+        let record = SandboxEventRecord(from: event)
+        recentEvents.append(record)
         if recentEvents.count > Self.maxRecentEvents {
             recentEvents.removeFirst(recentEvents.count - Self.maxRecentEvents)
         }
+        onEvent?(record)
         debouncedPost()
     }
 

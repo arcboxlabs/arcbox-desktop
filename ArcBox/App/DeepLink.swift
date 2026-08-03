@@ -28,4 +28,24 @@ enum DeepLink: Equatable {
             self = .section(item, id: url.pathComponents.first { $0 != "/" })
         }
     }
+
+    /// The canonical URL for this link, round-tripping through `init(_:)`.
+    /// Lets a link be carried through APIs that only take URLs, such as a
+    /// notification's `userInfo`.
+    var url: URL {
+        var components = URLComponents()
+        components.scheme = Self.scheme
+        switch self {
+        case .main:
+            components.host = "main"
+        case .settings:
+            components.host = "settings"
+        case .section(let item, let id):
+            components.host = item.rawValue
+            if let id { components.path = "/\(id)" }
+        }
+        // Scheme and host are fixed vocabulary and `path` is percent-encoded on
+        // assignment, so there is no input that makes this fail.
+        return components.url!
+    }
 }
