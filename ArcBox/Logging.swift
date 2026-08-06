@@ -16,6 +16,7 @@ nonisolated enum Log {
     static let services = Logger(subsystem: subsystem, category: "services")
     static let context = Logger(subsystem: subsystem, category: "context")
     static let deepLink = Logger(subsystem: subsystem, category: "deepLink")
+    static let notifications = Logger(subsystem: subsystem, category: "notifications")
     static let sleep = Logger(subsystem: subsystem, category: "sleep")
     static let terminal = Logger(subsystem: subsystem, category: "terminal")
     static let activity = Logger(subsystem: subsystem, category: "activity")
