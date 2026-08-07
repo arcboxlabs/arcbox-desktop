@@ -25,6 +25,7 @@ extension ContainersViewModel {
                             return message
                         }
                         await self.setContainerRunningState(id, isRunning: true)
+                        Analytics.capture(.containerStarted, properties: ["backend": "docker", "batch": true])
                         return nil
                     } catch {
                         Log.container.error(
@@ -66,6 +67,7 @@ extension ContainersViewModel {
                             return message
                         }
                         await self.setContainerRunningState(id, isRunning: false)
+                        Analytics.capture(.containerStopped, properties: ["backend": "docker", "batch": true])
                         return nil
                     } catch {
                         Log.container.error(
@@ -107,6 +109,7 @@ extension ContainersViewModel {
                             return message
                         }
                         await self.removeContainerLocally(id)
+                        Analytics.capture(.containerRemoved, properties: ["backend": "docker", "batch": true])
                         return nil
                     } catch {
                         Log.container.error(

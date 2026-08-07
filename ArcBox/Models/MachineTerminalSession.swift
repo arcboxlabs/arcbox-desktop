@@ -71,6 +71,7 @@ class MachineTerminalSession {
                         await MainActor.run { [weak self] in
                             guard let self, self.sessionGeneration == generation else { return }
                             self.state = .connected
+                            Analytics.capture(.terminalOpened, properties: ["surface": "machine"])
                         }
 
                         for try await output in response.messages {

@@ -1,6 +1,5 @@
 import AppKit
 import ArcBoxClient
-import PostHog
 import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
@@ -68,22 +67,13 @@ struct GeneralSettingsView: View {
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Share anonymous usage data")
+                        Text("Share usage data")
                         Text(
-                            "Help improve ArcBox by sharing feature usage statistics. No personal data is collected."
+                            "Help improve ArcBox by sharing feature usage statistics. While you are signed in, this is linked to your account."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
-                }
-                .onChange(of: telemetryEnabled) { _, newValue in
-                    #if !DEBUG
-                        if newValue {
-                            PostHogSDK.shared.optIn()
-                        } else {
-                            PostHogSDK.shared.optOut()
-                        }
-                    #endif
                 }
             }
 

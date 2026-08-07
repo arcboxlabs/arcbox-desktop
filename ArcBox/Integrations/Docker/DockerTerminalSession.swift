@@ -48,7 +48,8 @@ class DockerTerminalSession {
     func connect(containerID: String, shell: String, terminalView: TerminalView) {
         launchDockerSession(
             arguments: ["exec", "-it", containerID, shell],
-            terminalView: terminalView
+            terminalView: terminalView,
+            surface: "container"
         )
     }
 
@@ -56,7 +57,8 @@ class DockerTerminalSession {
     func runImage(imageName: String, shell: String, terminalView: TerminalView) {
         launchDockerSession(
             arguments: ["run", "-it", "--rm", "--stop-timeout", "1", imageName, shell],
-            terminalView: terminalView
+            terminalView: terminalView,
+            surface: "image"
         )
     }
 
@@ -66,12 +68,13 @@ class DockerTerminalSession {
         tv.feed(text: "\u{1b}[2J\u{1b}[H")
         launchDockerSession(
             arguments: ["run", "-it", "--rm", "--stop-timeout", "1", imageName, shell],
-            terminalView: tv
+            terminalView: tv,
+            surface: "image"
         )
     }
 
     /// Shared implementation: launch a docker CLI process with PTY.
-    private func launchDockerSession(arguments: [String], terminalView: TerminalView) {
+    private func launchDockerSession(arguments: [String], terminalView: TerminalView, surface: String) {
         // Tear down old process without touching state (avoids intermediate .disconnected flicker)
         teardownProcess()
         self.terminalView = terminalView
@@ -171,6 +174,7 @@ class DockerTerminalSession {
             close(replica)
             process = proc
             state = .connected
+            Analytics.capture(.terminalOpened, properties: ["surface": surface])
         } catch {
             close(replica)
             close(primary)

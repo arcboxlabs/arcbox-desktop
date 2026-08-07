@@ -25,6 +25,12 @@ enum ExternalTerminalLauncher {
         let script = makeCommandScript(command: command)
         guard let scriptURL = writeCommandScript(script) else { return }
 
+        Analytics.capture(
+            .terminalOpened,
+            properties: [
+                "surface": "external",
+                "target": containerID == nil ? "host" : "container",
+            ])
         openCommandScript(
             scriptURL,
             terminal: ExternalTerminalDiscovery.resolve(preference: preference)

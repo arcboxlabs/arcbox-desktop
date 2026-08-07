@@ -146,6 +146,7 @@ final class KubernetesState {
             } else {
                 endSession()
                 lifecycle = .disabled
+                Analytics.register(["k8s_active": false])
             }
         } catch is CancellationError {
             guard statusGeneration == self.statusGeneration else { return }
@@ -175,6 +176,7 @@ final class KubernetesState {
         let previousLifecycle = lifecycle
         statusGeneration &+= 1
         lifecycle = .starting
+        let startedAt = CFAbsoluteTimeGetCurrent()
 
         do {
             try await client.startKubernetes()
@@ -185,6 +187,10 @@ final class KubernetesState {
                 }
                 if try await client.kubernetesStatus().isReady {
                     setReady(client: client)
+                    Analytics.capture(
+                        .k8sEnabled,
+                        properties: ["duration_ms": Int((CFAbsoluteTimeGetCurrent() - startedAt) * 1000)]
+                    )
                     return
                 }
             }
@@ -224,6 +230,8 @@ final class KubernetesState {
             try await client.stopKubernetes()
             endSession()
             lifecycle = .disabled
+            Analytics.register(["k8s_active": false])
+            Analytics.capture(.k8sDisabled)
         } catch is CancellationError {
             lifecycle = previousLifecycle
         } catch {
@@ -245,6 +253,7 @@ final class KubernetesState {
     private func setReady(client: any KubernetesControlClient) {
         let clientID = ObjectIdentifier(client)
         lifecycle = .ready
+        Analytics.register(["k8s_active": true])
         guard sessionClientID != clientID else { return }
         startSession(client: client)
     }

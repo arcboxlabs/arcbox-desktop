@@ -45,7 +45,11 @@ extension AppDelegate {
     /// Initialize PostHog product analytics if an API key is configured.
     /// API key is read from Info.plist (injected via POSTHOG_API_KEY build setting).
     /// No-ops gracefully when key is empty or placeholder.
-    /// Telemetry is enabled by default; users can opt out in Settings > Privacy.
+    ///
+    /// Telemetry is on by default for every install, signed in or not:
+    /// `capture` does not require person processing, so events from users who
+    /// never sign in are collected as anonymous events. Signing in only adds a
+    /// person profile. Users opt out in Settings > Privacy.
     static func initPostHog() {
         guard let apiKey = Bundle.main.object(forInfoDictionaryKey: "PostHogAPIKey") as? String,
             !apiKey.isEmpty, apiKey != "YOUR_POSTHOG_API_KEY_HERE", apiKey != "$(POSTHOG_API_KEY)"
@@ -58,13 +62,27 @@ extension AppDelegate {
         config.captureApplicationLifecycleEvents = true
         config.captureScreenViews = false  // No-op on macOS, track manually
         config.personProfiles = .identifiedOnly
-        config.optOut = !UserDefaults.standard.bool(forKey: "telemetryEnabled")
         #if DEBUG
             // Never send telemetry from development builds.
-            config.optOut = true
+            let optedOut = true
+        #else
+            let optedOut = !UserDefaults.standard.bool(forKey: "telemetryEnabled")
         #endif
+        config.optOut = optedOut
         PostHogSDK.shared.setup(config)
-        Log.startup.info("PostHog initialized (opted \(config.optOut ? "out" : "in", privacy: .public))")
+        // `setup` lets the SDK's own persisted opt-out flag override
+        // `config.optOut`, so restate the app preference — Settings > Privacy
+        // is the only source of truth, and it defaults to opted in.
+        if optedOut {
+            Analytics.optOut()
+        } else {
+            Analytics.optIn()
+        }
+        Analytics.register([
+            "arcbox_profile": Bundle.main.object(forInfoDictionaryKey: "ArcBoxProfile") as? String ?? "unknown",
+            "update_channel": UserDefaults.standard.string(forKey: "updateChannel") ?? "stable",
+        ])
+        Log.startup.info("PostHog initialized (opted \(optedOut ? "out" : "in", privacy: .public))")
     }
 
     /// Strip home directory paths from Sentry events to avoid leaking usernames.
