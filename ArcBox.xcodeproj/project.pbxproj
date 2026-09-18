@@ -95,6 +95,7 @@
 		53B84DC35DF078E19C8D7780 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E217254D0827A011E01C3F05 /* StatusItemController.swift */; };
 		547AB2E719C9C6B7F66046F7 /* ServicesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85296C05DC9D33C7930366D7 /* ServicesListViewController.swift */; };
 		57A8D35B23CC870EDEAF7605 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98123C19CE4AB275C8D899E2 /* AppNotification.swift */; };
+		57DFBD423CA735B3A7BEB227 /* KubernetesWatchRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */; };
 		592D8D15F0AD149B578AC661 /* VolumesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209E974D66F4B2D9B5CDA2D9 /* VolumesListView.swift */; };
 		5C24B61DEC9BC6CE303FF52A /* AppMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0084D4B147FA59C7CCC0F5 /* AppMetrics.swift */; };
 		5D4AD52D29953C3DB6552B97 /* ContainerLogsTab+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DD7F5E0115C839BB364D59F /* ContainerLogsTab+Formatting.swift */; };
@@ -110,6 +111,7 @@
 		648A2CC2001B3BE05F6B7B4C /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5272B55436BFFB8D2021CA20 /* EmptyStateView.swift */; };
 		6631E8029205E50D8C32209A /* MachinesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8357344FFAC2AB6F56EE95EC /* MachinesListViewController.swift */; };
 		6720D08CDB730C241017A457 /* LayerStackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F4E99670A28483DBAA6CC8 /* LayerStackTests.swift */; };
+		67808E7A0B5C8FE7A454A117 /* KubernetesWatchRetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 061EDA25B1CD4A83411C65B9 /* KubernetesWatchRetry.swift */; };
 		67924F4E35FF28F7412EEBBA /* NetworkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B7685DAD23E5427C0F9911 /* NetworkDetailView.swift */; };
 		68D8583BAE183D23FFC10815 /* MenuBarHoverButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789DE20DB0F3E106BFAC6E10 /* MenuBarHoverButton.swift */; };
 		699F9908BD6DBCD8244DCEE5 /* AuthTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2C529811ECBAD82E110BC4 /* AuthTestSupport.swift */; };
@@ -313,6 +315,7 @@
 		0100B138714BA1626E5E8D48 /* AboutView+ReleaseRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+ReleaseRow.swift"; sourceTree = "<group>"; };
 		0201CD86DCD5E042D07FF66F /* ActivityRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityRow.swift; sourceTree = "<group>"; };
 		03C9AACAD52AFF216B6A69E0 /* ImagesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesListView.swift; sourceTree = "<group>"; };
+		061EDA25B1CD4A83411C65B9 /* KubernetesWatchRetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesWatchRetry.swift; sourceTree = "<group>"; };
 		064086AEC8C204E8224DF45A /* DockerContextManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerContextManager.swift; sourceTree = "<group>"; };
 		06688AB84392716F1108AE36 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
 		06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitorTests.swift; sourceTree = "<group>"; };
@@ -380,6 +383,7 @@
 		49A8DDE58F61A6B736A63E11 /* SandboxMonitoringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxMonitoringView.swift; sourceTree = "<group>"; };
 		4A4B5E95EA5A894B19867570 /* LocalRootFSOutlineCoordinator+Columns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+Columns.swift"; sourceTree = "<group>"; };
 		4B51BA58BAD575480118B2D2 /* FleetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetViewModel.swift; sourceTree = "<group>"; };
+		4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesWatchRetryTests.swift; sourceTree = "<group>"; };
 		4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerTypes.swift; sourceTree = "<group>"; };
 		4CEDB1A7E6E5F0EEA2214D21 /* VolumeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeTypes.swift; sourceTree = "<group>"; };
 		4DD7F5E0115C839BB364D59F /* ContainerLogsTab+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerLogsTab+Formatting.swift"; sourceTree = "<group>"; };
@@ -996,6 +1000,7 @@
 				3DAC9EE4F067CB69F022C1E0 /* ActivityViewModel.swift */,
 				F707491EC9A47AE534822664 /* AppViewModel.swift */,
 				E37F8C85EB27987F81FFB5F4 /* KubernetesState.swift */,
+				061EDA25B1CD4A83411C65B9 /* KubernetesWatchRetry.swift */,
 				61EE316315F864BA1BF0FFED /* MachinesViewModel.swift */,
 				7AB1B1CD1D5E0E961CD17118 /* MachinesViewModel+GRPC.swift */,
 				D4ED3EC883A488801DE03195 /* NetworksViewModel.swift */,
@@ -1274,6 +1279,7 @@
 				0F065A1CBDA891A5647FE6F6 /* K8sWatchTests.swift */,
 				C83FBFE31C0C7B96918BFCC6 /* KubernetesListViewControllerTests.swift */,
 				5CC273E219CB1B213B2DC57A /* KubernetesStateTests.swift */,
+				4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */,
 				3029D85CCC770F8C1801A392 /* LayeredRootFSTests.swift */,
 				C9F4E99670A28483DBAA6CC8 /* LayerStackTests.swift */,
 				F0647CCB67160C2509345B5E /* MachineModelTests.swift */,
@@ -1563,6 +1569,7 @@
 				9D6E13499CA3B4666836F0F1 /* InfoRow.swift in Sources */,
 				C8C56406446AE0906E11100C /* InfoTableView.swift in Sources */,
 				977632E34C7EC1E3FEEAA25E /* KubernetesState.swift in Sources */,
+				67808E7A0B5C8FE7A454A117 /* KubernetesWatchRetry.swift in Sources */,
 				BD0363ABBB77C56F049EE2E4 /* LayerMergeBadge.swift in Sources */,
 				3F5E421D1DA0E9C653BAEB70 /* LayerStack.swift in Sources */,
 				F0B924B312EABA596C870505 /* LayeredRootFS.swift in Sources */,
@@ -1730,6 +1737,7 @@
 				A8374C7CC46723B1764B2F43 /* KeychainTokenStoreTests.swift in Sources */,
 				44974322E172A05817F3D858 /* KubernetesListViewControllerTests.swift in Sources */,
 				961ABBF2262B0BA2139BECBA /* KubernetesStateTests.swift in Sources */,
+				57DFBD423CA735B3A7BEB227 /* KubernetesWatchRetryTests.swift in Sources */,
 				6720D08CDB730C241017A457 /* LayerStackTests.swift in Sources */,
 				8127661373B4B0D6B1423F67 /* LayeredRootFSTests.swift in Sources */,
 				CCD9ABC3F69FE5DA233E85EC /* MachineModelTests.swift in Sources */,

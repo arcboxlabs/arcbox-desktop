@@ -108,6 +108,20 @@ public enum K8sError: Error, Sendable {
     case watchFailed(reason: String)
 }
 
+/// Error reports are grouped, and deduplicated, by bridged domain and code. A plain enum
+/// bridges to its case index, which would file a 401 and a 503 as the same failure.
+extension K8sError: CustomNSError {
+    public var errorCode: Int {
+        switch self {
+        case .invalidURL: 1
+        case .invalidResponse: 2
+        case .watchExpired: 3
+        case .watchFailed: 4
+        case .httpError(let status): status
+        }
+    }
+}
+
 // MARK: - JSON Decoder
 
 extension JSONDecoder {
