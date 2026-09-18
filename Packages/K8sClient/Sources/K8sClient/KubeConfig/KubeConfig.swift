@@ -111,13 +111,7 @@ public struct KubeConfig: Sendable {
         config.timeoutIntervalForRequest = streaming ? 300 : 15
         config.timeoutIntervalForResource = streaming ? 86400 : 60
 
-        switch authMode {
-        case .certificate:
-            let delegate = try KubeTLSDelegate(config: self)
-            return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-        case .bearerToken:
-            let delegate = try KubeBearerTokenDelegate(caData: certificateAuthorityData)
-            return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-        }
+        let delegate = try KubeTLSDelegate(config: self)
+        return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
     }
 }

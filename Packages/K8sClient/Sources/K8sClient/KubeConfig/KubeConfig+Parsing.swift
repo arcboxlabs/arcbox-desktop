@@ -8,20 +8,37 @@ extension KubeConfig {
         try YAMLDecoder().decode(KubeConfigDocument.self, from: yaml)
     }
 
-    /// Convert PEM-encoded data to DER by stripping headers and decoding inner base64.
-    /// If the data is already DER (no PEM headers), returns it as-is.
-    static func pemToDER(_ data: Data) -> Data {
+    /// Decode every PEM block in `data` to DER, in order; never empty.
+    ///
+    /// Blocks are decoded one at a time because each carries its own base64 padding: k3s
+    /// ships `client-certificate-data` as a chain (the leaf, then the CA that signed it),
+    /// and a CA bundle may hold several roots. Data without PEM armor is already DER.
+    static func derBlocks(_ data: Data) throws -> [Data] {
         guard let pem = String(data: data, encoding: .utf8),
             pem.contains("-----BEGIN")
         else {
-            return data
+            return [data]
         }
-        let base64 =
-            pem
-            .components(separatedBy: .newlines)
-            .filter { !$0.hasPrefix("-----") }
-            .joined()
-        return Data(base64Encoded: base64) ?? data
+
+        var blocks: [Data] = []
+        var body: String?
+        for line in pem.components(separatedBy: .newlines).map({ $0.trimmingCharacters(in: .whitespaces) }) {
+            if line.hasPrefix("-----BEGIN") {
+                body = ""
+            } else if line.hasPrefix("-----END") {
+                guard let encoded = body, let der = Data(base64Encoded: encoded) else {
+                    throw KubeConfigError.invalidCertificate("Malformed PEM block")
+                }
+                blocks.append(der)
+                body = nil
+            } else {
+                body?.append(line)
+            }
+        }
+        guard body == nil, !blocks.isEmpty else {
+            throw KubeConfigError.invalidCertificate("Unterminated PEM block")
+        }
+        return blocks
     }
 }
 

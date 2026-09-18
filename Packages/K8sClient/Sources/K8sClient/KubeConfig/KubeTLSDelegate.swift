@@ -3,35 +3,48 @@ import Security
 
 // MARK: - TLS Delegate
 
-/// URLSession delegate that performs mTLS using kubeconfig credentials.
+/// URLSession delegate that pins the kubeconfig's CA and, for certificate auth, presents
+/// the client identity (mTLS). Bearer-token auth only pins: its credential travels in the
+/// request header.
+///
+/// The challenge handler is the task-level one on purpose. `URLSession.bytes(for:)`, which
+/// the watch streams run on, never consults the session-level `urlSession(_:didReceive:)`,
+/// while `data(for:)` falls back to the task-level method when the session-level one is
+/// absent — so this single method is the only one that covers both.
 @available(macOS 15.0, *)
-final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
-    private let identity: SecIdentity
-    private let caCertificate: SecCertificate
+final class KubeTLSDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    private let anchors: [SecCertificate]
+    private let identity: SecIdentity?
 
     init(config: KubeConfig) throws {
-        // Import CA certificate (convert PEM to DER if needed)
-        let caDER = KubeConfig.pemToDER(config.certificateAuthorityData)
-        guard let caCert = SecCertificateCreateWithData(nil, caDER as CFData) else {
-            throw KubeConfigError.invalidCertificate("Failed to parse CA certificate")
+        self.anchors = try KubeConfig.derBlocks(config.certificateAuthorityData).map { der in
+            guard let certificate = SecCertificateCreateWithData(nil, der as CFData) else {
+                throw KubeConfigError.invalidCertificate("Failed to parse CA certificate")
+            }
+            return certificate
         }
-        self.caCertificate = caCert
 
-        // Create in-memory identity from client cert + key (no keychain needed)
-        guard let clientCertData = config.clientCertificateData,
-            let clientKeyData = config.clientKeyData
-        else {
-            throw KubeConfigError.invalidCertificate(
-                "Certificate auth requires client-certificate-data and client-key-data")
+        switch config.authMode {
+        case .certificate:
+            guard let clientCertData = config.clientCertificateData,
+                let clientKeyData = config.clientKeyData
+            else {
+                throw KubeConfigError.invalidCertificate(
+                    "Certificate auth requires client-certificate-data and client-key-data")
+            }
+            // The leaf comes first; the server already holds whatever CA follows it.
+            self.identity = try Self.createIdentity(
+                certData: KubeConfig.derBlocks(clientCertData)[0],
+                keyPEM: clientKeyData
+            )
+        case .bearerToken:
+            self.identity = nil
         }
-        self.identity = try Self.createIdentity(
-            certData: KubeConfig.pemToDER(clientCertData),
-            keyPEM: clientKeyData
-        )
     }
 
     func urlSession(
         _ session: URLSession,
+        task: URLSessionTask,
         didReceive challenge: URLAuthenticationChallenge
     ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
         let protectionSpace = challenge.protectionSpace
@@ -43,8 +56,8 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
             let sslPolicy = SecPolicyCreateSSL(true, protectionSpace.host as CFString)
             SecTrustSetPolicies(serverTrust, sslPolicy)
 
-            // Pin the CA certificate and evaluate server trust
-            SecTrustSetAnchorCertificates(serverTrust, [caCertificate] as CFArray)
+            // Pin the kubeconfig's CA bundle and evaluate server trust
+            SecTrustSetAnchorCertificates(serverTrust, anchors as CFArray)
             SecTrustSetAnchorCertificatesOnly(serverTrust, true)
             var error: CFError?
             if SecTrustEvaluateWithError(serverTrust, &error) {
@@ -54,7 +67,9 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
             }
         }
 
-        if protectionSpace.authenticationMethod == NSURLAuthenticationMethodClientCertificate {
+        if protectionSpace.authenticationMethod == NSURLAuthenticationMethodClientCertificate,
+            let identity
+        {
             return (
                 .useCredential,
                 URLCredential(
@@ -68,10 +83,10 @@ final class KubeTLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
         return (.performDefaultHandling, nil)
     }
 
-    // MARK: - Private
+    // MARK: - Identity
 
-    private static func createIdentity(certData: Data, keyPEM: Data) throws -> SecIdentity {
-        // Import client certificate (DER)
+    /// Pair a DER certificate with its PEM private key as an in-memory identity.
+    static func createIdentity(certData: Data, keyPEM: Data) throws -> SecIdentity {
         guard let certificate = SecCertificateCreateWithData(nil, certData as CFData) else {
             throw KubeConfigError.invalidCertificate("Failed to parse client certificate")
         }
