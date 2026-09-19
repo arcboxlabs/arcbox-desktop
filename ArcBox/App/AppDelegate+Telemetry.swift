@@ -92,13 +92,28 @@ extension AppDelegate {
     }
 
     /// Strip home directory paths from Sentry events to avoid leaking usernames.
-    private static func scrubPII(_ event: Event) {
+    ///
+    /// Exceptions carry them as often as breadcrumbs do: the daemon reports its own
+    /// absolute paths, and those arrive here inside the error's description.
+    static func scrubPII(_ event: Event) {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
         guard !homeDir.isEmpty else { return }
+        func scrubbed(_ text: String) -> String {
+            text.replacingOccurrences(of: homeDir, with: "~")
+        }
         for breadcrumb in event.breadcrumbs ?? [] {
-            if let msg = breadcrumb.message {
-                breadcrumb.message = msg.replacingOccurrences(of: homeDir, with: "~")
+            if let message = breadcrumb.message {
+                breadcrumb.message = scrubbed(message)
             }
+        }
+        for exception in event.exceptions ?? [] {
+            if let value = exception.value {
+                exception.value = scrubbed(value)
+            }
+        }
+        // `SentryMessage.formatted` is read-only, so the message is replaced wholesale.
+        if let formatted = event.message?.formatted {
+            event.message = SentryMessage(formatted: scrubbed(formatted))
         }
     }
 }

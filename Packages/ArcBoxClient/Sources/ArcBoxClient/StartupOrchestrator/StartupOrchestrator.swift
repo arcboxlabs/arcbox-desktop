@@ -5,7 +5,13 @@ import Observation
 // MARK: - Internal Errors
 
 /// Errors thrown by step bodies to signal failure.
-private enum StartupError: LocalizedError {
+///
+/// Deliberately not `private`: a file-scoped private type has no nameable parent context,
+/// so the runtime renders it as `ArcBoxClient.(unknown context at $1035…).StartupError`
+/// with a live address in it. That is the bridged `NSError` domain, and it is what the
+/// crash reporter groups by, so every launch filed its startup failures under a brand new
+/// issue — 45 of them for two distinct failures.
+enum StartupError: LocalizedError {
     case stepFailed(String)
 
     var errorDescription: String? {
@@ -328,7 +334,11 @@ public final class StartupOrchestrator {
             ClientLog.startup.error(
                 "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .private)"
             )
-            ClientDiagnostics.capture(error, tags: ["startup_step": step.label])
+            // Declining the administrator prompt is a decision, not a fault: the step still
+            // fails and the message says how to retry, but there is nothing to diagnose.
+            if error as? HelperInstallError != .userCanceled {
+                ClientDiagnostics.capture(error, tags: ["startup_step": step.label])
+            }
             stepStatuses[step] = .failed(message)
             phase = .failed(step: step, message: message)
             return false
