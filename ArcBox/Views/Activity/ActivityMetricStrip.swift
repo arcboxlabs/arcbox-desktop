@@ -239,7 +239,9 @@ private struct Sparkline: View {
         .chartYScale(domain: domain ?? autoDomain)
         .chartLegend(.hidden)
         .chartXSelection(value: $scrubbedIndex)
-        .liveValueAnimation(points.last?.index)
+        // No `liveValueAnimation` here. Animating a `Chart` re-resolves every
+        // mark on every frame, and sliding three sparklines by one sample each
+        // second cost nine times the rest of the strip in main-thread time.
         .accessibilityHidden(true)
     }
 
