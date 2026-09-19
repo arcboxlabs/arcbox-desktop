@@ -255,8 +255,13 @@ public final class StartupOrchestrator {
         try checkCancellation()
         if !daemonManager.state.isRunning {
             let totalSeconds = Int(StartupConstants.daemonPollTimeout.components.seconds) * 2
+            // Where it got stuck is the whole question — "unreachable" on its own says only
+            // that the poll ran out, and files every distinct cause under one heading.
             throw StartupError.stepFailed(
-                "Daemon unreachable after force re-register recovery (\(totalSeconds)s total)")
+                """
+                Daemon unreachable after force re-register recovery (\(totalSeconds)s total, \
+                state \(daemonManager.state.label), setup \(daemonManager.setupPhase))
+                """)
         }
     }
 

@@ -53,7 +53,7 @@ extension DaemonManager {
             } catch {
                 ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
                 errorMessage = error.localizedDescription
-                state = .error("Failed to register daemon: \(error.localizedDescription)")
+                state = .error("Failed to register daemon: \(Self.registrationFailure(error))")
             }
         #else
             // In production, skip the destructive unregister+register cycle if the
@@ -77,9 +77,17 @@ extension DaemonManager {
             } catch {
                 ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
                 errorMessage = error.localizedDescription
-                state = .error("Failed to register daemon: \(error.localizedDescription)")
+                state = .error("Failed to register daemon: \(Self.registrationFailure(error))")
             }
         #endif
+    }
+
+    /// `SMAppService.register()`'s message alone is as thin as "Operation not permitted",
+    /// which fits a disabled login item, a quarantined bundle and a malformed plist alike.
+    /// The domain and code tell them apart, and keep them apart in the crash reporter.
+    static func registrationFailure(_ error: any Error) -> String {
+        let error = error as NSError
+        return "\(error.localizedDescription) [\(error.domain) \(error.code)]"
     }
 
     /// Force re-register the daemon with launchd, regardless of current status.
