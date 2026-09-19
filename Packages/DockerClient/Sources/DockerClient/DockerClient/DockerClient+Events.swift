@@ -27,7 +27,7 @@ extension DockerClient {
                     request.method = .GET
                     request.headers.add(name: "Accept", value: "application/json")
 
-                    let response = try await httpClient.execute(request, timeout: .hours(24))
+                    let response = try await streamingClient.execute(request, timeout: .hours(24))
 
                     let maxBufferSize = 10 * 1024 * 1024  // 10 MB
                     var buffer = Data()

@@ -191,8 +191,9 @@ extension DockerClient {
         var request = HTTPClientRequest(url: urlString)
         request.method = .GET
 
+        let client = follow ? streamingClient : httpClient
         let streamTimeout: TimeAmount = follow ? .hours(24) : timeout
-        let response = try await httpClient.execute(request, timeout: streamTimeout)
+        let response = try await client.execute(request, timeout: streamTimeout)
         guard (200..<300).contains(response.status.code) else {
             throw DockerClientError.invalidHTTPStatus(Int(response.status.code))
         }
@@ -201,6 +202,7 @@ extension DockerClient {
 
     /// Gracefully shut down the underlying HTTP client.
     public func shutdown() async throws {
+        try await streamingClient.shutdown()
         try await httpClient.shutdown()
     }
 
