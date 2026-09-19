@@ -98,7 +98,6 @@
 		57DFBD423CA735B3A7BEB227 /* KubernetesWatchRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */; };
 		592D8D15F0AD149B578AC661 /* VolumesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209E974D66F4B2D9B5CDA2D9 /* VolumesListView.swift */; };
 		5C24B61DEC9BC6CE303FF52A /* AppMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0084D4B147FA59C7CCC0F5 /* AppMetrics.swift */; };
-		5D4AD52D29953C3DB6552B97 /* ContainerLogsTab+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DD7F5E0115C839BB364D59F /* ContainerLogsTab+Formatting.swift */; };
 		5D859AD67E6BF46402B5B621 /* ServicesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4009DCC81EA64B23A77FB0C4 /* ServicesViewModel.swift */; };
 		5DBFB63C5C744C1FC45C7808 /* SandboxMonitoringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A8DDE58F61A6B736A63E11 /* SandboxMonitoringView.swift */; };
 		5F8BD0B16CBBDC44080F6EA5 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9101DCB26B0BB5B8DE4CAE70 /* Analytics.swift */; };
@@ -150,6 +149,7 @@
 		807479D85C38FEE5E53218DD /* LocalRootFSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */; };
 		8127661373B4B0D6B1423F67 /* LayeredRootFSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3029D85CCC770F8C1801A392 /* LayeredRootFSTests.swift */; };
 		82ECF33C9637C7C65B527336 /* ArcBoxClient in Frameworks */ = {isa = PBXBuildFile; productRef = CFE468A82BAC1B4D9AE25368 /* ArcBoxClient */; };
+		83BC64C9FCAEC496202332AE /* AsyncSequence+Batched.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4CB95E38D07E88BA970910 /* AsyncSequence+Batched.swift */; };
 		84668EC176DD05088BB01A54 /* SettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F46BA5653A1B6451B7941D5 /* SettingsTab.swift */; };
 		8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */; };
 		84DDB437165AE31AD63C30F9 /* MenuBarView+Metrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF57E2C2B0281B8CEA6132C /* MenuBarView+Metrics.swift */; };
@@ -272,6 +272,7 @@
 		ED5B6539D3909308DA1C4AE4 /* TerminalSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 312B3A0CBD47EB616127BBE5 /* TerminalSessionBridge.swift */; };
 		EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */; };
 		F035F2D21380F9DD531E6B04 /* LocalRootFSOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EDD0CCB1C4698A31FC1ED1 /* LocalRootFSOutlineView.swift */; };
+		F04A2EA6530E7020A9C875E3 /* AsyncSequenceBatchedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3421445408D28697F7CAE4F /* AsyncSequenceBatchedTests.swift */; };
 		F07FF6E8891692D4D8807F3A /* LocalRootFSOutlineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6C627A5BC34C783DAEAC31 /* LocalRootFSOutlineModels.swift */; };
 		F0B6CC9DB9992CE44F2A7F70 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F707491EC9A47AE534822664 /* AppViewModel.swift */; };
 		F0B924B312EABA596C870505 /* LayeredRootFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33250D1306B30B4E3D4C9B0E /* LayeredRootFS.swift */; };
@@ -386,7 +387,6 @@
 		4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesWatchRetryTests.swift; sourceTree = "<group>"; };
 		4CC37601A89C4ED758AC6C45 /* ContainerTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerTypes.swift; sourceTree = "<group>"; };
 		4CEDB1A7E6E5F0EEA2214D21 /* VolumeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeTypes.swift; sourceTree = "<group>"; };
-		4DD7F5E0115C839BB364D59F /* ContainerLogsTab+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerLogsTab+Formatting.swift"; sourceTree = "<group>"; };
 		4E0084D4B147FA59C7CCC0F5 /* AppMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMetrics.swift; sourceTree = "<group>"; };
 		4E7528A43356F3BB6CE3FB96 /* ArcBox.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArcBox.entitlements; sourceTree = "<group>"; };
 		4F0D0444E612EC32D81A7E0C /* LocalRootFSOutlineCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineCoordinator.swift; sourceTree = "<group>"; };
@@ -527,12 +527,14 @@
 		C0DD79FCBCF65FAFFBBB61D0 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		C15C37C29F16DD4E28B30271 /* MenuBarView+Containers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Containers.swift"; sourceTree = "<group>"; };
 		C33F6D43F3CE2C79F072C7F3 /* DockerClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DockerClient; path = Packages/DockerClient; sourceTree = SOURCE_ROOT; };
+		C3421445408D28697F7CAE4F /* AsyncSequenceBatchedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSequenceBatchedTests.swift; sourceTree = "<group>"; };
 		C396CA9355FFB5ACB7DD1D32 /* MainWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowController.swift; sourceTree = "<group>"; };
 		C3AAFC5E642995054B983811 /* ContainersListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListViewController.swift; sourceTree = "<group>"; };
 		C83FBFE31C0C7B96918BFCC6 /* KubernetesListViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubernetesListViewControllerTests.swift; sourceTree = "<group>"; };
 		C8FE218992C260511CE601B8 /* FleetControlServicing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetControlServicing.swift; sourceTree = "<group>"; };
 		C964312D5336EE55A8E4680B /* ImageLayerChainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLayerChainTests.swift; sourceTree = "<group>"; };
 		C9F4E99670A28483DBAA6CC8 /* LayerStackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerStackTests.swift; sourceTree = "<group>"; };
+		CA4CB95E38D07E88BA970910 /* AsyncSequence+Batched.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AsyncSequence+Batched.swift"; sourceTree = "<group>"; };
 		CB5E3A017A70860929AA45F0 /* FleetControlClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetControlClientTests.swift; sourceTree = "<group>"; };
 		CC7024634F15938CC362E861 /* CommandEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandEmptyStateView.swift; sourceTree = "<group>"; };
 		CC98017408ED56AFF734125A /* AboutView+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+Sections.swift"; sourceTree = "<group>"; };
@@ -947,6 +949,7 @@
 		5F282325419E9444ADBEA66D /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				CA4CB95E38D07E88BA970910 /* AsyncSequence+Batched.swift */,
 				DBEBBF08F0E4AC45D9C0BB83 /* ChangelogParser.swift */,
 				C0A093F9D88FA4D914DE6F45 /* Utilities.swift */,
 			);
@@ -1196,7 +1199,6 @@
 				269B74A3C7704AB81139FA52 /* ContainerLogsModels.swift */,
 				FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */,
 				200F15F29A3634EC779554D4 /* ContainerLogsTab+Actions.swift */,
-				4DD7F5E0115C839BB364D59F /* ContainerLogsTab+Formatting.swift */,
 				B2CC2B117E020C62C1E9952E /* ContainerLogsTab+Views.swift */,
 			);
 			path = ContainerLogsTab;
@@ -1257,6 +1259,7 @@
 				3CD990EEEF43CDA673BC1816 /* ActivityRowGroupingTests.swift */,
 				1A9181A312D267BBD4687762 /* AppPreferencesTests.swift */,
 				1DC5F65FECB2F80BA3AF1D84 /* ArcBoxClientErrorTests.swift */,
+				C3421445408D28697F7CAE4F /* AsyncSequenceBatchedTests.swift */,
 				3750055AEC4C49576A78A909 /* ByteFormattingTests.swift */,
 				A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */,
 				80010452354615CAC08FAF1D /* ContainersListViewControllerTests.swift */,
@@ -1505,6 +1508,7 @@
 				725EE1E8C4BABAF5AB3B9D20 /* AppPreferences.swift in Sources */,
 				F0B6CC9DB9992CE44F2A7F70 /* AppViewModel.swift in Sources */,
 				932BD3DB61039B6A7B298661 /* ApplicationCoordinator.swift in Sources */,
+				83BC64C9FCAEC496202332AE /* AsyncSequence+Batched.swift in Sources */,
 				11E29BA2E32899164106A9E7 /* AvatarView.swift in Sources */,
 				50CCDEFCA186BCD1E99D291F /* ChangelogParser.swift in Sources */,
 				0A2CD753BB4FE0991213273A /* CommandEmptyStateView.swift in Sources */,
@@ -1516,7 +1520,6 @@
 				1BC0DF2E6DAA6E0A94058B5F /* ContainerListModels.swift in Sources */,
 				2754C5F694613CA3A06DBC7E /* ContainerLogsModels.swift in Sources */,
 				361A7AD4626352A09571245C /* ContainerLogsTab+Actions.swift in Sources */,
-				5D4AD52D29953C3DB6552B97 /* ContainerLogsTab+Formatting.swift in Sources */,
 				012B6BCE79F6FAE406EE97A0 /* ContainerLogsTab+Views.swift in Sources */,
 				48014023336A8AD5D1B21A27 /* ContainerLogsTab.swift in Sources */,
 				8E9980682D9BB81A4CB35673 /* ContainerModel.swift in Sources */,
@@ -1707,6 +1710,7 @@
 				11168BDC9BB01B20733A9063 /* AppPreferencesTests.swift in Sources */,
 				C94515858BC220B73B93EC5D /* ArcBoxClientErrorTests.swift in Sources */,
 				6276E31C6E2F736A7B5F41E0 /* ArcBoxClientTests.swift in Sources */,
+				F04A2EA6530E7020A9C875E3 /* AsyncSequenceBatchedTests.swift in Sources */,
 				BECE57281BC047E471893209 /* AuthClientConfigurationTests.swift in Sources */,
 				2EFFFF0AEC16386829FAC491 /* AuthSessionTests.swift in Sources */,
 				699F9908BD6DBCD8244DCEE5 /* AuthTestSupport.swift in Sources */,

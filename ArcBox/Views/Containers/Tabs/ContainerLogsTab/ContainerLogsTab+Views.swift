@@ -98,11 +98,12 @@ extension ContainerLogsTab {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
+                // Unanimated: animating a jump to the end of a lazy stack makes SwiftUI
+                // walk the list to resolve the target, and a followed container pays that
+                // on every line.
                 .onChange(of: logEntries.count) {
                     if isFollowing, let last = filteredEntries.last {
-                        withAnimation(.easeOut(duration: 0.1)) {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                        proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
             }
@@ -112,8 +113,8 @@ extension ContainerLogsTab {
     @ViewBuilder
     func logLineView(_ entry: LogEntry) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            if let ts = entry.timestamp {
-                Text(formatTimestamp(ts))
+            if let time = entry.time {
+                Text(time)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(AppColors.textMuted)
                     .lineLimit(1)

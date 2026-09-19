@@ -16,6 +16,9 @@ struct ContainerLogsTab: View {
     @State var streamTask: Task<Void, Never>?
 
     let maxLogEntries = 10_000
+    /// How long lines may wait to be shown. Long enough to fold a burst into one list
+    /// rebuild, short enough to still read as live.
+    static let appendInterval = Duration.milliseconds(100)
 
     var filteredEntries: [LogEntry] {
         var entries = logEntries

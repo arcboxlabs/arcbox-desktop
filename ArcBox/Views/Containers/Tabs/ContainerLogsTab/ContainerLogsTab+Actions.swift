@@ -58,14 +58,16 @@ extension ContainerLogsTab {
                 since: sinceTimestamp
             )
             do {
-                for try await line in stream {
+                for try await lines in stream.batched(every: Self.appendInterval) {
                     if Task.isCancelled { break }
-                    let entry = LogEntry(
-                        timestamp: line.timestamp,
-                        stream: line.stream == .stderr ? .stderr : .stdout,
-                        message: line.message
-                    )
-                    logEntries.append(entry)
+                    logEntries.append(
+                        contentsOf: lines.map { line in
+                            LogEntry(
+                                timestamp: line.timestamp,
+                                stream: line.stream == .stderr ? .stderr : .stdout,
+                                message: line.message
+                            )
+                        })
                     if logEntries.count > maxLogEntries {
                         logEntries.removeFirst(logEntries.count - maxLogEntries)
                     }
