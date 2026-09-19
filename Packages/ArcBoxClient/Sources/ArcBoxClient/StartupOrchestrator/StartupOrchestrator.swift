@@ -13,10 +13,14 @@ import Observation
 /// issue — 45 of them for two distinct failures.
 enum StartupError: LocalizedError {
     case stepFailed(String)
+    /// A step the user has to unblock in System Settings. It fails like any other and the
+    /// message says what to do, but there is nothing here to diagnose, so it is not
+    /// reported.
+    case requiresUserAction(String)
 
     var errorDescription: String? {
         switch self {
-        case .stepFailed(let msg): return msg
+        case .stepFailed(let msg), .requiresUserAction(let msg): return msg
         }
     }
 }
@@ -189,7 +193,9 @@ public final class StartupOrchestrator {
         let daemonOK = await runStep(.enableDaemon) {
             await self.daemonManager.enableDaemon()
             if case .error(let msg) = self.daemonManager.state {
-                throw StartupError.stepFailed(msg)
+                throw self.daemonManager.daemonService.status == .requiresApproval
+                    ? StartupError.requiresUserAction(msg)
+                    : StartupError.stepFailed(msg)
             }
         }
 
@@ -279,6 +285,14 @@ public final class StartupOrchestrator {
 
     /// Human-readable cause of a daemon `FAILED` setup phase, for the retryable
     /// failure UI. `setupMessage` already carries the daemon's `error` detail.
+    /// Outcomes the user chose or must undo themselves — declining the administrator
+    /// prompt, or switching ArcBox off in Login Items. They fail the step and say what to
+    /// do; reporting them only fills the tracker with settings.
+    private static func isUpToTheUser(_ error: any Error) -> Bool {
+        if case StartupError.requiresUserAction = error { return true }
+        return error as? HelperInstallError == .userCanceled
+    }
+
     private var daemonFailureMessage: String {
         let reason = daemonManager.setupMessage
         return reason.isEmpty ? "Daemon reported a fatal setup failure" : reason
@@ -339,9 +353,7 @@ public final class StartupOrchestrator {
             ClientLog.startup.error(
                 "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .private)"
             )
-            // Declining the administrator prompt is a decision, not a fault: the step still
-            // fails and the message says how to retry, but there is nothing to diagnose.
-            if error as? HelperInstallError != .userCanceled {
+            if !Self.isUpToTheUser(error) {
                 ClientDiagnostics.capture(error, tags: ["startup_step": step.label])
             }
             stepStatuses[step] = .failed(message)

@@ -53,7 +53,7 @@ extension DaemonManager {
             } catch {
                 ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
                 errorMessage = error.localizedDescription
-                state = .error("Failed to register daemon: \(Self.registrationFailure(error))")
+                state = .error(Self.registrationFailure(error))
             }
         #else
             // In production, skip the destructive unregister+register cycle if the
@@ -67,27 +67,60 @@ extension DaemonManager {
                 return
             }
 
+            // Already registered, but the user switched ArcBox off in Login Items. Only
+            // they can undo that: re-registering does not grant consent, it discards a
+            // good registration and then fails with EPERM — which is how this arrived as
+            // "Failed to register daemon: Operation not permitted" with no mention of the
+            // setting that actually caused it.
+            if status == .requiresApproval {
+                ClientLog.daemon.warning("Daemon is registered but switched off in Login Items")
+                errorMessage = Self.loginItemsApprovalMessage
+                state = .error(Self.loginItemsApprovalMessage)
+                return
+            }
+
             do {
-                // Force re-register to ensure BundleProgram resolves against the current
-                // app bundle path.
-                try? await daemonService.unregister()
+                // Nothing to unregister here: the only statuses left are `notRegistered`
+                // and `notFound`. Apple asks for unregister-before-register when the
+                // executable changed, which is the `.enabled` case handled above.
                 try daemonService.register()
                 ClientLog.daemon.info("Service registered successfully")
                 state = .registered
             } catch {
                 ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
                 errorMessage = error.localizedDescription
-                state = .error("Failed to register daemon: \(Self.registrationFailure(error))")
+                state = .error(Self.registrationFailure(error))
             }
         #endif
     }
 
     /// `SMAppService.register()`'s message alone is as thin as "Operation not permitted",
-    /// which fits a disabled login item, a quarantined bundle and a malformed plist alike.
-    /// The domain and code tell them apart, and keep them apart in the crash reporter.
-    static func registrationFailure(_ error: any Error) -> String {
+    /// which fits a quarantined bundle and a label launchd already owns alike. The domain
+    /// and code tell them apart, and keep them apart in the crash reporter; the one cause
+    /// we can identify outright is named in full, because the user has to undo it by hand.
+    public static func registrationFailure(_ error: any Error) -> String {
         let error = error as NSError
-        return "\(error.localizedDescription) [\(error.domain) \(error.code)]"
+        let detail = "\(error.localizedDescription) [\(error.domain) \(error.code)]"
+        guard let conflict = Self.conflictingLaunchAgent else {
+            return "Failed to register daemon: \(detail)"
+        }
+        return """
+            Failed to register daemon: \(detail). launchd already runs \(Self.daemonLabel) from \
+            \(conflict.path), which `abctl _install` installs; the copy inside ArcBox cannot \
+            register while that one is loaded. Run `abctl _uninstall`, or remove that file and \
+            log out and back in, then retry.
+            """
+    }
+
+    /// A plist for our own label sitting where launchd loads it from. Apple's guidance on
+    /// this failure is that registering a service whose plist "is already loaded by
+    /// launchd (for example, it is installed in /Library/Launch{Agents,Daemons})" is what
+    /// the error means, and `abctl _install` without `--no-daemon` installs exactly that.
+    static var conflictingLaunchAgent: URL? {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/LaunchAgents", isDirectory: true)
+            .appendingPathComponent(Self.daemonPlistName)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     /// Force re-register the daemon with launchd, regardless of current status.

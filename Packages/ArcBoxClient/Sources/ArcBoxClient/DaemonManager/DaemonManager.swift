@@ -61,7 +61,7 @@ public final class DaemonManager {
         isDevelopmentProfile ? "com.arcboxlabs.desktop.dev.daemon" : "com.arcboxlabs.desktop.daemon"
     }
 
-    nonisolated static var daemonPlistName: String {
+    nonisolated public static var daemonPlistName: String {
         "\(daemonLabel).plist"
     }
 
@@ -73,8 +73,21 @@ public final class DaemonManager {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(dataDirectoryName)
     }
 
-    nonisolated var daemonService: SMAppService {
+    nonisolated public var daemonService: SMAppService {
         SMAppService.agent(plistName: Self.daemonPlistName)
+    }
+
+    /// What to tell the user when `SMAppService` reports `.requiresApproval`, which the
+    /// framework documents as "the user needs to take action in System Settings before
+    /// the service is eligible to run … returned if the user revokes consent".
+    public static let loginItemsApprovalMessage = """
+        ArcBox is switched off in Login Items, so its background service cannot start. \
+        Turn ArcBox on in System Settings > General > Login Items & Extensions, then retry.
+        """
+
+    /// Opens the pane ``loginItemsApprovalMessage`` names.
+    nonisolated public static func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 
     /// Whether the privileged helper is installed.
