@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.37.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.37.0...v1.37.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **activity:** stop animating the sparklines on every sample ([ef0578f](https://github.com/arcboxlabs/arcbox-desktop/commit/ef0578f35b1e0ef6710fdf7fbee5e0a445cef683))
+* **containers:** keep the logs tab off the main thread's critical path ([0aa0ea1](https://github.com/arcboxlabs/arcbox-desktop/commit/0aa0ea19fbc59005c269e79255c1da02c29a6786))
+* **containers:** stop the Docker client running out of connections ([2393376](https://github.com/arcboxlabs/arcbox-desktop/commit/23933765ccaf2a64f03aeec5ae23bff08f082297))
+* **k8s:** make the watch streams authenticate against k3s ([33c72dd](https://github.com/arcboxlabs/arcbox-desktop/commit/33c72ddbe7b0f3b1b844af69e341aea9b5b4128f))
+* **k8s:** report a stuck watch once and keep backing off while it fails ([c60257d](https://github.com/arcboxlabs/arcbox-desktop/commit/c60257d0fd790905437ecf14974dd8c5bf86deb1))
+* **startup:** file startup failures under one issue instead of one per launch ([036790e](https://github.com/arcboxlabs/arcbox-desktop/commit/036790e5483917d8b0893dca2ba144442fa90942))
+* **startup:** name the two things that make daemon registration fail ([bebf107](https://github.com/arcboxlabs/arcbox-desktop/commit/bebf10779c554c5b8483c89964d5b164078e2b82))
+* **startup:** say why the daemon failed, not just that it did ([f100307](https://github.com/arcboxlabs/arcbox-desktop/commit/f10030721bf011adb53af458c27f5154f641ec76))
+
 ## [1.37.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.36.0...v1.37.0) (2026-08-13)
 
 ### Highlights
