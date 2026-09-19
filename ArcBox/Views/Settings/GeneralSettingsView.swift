@@ -20,6 +20,7 @@ struct GeneralSettingsView: View {
     @AppStorage("externalTerminal") private var externalTerminal = ExternalTerminalApp.terminalBundleIdentifier
     @AppStorage("telemetryEnabled") private var telemetryEnabled = true
     @AppStorage(AppNotification.Category.sandbox.preferenceKey) private var notifySandboxResults = true
+    @AppStorage(AppNotification.Category.container.preferenceKey) private var notifyContainerCrashes = true
     @AppStorage(AppNotification.Category.daemonHealth.preferenceKey) private var notifyDaemonProblems = true
 
     @State private var isExportingDiagnostics = false
@@ -84,6 +85,17 @@ struct GeneralSettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Sandbox execution results")
                         Text("Every failure, and successful runs longer than 30 seconds.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent {
+                    Toggle("", isOn: $notifyContainerCrashes)
+                        .labelsHidden()
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Container crashes")
+                        Text("When a container exits on its own with a non-zero code.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

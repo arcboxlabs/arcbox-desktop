@@ -26,7 +26,7 @@ final class DockerEventMonitorTests: XCTestCase {
     // MARK: - Helpers
 
     private func event(_ type: String, _ action: String) -> DockerClient.DockerEvent {
-        DockerClient.DockerEvent(type: type, action: action, actorID: nil)
+        DockerClient.DockerEvent(type: type, action: action, actorID: nil, date: Date())
     }
 
     /// Wait for a notification within a timeout, returning true if received.

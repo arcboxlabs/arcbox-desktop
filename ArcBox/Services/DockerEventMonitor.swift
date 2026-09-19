@@ -21,6 +21,11 @@ extension Notification.Name {
 @Observable
 final class DockerEventMonitor {
 
+    /// Called for every event as it arrives, before whitelisting and debounce.
+    /// The posted notifications carry no payload, so consumers that need the
+    /// event itself — notifications — take it from here.
+    @ObservationIgnored var onEvent: ((DockerClient.DockerEvent) -> Void)?
+
     // MARK: Action Whitelists
 
     private static let containerActions: Set<String> = [
@@ -107,6 +112,11 @@ final class DockerEventMonitor {
 
     /// Visible to tests via @testable import.
     func handleEvent(_ event: DockerClient.DockerEvent) {
+        // Every event, before the whitelist below: that filter exists to
+        // decide which list to refresh, and notification rules need actions
+        // it has no reason to carry.
+        onEvent?(event)
+
         switch event.type {
         case "container":
             guard Self.containerActions.contains(event.action) else { return }

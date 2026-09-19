@@ -1,4 +1,5 @@
 import ArcBoxClient
+import DockerClient
 import Foundation
 
 /// Owns everything between an event and a delivered notification: which rules
@@ -15,6 +16,9 @@ final class NotificationCoordinator {
 
     private var sandboxRules = SandboxNotificationRules()
     private var pendingDaemonAlert: Task<Void, Never>?
+    private lazy var containerCrashes = ContainerCrashReporter { [weak self] notification in
+        self?.service.post(notification)
+    }
 
     init(
         service: UserNotificationService = UserNotificationService(),
@@ -37,11 +41,22 @@ final class NotificationCoordinator {
     func stop() {
         pendingDaemonAlert?.cancel()
         pendingDaemonAlert = nil
+        containerCrashes.stop()
     }
 
     func handleSandboxEvent(_ event: SandboxEventRecord) {
         guard let notification = sandboxRules.notification(for: event) else { return }
         service.post(notification)
+    }
+
+    func handleDockerEvent(_ event: DockerClient.DockerEvent) {
+        containerCrashes.handle(event)
+    }
+
+    /// The runtime went away and took every container with it. Those deaths
+    /// are not news — the daemon has its own notification for exactly this.
+    func runtimeStopped() {
+        containerCrashes.stop()
     }
 
     /// Tell the user about a daemon problem, but only once it has outlasted the
