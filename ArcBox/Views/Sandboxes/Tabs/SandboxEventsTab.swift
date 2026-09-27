@@ -24,6 +24,7 @@ struct SandboxEventsTab: View {
                     Image(systemName: "bolt")
                         .font(.system(size: 24))
                         .foregroundStyle(AppColors.textMuted)
+                        .accessibilityHidden(true)
                     Text("No events retained for this sandbox.")
                         .font(.system(size: 13))
                         .foregroundStyle(AppColors.textSecondary)

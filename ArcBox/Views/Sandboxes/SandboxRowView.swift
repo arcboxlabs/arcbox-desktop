@@ -31,6 +31,7 @@ struct SandboxRowView: View {
                     Image(systemName: "square.stack.3d.up")
                         .font(.system(size: 14))
                         .foregroundStyle(stateColor)
+                        .accessibilityHidden(true)
                 }
 
             // Name and ID
@@ -57,12 +58,14 @@ struct SandboxRowView: View {
                 if sandbox.state.isActive {
                     IconButton(
                         symbol: "stop.fill",
+                        label: "Stop \(sandbox.displayName)",
                         action: { onStop?() },
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
                 } else if sandbox.state.canRemove {
                     IconButton(
                         symbol: "trash.fill",
+                        label: "Remove \(sandbox.displayName)",
                         action: { onRemove?() },
                         color: isSelected ? AppColors.onAccent : AppColors.textSecondary
                     )
@@ -84,5 +87,9 @@ struct SandboxRowView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { hovering in isHovered = hovering }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(sandbox.displayName), \(sandbox.state.label)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAction { onSelect() }
     }
 }

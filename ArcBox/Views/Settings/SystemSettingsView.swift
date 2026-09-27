@@ -152,7 +152,7 @@ struct SystemSettingsView: View {
                 }
 
                 LabeledContent {
-                    Toggle("", isOn: $pauseContainersWhileSleeping)
+                    Toggle("Pause containers while Mac is sleeping", isOn: $pauseContainersWhileSleeping)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {

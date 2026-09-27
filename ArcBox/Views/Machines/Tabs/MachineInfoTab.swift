@@ -77,6 +77,7 @@ struct MachineInfoTab: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
+                .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: 0) {
                 content()

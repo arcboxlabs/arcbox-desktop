@@ -20,6 +20,7 @@ struct ContainerLogsContent: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 24))
                         .foregroundStyle(AppColors.textMuted)
+                        .accessibilityHidden(true)
                     Text(error)
                         .font(.system(size: 13))
                         .foregroundStyle(AppColors.textSecondary)

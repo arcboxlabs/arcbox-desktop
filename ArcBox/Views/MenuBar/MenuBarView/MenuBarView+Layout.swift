@@ -42,6 +42,7 @@ extension MenuBarView {
             Spacer(minLength: 0)
 
             statusPill(title: daemonStateDisplay, color: daemonStateColor)
+                .accessibilityLabel("Daemon \(daemonStateDisplay)")
         }
         .padding(.leading, 4)
         .padding(.horizontal, 2)

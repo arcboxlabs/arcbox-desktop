@@ -39,12 +39,14 @@ struct VolumeFilesTab: View {
             Image(systemName: "folder")
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textSecondary)
+                .accessibilityHidden(true)
 
             Text(rootURL?.path ?? volume.mountPoint)
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundStyle(AppColors.textSecondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+                .accessibilityLabel("Path: \(rootURL?.path ?? volume.mountPoint)")
 
             Spacer()
 
@@ -57,6 +59,7 @@ struct VolumeFilesTab: View {
             )
             .buttonStyle(.plain)
             .help(showHiddenFiles ? "Hide hidden files" : "Show hidden files")
+            .accessibilityLabel(showHiddenFiles ? "Hide hidden files" : "Show hidden files")
 
             Button(action: refresh) {
                 Image(systemName: "arrow.clockwise")
@@ -64,6 +67,7 @@ struct VolumeFilesTab: View {
             }
             .buttonStyle(.plain)
             .help("Refresh")
+            .accessibilityLabel("Refresh files")
 
             Button(action: revealSelectedInFinder) {
                 Image(systemName: "finder")
@@ -72,6 +76,7 @@ struct VolumeFilesTab: View {
             .buttonStyle(.plain)
             .disabled(selectedURL == nil)
             .help("Reveal selected in Finder")
+            .accessibilityLabel("Reveal selected in Finder")
         }
         .foregroundStyle(AppColors.textSecondary)
         .padding(.horizontal, 12)
@@ -113,6 +118,7 @@ struct VolumeFilesTab: View {
             Image(systemName: "folder.badge.questionmark")
                 .font(.system(size: 24))
                 .foregroundStyle(AppColors.textMuted)
+                .accessibilityHidden(true)
 
             Text(message)
                 .font(.system(size: 13))

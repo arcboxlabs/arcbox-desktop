@@ -84,6 +84,7 @@ struct MachineTerminalTab: View {
                 )
                 .buttonStyle(.plain)
                 .help("Disconnect")
+                .accessibilityLabel("Disconnect terminal")
             } else if session.state == .disconnected || session.state == .idle {
                 Button(action: reconnect) {
                     Image(systemName: "arrow.clockwise")
@@ -92,6 +93,7 @@ struct MachineTerminalTab: View {
                 }
                 .buttonStyle(.plain)
                 .help("Reconnect")
+                .accessibilityLabel("Reconnect terminal")
             }
         }
         .padding(.horizontal, 12)
@@ -126,6 +128,7 @@ struct MachineTerminalTab: View {
             Image(systemName: "terminal")
                 .font(.system(size: 32))
                 .foregroundStyle(AppColors.textMuted)
+                .accessibilityHidden(true)
             Text("Machine is not running")
                 .font(.system(size: 15))
                 .foregroundStyle(AppColors.textSecondary)
@@ -143,6 +146,7 @@ struct MachineTerminalTab: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 32))
                 .foregroundStyle(AppColors.textMuted)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.system(size: 13))
                 .foregroundStyle(AppColors.textSecondary)

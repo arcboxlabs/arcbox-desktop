@@ -58,6 +58,7 @@ struct SandboxFilesTab: View {
             Image(systemName: "doc")
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textSecondary)
+                .accessibilityHidden(true)
 
             TextField(
                 "Absolute path in sandbox", text: $path,
@@ -103,6 +104,7 @@ struct SandboxFilesTab: View {
                 Image(systemName: "arrow.up.arrow.down.circle")
                     .font(.system(size: 24))
                     .foregroundStyle(AppColors.textMuted)
+                    .accessibilityHidden(true)
                 Text("Enter an absolute path to upload or download a file.")
                     .font(.system(size: 13))
                     .foregroundStyle(AppColors.textSecondary)

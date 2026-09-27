@@ -112,6 +112,7 @@ struct SandboxSnapshotsTab: View {
             .buttonStyle(.plain)
             .disabled(isWorking || client == nil || vm.isLoadingSnapshots)
             .help("Refresh")
+            .accessibilityLabel("Refresh snapshots")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -150,6 +151,7 @@ struct SandboxSnapshotsTab: View {
                 Image(systemName: "camera")
                     .font(.system(size: 24))
                     .foregroundStyle(AppColors.textMuted)
+                    .accessibilityHidden(true)
                 Text("No snapshots of this sandbox.")
                     .font(.system(size: 13))
                     .foregroundStyle(AppColors.textSecondary)
@@ -190,6 +192,7 @@ struct SandboxSnapshotsTab: View {
         HStack(spacing: 10) {
             Image(systemName: "camera")
                 .foregroundStyle(AppColors.textSecondary)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(snapshot.displayName)
@@ -219,6 +222,7 @@ struct SandboxSnapshotsTab: View {
             .buttonStyle(.plain)
             .disabled(isWorking || vm.isLoadingSnapshots || client == nil)
             .help("Promote to a reusable catalog template")
+            .accessibilityLabel("Promote \(snapshot.displayName) to template")
 
             Button {
                 snapshotToDelete = snapshot
@@ -229,6 +233,7 @@ struct SandboxSnapshotsTab: View {
             .buttonStyle(.plain)
             .disabled(isWorking || vm.isLoadingSnapshots || client == nil)
             .help("Delete snapshot")
+            .accessibilityLabel("Delete \(snapshot.displayName)")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

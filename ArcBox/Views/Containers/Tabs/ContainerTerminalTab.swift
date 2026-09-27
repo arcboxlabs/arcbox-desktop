@@ -58,6 +58,7 @@ struct ContainerTerminalTab: View {
                     )
                     .buttonStyle(.plain)
                     .help("Open in external terminal")
+                    .accessibilityLabel("Open in external terminal")
 
                     if session.state == .connected {
                         Button(
@@ -70,6 +71,7 @@ struct ContainerTerminalTab: View {
                         )
                         .buttonStyle(.plain)
                         .help("Disconnect")
+                        .accessibilityLabel("Disconnect terminal")
                     } else if session.state == .disconnected || session.state == .idle {
                         Button(action: reconnect) {
                             Image(systemName: "arrow.clockwise")
@@ -78,6 +80,7 @@ struct ContainerTerminalTab: View {
                         }
                         .buttonStyle(.plain)
                         .help("Reconnect")
+                        .accessibilityLabel("Reconnect terminal")
                     }
                 }
                 .padding(.horizontal, 12)
@@ -160,6 +163,7 @@ struct ContainerTerminalTab: View {
                     Image(systemName: "shippingbox")
                         .font(.system(size: 26))
                         .foregroundStyle(AppColors.textMuted)
+                        .accessibilityHidden(true)
                 }
 
                 // Container name
@@ -176,6 +180,7 @@ struct ContainerTerminalTab: View {
                         .font(.system(size: 13))
                         .foregroundStyle(AppColors.textSecondary)
                 }
+                .accessibilityElement(children: .combine)
 
                 // Start button
                 Button(action: startContainer) {
@@ -195,6 +200,9 @@ struct ContainerTerminalTab: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
                 .disabled(container.isTransitioning)
+                .accessibilityLabel(
+                    container.isTransitioning ? "Starting \(container.name)" : "Start \(container.name)"
+                )
                 .padding(.top, 4)
 
                 // Hint text
@@ -214,6 +222,7 @@ struct ContainerTerminalTab: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 32))
                 .foregroundStyle(AppColors.textMuted)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.system(size: 13))
                 .foregroundStyle(AppColors.textSecondary)
