@@ -125,7 +125,7 @@ extension SandboxesViewModel {
                     metadata: metadata,
                     options: ArcBoxClient.sandboxCreateCallOptions
                 )
-                Log.sandbox.info("Created sandbox \(response.id, privacy: .public)")
+                Log.sandbox.info("Created sandbox \(response.id, privacy: .private(mask: .hash))")
                 return response.id
             } catch is CancellationError {
                 return nil
@@ -135,7 +135,7 @@ extension SandboxesViewModel {
                     rpcError.code == .alreadyExists
                 {
                     Log.sandbox.warning(
-                        "Sandbox create outcome is uncertain for ID \(request.id, privacy: .public)"
+                        "Sandbox create outcome is uncertain for ID \(request.id, privacy: .private(mask: .hash))"
                     )
                     lastError =
                         "Sandbox creation may still be completing. Close this sheet and check the list before retrying."

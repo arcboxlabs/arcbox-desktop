@@ -63,3 +63,23 @@ identifier_name:
 
 todo:
   only: [FIXME]
+
+custom_rules:
+  # `privacy: .public` puts the value in plain text in the unified log, where
+  # any process on the Mac can read it with `log stream`. It is only right for
+  # values drawn from a closed set the code already knows — enum labels,
+  # counts, durations, exit statuses, version strings. Identifiers, names,
+  # paths, URLs and error text belong under `.private`, or
+  # `.private(mask: .hash)` when two log lines need to be matched up.
+  #
+  # The rule allows an interpolation by the shape of its expression. A value
+  # that is genuinely closed-set but named outside these shapes should be
+  # renamed to fit, or the shape added here.
+  log_privacy_public:
+    name: "Public log interpolation of an open-ended value"
+    included:
+      - "ArcBox/.*"
+      - "Packages/.*/Sources/.*"
+    regex: '\\\((?!(?:[\w.]*\.(?:label|rawValue)\b|[\w.]*[cC]ount\b|[\w.]*[sS]tatus\b|String\(describing: [\w.]*[sS]tatus\)|\w*Version\b|\w*Entitlements\b|elapsedMs\b|index\b|statusCode\b|operation\b|label\b|type\b|arcboxContextName\b|\w+ \? "[^"]*" : "[^"]*"))[^\\\n]*?, privacy: \.public\)'
+    message: "Only closed-set values (enum labels, counts, statuses, versions) may be logged `.public`; identifiers, names, paths, URLs and error text must be `.private` or `.private(mask: .hash)`."
+    severity: error

@@ -109,7 +109,7 @@ extension MachinesViewModel {
                 request,
                 options: ArcBoxClient.machineCreateCallOptions
             )
-            Log.machine.info("Created machine \(response.id, privacy: .public)")
+            Log.machine.info("Created machine \(response.id, privacy: .private(mask: .hash))")
             await loadMachines(client: client)
             await startMachine(response.id, client: client)
             return response.id
