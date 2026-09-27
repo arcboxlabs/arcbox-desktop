@@ -1,6 +1,7 @@
 included:
   - ArcBox
   - ArcBoxTests
+  - ArcBoxUITests
   - Packages
 
 excluded:

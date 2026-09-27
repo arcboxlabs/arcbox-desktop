@@ -206,6 +206,7 @@
 		A2FA1D274C5DADFC199EE437 /* RunnerEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E327BEE2A1A04A55A730BF /* RunnerEmptyState.swift */; };
 		A5041C698CD41D977D5F963D /* ContainerLogsContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8BC15AE11A092FC1C1C267 /* ContainerLogsContent.swift */; };
 		A537498E1D8181BB0230E199 /* ContentViewColumnLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7E377F9D8C89E24989DE3D /* ContentViewColumnLayoutTests.swift */; };
+		A58F32EA70B4FBB5835D4DCF /* AccessibilityAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17FDC0D5C9B6F0255C332484 /* AccessibilityAuditTests.swift */; };
 		A75C60F77B89D7AEE365BC2E /* VolumeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDF2337ED21F8382F7ABB29A /* VolumeModel.swift */; };
 		A7E66915A83CDD9FF95EF09F /* MachineEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FCCED6F39D73E946107243 /* MachineEmptyStateView.swift */; };
 		A8374C7CC46723B1764B2F43 /* KeychainTokenStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18DFEA7126F89956523019B4 /* KeychainTokenStoreTests.swift */; };
@@ -308,6 +309,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8286E57100E8A14DD720CCF4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 41A3404100DBDE076B74DE68 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5736F290209CBC17FA7F78A4;
+			remoteInfo = ArcBox;
+		};
 		E5DB5C7D0FE3D3B3E84C9A60 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 41A3404100DBDE076B74DE68 /* Project object */;
@@ -353,6 +361,7 @@
 		12240648D65030A504A21CC6 /* UserNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationService.swift; sourceTree = "<group>"; };
 		13203BD67479A8191C1A3BD6 /* ServiceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceModel.swift; sourceTree = "<group>"; };
 		13FD9C27ABD090B7DBA435AA /* ImagesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesListViewController.swift; sourceTree = "<group>"; };
+		17FDC0D5C9B6F0255C332484 /* AccessibilityAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityAuditTests.swift; sourceTree = "<group>"; };
 		185A238D021D6C976574528C /* ImageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDetailView.swift; sourceTree = "<group>"; };
 		18DFEA7126F89956523019B4 /* KeychainTokenStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStoreTests.swift; sourceTree = "<group>"; };
 		198D2920821E17EB26B0F313 /* SegmentedControlRelayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedControlRelayoutTests.swift; sourceTree = "<group>"; };
@@ -628,6 +637,7 @@
 		FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsTab.swift; sourceTree = "<group>"; };
 		FBA33C724456FCDF5A3E52AD /* AuthSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionTests.swift; sourceTree = "<group>"; };
 		FDE313F40E79E409C942B1EE /* AboutWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindow.swift; sourceTree = "<group>"; };
+		FE8CBE9D4BAB5AB3D4413F80 /* ArcBoxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FEA9D33B25DF9BB204D4B637 /* DaemonNotificationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonNotificationRules.swift; sourceTree = "<group>"; };
 		FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sExecCredentialTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -667,6 +677,14 @@
 				7E19C3CB48DC5786F74E0FAD /* MenuBarView */,
 			);
 			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		05C2CACC059E40EC3CF99E44 /* ArcBoxUITests */ = {
+			isa = PBXGroup;
+			children = (
+				17FDC0D5C9B6F0255C332484 /* AccessibilityAuditTests.swift */,
+			);
+			path = ArcBoxUITests;
 			sourceTree = "<group>";
 		};
 		1017F0D51C38B694100D248C /* LocalRootFSOutline */ = {
@@ -931,6 +949,7 @@
 				AC4AAD074C3A39ADAB6FAD7B /* ArcBoxAuthTests */,
 				C8B7319F3F54C908E990038A /* ArcBoxClientTests */,
 				F40F93A7C5C0CC3834C9D722 /* ArcBoxTests */,
+				05C2CACC059E40EC3CF99E44 /* ArcBoxUITests */,
 				483A99FA686F220DCF359139 /* FleetControlClientTests */,
 				364260061EBD37B89C9CA619 /* FleetPlatformClientTests */,
 				CDE1EC6D82D788262B5E4213 /* LaunchDaemons */,
@@ -1013,6 +1032,7 @@
 			children = (
 				ABC372134FDA259C40503AE1 /* ArcBox.app */,
 				2D053B8542825698996A16FE /* ArcBoxTests.xctest */,
+				FE8CBE9D4BAB5AB3D4413F80 /* ArcBoxUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1414,6 +1434,24 @@
 			productReference = ABC372134FDA259C40503AE1 /* ArcBox.app */;
 			productType = "com.apple.product-type.application";
 		};
+		6298F959B38CA256FC9A0EDB /* ArcBoxUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1CE4CC654B72F1253F4C7FDB /* Build configuration list for PBXNativeTarget "ArcBoxUITests" */;
+			buildPhases = (
+				7DC6116773C7C968CD04B8B2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CAC45E0A5A0B2B570123EA97 /* PBXTargetDependency */,
+			);
+			name = ArcBoxUITests;
+			packageProductDependencies = (
+			);
+			productName = ArcBoxUITests;
+			productReference = FE8CBE9D4BAB5AB3D4413F80 /* ArcBoxUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		D94F3D542D956F8595A5164D /* ArcBoxTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = EA85DA5ABB4881624C90943B /* Build configuration list for PBXNativeTarget "ArcBoxTests" */;
@@ -1446,6 +1484,11 @@
 					5736F290209CBC17FA7F78A4 = {
 						DevelopmentTeam = 422ACSY6Y5;
 						ProvisioningStyle = Automatic;
+					};
+					6298F959B38CA256FC9A0EDB = {
+						DevelopmentTeam = 422ACSY6Y5;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 5736F290209CBC17FA7F78A4;
 					};
 					D94F3D542D956F8595A5164D = {
 						DevelopmentTeam = 422ACSY6Y5;
@@ -1481,6 +1524,7 @@
 			targets = (
 				5736F290209CBC17FA7F78A4 /* ArcBox */,
 				D94F3D542D956F8595A5164D /* ArcBoxTests */,
+				6298F959B38CA256FC9A0EDB /* ArcBoxUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -1762,6 +1806,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7DC6116773C7C968CD04B8B2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A58F32EA70B4FBB5835D4DCF /* AccessibilityAuditTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EE0FACF7FF0F62973204B140 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1844,6 +1896,11 @@
 			isa = PBXTargetDependency;
 			target = 5736F290209CBC17FA7F78A4 /* ArcBox */;
 			targetProxy = E5DB5C7D0FE3D3B3E84C9A60 /* PBXContainerItemProxy */;
+		};
+		CAC45E0A5A0B2B570123EA97 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5736F290209CBC17FA7F78A4 /* ArcBox */;
+			targetProxy = 8286E57100E8A14DD720CCF4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -2056,6 +2113,30 @@
 			};
 			name = Debug;
 		};
+		B6DC7C1B8B556719C30470E0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 422ACSY6Y5;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = ArcBox;
+			};
+			name = Release;
+		};
 		E54B057E315EAB9D0A660D31 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2128,6 +2209,30 @@
 			};
 			name = Debug;
 		};
+		FC3E866D3F82FAE71AC564F7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 422ACSY6Y5;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arcboxlabs.desktop.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = ArcBox;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -2136,6 +2241,15 @@
 			buildConfigurations = (
 				B65D4F0FCC4C62119FDE962D /* Debug */,
 				30201713747F358DB9057B09 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1CE4CC654B72F1253F4C7FDB /* Build configuration list for PBXNativeTarget "ArcBoxUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FC3E866D3F82FAE71AC564F7 /* Debug */,
+				B6DC7C1B8B556719C30470E0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
