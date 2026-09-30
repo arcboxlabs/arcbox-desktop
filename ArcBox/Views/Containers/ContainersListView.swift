@@ -2,7 +2,13 @@ import ArcBoxClient
 import DockerClient
 import SwiftUI
 
-/// Column 2: container list with toolbar
+/// Column 2: container list with toolbar.
+///
+/// The body decides only which content fills the column. Everything that
+/// reads hot view-model state — the subtitle's running count, the search
+/// bindings — lives in modifiers with their own dependency tracking, so a
+/// container state flip re-evaluates those and not this body, the toolbar it
+/// declares, or the `NSViewControllerRepresentable` under it.
 struct ContainersListView: View {
     @Environment(ContainersViewModel.self) private var vm
     @Environment(DaemonManager.self) private var daemonManager
@@ -10,7 +16,56 @@ struct ContainersListView: View {
     @Environment(\.arcboxClient) private var client
     @Environment(\.dockerClient) private var docker
 
+    #if DEBUG
+        /// Body evaluations since launch; tests read it to pin what invalidates
+        /// this view.
+        static var bodyEvaluations = 0
+    #endif
+
     var body: some View {
+        #if DEBUG
+            Self.bodyEvaluations += 1
+        #endif
+        return
+            content
+            .navigationTitle("Containers")
+            .modifier(ContainersListSubtitle(dockerAvailable: docker != nil))
+            .modifier(ContainersListSearch())
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
+                        .disabled(!dockerActionsAvailable)
+                    Button(
+                        action: { vm.showNewContainerSheet = true },
+                        label: {
+                            Image(systemName: "plus")
+                        }
+                    )
+                    .accessibilityLabel("New container")
+                    .keyboardShortcut("n", modifiers: .command)
+                    .disabled(!dockerActionsAvailable)
+                }
+            }
+            .task(id: daemonManager.setupPhase.isDockerReady && docker != nil) {
+                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                await vm.loadContainersFromDocker(docker: docker, iconClient: client)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
+                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
+            }
+            .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
+                NewContainerSheet()
+            }
+            .listErrorToast(
+                operationError: Bindable(vm).lastError,
+                refreshError: Bindable(vm).refreshError,
+                resourceName: "containers"
+            )
+    }
+
+    @ViewBuilder
+    private var content: some View {
         VStack(spacing: 0) {
             if let orchestrator, !orchestrator.isReady {
                 StartupProgressView(orchestrator: orchestrator)
@@ -110,43 +165,6 @@ struct ContainersListView: View {
                 )
             }
         }
-        .navigationTitle("Containers")
-        .navigationSubtitle(listSubtitle)
-        .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
-        .onChange(of: vm.isSearching) { _, newValue in
-            if !newValue { vm.searchText = "" }
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                SortMenuButton(sortBy: Bindable(vm).sortBy, ascending: Bindable(vm).sortAscending)
-                    .disabled(!dockerActionsAvailable)
-                Button(
-                    action: { vm.showNewContainerSheet = true },
-                    label: {
-                        Image(systemName: "plus")
-                    }
-                )
-                .accessibilityLabel("New container")
-                .keyboardShortcut("n", modifiers: .command)
-                .disabled(!dockerActionsAvailable)
-            }
-        }
-        .task(id: daemonManager.setupPhase.isDockerReady && docker != nil) {
-            guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
-            await vm.loadContainersFromDocker(docker: docker, iconClient: client)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-            guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
-            Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
-        }
-        .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
-            NewContainerSheet()
-        }
-        .listErrorToast(
-            operationError: Bindable(vm).lastError,
-            refreshError: Bindable(vm).refreshError,
-            resourceName: "containers"
-        )
     }
 
     private var dockerActionsAvailable: Bool {
@@ -155,8 +173,21 @@ struct ContainersListView: View {
             && daemonManager.setupPhase.isDockerReady
             && docker != nil
     }
+}
 
-    private var listSubtitle: String {
+/// The navigation subtitle, kept out of `ContainersListView.body` because its
+/// running count depends on `containers`, which changes on every Docker event.
+private struct ContainersListSubtitle: ViewModifier {
+    @Environment(ContainersViewModel.self) private var vm
+    @Environment(DaemonManager.self) private var daemonManager
+    @Environment(\.startupOrchestrator) private var orchestrator
+    let dockerAvailable: Bool
+
+    func body(content: Content) -> some View {
+        content.navigationSubtitle(subtitle)
+    }
+
+    private var subtitle: String {
         if let orchestrator, !orchestrator.isReady {
             return "Starting…"
         }
@@ -166,7 +197,7 @@ struct ContainersListView: View {
         guard daemonManager.setupPhase.isDockerReady else {
             return "Starting…"
         }
-        guard docker != nil else {
+        guard dockerAvailable else {
             return "Unavailable"
         }
         return switch vm.loadState {
@@ -177,6 +208,18 @@ struct ContainersListView: View {
         case .loaded:
             "\(vm.runningCount) running"
         }
+    }
+}
+
+private struct ContainersListSearch: ViewModifier {
+    @Environment(ContainersViewModel.self) private var vm
+
+    func body(content: Content) -> some View {
+        content
+            .searchable(text: Bindable(vm).searchText, isPresented: Bindable(vm).isSearching)
+            .onChange(of: vm.isSearching) { _, newValue in
+                if !newValue { vm.searchText = "" }
+            }
     }
 }
 

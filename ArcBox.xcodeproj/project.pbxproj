@@ -86,6 +86,7 @@
 		477DF414090DADD3A631F50B /* SandboxesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21565AF3B3606525539AE506 /* SandboxesListView.swift */; };
 		47F7DA566708A3959A5AEB8D /* SystemVmBackendModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BC46E06601AA9D330AF049 /* SystemVmBackendModel.swift */; };
 		48014023336A8AD5D1B21A27 /* ContainerLogsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */; };
+		49FAEF3B0E9CDCD51E78EB26 /* ContainersListViewBodyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDD0BC8797B1E992161C753 /* ContainersListViewBodyTests.swift */; };
 		4B14BB17843A552B8D1B51BA /* ExternalTerminalDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BE672A52785F040AC6CEB2 /* ExternalTerminalDiscovery.swift */; };
 		4C3BC465BFE58BF0D59AFE78 /* OnboardingWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915561BEEE49F5E27F4B0D40 /* OnboardingWindowController.swift */; };
 		4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */; };
@@ -584,6 +585,7 @@
 		EC6744BCBFA0A05831AFED0E /* MenuBarView+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Layout.swift"; sourceTree = "<group>"; };
 		ECF57E2C2B0281B8CEA6132C /* MenuBarView+Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Metrics.swift"; sourceTree = "<group>"; };
 		EE6C627A5BC34C783DAEAC31 /* LocalRootFSOutlineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineModels.swift; sourceTree = "<group>"; };
+		EEDD0BC8797B1E992161C753 /* ContainersListViewBodyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListViewBodyTests.swift; sourceTree = "<group>"; };
 		EF45523D23D3F96612423943 /* HelperInstallErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperInstallErrorTests.swift; sourceTree = "<group>"; };
 		EFB03A05EDADB4F1FA6E10A1 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		F0647CCB67160C2509345B5E /* MachineModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineModelTests.swift; sourceTree = "<group>"; };
@@ -1281,6 +1283,7 @@
 				671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */,
 				269F743D5217D0B08810DB1F /* ContainersBatchConcurrencyTests.swift */,
 				B4B46E6B6A77930CEF86997A /* ContainersListIncrementalUpdateTests.swift */,
+				EEDD0BC8797B1E992161C753 /* ContainersListViewBodyTests.swift */,
 				80010452354615CAC08FAF1D /* ContainersListViewControllerTests.swift */,
 				E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */,
 				DE7E377F9D8C89E24989DE3D /* ContentViewColumnLayoutTests.swift */,
@@ -1742,6 +1745,7 @@
 				1C9ADBD51C57E8C3938500CA /* ContainerListCellPerformanceTests.swift in Sources */,
 				427F8A6DBC4047172A310627 /* ContainersBatchConcurrencyTests.swift in Sources */,
 				F8334019E0F0EC1A5270EB0C /* ContainersListIncrementalUpdateTests.swift in Sources */,
+				49FAEF3B0E9CDCD51E78EB26 /* ContainersListViewBodyTests.swift in Sources */,
 				DB19F0073D84ED7A7C937D49 /* ContainersListViewControllerTests.swift in Sources */,
 				4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */,
 				A537498E1D8181BB0230E199 /* ContentViewColumnLayoutTests.swift in Sources */,
