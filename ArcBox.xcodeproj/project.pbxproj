@@ -100,6 +100,7 @@
 		52735B353D820FECE0BF871D /* DaemonLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26FECB4CA53A425E613E71A2 /* DaemonLockTests.swift */; };
 		53B84DC35DF078E19C8D7780 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E217254D0827A011E01C3F05 /* StatusItemController.swift */; };
 		547AB2E719C9C6B7F66046F7 /* ServicesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85296C05DC9D33C7930366D7 /* ServicesListViewController.swift */; };
+		55AB33B6859FE22D5FE1DF88 /* SparklineGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B815C17A01F8774E97227499 /* SparklineGeometry.swift */; };
 		57A8D35B23CC870EDEAF7605 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98123C19CE4AB275C8D899E2 /* AppNotification.swift */; };
 		57DFBD423CA735B3A7BEB227 /* KubernetesWatchRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB3003C93936B1DAAC22AA7 /* KubernetesWatchRetryTests.swift */; };
 		592D8D15F0AD149B578AC661 /* VolumesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209E974D66F4B2D9B5CDA2D9 /* VolumesListView.swift */; };
@@ -135,6 +136,7 @@
 		72CCF0BC7FEAEB988595757C /* NewNetworkSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7C1F10630FCFA65B832FA9 /* NewNetworkSheet.swift */; };
 		7329C817F923872FC238D8B3 /* ContainersViewModel+BatchOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 545D230723A80CB5C011B57E /* ContainersViewModel+BatchOperations.swift */; };
 		73E1E5FC3E40AD0760A21AC0 /* PodModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37BB3605830EBE3A1625452 /* PodModel.swift */; };
+		7412564CF709DF2E69CD191F /* SparklineGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F3188B1D2EF33614A67CB7 /* SparklineGeometryTests.swift */; };
 		74488A22CBA34633776AC5D2 /* SandboxDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B18FDEC4B5AE8513C98D7B4 /* SandboxDetailView.swift */; };
 		759C82DCC614CABAA93AABC4 /* ActivityContainerTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = B050286A2450880AC2C95342 /* ActivityContainerTable.swift */; };
 		7611F110DA849DA460755BE4 /* DetailTabPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB1AD9099DE0BF8CCBC35667 /* DetailTabPicker.swift */; };
@@ -496,6 +498,7 @@
 		92FD51B5947EFEEFD73D00F9 /* FleetEnrollmentCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetEnrollmentCoordinatorTests.swift; sourceTree = "<group>"; };
 		93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterSettingsModel.swift; sourceTree = "<group>"; };
 		9467D1D1EA60DDF80414B20B /* ContainerListModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerListModels.swift; sourceTree = "<group>"; };
+		94F3188B1D2EF33614A67CB7 /* SparklineGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineGeometryTests.swift; sourceTree = "<group>"; };
 		95F313C9C7AA84A964728D44 /* AppDelegate+Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Telemetry.swift"; sourceTree = "<group>"; };
 		96C7AE7CC8DF4C7910C4230B /* SandboxPortsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxPortsViewModelTests.swift; sourceTree = "<group>"; };
 		9750454C23940C3F74E7690E /* ResourceListRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceListRowView.swift; sourceTree = "<group>"; };
@@ -539,6 +542,7 @@
 		B69A867E81CB7E281682A24D /* ContainerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerModel.swift; sourceTree = "<group>"; };
 		B6BC28A842D0A91FA84517CC /* RunnerHostViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostViewModel.swift; sourceTree = "<group>"; };
 		B71D28721E41F8303DBF7232 /* MachineImageCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineImageCatalog.swift; sourceTree = "<group>"; };
+		B815C17A01F8774E97227499 /* SparklineGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineGeometry.swift; sourceTree = "<group>"; };
 		B8254D67C0D80B99FC18DAD5 /* PullImageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullImageSheet.swift; sourceTree = "<group>"; };
 		B8F932C1467A5FB5CFBD0444 /* LocalRootFSOutlineCoordinator+DataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+DataSource.swift"; sourceTree = "<group>"; };
 		B9C7ADBBD83C5F92EEBAAD88 /* MachineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineDetailView.swift; sourceTree = "<group>"; };
@@ -1086,6 +1090,7 @@
 				61F15E941FF769135D0AA218 /* ActivityMetricStrip.swift */,
 				0201CD86DCD5E042D07FF66F /* ActivityRow.swift */,
 				5B3D2AE66CD9DD4A18CADB71 /* ActivityView.swift */,
+				B815C17A01F8774E97227499 /* SparklineGeometry.swift */,
 				47B33A34931421365A5BCAE6 /* StatsFormat.swift */,
 			);
 			path = Activity;
@@ -1341,6 +1346,7 @@
 				96C7AE7CC8DF4C7910C4230B /* SandboxPortsViewModelTests.swift */,
 				D0A680191505746F5F6F5A0B /* SandboxTemplateModelTests.swift */,
 				198D2920821E17EB26B0F313 /* SegmentedControlRelayoutTests.swift */,
+				94F3188B1D2EF33614A67CB7 /* SparklineGeometryTests.swift */,
 				EBD1F83B573C40DFA09E5633 /* StatePlaceholderTestSupport.swift */,
 				B4BAE047B96D10B4716BA1A2 /* VolumesListViewControllerTests.swift */,
 			);
@@ -1719,6 +1725,7 @@
 				D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */,
 				D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */,
 				9E79E2BBA05690D9ECAED2CD /* SortMenuButton.swift in Sources */,
+				55AB33B6859FE22D5FE1DF88 /* SparklineGeometry.swift in Sources */,
 				A03ACBF5074B007C8CD7B101 /* StartupProgressView.swift in Sources */,
 				40202C272514A95229FBEAB6 /* StatePlaceholderView.swift in Sources */,
 				08DDBA6E0000548FEF44EB7B /* StatsFormat.swift in Sources */,
@@ -1816,6 +1823,7 @@
 				EC2532F756D371A159AB9A97 /* SandboxPortsViewModelTests.swift in Sources */,
 				B9FBD28A52E575A47BC65BF7 /* SandboxTemplateModelTests.swift in Sources */,
 				10BFF3CC4EE2BB6E6399FB99 /* SegmentedControlRelayoutTests.swift in Sources */,
+				7412564CF709DF2E69CD191F /* SparklineGeometryTests.swift in Sources */,
 				927458F82097ECF1A07412FD /* StatePlaceholderTestSupport.swift in Sources */,
 				17ED6FFFD9A61998178E38B9 /* VolumesListViewControllerTests.swift in Sources */,
 			);
