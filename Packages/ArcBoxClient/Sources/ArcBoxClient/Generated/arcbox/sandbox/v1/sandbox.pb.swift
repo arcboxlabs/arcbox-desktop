@@ -255,8 +255,8 @@ public enum Arcbox_Sandbox_V1_IdleAction: SwiftProtobuf.Enum, Swift.CaseIterable
   case kill // = 1
 
   /// Pause: checkpoint to disk under the same ID and release the VM.
-  /// Trades RAM for disk — the sandbox reports `storage_bytes` until
-  /// resumed or removed.
+  /// Trades RAM for disk — the checkpoint joins the disk overlay in
+  /// `storage_bytes` until the sandbox is resumed or removed.
   case pause // = 2
   case UNRECOGNIZED(Int)
 
@@ -488,6 +488,11 @@ public struct Arcbox_Sandbox_V1_CreateSandboxRequest: @unchecked Sendable {
 
   /// Caller-supplied unique ID for durable retry idempotency.
   /// If empty the daemon generates a fresh UUID for every attempt.
+  ///
+  /// A supplied ID must be 1-64 characters of [A-Za-z0-9-]. The sandbox runs
+  /// under this ID as its VMM instance identity, and the VMM refuses any
+  /// other character - `_` and `.` included - so the daemon rejects it here
+  /// rather than letting the boot fail with nothing naming the request.
   public var id: String {
     get {_storage._id}
     set {_uniqueStorage()._id = newValue}
@@ -1005,8 +1010,10 @@ public struct Arcbox_Sandbox_V1_SandboxInfo: @unchecked Sendable {
   /// Clears the value of `failedAt`. Subsequent reads from it will return its default value.
   public mutating func clearFailedAt() {_uniqueStorage()._failedAt = nil}
 
-  /// On-disk footprint of the sandbox's retained state (checkpoint +
-  /// disk overlay). Paused sandboxes keep paying this until removed.
+  /// On-disk footprint of the sandbox's retained state, reported in
+  /// every lifecycle state: the COW disk overlay its writes grow while
+  /// running, plus the pause checkpoint while paused. Meterable —
+  /// paused sandboxes keep paying it until resumed or removed.
   public var storageBytes: UInt64 {
     get {_storage._storageBytes}
     set {_uniqueStorage()._storageBytes = newValue}
@@ -1136,7 +1143,9 @@ public struct Arcbox_Sandbox_V1_SandboxSummary: Sendable {
   /// Clears the value of `failedAt`. Subsequent reads from it will return its default value.
   public mutating func clearFailedAt() {self._failedAt = nil}
 
-  /// On-disk footprint of retained state; nonzero for paused sandboxes.
+  /// On-disk footprint of retained state, in every lifecycle state:
+  /// the COW disk overlay while running, plus the pause checkpoint
+  /// while paused. Agrees with Inspect for the same sandbox.
   public var storageBytes: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -1206,6 +1215,12 @@ public struct Arcbox_Sandbox_V1_WatchEventsResponse: Sendable {
 }
 
 /// A sandbox lifecycle event.
+///
+/// Delivery is best-effort: a subscriber that lags loses events, and events
+/// emitted with no subscriber attached are discarded. `sequence` is what
+/// makes that loss detectable — conclusively on an unfiltered subscription
+/// only; see the field. Treat the stream as a latency optimization over
+/// polling Inspect/List, and reconcile when in doubt.
 public struct Arcbox_Sandbox_V1_SandboxEvent: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -1230,6 +1245,20 @@ public struct Arcbox_Sandbox_V1_SandboxEvent: Sendable {
   /// Additional context (e.g. "exit_code" / "signal" on IDLE,
   /// "error" on FAILED).
   public var attributes: Dictionary<String,String> = [:]
+
+  /// Monotonic sequence number: 1-based, global across all sandboxes of
+  /// the emitting daemon, and stamped before any server-side filtering.
+  /// On an unfiltered subscription sequences are contiguous in delivery
+  /// order, so a jump of more than one means events were missed (lag,
+  /// or history from before the subscription) — fall back to
+  /// Inspect/List instead of carrying stale state. On a filtered
+  /// subscription (sandbox_id or kind set) gaps are expected — events
+  /// the filter dropped consumed numbers too — so a gap is
+  /// inconclusive; contiguous sequences still prove nothing was
+  /// missed, and a sequence running backwards reveals a daemon
+  /// restart. Not persisted: a restarted daemon numbers from 1 again,
+  /// and 0 means the daemon predates sequencing.
+  public var sequence: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -2553,7 +2582,7 @@ extension Arcbox_Sandbox_V1_WatchEventsResponse: SwiftProtobuf.Message, SwiftPro
 
 extension Arcbox_Sandbox_V1_SandboxEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SandboxEvent"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sandbox_id\0\u{1}kind\0\u{1}time\0\u{1}attributes\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sandbox_id\0\u{1}kind\0\u{1}time\0\u{1}attributes\0\u{1}sequence\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2565,6 +2594,7 @@ extension Arcbox_Sandbox_V1_SandboxEvent: SwiftProtobuf.Message, SwiftProtobuf._
       case 2: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._time) }()
       case 4: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.attributes) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.sequence) }()
       default: break
       }
     }
@@ -2587,6 +2617,9 @@ extension Arcbox_Sandbox_V1_SandboxEvent: SwiftProtobuf.Message, SwiftProtobuf._
     if !self.attributes.isEmpty {
       try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: self.attributes, fieldNumber: 4)
     }
+    if self.sequence != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sequence, fieldNumber: 5)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2595,6 +2628,7 @@ extension Arcbox_Sandbox_V1_SandboxEvent: SwiftProtobuf.Message, SwiftProtobuf._
     if lhs.kind != rhs.kind {return false}
     if lhs._time != rhs._time {return false}
     if lhs.attributes != rhs.attributes {return false}
+    if lhs.sequence != rhs.sequence {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

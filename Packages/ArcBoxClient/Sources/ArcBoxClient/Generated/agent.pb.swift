@@ -147,6 +147,21 @@ public struct Arcbox_V1_SystemInfo: Sendable {
   /// Guest IP addresses (excluding loopback).
   public var ipAddresses: [String] = []
 
+  /// Whether the guest distro's own init is still running its boot sequence.
+  ///
+  /// A Machine runs an upstream distro image whose init starts *after* the
+  /// agent, and typically reconfigures the network from scratch — flushing
+  /// the interface the boot shim already configured. Readiness must wait for
+  /// that to settle, so the host gates on this rather than on the agent
+  /// merely answering (CORE-66).
+  ///
+  /// Phrased as "pending" so the proto3 default is the safe one: an agent
+  /// predating this field decodes it as false and the host proceeds exactly
+  /// as it did before, instead of waiting out the readiness timeout on a
+  /// signal the agent never sends. Only a recognized init that is known to
+  /// still be starting sets it true.
+  public var distroInitPending: Bool = false
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -561,7 +576,10 @@ public struct Arcbox_V1_RuntimeStatusResponse: Sendable {
   public init() {}
 }
 
-/// Request to trigger an immediate fstrim on data mount points.
+/// Request to trim the guest's data filesystems now: the guest issues a
+/// discard for every free block so the host punches it out of the sparse
+/// image. The System VM trims its Btrfs data and ext4 metadata volumes; a
+/// distro machine trims the Btrfs data disk under its overlay root.
 public struct Arcbox_V1_DiskTrimRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -578,8 +596,13 @@ public struct Arcbox_V1_DiskTrimResponse: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// Human-readable result summary (e.g. bytes trimmed per mount).
+  /// Human-readable result summary (bytes trimmed per filesystem).
   public var result: String = String()
+
+  /// Bytes the guest reported trimmed, summed over the filesystems. This is
+  /// what the filesystem discarded, not what the host reclaimed: a range
+  /// that was already a hole counts here and frees nothing.
+  public var bytesTrimmed: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -755,6 +778,168 @@ public struct Arcbox_V1_KubernetesStatusResponse: Sendable {
 
   /// Per-service status entries for fine-grained observability.
   public var services: [Arcbox_V1_ServiceStatus] = []
+
+  /// How each port of each LoadBalancer Service reaches the host, one entry
+  /// per port. Reported by the daemon, which owns the host listeners; the
+  /// guest agent leaves it empty.
+  public var hostPorts: [Arcbox_V1_KubernetesHostPort] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// How one port of a Service of type LoadBalancer reaches the host.
+public struct Arcbox_V1_KubernetesHostPort: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Namespace of the Service.
+  public var namespace: String = String()
+
+  /// Name of the Service.
+  public var name: String = String()
+
+  /// Protocol as the Service spells it: "TCP", "UDP" or "SCTP".
+  public var `protocol`: String = String()
+
+  /// Service port, which is also the host port.
+  public var port: UInt32 = 0
+
+  /// Host address the listener binds, per `[docker] expose_ports_to_lan`.
+  public var hostIp: String = String()
+
+  /// Forwarding state.
+  public var state: Arcbox_V1_KubernetesHostPort.State = .unspecified
+
+  /// Why the port is not forwarded; empty when it is.
+  public var detail: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum State: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// A host listener is bound and relays to the port on the node.
+    case forwarded // = 1
+
+    /// servicelb has not published the port on the node yet.
+    case pending // = 2
+
+    /// Deliberately not bound; `detail` says why.
+    case skipped // = 3
+
+    /// The host listener failed to bind; retried periodically.
+    case failed // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .forwarded
+      case 2: self = .pending
+      case 3: self = .skipped
+      case 4: self = .failed
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .forwarded: return 1
+      case .pending: return 2
+      case .skipped: return 3
+      case .failed: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_KubernetesHostPort.State] = [
+      .unspecified,
+      .forwarded,
+      .pending,
+      .skipped,
+      .failed,
+    ]
+
+  }
+
+  public init() {}
+}
+
+/// Request for the cluster's Services of type LoadBalancer.
+public struct Arcbox_V1_KubernetesLoadBalancersRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// The cluster's Services of type LoadBalancer.
+public struct Arcbox_V1_KubernetesLoadBalancersResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Whether k3s is running. False means the list is empty because there
+  /// is no cluster, not because the cluster has no load balancers.
+  public var running: Bool = false
+
+  /// Every Service of type LoadBalancer, in any namespace.
+  public var loadBalancers: [Arcbox_V1_KubernetesLoadBalancer] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// A Service of type LoadBalancer.
+public struct Arcbox_V1_KubernetesLoadBalancer: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Namespace of the Service.
+  public var namespace: String = String()
+
+  /// Name of the Service.
+  public var name: String = String()
+
+  /// The Service's ports.
+  public var ports: [Arcbox_V1_KubernetesServicePort] = []
+
+  /// Addresses in the Service's `status.loadBalancer.ingress`. k3s
+  /// servicelb lists a node once its svclb pod is ready, i.e. once the
+  /// ports are published on the node; until then the list is empty.
+  public var ingress: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// One port of a Service.
+public struct Arcbox_V1_KubernetesServicePort: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Protocol as the Service spells it: "TCP", "UDP" or "SCTP".
+  public var `protocol`: String = String()
+
+  /// Service port.
+  public var port: UInt32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1069,6 +1254,24 @@ public struct Arcbox_V1_WatchSandboxCleanupRequest: Sendable {
   public init() {}
 }
 
+/// Flow-control window on a sandbox streaming RPC's connection (host↔guest
+/// vsock only): the host lets the agent stream `bytes` more, counted in
+/// encoded payload bytes of the frames it sends back. Every such stream opens
+/// with a fixed window (`SANDBOX_STREAM_WINDOW` in arcbox-constants) and the
+/// host returns it as its consumer takes frames, so the agent never sends
+/// what the host has no room for and the host never leaves the vsock unread.
+public struct Arcbox_V1_SandboxStreamWindow: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var bytes: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Ask the guest agent to resume a paused sandbox in place (CORE-21).
 ///
 /// Internal wire message rather than the public ResumeSandboxRequest: the
@@ -1102,6 +1305,67 @@ public struct Arcbox_V1_SandboxResumeResponse: Sendable {
   /// IP address of the resumed sandbox's new allocation (empty when the
   /// sandbox has no network). The daemon re-registers host DNS from it.
   public var ipAddress: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Deliver a signal to a running machine exec process, sent on the session's
+/// connection after its MachineExecRequest (SSH `signal` requests). No reply.
+public struct Arcbox_V1_MachineExecSignal: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Signal name without the SIG prefix, as SSH names it ("INT", "TERM").
+  /// Named rather than numbered because host and guest number signals
+  /// differently (SIGUSR1 is 30 on macOS, 10 on Linux).
+  public var name: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Flow-control window on a machine exec session's connection: the receiver
+/// of a stream lets its sender send `bytes` more of it. The host returns
+/// output window (counted in encoded MachineExecOutput payload bytes) as its
+/// consumer takes output; the agent grants its stdin window (in stdin bytes)
+/// in its first frame, then returns it as the process reads stdin. Neither
+/// side may send beyond the window it holds, so both can always keep
+/// reading the connection.
+public struct Arcbox_V1_MachineExecWindow: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var bytes: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Open a TCP connection from inside the machine (SSH `direct-tcpip`). On
+/// success the connection runs like a flow-controlled machine exec session:
+/// the agent's first frame grants its window, MachineExecInput carries bytes
+/// to the peer (empty: shut down the sending side), MachineExecOutput bytes
+/// from it, an `eof` frame when the peer stops sending, and a `done` frame
+/// once both directions are closed. A connect failure is an Error frame.
+public struct Arcbox_V1_MachineTcpConnectRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Host name or address, resolved inside the machine ("localhost" is the
+  /// machine itself).
+  public var host: String = String()
+
+  public var port: UInt32 = 0
+
+  /// As MachineExecRequest.output_window; required.
+  public var outputWindow: UInt32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1193,7 +1457,7 @@ extension Arcbox_V1_AgentPingResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SystemInfo"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}kernel_version\0\u{3}os_name\0\u{3}os_version\0\u{1}arch\0\u{3}total_memory\0\u{3}available_memory\0\u{3}cpu_count\0\u{3}load_average\0\u{1}hostname\0\u{1}uptime\0\u{3}ip_addresses\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}kernel_version\0\u{3}os_name\0\u{3}os_version\0\u{1}arch\0\u{3}total_memory\0\u{3}available_memory\0\u{3}cpu_count\0\u{3}load_average\0\u{1}hostname\0\u{1}uptime\0\u{3}ip_addresses\0\u{3}distro_init_pending\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1212,6 +1476,7 @@ extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
       case 9: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
       case 10: try { try decoder.decodeSingularUInt64Field(value: &self.uptime) }()
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.ipAddresses) }()
+      case 12: try { try decoder.decodeSingularBoolField(value: &self.distroInitPending) }()
       default: break
       }
     }
@@ -1251,6 +1516,9 @@ extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
     if !self.ipAddresses.isEmpty {
       try visitor.visitRepeatedStringField(value: self.ipAddresses, fieldNumber: 11)
     }
+    if self.distroInitPending != false {
+      try visitor.visitSingularBoolField(value: self.distroInitPending, fieldNumber: 12)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1266,6 +1534,7 @@ extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
     if lhs.hostname != rhs.hostname {return false}
     if lhs.uptime != rhs.uptime {return false}
     if lhs.ipAddresses != rhs.ipAddresses {return false}
+    if lhs.distroInitPending != rhs.distroInitPending {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1814,7 +2083,7 @@ extension Arcbox_V1_DiskTrimRequest: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Arcbox_V1_DiskTrimResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".DiskTrimResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}bytes_trimmed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1823,6 +2092,7 @@ extension Arcbox_V1_DiskTrimResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.result) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.bytesTrimmed) }()
       default: break
       }
     }
@@ -1832,11 +2102,15 @@ extension Arcbox_V1_DiskTrimResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
     if !self.result.isEmpty {
       try visitor.visitSingularStringField(value: self.result, fieldNumber: 1)
     }
+    if self.bytesTrimmed != 0 {
+      try visitor.visitSingularUInt64Field(value: self.bytesTrimmed, fieldNumber: 2)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Arcbox_V1_DiskTrimResponse, rhs: Arcbox_V1_DiskTrimResponse) -> Bool {
     if lhs.result != rhs.result {return false}
+    if lhs.bytesTrimmed != rhs.bytesTrimmed {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2135,7 +2409,7 @@ extension Arcbox_V1_KubernetesStatusRequest: SwiftProtobuf.Message, SwiftProtobu
 
 extension Arcbox_V1_KubernetesStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".KubernetesStatusResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}running\0\u{3}api_ready\0\u{1}endpoint\0\u{1}detail\0\u{1}services\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}running\0\u{3}api_ready\0\u{1}endpoint\0\u{1}detail\0\u{1}services\0\u{3}host_ports\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2148,6 +2422,7 @@ extension Arcbox_V1_KubernetesStatusResponse: SwiftProtobuf.Message, SwiftProtob
       case 3: try { try decoder.decodeSingularStringField(value: &self.endpoint) }()
       case 4: try { try decoder.decodeSingularStringField(value: &self.detail) }()
       case 5: try { try decoder.decodeRepeatedMessageField(value: &self.services) }()
+      case 6: try { try decoder.decodeRepeatedMessageField(value: &self.hostPorts) }()
       default: break
       }
     }
@@ -2169,6 +2444,9 @@ extension Arcbox_V1_KubernetesStatusResponse: SwiftProtobuf.Message, SwiftProtob
     if !self.services.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.services, fieldNumber: 5)
     }
+    if !self.hostPorts.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.hostPorts, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2178,6 +2456,205 @@ extension Arcbox_V1_KubernetesStatusResponse: SwiftProtobuf.Message, SwiftProtob
     if lhs.endpoint != rhs.endpoint {return false}
     if lhs.detail != rhs.detail {return false}
     if lhs.services != rhs.services {return false}
+    if lhs.hostPorts != rhs.hostPorts {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_KubernetesHostPort: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KubernetesHostPort"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}namespace\0\u{1}name\0\u{1}protocol\0\u{1}port\0\u{3}host_ip\0\u{1}state\0\u{1}detail\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.namespace) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.`protocol`) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.port) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.hostIp) }()
+      case 6: try { try decoder.decodeSingularEnumField(value: &self.state) }()
+      case 7: try { try decoder.decodeSingularStringField(value: &self.detail) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.namespace.isEmpty {
+      try visitor.visitSingularStringField(value: self.namespace, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    if !self.`protocol`.isEmpty {
+      try visitor.visitSingularStringField(value: self.`protocol`, fieldNumber: 3)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularUInt32Field(value: self.port, fieldNumber: 4)
+    }
+    if !self.hostIp.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostIp, fieldNumber: 5)
+    }
+    if self.state != .unspecified {
+      try visitor.visitSingularEnumField(value: self.state, fieldNumber: 6)
+    }
+    if !self.detail.isEmpty {
+      try visitor.visitSingularStringField(value: self.detail, fieldNumber: 7)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_KubernetesHostPort, rhs: Arcbox_V1_KubernetesHostPort) -> Bool {
+    if lhs.namespace != rhs.namespace {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.`protocol` != rhs.`protocol` {return false}
+    if lhs.port != rhs.port {return false}
+    if lhs.hostIp != rhs.hostIp {return false}
+    if lhs.state != rhs.state {return false}
+    if lhs.detail != rhs.detail {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_KubernetesHostPort.State: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0STATE_UNSPECIFIED\0\u{1}FORWARDED\0\u{1}PENDING\0\u{1}SKIPPED\0\u{1}FAILED\0")
+}
+
+extension Arcbox_V1_KubernetesLoadBalancersRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KubernetesLoadBalancersRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_KubernetesLoadBalancersRequest, rhs: Arcbox_V1_KubernetesLoadBalancersRequest) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_KubernetesLoadBalancersResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KubernetesLoadBalancersResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}running\0\u{3}load_balancers\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.running) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.loadBalancers) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.running != false {
+      try visitor.visitSingularBoolField(value: self.running, fieldNumber: 1)
+    }
+    if !self.loadBalancers.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.loadBalancers, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_KubernetesLoadBalancersResponse, rhs: Arcbox_V1_KubernetesLoadBalancersResponse) -> Bool {
+    if lhs.running != rhs.running {return false}
+    if lhs.loadBalancers != rhs.loadBalancers {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_KubernetesLoadBalancer: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KubernetesLoadBalancer"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}namespace\0\u{1}name\0\u{1}ports\0\u{1}ingress\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.namespace) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.ports) }()
+      case 4: try { try decoder.decodeRepeatedStringField(value: &self.ingress) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.namespace.isEmpty {
+      try visitor.visitSingularStringField(value: self.namespace, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    if !self.ports.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.ports, fieldNumber: 3)
+    }
+    if !self.ingress.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.ingress, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_KubernetesLoadBalancer, rhs: Arcbox_V1_KubernetesLoadBalancer) -> Bool {
+    if lhs.namespace != rhs.namespace {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.ports != rhs.ports {return false}
+    if lhs.ingress != rhs.ingress {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_KubernetesServicePort: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".KubernetesServicePort"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}protocol\0\u{1}port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.`protocol`) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.port) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.`protocol`.isEmpty {
+      try visitor.visitSingularStringField(value: self.`protocol`, fieldNumber: 1)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularUInt32Field(value: self.port, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_KubernetesServicePort, rhs: Arcbox_V1_KubernetesServicePort) -> Bool {
+    if lhs.`protocol` != rhs.`protocol` {return false}
+    if lhs.port != rhs.port {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2754,6 +3231,36 @@ extension Arcbox_V1_WatchSandboxCleanupRequest: SwiftProtobuf.Message, SwiftProt
   }
 }
 
+extension Arcbox_V1_SandboxStreamWindow: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SandboxStreamWindow"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}bytes\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.bytes) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.bytes != 0 {
+      try visitor.visitSingularUInt32Field(value: self.bytes, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SandboxStreamWindow, rhs: Arcbox_V1_SandboxStreamWindow) -> Bool {
+    if lhs.bytes != rhs.bytes {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Arcbox_V1_SandboxResumeCommand: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SandboxResumeCommand"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}reason\0")
@@ -2814,6 +3321,106 @@ extension Arcbox_V1_SandboxResumeResponse: SwiftProtobuf.Message, SwiftProtobuf.
 
   public static func ==(lhs: Arcbox_V1_SandboxResumeResponse, rhs: Arcbox_V1_SandboxResumeResponse) -> Bool {
     if lhs.ipAddress != rhs.ipAddress {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineExecSignal: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineExecSignal"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineExecSignal, rhs: Arcbox_V1_MachineExecSignal) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineExecWindow: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineExecWindow"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}bytes\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.bytes) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.bytes != 0 {
+      try visitor.visitSingularUInt32Field(value: self.bytes, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineExecWindow, rhs: Arcbox_V1_MachineExecWindow) -> Bool {
+    if lhs.bytes != rhs.bytes {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineTcpConnectRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineTcpConnectRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}host\0\u{1}port\0\u{3}output_window\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.host) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.port) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.outputWindow) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.host.isEmpty {
+      try visitor.visitSingularStringField(value: self.host, fieldNumber: 1)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularUInt32Field(value: self.port, fieldNumber: 2)
+    }
+    if self.outputWindow != 0 {
+      try visitor.visitSingularUInt32Field(value: self.outputWindow, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineTcpConnectRequest, rhs: Arcbox_V1_MachineTcpConnectRequest) -> Bool {
+    if lhs.host != rhs.host {return false}
+    if lhs.port != rhs.port {return false}
+    if lhs.outputWindow != rhs.outputWindow {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
