@@ -27,8 +27,9 @@ import XCTest
 final class ActivityTickBenchmarkTests: XCTestCase {
     private static let containerCount = 20
     private static let seededSamples = 60
-    private static let ticks =
-        ProcessInfo.processInfo.environment["ARCBOX_ACTIVITY_BENCH_TICKS"].flatMap(Int.init) ?? 60
+    /// At least one: a median needs a sample.
+    private static let ticks = max(
+        1, ProcessInfo.processInfo.environment["ARCBOX_ACTIVITY_BENCH_TICKS"].flatMap(Int.init) ?? 60)
     private static let shuffles = ProcessInfo.processInfo.environment["ARCBOX_ACTIVITY_BENCH_SHUFFLE"] == "1"
 
     /// The three sparklines alone — the headline figures held still so only
@@ -149,12 +150,18 @@ private struct TickTiming: CustomStringConvertible {
     let animationTail: Duration
 
     init(ticks: [Duration], idle: [Duration], tails: [Duration]) {
-        let sorted = ticks.sorted()
-        median = sorted[sorted.count / 2]
-        p90 = sorted[min(sorted.count - 1, sorted.count * 9 / 10)]
-        max = sorted[sorted.count - 1]
-        idleFlush = idle.sorted()[idle.count / 2]
-        animationTail = tails.sorted()[tails.count / 2]
+        median = Self.percentile(ticks, 0.5)
+        p90 = Self.percentile(ticks, 0.9)
+        max = Self.percentile(ticks, 1)
+        idleFlush = Self.percentile(idle, 0.5)
+        animationTail = Self.percentile(tails, 0.5)
+    }
+
+    /// Nearest-rank percentile; zero for no samples rather than a trap.
+    private static func percentile(_ durations: [Duration], _ fraction: Double) -> Duration {
+        let sorted = durations.sorted()
+        guard !sorted.isEmpty else { return .zero }
+        return sorted[min(sorted.count - 1, Int(Double(sorted.count) * fraction))]
     }
 
     var description: String {
