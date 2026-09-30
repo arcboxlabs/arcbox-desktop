@@ -88,6 +88,10 @@ public struct Arcbox_Sandbox_V1_RestoreRequest: Sendable {
 
   /// Caller-supplied ID for durable retry idempotency. Empty asks the daemon
   /// to generate a fresh UUID for every attempt.
+  ///
+  /// Same rule as CreateSandboxRequest.id: 1-64 characters of [A-Za-z0-9-],
+  /// because the restored sandbox runs under this ID as its VMM instance
+  /// identity.
   public var id: String = String()
 
   /// Source snapshot ID.

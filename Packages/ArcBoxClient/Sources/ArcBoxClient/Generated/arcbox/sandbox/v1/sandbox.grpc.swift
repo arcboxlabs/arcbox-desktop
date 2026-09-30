@@ -313,8 +313,8 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
         /// > execution — see the state machine below for why RUNNING cannot
-        /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_Sandbox_V1_PauseSandboxRequest` messages.
@@ -595,8 +595,8 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
         /// > execution — see the state machine below for why RUNNING cannot
-        /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -875,8 +875,8 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
         /// > execution — see the state machine below for why RUNNING cannot
-        /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -1649,8 +1649,8 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
         /// > execution — see the state machine below for why RUNNING cannot
-        /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -2037,8 +2037,8 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
         /// > execution — see the state machine below for why RUNNING cannot
-        /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -2502,8 +2502,8 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
     /// > relocation constraint documented in `snapshot.proto` (CORE-21).
     /// > Returns once the sandbox reaches PAUSED; requires READY (no active
     /// > execution — see the state machine below for why RUNNING cannot
-    /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-    /// > `storage_bytes` until removed.
+    /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+    /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -2928,8 +2928,8 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
     /// > relocation constraint documented in `snapshot.proto` (CORE-21).
     /// > Returns once the sandbox reaches PAUSED; requires READY (no active
     /// > execution — see the state machine below for why RUNNING cannot
-    /// > pause). Trades RAM for disk: a paused sandbox keeps paying
-    /// > `storage_bytes` until removed.
+    /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+    /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
     ///
     /// - Parameters:
     ///   - message: request message to send.

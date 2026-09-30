@@ -1146,6 +1146,30 @@ public enum Arcbox_V1_SystemService {
                 method: "SetSystemVmBackend"
             )
         }
+        /// Namespace for "GetSystemVmResources" metadata.
+        public enum GetSystemVmResources {
+            /// Request type for "GetSystemVmResources".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "GetSystemVmResources".
+            public typealias Output = Arcbox_V1_SystemVmResources
+            /// Descriptor for "GetSystemVmResources".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "GetSystemVmResources"
+            )
+        }
+        /// Namespace for "SetSystemVmResources" metadata.
+        public enum SetSystemVmResources {
+            /// Request type for "SetSystemVmResources".
+            public typealias Input = Arcbox_V1_SetSystemVmResourcesRequest
+            /// Response type for "SetSystemVmResources".
+            public typealias Output = Arcbox_V1_SystemVmResources
+            /// Descriptor for "SetSystemVmResources".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "SetSystemVmResources"
+            )
+        }
         /// Namespace for "GetVirtioDebug" metadata.
         public enum GetVirtioDebug {
             /// Request type for "GetVirtioDebug".
@@ -1193,6 +1217,8 @@ public enum Arcbox_V1_SystemService {
             WatchSetupStatus.descriptor,
             GetSystemVmBackend.descriptor,
             SetSystemVmBackend.descriptor,
+            GetSystemVmResources.descriptor,
+            SetSystemVmResources.descriptor,
             GetVirtioDebug.descriptor,
             ResolveContainerFs.descriptor,
             ResolveImageFs.descriptor
@@ -1390,6 +1416,46 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetSystemVmBackendRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo>
+
+        /// Handle the "GetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's CPU and memory limits, with the host's capacity
+        /// > for context.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SystemVmResources` messages.
+        func getSystemVmResources(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmResources>
+
+        /// Handle the "SetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the System VM's CPU and memory limits. The choice is written to
+        /// > the user's config.toml so it survives daemon restarts; the System VM
+        /// > is recreated so it takes effect, which stops running containers.
+        /// > Returns the resulting limits.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_SetSystemVmResourcesRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SystemVmResources` messages.
+        func setSystemVmResources(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmResources>
 
         /// Handle the "GetVirtioDebug" method.
         ///
@@ -1635,6 +1701,46 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>
 
+        /// Handle the "GetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's CPU and memory limits, with the host's capacity
+        /// > for context.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_SystemVmResources` message.
+        func getSystemVmResources(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmResources>
+
+        /// Handle the "SetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the System VM's CPU and memory limits. The choice is written to
+        /// > the user's config.toml so it survives daemon restarts; the System VM
+        /// > is recreated so it takes effect, which stops running containers.
+        /// > Returns the resulting limits.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetSystemVmResourcesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_SystemVmResources` message.
+        func setSystemVmResources(
+            request: GRPCCore.ServerRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmResources>
+
         /// Handle the "GetVirtioDebug" method.
         ///
         /// > Source IDL Documentation:
@@ -1879,6 +1985,46 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_SystemVmBackendInfo
 
+        /// Handle the "GetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's CPU and memory limits, with the host's capacity
+        /// > for context.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_SystemVmResources` to respond with.
+        func getSystemVmResources(
+            request: Arcbox_V1_Empty,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_SystemVmResources
+
+        /// Handle the "SetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the System VM's CPU and memory limits. The choice is written to
+        /// > the user's config.toml so it survives daemon restarts; the System VM
+        /// > is recreated so it takes effect, which stops running containers.
+        /// > Returns the resulting limits.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_SetSystemVmResourcesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_SystemVmResources` to respond with.
+        func setSystemVmResources(
+            request: Arcbox_V1_SetSystemVmResourcesRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_SystemVmResources
+
         /// Handle the "GetVirtioDebug" method.
         ///
         /// > Source IDL Documentation:
@@ -2050,6 +2196,28 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.GetSystemVmResources.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SystemVmResources>(),
+            handler: { request, context in
+                try await self.getSystemVmResources(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.SetSystemVmResources.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetSystemVmResourcesRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SystemVmResources>(),
+            handler: { request, context in
+                try await self.setSystemVmResources(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_V1_SystemService.Method.GetVirtioDebug.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_VirtioDebugInfo>(),
@@ -2181,6 +2349,28 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmBackendInfo> {
         let response = try await self.setSystemVmBackend(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func getSystemVmResources(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmResources> {
+        let response = try await self.getSystemVmResources(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func setSystemVmResources(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SystemVmResources> {
+        let response = try await self.setSystemVmResources(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -2342,6 +2532,32 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo> {
         return GRPCCore.ServerResponse<Arcbox_V1_SystemVmBackendInfo>(
             message: try await self.setSystemVmBackend(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func getSystemVmResources(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmResources> {
+        return GRPCCore.ServerResponse<Arcbox_V1_SystemVmResources>(
+            message: try await self.getSystemVmResources(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func setSystemVmResources(
+        request: GRPCCore.ServerRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SystemVmResources> {
+        return GRPCCore.ServerResponse<Arcbox_V1_SystemVmResources>(
+            message: try await self.setSystemVmResources(
                 request: request.message,
                 context: context
             ),
@@ -2611,6 +2827,56 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmBackendInfo>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmBackendInfo>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's CPU and memory limits, with the host's capacity
+        /// > for context.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmResources` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getSystemVmResources<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmResources>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the System VM's CPU and memory limits. The choice is written to
+        /// > the user's config.toml so it survives daemon restarts; the System VM
+        /// > is recreated so it takes effect, which stops running containers.
+        /// > Returns the resulting limits.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetSystemVmResourcesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetSystemVmResourcesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmResources` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setSystemVmResources<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetSystemVmResourcesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmResources>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "GetVirtioDebug" method.
@@ -3020,6 +3286,78 @@ extension Arcbox_V1_SystemService {
             )
         }
 
+        /// Call the "GetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Gets the System VM's CPU and memory limits, with the host's capacity
+        /// > for context.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmResources` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getSystemVmResources<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmResources>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.GetSystemVmResources.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetSystemVmResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the System VM's CPU and memory limits. The choice is written to
+        /// > the user's config.toml so it survives daemon restarts; the System VM
+        /// > is recreated so it takes effect, which stops running containers.
+        /// > Returns the resulting limits.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetSystemVmResourcesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetSystemVmResourcesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SystemVmResources` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setSystemVmResources<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetSystemVmResourcesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SystemVmResources>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.SetSystemVmResources.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "GetVirtioDebug" method.
         ///
         /// > Source IDL Documentation:
@@ -3394,6 +3732,68 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetSystemVmBackendRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SystemVmBackendInfo>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetSystemVmResources" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Gets the System VM's CPU and memory limits, with the host's capacity
+    /// > for context.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getSystemVmResources<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getSystemVmResources(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SystemVmResources>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetSystemVmResources" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Sets the System VM's CPU and memory limits. The choice is written to
+    /// > the user's config.toml so it survives daemon restarts; the System VM
+    /// > is recreated so it takes effect, which stops running containers.
+    /// > Returns the resulting limits.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_SetSystemVmResourcesRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setSystemVmResources<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmResourcesRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setSystemVmResources(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetSystemVmResourcesRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SystemVmResources>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3792,6 +4192,76 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.setSystemVmBackend(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetSystemVmResources" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Gets the System VM's CPU and memory limits, with the host's capacity
+    /// > for context.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getSystemVmResources<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getSystemVmResources(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetSystemVmResources" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Sets the System VM's CPU and memory limits. The choice is written to
+    /// > the user's config.toml so it survives daemon restarts; the System VM
+    /// > is recreated so it takes effect, which stops running containers.
+    /// > Returns the resulting limits.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setSystemVmResources<Result>(
+        _ message: Arcbox_V1_SetSystemVmResourcesRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SystemVmResources>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_SetSystemVmResourcesRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setSystemVmResources(
             request: request,
             options: options,
             onResponse: handleResponse
@@ -5352,7 +5822,9 @@ extension Arcbox_V1_MigrationService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Runs a prepared migration plan and streams execution progress.
+        /// > Runs a prepared migration plan and streams execution progress. Repeating
+        /// > the same request attaches to the existing run and replays its latest
+        /// > progress or terminal result.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_V1_RunMigrationRequest` messages.
@@ -5401,7 +5873,9 @@ extension Arcbox_V1_MigrationService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Runs a prepared migration plan and streams execution progress.
+        /// > Runs a prepared migration plan and streams execution progress. Repeating
+        /// > the same request attaches to the existing run and replays its latest
+        /// > progress or terminal result.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
@@ -5448,7 +5922,9 @@ extension Arcbox_V1_MigrationService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Runs a prepared migration plan and streams execution progress.
+        /// > Runs a prepared migration plan and streams execution progress. Repeating
+        /// > the same request attaches to the existing run and replays its latest
+        /// > progress or terminal result.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_V1_RunMigrationRequest` message.
@@ -5594,7 +6070,9 @@ extension Arcbox_V1_MigrationService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Runs a prepared migration plan and streams execution progress.
+        /// > Runs a prepared migration plan and streams execution progress. Repeating
+        /// > the same request attaches to the existing run and replays its latest
+        /// > progress or terminal result.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
@@ -5672,7 +6150,9 @@ extension Arcbox_V1_MigrationService {
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Runs a prepared migration plan and streams execution progress.
+        /// > Runs a prepared migration plan and streams execution progress. Repeating
+        /// > the same request attaches to the existing run and replays its latest
+        /// > progress or terminal result.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
@@ -5738,7 +6218,9 @@ extension Arcbox_V1_MigrationService.ClientProtocol {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Runs a prepared migration plan and streams execution progress.
+    /// > Runs a prepared migration plan and streams execution progress. Repeating
+    /// > the same request attaches to the existing run and replays its latest
+    /// > progress or terminal result.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_V1_RunMigrationRequest` message.
@@ -5802,7 +6284,9 @@ extension Arcbox_V1_MigrationService.ClientProtocol {
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Runs a prepared migration plan and streams execution progress.
+    /// > Runs a prepared migration plan and streams execution progress. Repeating
+    /// > the same request attaches to the existing run and replays its latest
+    /// > progress or terminal result.
     ///
     /// - Parameters:
     ///   - message: request message to send.
