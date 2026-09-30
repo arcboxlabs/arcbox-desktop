@@ -35,6 +35,9 @@ struct ActivityContainerTable: View {
     @AppStorage("activity.containerColumns") private var storedColumnLayout = Data()
 
     var body: some View {
+        // Once per sample, not once per reader: the rows and the empty state
+        // both want the grouping, and it sorts every row each time it runs.
+        let groups = groups
         Table(
             of: ActivityRow.self,
             selection: $selection,
@@ -101,7 +104,7 @@ struct ActivityContainerTable: View {
         }
         .tableStyle(.inset)
         .alternatingRowBackgrounds()
-        .overlay { emptyState }
+        .overlay { emptyState(groups: groups) }
         .contextMenu(forSelectionType: ActivityRow.ID.self) { ids in
             menu(for: ids)
         } primaryAction: { ids in
@@ -117,7 +120,7 @@ struct ActivityContainerTable: View {
     /// cannot tell "nothing is running" from "nothing matches" without redoing
     /// the same work.
     @ViewBuilder
-    private var emptyState: some View {
+    private func emptyState(groups: [ActivityRowGroup]) -> some View {
         if !hasLoaded {
             EmptyView()
         } else if containers.isEmpty {
