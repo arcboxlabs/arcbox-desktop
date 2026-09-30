@@ -41,6 +41,12 @@ private struct FakeBinary {
         try FakeBinary("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
     }
 
+    /// Writes 2 MiB and ignores SIGTERM: once the reader stops at its limit the write blocks,
+    /// and only SIGKILL ends the child.
+    static func writingTwoMebibytesIgnoringTermination() throws -> FakeBinary {
+        try FakeBinary("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
+    }
+
     /// Prints its version and exits, leaving behind a grandchild that inherited stdout and
     /// keeps the pipe open for 30 s. Its `argv[0]` is the marker plus `-child`.
     static func leavingAGrandchildOnStdout() throws -> FakeBinary {
@@ -72,12 +78,25 @@ private struct FakeBinary {
         return fake
     }
 
-    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. Opening the FIFO for
-    /// writing waits for the script to reach its `read`.
+    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. The write end is
+    /// opened non-blocking: with no reader — the child is already gone — `open` fails with
+    /// ENXIO and the test fails, where a blocking open would hang the test host for good.
     func release() throws {
-        let fifo = try FileHandle(forWritingTo: URL(fileURLWithPath: releasePath))
-        try fifo.write(contentsOf: Data("\n".utf8))
-        try fifo.close()
+        let fifo = open(releasePath, O_WRONLY | O_NONBLOCK)
+        guard fifo >= 0 else { throw ReleaseFailed(code: errno) }
+        defer { close(fifo) }
+        var newline: UInt8 = 0x0A
+        guard write(fifo, &newline, 1) == 1 else { throw ReleaseFailed(code: errno) }
+    }
+
+    struct ReleaseFailed: Error, CustomStringConvertible {
+        let code: Int32
+
+        var description: String {
+            code == ENXIO
+                ? "the child is already gone: nothing reads the release FIFO"
+                : String(cString: strerror(code))
+        }
     }
 
     private var releasePath: String {
@@ -275,6 +294,30 @@ struct BinaryVersionTests {
         #expect(process.terminationReason == .uncaughtSignal)
         let runningAfterTimeout = try await fake.isRunning()
         #expect(!runningAfterTimeout)
+    }
+
+    @Test func limitTrippedBeforeTheTimeoutIsReportedAsTheLimit() async throws {
+        // The reader trips the limit within milliseconds and terminates the child, which
+        // ignores SIGTERM; the 1 s timeout then fires inside the 2 s kill grace. The limit is
+        // the cause and must be the error, and the child is still reaped before it propagates.
+        let fake = try FakeBinary.writingTwoMebibytesIgnoringTermination()
+        defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        await #expect(throws: ProcessOutputLimitExceeded.self) {
+            try await runCapturingStandardOutput(process, timeout: .seconds(1), outputLimit: 1 << 20)
+        }
+
+        let elapsed = clock.now - startedAt
+        #expect(elapsed > processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        #expect(elapsed < processTerminationGrace + .seconds(1), "returned after \(elapsed)")
+        #expect(!process.isRunning)
+        #expect(process.terminationReason == .uncaughtSignal)
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
     }
 
     @Test func killsAChildThatIgnoresSIGTERM() async throws {

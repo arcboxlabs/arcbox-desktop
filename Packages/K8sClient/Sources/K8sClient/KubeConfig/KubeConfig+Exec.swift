@@ -171,7 +171,12 @@ private func runCapturingStandardOutput(
         }
     } catch {
         capture.cancel()
-        _ = try? await capture.value
+        // A limit the reader tripped first is the cause even when the timeout surfaced: the
+        // reader had already ended the child, and the timeout only saw it refuse SIGTERM
+        // until the kill.
+        if case .failure(let exceeded as ProcessOutputLimitExceeded) = await capture.result {
+            throw exceeded
+        }
         throw error
     }
     // The child is gone; EOF gets `processOutputDrainGrace` and no longer.

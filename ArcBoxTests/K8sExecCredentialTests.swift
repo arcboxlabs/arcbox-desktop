@@ -49,6 +49,12 @@ private struct FakePlugin {
         try FakePlugin("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
     }
 
+    /// Writes 2 MiB and ignores SIGTERM: once the reader stops at its limit the write blocks,
+    /// and only SIGKILL ends the plugin.
+    static func writingTwoMebibytesIgnoringTermination() throws -> FakePlugin {
+        try FakePlugin("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
+    }
+
     /// Prints a valid credential and exits, leaving behind a grandchild that inherited stdout
     /// and keeps the pipe open for 30 s. Its `argv[0]` is the marker plus `-child`.
     static func leavingAGrandchildOnStdout() throws -> FakePlugin {
@@ -80,12 +86,25 @@ private struct FakePlugin {
         return plugin
     }
 
-    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. Opening the FIFO for
-    /// writing waits for the script to reach its `read`.
+    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. The write end is
+    /// opened non-blocking: with no reader — the plugin is already gone — `open` fails with
+    /// ENXIO and the test fails, where a blocking open would hang the test host for good.
     func release() throws {
-        let fifo = try FileHandle(forWritingTo: URL(fileURLWithPath: releasePath))
-        try fifo.write(contentsOf: Data("\n".utf8))
-        try fifo.close()
+        let fifo = open(releasePath, O_WRONLY | O_NONBLOCK)
+        guard fifo >= 0 else { throw ReleaseFailed(code: errno) }
+        defer { close(fifo) }
+        var newline: UInt8 = 0x0A
+        guard write(fifo, &newline, 1) == 1 else { throw ReleaseFailed(code: errno) }
+    }
+
+    struct ReleaseFailed: Error, CustomStringConvertible {
+        let code: Int32
+
+        var description: String {
+            code == ENXIO
+                ? "the plugin is already gone: nothing reads the release FIFO"
+                : String(cString: strerror(code))
+        }
     }
 
     private var releasePath: String {
@@ -277,6 +296,29 @@ final class K8sExecCredentialTests: XCTestCase {
         XCTAssertLessThan(clock.now - startedAt, .milliseconds(1500))
         let runningAfterTimeout = try await plugin.isRunning()
         XCTAssertFalse(runningAfterTimeout, "the plugin must be terminated")
+    }
+
+    func testLimitTrippedBeforeTheTimeoutIsReportedAsTheLimit() async throws {
+        // The reader trips the limit within milliseconds and terminates the plugin, which
+        // ignores SIGTERM; the 1 s timeout then fires inside the 2 s kill grace. The limit is
+        // the cause and must be the error, and the plugin is still reaped before it propagates.
+        let plugin = try FakePlugin.writingTwoMebibytesIgnoringTermination()
+        defer { plugin.remove() }
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        do {
+            _ = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: .seconds(1))
+            XCTFail("2 MiB of output must be refused")
+        } catch KubeConfigError.execPluginFailed(let message) {
+            XCTAssertEqual(message, "exec plugin wrote more than 1048576 bytes")
+        }
+
+        let elapsed = clock.now - startedAt
+        XCTAssertGreaterThan(elapsed, terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        XCTAssertLessThan(elapsed, terminationGrace + .seconds(1), "returned after \(elapsed)")
+        let stillRunning = try await plugin.isRunning()
+        XCTAssertFalse(stillRunning, "the plugin must be killed")
     }
 
     func testPluginIgnoringSIGTERMIsKilledAfterTheGrace() async throws {
