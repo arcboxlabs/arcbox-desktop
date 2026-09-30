@@ -171,6 +171,8 @@ private func runCapturingStandardOutput(
         }
     } catch {
         capture.cancel()
+        // The caller's cancellation is what it asked for, whatever else went wrong meanwhile.
+        try Task.checkCancellation()
         // A limit the reader tripped first is the cause even when the timeout surfaced: the
         // reader had already ended the child, and the timeout only saw it refuse SIGTERM
         // until the kill.

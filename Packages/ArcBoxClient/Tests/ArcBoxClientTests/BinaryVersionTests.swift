@@ -127,6 +127,19 @@ private struct FakeBinary {
         try? pkill.run()
     }
 
+    /// Polls until the fake's own program runs, or two seconds pass. `exec -a "$0"` puts the
+    /// path first on the command line, where the interpreter's `/bin/bash <path>` had it
+    /// second — so this also means the script's `trap` has run.
+    func waitUntilExecuted() async throws -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(2)
+        while clock.now < deadline {
+            if try await pgrep("^\(path)") { return true }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        return false
+    }
+
     /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
     func waitUntilRunning() async throws -> Bool {
         let clock = ContinuousClock()
@@ -316,6 +329,31 @@ struct BinaryVersionTests {
         #expect(elapsed < processTerminationGrace + .seconds(1), "returned after \(elapsed)")
         #expect(!process.isRunning)
         #expect(process.terminationReason == .uncaughtSignal)
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
+    }
+
+    @Test func cancellationOutranksALimitTrippedBeforeIt() async throws {
+        // The reader trips the limit and terminates the child, which ignores SIGTERM; the caller
+        // is cancelled inside the 2 s kill grace. Cancellation is what the caller asked for and
+        // must propagate — `installHelper` reads a `nil` as "reinstall" — while the child is
+        // still reaped before it does.
+        let fake = try FakeBinary.writingTwoMebibytesIgnoringTermination()
+        defer { fake.remove() }
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        let version = Task { try await binaryVersion(fake.path, timeout: .seconds(30)) }
+        // Once `head` itself runs, `trap` has taken effect and the limit trips within
+        // milliseconds; a SIGTERM that reached bash while it was still starting would end the
+        // child at once and prove nothing.
+        try #require(try await fake.waitUntilExecuted())
+        try await Task.sleep(for: .milliseconds(200))
+        version.cancel()
+
+        await #expect(throws: CancellationError.self) { try await version.value }
+        let elapsed = clock.now - startedAt
+        #expect(elapsed > processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
         let stillRunning = try await fake.isRunning()
         #expect(!stillRunning)
     }

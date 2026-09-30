@@ -131,6 +131,19 @@ private struct FakePlugin {
         _ = try await run("/usr/bin/pkill", ["-KILL", "-f", "\(marker)-child"])
     }
 
+    /// Polls until the fake's own program runs, or two seconds pass. `exec -a "$0"` puts the
+    /// path first on the command line, where the interpreter's `/bin/bash <path>` had it
+    /// second — so this also means the script's `trap` has run.
+    func waitUntilExecuted() async throws -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(2)
+        while clock.now < deadline {
+            if try await run("/usr/bin/pgrep", ["-f", "^\(path)"]) == 0 { return true }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        return false
+    }
+
     /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
     func waitUntilRunning() async throws -> Bool {
         let clock = ContinuousClock()
@@ -317,6 +330,37 @@ final class K8sExecCredentialTests: XCTestCase {
         let elapsed = clock.now - startedAt
         XCTAssertGreaterThan(elapsed, terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
         XCTAssertLessThan(elapsed, terminationGrace + .seconds(1), "returned after \(elapsed)")
+        let stillRunning = try await plugin.isRunning()
+        XCTAssertFalse(stillRunning, "the plugin must be killed")
+    }
+
+    func testCancellationOutranksALimitTrippedBeforeIt() async throws {
+        // The reader trips the limit and terminates the plugin, which ignores SIGTERM; the caller
+        // is cancelled inside the 2 s kill grace. Cancellation is what the caller asked for and
+        // must propagate, while the plugin is still reaped before it does.
+        let plugin = try FakePlugin.writingTwoMebibytesIgnoringTermination()
+        defer { plugin.remove() }
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        let resolution = Task {
+            try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: .seconds(30))
+        }
+        // Once `head` itself runs, `trap` has taken effect and the limit trips within
+        // milliseconds; a SIGTERM that reached bash while it was still starting would end the
+        // plugin at once and prove nothing.
+        let executed = try await plugin.waitUntilExecuted()
+        XCTAssertTrue(executed, "the fake's own program must be running")
+        try await Task.sleep(for: .milliseconds(200))
+        resolution.cancel()
+
+        do {
+            _ = try await resolution.value
+            XCTFail("a cancelled resolution must throw")
+        } catch is CancellationError {
+        }
+        let elapsed = clock.now - startedAt
+        XCTAssertGreaterThan(elapsed, terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
         let stillRunning = try await plugin.isRunning()
         XCTAssertFalse(stillRunning, "the plugin must be killed")
     }
