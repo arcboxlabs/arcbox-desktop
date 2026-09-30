@@ -62,6 +62,36 @@ private struct FakePlugin {
         )
     }
 
+    /// Like `leavingAGrandchildOnStdout()`, but waits for `release()` first, so the test — not
+    /// bash's start-up time — decides when the plugin exits.
+    static func leavingAGrandchildOnStdoutWhenReleased() throws -> FakePlugin {
+        let plugin = try FakePlugin(
+            """
+            #!/bin/bash
+            read _ < "$(dirname "$0")/release"
+            (exec -a "$0-child" /bin/sleep 30) &
+            echo '\(credentialJSON)'
+
+            """
+        )
+        guard mkfifo(plugin.releasePath, 0o600) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        return plugin
+    }
+
+    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. Opening the FIFO for
+    /// writing waits for the script to reach its `read`.
+    func release() throws {
+        let fifo = try FileHandle(forWritingTo: URL(fileURLWithPath: releasePath))
+        try fifo.write(contentsOf: Data("\n".utf8))
+        try fifo.close()
+    }
+
+    private var releasePath: String {
+        directory.appendingPathComponent("release").path
+    }
+
     func remove() {
         try? FileManager.default.removeItem(at: directory)
     }
@@ -154,6 +184,14 @@ final class K8sExecCredentialTests: XCTestCase {
         """
     }
 
+    /// Registers the grandchild's removal before any assertion can throw and leave a 30 s
+    /// sleeper behind.
+    private func killGrandchildOnTeardown(of plugin: FakePlugin) {
+        addTeardownBlock {
+            try await plugin.killGrandchild()
+        }
+    }
+
     // MARK: - runExecPlugin
 
     func testPluginTokenIsReturned() async throws {
@@ -179,6 +217,7 @@ final class K8sExecCredentialTests: XCTestCase {
     func testTokenIsReturnedWhenAGrandchildKeepsStdoutOpen() async throws {
         let plugin = try FakePlugin.leavingAGrandchildOnStdout()
         defer { plugin.remove() }
+        killGrandchildOnTeardown(of: plugin)
         let clock = ContinuousClock()
         let startedAt = clock.now
 
@@ -191,7 +230,27 @@ final class K8sExecCredentialTests: XCTestCase {
         // The scenario is real only if the grandchild is still there holding the pipe.
         let grandchildAlive = try await plugin.grandchildIsRunning()
         XCTAssertTrue(grandchildAlive, "the fake must leave a grandchild on stdout")
-        try await plugin.killGrandchild()
+    }
+
+    func testExitJustBeforeTheDeadlineIsNotATimeout() async throws {
+        // The plugin exits 100 ms before the deadline and EOF never comes (a grandchild holds
+        // stdout), so the deadline falls inside the 200 ms drain that follows the exit. A
+        // timeout that kept racing through the drain reported this successful exit as a
+        // timeout. The exit is released by the test rather than timed with `sleep`, because
+        // bash alone takes 0.1–0.35 s to start.
+        let plugin = try FakePlugin.leavingAGrandchildOnStdoutWhenReleased()
+        defer { plugin.remove() }
+        killGrandchildOnTeardown(of: plugin)
+        let timeout: Duration = .seconds(1)
+
+        let resolution = Task {
+            try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: timeout)
+        }
+        try await Task.sleep(for: timeout - .milliseconds(100))
+        try plugin.release()
+
+        let token = try await resolution.value
+        XCTAssertEqual(token, "tok-123")
     }
 
     func testStalledPluginIsTerminatedAtTheTimeoutWithoutBlockingTheMainActor() async throws {

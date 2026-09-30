@@ -116,22 +116,16 @@ private let processTerminationGrace: Duration = .seconds(2)
 /// inherited stdout can still hold the pipe open, and the call does not wait for it.
 private let processOutputDrainGrace: Duration = .milliseconds(200)
 
-/// What a child of the capture group reports back to it.
-private enum ProcessEvent {
-    case exited
-    case outputEnded
-    case drainExpired
-}
-
 /// Runs `process` and returns everything it wrote to standard output, up to `outputLimit`
 /// bytes.
 ///
 /// The read runs alongside the wait, so a child that writes more than the pipe holds still
-/// exits, and the child's exit — not EOF — bounds the call: output arriving after the exit is
-/// read for `processOutputDrainGrace`, then the read stops and the parent's read end is
-/// closed. When `timeout` elapses first, the output exceeds `outputLimit`, or the caller is
-/// cancelled, the child is terminated and reaped before the error propagates. A grandchild
-/// that inherited stdout is neither waited for nor killed: `Process` offers no process group.
+/// exits, and the child's exit — not EOF — bounds the call: `timeout` races the exit alone,
+/// and output arriving after the exit is read for `processOutputDrainGrace`, then the read
+/// stops and the parent's read end is closed. When `timeout` elapses first, the output
+/// exceeds `outputLimit`, or the caller is cancelled, the child is terminated and reaped
+/// before the error propagates. A grandchild that inherited stdout is neither waited for nor
+/// killed: `Process` offers no process group.
 private func runCapturingStandardOutput(
     _ process: Process,
     timeout: Duration,
@@ -154,50 +148,41 @@ private func runCapturingStandardOutput(
     }
     defer { try? reader.close() }
 
-    // The reader is its own task so that it can be cancelled on its own once the child is
-    // gone. The group still cannot finish before it does: the child awaiting it cancels it
-    // when the group is torn down.
-    let capture = Task { try await reader.readToEndOfFile(limit: outputLimit) }
-    try await withThrowingTaskGroup(of: ProcessEvent.self) { group in
-        group.addTask {
-            try await process.waitForExit(exit)
-            return .exited
-        }
-        group.addTask {
-            try await Task.sleep(for: timeout)
-            throw ProcessTimedOut()
-        }
-        group.addTask {
-            try await withTaskCancellationHandler {
-                _ = try await capture.value
-            } onCancel: {
-                capture.cancel()
-            }
-            return .outputEnded
-        }
-        defer { group.cancelAll() }
-        var exited = false
-        var outputEnded = false
-        while !(exited && outputEnded) {
-            guard let event = try await group.next() else { break }
-            switch event {
-            case .exited:
-                exited = true
-                if !outputEnded {
-                    group.addTask {
-                        try await Task.sleep(for: processOutputDrainGrace)
-                        capture.cancel()
-                        return .drainExpired
-                    }
-                }
-            case .outputEnded:
-                outputEnded = true
-            case .drainExpired:
-                break
-            }
+    // On the limit the reader ends the child itself, so the wait below observes the exit.
+    let capture = Task {
+        do {
+            return try await reader.readToEndOfFile(limit: outputLimit)
+        } catch let exceeded as ProcessOutputLimitExceeded {
+            process.terminateEscalating()
+            throw exceeded
         }
     }
-    return try await capture.value
+    // The timeout races the exit and nothing else: a child that exits at the deadline has
+    // succeeded, and the EOF drain below must not be mistaken for it still running.
+    do {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask { try await process.waitForExit(exit) }
+            group.addTask {
+                try await Task.sleep(for: timeout)
+                throw ProcessTimedOut()
+            }
+            defer { group.cancelAll() }
+            try await group.next()
+        }
+    } catch {
+        capture.cancel()
+        _ = try? await capture.value
+        throw error
+    }
+    // The child is gone; EOF gets `processOutputDrainGrace` and no longer.
+    let drain = Task {
+        try? await Task.sleep(for: processOutputDrainGrace)
+        capture.cancel()
+    }
+    defer { drain.cancel() }
+    let output = try await capture.value
+    try Task.checkCancellation()
+    return output
 }
 
 extension Process {
@@ -214,25 +199,30 @@ extension Process {
     /// run loop, and on a cooperative-pool thread the termination wake-up can fail to arrive,
     /// leaving the waiter parked forever after the child is gone.
     ///
-    /// Cancellation terminates the child, kills it if it still runs after
-    /// `processTerminationGrace`, and still waits for the exit so the child is reaped before
-    /// `CancellationError` propagates.
+    /// Cancellation terminates the child (`terminateEscalating()`) and still waits for the
+    /// exit so the child is reaped before `CancellationError` propagates.
     fileprivate func waitForExit(_ exit: ProcessExit) async throws {
         await withTaskCancellationHandler {
             // Iterating the stream from a cancelled task ends early, and the wait must outlive
             // the cancellation to observe the exit; an unstructured task inherits no cancellation.
             await Task { for await _ in exit.exited {} }.value
         } onCancel: {
-            guard self.isRunning else { return }
-            self.terminate()
-            Task {
-                try? await Task.sleep(for: processTerminationGrace)
-                if self.isRunning {
-                    kill(self.processIdentifier, SIGKILL)
-                }
-            }
+            self.terminateEscalating()
         }
         try Task.checkCancellation()
+    }
+
+    /// Sends SIGTERM now and SIGKILL if the child still runs after `processTerminationGrace`.
+    /// Returns at once; `waitForExit(_:)` observes the exit.
+    fileprivate func terminateEscalating() {
+        guard isRunning else { return }
+        terminate()
+        Task {
+            try? await Task.sleep(for: processTerminationGrace)
+            if self.isRunning {
+                kill(self.processIdentifier, SIGKILL)
+            }
+        }
     }
 }
 

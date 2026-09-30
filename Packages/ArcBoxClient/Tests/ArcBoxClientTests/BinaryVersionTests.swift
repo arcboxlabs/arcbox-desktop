@@ -54,6 +54,36 @@ private struct FakeBinary {
         )
     }
 
+    /// Like `leavingAGrandchildOnStdout()`, but waits for `release()` first, so the test — not
+    /// bash's start-up time — decides when the child exits.
+    static func leavingAGrandchildOnStdoutWhenReleased() throws -> FakeBinary {
+        let fake = try FakeBinary(
+            """
+            #!/bin/bash
+            read _ < "$(dirname "$0")/release"
+            (exec -a "$0-child" /bin/sleep 30) &
+            echo 'arcbox-helper 9.9.9'
+
+            """
+        )
+        guard mkfifo(fake.releasePath, 0o600) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        return fake
+    }
+
+    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. Opening the FIFO for
+    /// writing waits for the script to reach its `read`.
+    func release() throws {
+        let fifo = try FileHandle(forWritingTo: URL(fileURLWithPath: releasePath))
+        try fifo.write(contentsOf: Data("\n".utf8))
+        try fifo.close()
+    }
+
+    private var releasePath: String {
+        directory.appendingPathComponent("release").path
+    }
+
     func remove() {
         try? FileManager.default.removeItem(at: directory)
     }
@@ -69,12 +99,13 @@ private struct FakeBinary {
     }
 
     /// Kills that grandchild; nothing in the code under test can, it is not in the child's
-    /// process group.
-    func killGrandchild() async throws {
+    /// process group. Synchronous and unwaited so that a `defer` registered before the
+    /// assertions can call it: a failed assertion must not leave a 30 s sleeper behind.
+    func killGrandchild() {
         let pkill = Process()
         pkill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
         pkill.arguments = ["-KILL", "-f", "\(marker)-child"]
-        try await runCancellableProcess(pkill)
+        try? pkill.run()
     }
 
     /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
@@ -151,6 +182,7 @@ struct BinaryVersionTests {
     @Test func returnsTheVersionWhenAGrandchildKeepsStdoutOpen() async throws {
         let fake = try FakeBinary.leavingAGrandchildOnStdout()
         defer { fake.remove() }
+        defer { fake.killGrandchild() }
         let clock = ContinuousClock()
         let startedAt = clock.now
 
@@ -163,7 +195,25 @@ struct BinaryVersionTests {
         // The scenario is real only if the grandchild is still there holding the pipe.
         let grandchildAlive = try await fake.grandchildIsRunning()
         #expect(grandchildAlive, "the fake must leave a grandchild on stdout")
-        try await fake.killGrandchild()
+    }
+
+    @Test func exitJustBeforeTheDeadlineIsNotATimeout() async throws {
+        // The child exits 100 ms before the deadline and EOF never comes (a grandchild holds
+        // stdout), so the deadline falls inside the 200 ms drain that follows the exit. A
+        // timeout that kept racing through the drain reported this successful exit as a
+        // timeout. The exit is released by the test rather than timed with `sleep`, because
+        // bash alone takes 0.1–0.35 s to start.
+        let fake = try FakeBinary.leavingAGrandchildOnStdoutWhenReleased()
+        defer { fake.remove() }
+        defer { fake.killGrandchild() }
+        let timeout: Duration = .seconds(1)
+
+        let version = Task { try await binaryVersion(fake.path, timeout: timeout) }
+        try await Task.sleep(for: timeout - .milliseconds(100))
+        try fake.release()
+
+        let value = try await version.value
+        #expect(value == "arcbox-helper 9.9.9")
     }
 
     @Test func returnsNilWhenTheBinaryWritesMoreThan64KiB() async throws {
