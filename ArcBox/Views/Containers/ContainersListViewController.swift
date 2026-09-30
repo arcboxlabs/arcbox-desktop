@@ -315,7 +315,11 @@ final class ContainersListViewController: NSViewController,
                     expandedGroups: snapshot.expandedGroups
                 )
             }
-        } else if expansionChanged {
+        }
+        // Checked independently of `rootsChanged`: a load publishes new
+        // containers and then `applyExpandedGroups` in the same turn, and the
+        // incremental path above re-applies expansion only to groups it moved.
+        if expansionChanged {
             applyExpansion(snapshot.expandedGroups, to: tree.roots)
         }
 

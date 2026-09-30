@@ -209,6 +209,32 @@ final class ContainersListIncrementalUpdateTests: XCTestCase {
         assertOutlineMatchesViewModel(harness)
     }
 
+    func testExpansionChangeInTheSameRenderAsARowChangeIsApplied() async throws {
+        let harness = try await makeLoadedHarness(containers: fixtureContainers(), selectedID: "g1-a")
+        let outlineView = harness.outlineView
+
+        // One render sees both: a new standalone row and g2 collapsing in place.
+        try await render(harness) {
+            harness.viewModel.containers.append(container(id: "s11", state: .running))
+            harness.viewModel.toggleGroup("g2")
+        }
+        let g2 = try XCTUnwrap(outlineView.item(atRow: try XCTUnwrap(row(forGroup: "g2", in: outlineView))))
+        XCTAssertFalse(outlineView.isItemExpanded(g2))
+        XCTAssertNil(row(forContainer: "g2-a", in: outlineView))
+        assertOutlineMatchesViewModel(harness)
+
+        // The load path: containers replaced, then every project re-expanded.
+        try await render(harness) {
+            harness.viewModel.containers.removeAll { $0.id == "s11" }
+            harness.viewModel.applyExpandedGroups(from: harness.viewModel.containers)
+        }
+        XCTAssertTrue(outlineView.isItemExpanded(g2))
+        XCTAssertNotNil(row(forContainer: "g2-a", in: outlineView))
+        assertGroupsExpanded(["g1", "g2", "g3"], in: harness)
+        XCTAssertEqual(outlineView.selectedRow, row(forContainer: "g1-a", in: outlineView))
+        assertOutlineMatchesViewModel(harness)
+    }
+
     // MARK: - T5: stress
 
     func testSixtyMutationsStayUnderBudget() async throws {
