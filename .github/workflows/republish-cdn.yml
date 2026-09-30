@@ -6,6 +6,9 @@ name: Republish CDN
 # the release asset is the exact file users downloaded, Ed25519 signatures are
 # deterministic, and the build number is the tag's commit count, so the item
 # comes out identical to what the release run would have published.
+#
+# Two jobs: signing needs Sparkle's macOS sign_update, while r2-publish runs
+# on Linux, so the macOS job stages everything and hands it over as an artifact.
 
 on:
   workflow_dispatch:
@@ -27,11 +30,15 @@ permissions:
   contents: read
 
 jobs:
-  republish:
-    name: Republish ${{ inputs.tag }}
+  stage:
+    name: Stage ${{ inputs.tag }}
     # sign_update ships in Sparkle's macOS distribution.
     runs-on: macos-26
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      channel: ${{ steps.resolve.outputs.channel }}
+      dmg: ${{ steps.asset.outputs.dmg }}
     env:
       TAG: ${{ inputs.tag }}
       GH_TOKEN: ${{ github.token }}
@@ -179,6 +186,24 @@ jobs:
           echo "=== CDN staging ==="
           find cdn-staging -type f | sort
 
+      - name: Upload staging
+        uses: actions/upload-artifact@v6
+        with:
+          name: cdn-staging
+          path: cdn-staging/
+          retention-days: 1
+
+  publish:
+    name: Publish ${{ inputs.tag }}
+    needs: stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download staging
+        uses: actions/download-artifact@v8
+        with:
+          name: cdn-staging
+          path: cdn-staging/
+
       - name: Publish to R2
         uses: arcboxlabs/actions/r2-publish@v2
         with:
@@ -188,10 +213,10 @@ jobs:
           bucket: arcboxcdn-release
           source-dir: cdn-staging
           index-files: |
-            desktop/appcast/${{ steps.resolve.outputs.channel }}.xml
+            desktop/appcast/${{ needs.stage.outputs.channel }}.xml
             desktop/latest.json
           strict-verify: "true"
           verify-urls: |
-            https://release.arcboxcdn.com/desktop/${{ steps.resolve.outputs.version }}/${{ steps.asset.outputs.dmg }}
-            https://release.arcboxcdn.com/desktop/appcast/${{ steps.resolve.outputs.channel }}.xml
+            https://release.arcboxcdn.com/desktop/${{ needs.stage.outputs.version }}/${{ needs.stage.outputs.dmg }}
+            https://release.arcboxcdn.com/desktop/appcast/${{ needs.stage.outputs.channel }}.xml
             https://release.arcboxcdn.com/desktop/latest.json
