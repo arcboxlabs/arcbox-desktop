@@ -195,6 +195,7 @@
 		977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */; };
 		97B9638AA9C685C6DB2780B4 /* PerformanceTracing.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6DBFBB43078F295AFE54C0 /* PerformanceTracing.swift */; };
 		97E56AA0BEC7024FEBBE1B75 /* ExternalTerminalLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A87C9445565D341EA85D2F4 /* ExternalTerminalLauncher.swift */; };
+		9AB040ABE1C0C73D9F9967FD /* ActivityTickBenchmarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA289E87C33FF60E7BFD76C2 /* ActivityTickBenchmarkTests.swift */; };
 		9BBC2F30A81F4AE668951B67 /* SandboxModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA990161E9F1709745BE5796 /* SandboxModel.swift */; };
 		9D6E13499CA3B4666836F0F1 /* InfoRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F318A121B0C8EA1A05BFE5 /* InfoRow.swift */; };
 		9E79E2BBA05690D9ECAED2CD /* SortMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97E7E52D3A54846906EB064D /* SortMenuButton.swift */; };
@@ -521,6 +522,7 @@
 		A80B0A0F4FC2E7ECA0B844DD /* ContainerFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerFilesTab.swift; sourceTree = "<group>"; };
 		AA0656F14604E5C2380BFA93 /* FleetRunnerImageReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetRunnerImageReadiness.swift; sourceTree = "<group>"; };
 		AA0C5A43740FFD68902A2F77 /* AboutView+SystemInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AboutView+SystemInfo.swift"; sourceTree = "<group>"; };
+		AA289E87C33FF60E7BFD76C2 /* ActivityTickBenchmarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTickBenchmarkTests.swift; sourceTree = "<group>"; };
 		AA88097CAC1929269BE210C5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		ABC372134FDA259C40503AE1 /* ArcBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArcBox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC010DD9F0AEC7E4EA778C59 /* MenuBarView+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Actions.swift"; sourceTree = "<group>"; };
@@ -1297,6 +1299,7 @@
 			children = (
 				71884CDCA128955E2B60A744 /* ActivityMetricStripSnapshotTests.swift */,
 				3CD990EEEF43CDA673BC1816 /* ActivityRowGroupingTests.swift */,
+				AA289E87C33FF60E7BFD76C2 /* ActivityTickBenchmarkTests.swift */,
 				91F830C5D7EEFBF144197C5B /* AppDelegateTestHostTests.swift */,
 				1A9181A312D267BBD4687762 /* AppPreferencesTests.swift */,
 				1DC5F65FECB2F80BA3AF1D84 /* ArcBoxClientErrorTests.swift */,
@@ -1762,6 +1765,7 @@
 			files = (
 				EB904D7681DEDF1ADE2D2B53 /* ActivityMetricStripSnapshotTests.swift in Sources */,
 				0EB4E66405DD58C377BCE0E6 /* ActivityRowGroupingTests.swift in Sources */,
+				9AB040ABE1C0C73D9F9967FD /* ActivityTickBenchmarkTests.swift in Sources */,
 				2D4EAAD232C7444E6F227707 /* AppDelegateTestHostTests.swift in Sources */,
 				11168BDC9BB01B20733A9063 /* AppPreferencesTests.swift in Sources */,
 				C94515858BC220B73B93EC5D /* ArcBoxClientErrorTests.swift in Sources */,
