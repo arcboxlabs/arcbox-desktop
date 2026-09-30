@@ -14,17 +14,23 @@ func showAboutWindow() {
         return
     }
 
+    let contentSize = NSSize(width: 500, height: 660)
     let panel = AboutPanel(
-        contentRect: NSRect(x: 0, y: 0, width: 500, height: 660),
+        contentRect: NSRect(origin: .zero, size: contentSize),
         styleMask: [.titled, .closable],
         backing: .buffered,
         defer: false
     )
     panel.title = "About ArcBox"
     panel.isReleasedWhenClosed = false
-    panel.center()
 
     panel.contentViewController = AboutViewController()
+    // Assigning the controller resizes the panel to its view's fitting
+    // size, and a scroll view has none: the panel collapsed to a bare
+    // title bar (measured 0x32 on macOS 26). Restore the intended size
+    // after the assignment, then center the panel at that size.
+    panel.setContentSize(contentSize)
+    panel.center()
     panel.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
 
