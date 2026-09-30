@@ -38,6 +38,7 @@
 		17ED6FFFD9A61998178E38B9 /* VolumesListViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4BAE047B96D10B4716BA1A2 /* VolumesListViewControllerTests.swift */; };
 		1941A5EBBFB259911F7E9ADE /* SandboxesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A764F03F9EA5C3149B777338 /* SandboxesViewModel.swift */; };
 		1BC0DF2E6DAA6E0A94058B5F /* ContainerListModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9467D1D1EA60DDF80414B20B /* ContainerListModels.swift */; };
+		1C9ADBD51C57E8C3938500CA /* ContainerListCellPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */; };
 		1CA50DB029E0C7A18CAF87A2 /* LocalRootFSOutlineCoordinator+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45A5AAA9B74A59E7543D8D0 /* LocalRootFSOutlineCoordinator+Actions.swift */; };
 		1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */; };
 		1FB4D8B5B61B82155960542D /* NetworksListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 089AAF447EC30EF108B76EF7 /* NetworksListViewController.swift */; };
@@ -285,6 +286,7 @@
 		F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */; };
 		F5350A9E11B4C65AAE8BD569 /* ServiceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13203BD67479A8191C1A3BD6 /* ServiceModel.swift */; };
 		F65C1148B776397730836A3D /* TerminalViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454ED6CBDC3B851667C70AF8 /* TerminalViewController.swift */; };
+		F8334019E0F0EC1A5270EB0C /* ContainersListIncrementalUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B46E6B6A77930CEF86997A /* ContainersListIncrementalUpdateTests.swift */; };
 		FA631E839B38C6D0DBDBA928 /* ArcBoxAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1EEA05F99067212B54970FA5 /* ArcBoxAuth */; };
 		FBDBF39F818DDE35E0B7D0DF /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = B23ADDA7527EDFFFD6615B12 /* SwiftTerm */; };
 		FBDC1F10288E1448184A91E3 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */; };
@@ -424,6 +426,7 @@
 		657D7543F1D47988AEC3339D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		665F6200AEC097082B2C43CA /* SandboxNotificationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxNotificationRules.swift; sourceTree = "<group>"; };
 		66F91CF47E53375781959EC9 /* ServicesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesListView.swift; sourceTree = "<group>"; };
+		671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerListCellPerformanceTests.swift; sourceTree = "<group>"; };
 		68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		68B7685DAD23E5427C0F9911 /* NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDetailView.swift; sourceTree = "<group>"; };
 		68FD048401D9884E96A52412 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
@@ -514,6 +517,7 @@
 		B2CC2B117E020C62C1E9952E /* ContainerLogsTab+Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerLogsTab+Views.swift"; sourceTree = "<group>"; };
 		B38661BA5859384BCCE61B0C /* PodDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodDetailView.swift; sourceTree = "<group>"; };
 		B3BE02225F61EF92333916B1 /* ImageFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageFilesTab.swift; sourceTree = "<group>"; };
+		B4B46E6B6A77930CEF86997A /* ContainersListIncrementalUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListIncrementalUpdateTests.swift; sourceTree = "<group>"; };
 		B4BAE047B96D10B4716BA1A2 /* VolumesListViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesListViewControllerTests.swift; sourceTree = "<group>"; };
 		B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceStatsTests.swift; sourceTree = "<group>"; };
 		B5A780F10224ACC8C1B53D1E /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
@@ -1274,7 +1278,9 @@
 				C3421445408D28697F7CAE4F /* AsyncSequenceBatchedTests.swift */,
 				3750055AEC4C49576A78A909 /* ByteFormattingTests.swift */,
 				A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */,
+				671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */,
 				269F743D5217D0B08810DB1F /* ContainersBatchConcurrencyTests.swift */,
+				B4B46E6B6A77930CEF86997A /* ContainersListIncrementalUpdateTests.swift */,
 				80010452354615CAC08FAF1D /* ContainersListViewControllerTests.swift */,
 				E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */,
 				DE7E377F9D8C89E24989DE3D /* ContentViewColumnLayoutTests.swift */,
@@ -1733,7 +1739,9 @@
 				AF8784321B0BF66F476749C5 /* BetterAuthClientTests.swift in Sources */,
 				70996419B03971A57B1DCF0F /* ByteFormattingTests.swift in Sources */,
 				31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */,
+				1C9ADBD51C57E8C3938500CA /* ContainerListCellPerformanceTests.swift in Sources */,
 				427F8A6DBC4047172A310627 /* ContainersBatchConcurrencyTests.swift in Sources */,
+				F8334019E0F0EC1A5270EB0C /* ContainersListIncrementalUpdateTests.swift in Sources */,
 				DB19F0073D84ED7A7C937D49 /* ContainersListViewControllerTests.swift in Sources */,
 				4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */,
 				A537498E1D8181BB0230E199 /* ContentViewColumnLayoutTests.swift in Sources */,
