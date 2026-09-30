@@ -37,7 +37,7 @@ final class KubeTLSDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendab
                 certData: KubeConfig.derBlocks(clientCertData)[0],
                 keyPEM: clientKeyData
             )
-        case .bearerToken:
+        case .bearerToken, .execPlugin:
             self.identity = nil
         }
     }

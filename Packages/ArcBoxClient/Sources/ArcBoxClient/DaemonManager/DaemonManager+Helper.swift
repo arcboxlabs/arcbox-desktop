@@ -42,8 +42,8 @@ extension DaemonManager {
             throw HelperInstallError.bundledBinaryMissing("arcbox-helper")
         }
 
-        let installedVersion = binaryVersion(Self.installedHelperPath)
-        let bundledVersion = binaryVersion(helper)
+        let installedVersion = try await binaryVersion(Self.installedHelperPath)
+        let bundledVersion = try await binaryVersion(helper)
         let installedSemver = HelperVersion.parse(installedVersion)
         let bundledSemver = HelperVersion.parse(bundledVersion)
 
@@ -88,7 +88,7 @@ extension DaemonManager {
 
         // Verify the on-disk helper version is now ≥ the bundle. AppleScript
         // can report success while the copy/bootstrap silently no-ops.
-        let postInstallVersion = binaryVersion(Self.installedHelperPath)
+        let postInstallVersion = try await binaryVersion(Self.installedHelperPath)
         let postInstallSemver = HelperVersion.parse(postInstallVersion)
         if !HelperVersion.needsReinstall(installed: postInstallSemver, bundled: bundledSemver) {
             helperInstalled = true
@@ -238,23 +238,6 @@ extension DaemonManager {
 
 }
 
-// MARK: - Errors
-
-func runCancellableProcess(_ process: Process) async throws {
-    try Task.checkCancellation()
-    try process.run()
-    await withTaskCancellationHandler {
-        await Task.detached {
-            process.waitUntilExit()
-        }.value
-    } onCancel: {
-        if process.isRunning {
-            process.terminate()
-        }
-    }
-    try Task.checkCancellation()
-}
-
 /// Encodes an arbitrary string as one AppleScript string literal.
 ///
 /// Shell quoting alone is insufficient because the shell command is first
@@ -275,6 +258,8 @@ func appleScriptStringLiteral(_ value: String) -> String {
     literal.append("\"")
     return literal
 }
+
+// MARK: - Errors
 
 /// Failures while installing or verifying the privileged helper.
 public enum HelperInstallError: LocalizedError, Sendable, Equatable {
@@ -460,32 +445,29 @@ struct HelperVersion: Comparable, Sendable {
     }
 }
 
-/// Runs `<binary> --version` and returns the trimmed stdout
-/// (e.g. "arcbox-helper 1.0.0").
-/// Returns nil if the binary doesn't exist or the command fails.
-func binaryVersion(_ path: String) -> String? {
+/// Runs `<binary> --version` and returns the trimmed stdout (e.g. "arcbox-helper 1.0.0").
+///
+/// Returns `nil` when `path` is not executable, when the command fails, when it writes more
+/// than 64 KiB, or when it has not exited after `timeout` (the child is terminated then).
+/// Throws only `CancellationError`.
+///
+/// `installHelper` runs this three times per launch from the main actor, and the first launch
+/// after an update — Gatekeeper scanning the fresh `arcbox-helper` — stretches each run to
+/// seconds. The wait and the read therefore run off the calling actor.
+nonisolated func binaryVersion(_ path: String, timeout: Duration = .seconds(5)) async throws -> String? {
     guard FileManager.default.isExecutableFile(atPath: path) else { return nil }
     let process = Process()
     process.executableURL = URL(fileURLWithPath: path)
     process.arguments = ["--version"]
-    let pipe = Pipe()
-    process.standardOutput = pipe
     process.standardError = FileHandle.nullDevice
+    let output: Data
     do {
-        try process.run()
-        // Wait with a 5-second timeout to avoid freezing the app.
-        let deadline = Date().addingTimeInterval(5)
-        while process.isRunning && Date() < deadline {
-            Thread.sleep(forTimeInterval: 0.05)
-        }
-        if process.isRunning {
-            process.terminate()
-            return nil
-        }
-        guard process.terminationStatus == 0 else { return nil }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        output = try await runCapturingStandardOutput(process, timeout: timeout, outputLimit: 64 << 10)
+    } catch let cancellation as CancellationError {
+        throw cancellation
     } catch {
         return nil
     }
+    guard process.terminationStatus == 0 else { return nil }
+    return String(data: output, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
 }

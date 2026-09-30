@@ -162,6 +162,7 @@
 		853F2D06A878BE9A867BE3FD /* CreateOperationErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DFE1C88F20E40C1A36A384C /* CreateOperationErrorTests.swift */; };
 		868F62A98F4BD1023DD79167 /* FleetEnrollmentCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92FD51B5947EFEEFD73D00F9 /* FleetEnrollmentCoordinatorTests.swift */; };
 		869B14DB25CD44955C7C32AE /* ContainersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C69EC561EEA79ADE5A9000 /* ContainersViewModel.swift */; };
+		8914AD6D656F288E31B65499 /* K8sExecCredentialTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */; };
 		8939A06F20FE4F92A72E3372 /* ImageTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E17CF68FBBA9447E1B15371 /* ImageTypes.swift */; };
 		8AADBD7B0F4EA3F0068957BF /* ErrorReportingScrubTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522820EEBA49BC66D525CE20 /* ErrorReportingScrubTests.swift */; };
 		8BBBA54130403D89D35986F7 /* ImageLayerChainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C964312D5336EE55A8E4680B /* ImageLayerChainTests.swift */; };
@@ -247,6 +248,7 @@
 		CC2502232C562D3167B2F3D2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
 		CCAF8E87C516B0ACE300BDCD /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A76C0B459745654F31B3B2 /* PodsListView.swift */; };
 		CCD9ABC3F69FE5DA233E85EC /* MachineModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0647CCB67160C2509345B5E /* MachineModelTests.swift */; };
+		CDC754C9DE9BE00B3AF4F976 /* BinaryVersionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B61204F020CDD2B21D6D55D /* BinaryVersionTests.swift */; };
 		D0518D07973520530916560B /* ServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F238F21169A97B94193454CF /* ServiceDetailView.swift */; };
 		D0A2395C0C2BC0A77B175840 /* MachineEventMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2021CE387B9546EE87FA4CD5 /* MachineEventMonitor.swift */; };
 		D16762EE419CC9055CDD90FF /* DockerTerminalSessionIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C52C15D6902B3EAB6307AA /* DockerTerminalSessionIntegrationTests.swift */; };
@@ -479,6 +481,7 @@
 		867A6CA0B4DD07BE74610FCB /* VolumeViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VolumeViewModel+Docker.swift"; sourceTree = "<group>"; };
 		88EB2359E678AC8E1EEEB83A /* VolumesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesListViewController.swift; sourceTree = "<group>"; };
 		8AD5CF45B00B80D85A778AB4 /* MachineModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineModel.swift; sourceTree = "<group>"; };
+		8B61204F020CDD2B21D6D55D /* BinaryVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryVersionTests.swift; sourceTree = "<group>"; };
 		8DB22F8A7AA46286F186A73F /* DockerEventMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerEventMonitor.swift; sourceTree = "<group>"; };
 		8ECCF18CC36CC3579EE2B5B9 /* MachinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesView.swift; sourceTree = "<group>"; };
 		8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerImagePreparationStatusView.swift; sourceTree = "<group>"; };
@@ -616,6 +619,7 @@
 		FBA33C724456FCDF5A3E52AD /* AuthSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionTests.swift; sourceTree = "<group>"; };
 		FDE313F40E79E409C942B1EE /* AboutWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindow.swift; sourceTree = "<group>"; };
 		FEA9D33B25DF9BB204D4B637 /* DaemonNotificationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonNotificationRules.swift; sourceTree = "<group>"; };
+		FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sExecCredentialTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1171,6 +1175,7 @@
 			isa = PBXGroup;
 			children = (
 				5B20797EBE3F932D8DDAD42C /* ArcBoxClientTests.swift */,
+				8B61204F020CDD2B21D6D55D /* BinaryVersionTests.swift */,
 				26FECB4CA53A425E613E71A2 /* DaemonLockTests.swift */,
 				EF45523D23D3F96612423943 /* HelperInstallErrorTests.swift */,
 				B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */,
@@ -1312,6 +1317,7 @@
 				35969670AC4F826B4A3BB567 /* ImagesListViewControllerTests.swift */,
 				A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */,
 				605BB22FC0AA7C64CE841ECE /* K8sClientTLSTests.swift */,
+				FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */,
 				7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */,
 				0F065A1CBDA891A5647FE6F6 /* K8sWatchTests.swift */,
 				C83FBFE31C0C7B96918BFCC6 /* KubernetesListViewControllerTests.swift */,
@@ -1754,6 +1760,7 @@
 				2EFFFF0AEC16386829FAC491 /* AuthSessionTests.swift in Sources */,
 				699F9908BD6DBCD8244DCEE5 /* AuthTestSupport.swift in Sources */,
 				AF8784321B0BF66F476749C5 /* BetterAuthClientTests.swift in Sources */,
+				CDC754C9DE9BE00B3AF4F976 /* BinaryVersionTests.swift in Sources */,
 				70996419B03971A57B1DCF0F /* ByteFormattingTests.swift in Sources */,
 				31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */,
 				1C9ADBD51C57E8C3938500CA /* ContainerListCellPerformanceTests.swift in Sources */,
@@ -1782,6 +1789,7 @@
 				E0C997A42E6F8D8B4D9C26FF /* ImagesListViewControllerTests.swift in Sources */,
 				0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */,
 				61A1DC4C6B46C767E5DD09E6 /* K8sClientTLSTests.swift in Sources */,
+				8914AD6D656F288E31B65499 /* K8sExecCredentialTests.swift in Sources */,
 				F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */,
 				25E25D58DAE59E9EB433B6F5 /* K8sWatchTests.swift in Sources */,
 				A8374C7CC46723B1764B2F43 /* KeychainTokenStoreTests.swift in Sources */,
