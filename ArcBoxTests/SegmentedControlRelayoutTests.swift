@@ -140,17 +140,27 @@ final class SegmentedControlRelayoutTests: XCTestCase {
         defer { host.close() }
         let control = try XCTUnwrap(host.segmentedControls().first)
         XCTAssertEqual(control.selectedSegment, 0, "TCP is the default")
+        XCTAssertEqual(fixture.form.networkProtocol, "tcp")
 
+        // Control -> state: `form.networkProtocol` is what Expose sends.
         control.selectedSegment = 1
         _ = control.sendAction(control.action, to: control.target)
         host.settle()
-        XCTAssertEqual(control.selectedSegment, 1)
-        // The click reached the binding: a picker whose binding rejected it
-        // would snap back to TCP on the next evaluation of its body.
-        BodyEvaluationCounter.reset()
-        fixture.showLoadedMappings([Self.port(8080)])
+        XCTAssertEqual(fixture.form.networkProtocol, "udp")
+
+        control.selectedSegment = 0
+        _ = control.sendAction(control.action, to: control.target)
+        host.settle()
+        XCTAssertEqual(fixture.form.networkProtocol, "tcp")
+
+        // State -> control.
+        fixture.form.networkProtocol = "udp"
         host.settle()
         XCTAssertEqual(control.selectedSegment, 1)
+
+        fixture.form.networkProtocol = "tcp"
+        host.settle()
+        XCTAssertEqual(control.selectedSegment, 0)
     }
 
     // MARK: - Detail tab bar accessibility
@@ -244,6 +254,7 @@ private struct DetailTabPickerHarness: View {
 private struct SandboxPortsFixture {
     let vm = SandboxesViewModel()
     let daemonManager = DaemonManager()
+    let form = SandboxPortsForm()
     let sandbox: SandboxViewModel
 
     init() {
@@ -255,7 +266,7 @@ private struct SandboxPortsFixture {
     }
 
     var tab: some View {
-        SandboxPortsTab(sandbox: sandbox)
+        SandboxPortsTab(sandbox: sandbox, form: form)
             .environment(vm)
             .environment(daemonManager)
     }

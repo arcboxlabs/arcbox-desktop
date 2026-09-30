@@ -16,13 +16,21 @@ struct SandboxPortsTab: View {
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(\.arcboxClient) private var client
 
+    @State private var form: SandboxPortsForm
     /// Set while an expose or unexpose call is in flight; the leaves disable
     /// their actions on it.
     @State private var isWorking = false
 
+    /// `form` is the seam the relayout regression tests read the picker's
+    /// protocol back through.
+    init(sandbox: SandboxViewModel, form: SandboxPortsForm = SandboxPortsForm()) {
+        self.sandbox = sandbox
+        _form = State(initialValue: form)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            SandboxPortsToolbar(sandboxID: sandbox.id, isWorking: $isWorking)
+            SandboxPortsToolbar(sandboxID: sandbox.id, form: form, isWorking: $isWorking)
             Divider()
             SandboxPortsContent(sandboxID: sandbox.id, isWorking: $isWorking)
         }
@@ -47,24 +55,30 @@ struct SandboxPortsTab: View {
     }
 }
 
+/// What the user typed into the expose form; `SandboxPortsExposeButton` sends
+/// exactly these values.
+@Observable
+final class SandboxPortsForm {
+    var sandboxPortText = ""
+    var hostPortText = ""
+    var networkProtocol = "tcp"
+}
+
 /// The expose form: sandbox port, host port, protocol, and the expose and
 /// refresh buttons.
 ///
-/// Reads only its own text fields and protocol. The two buttons are leaves of
-/// their own because their enabled state follows the load state a refresh
-/// flips; keeping that dependency out of this body is what keeps the
-/// segmented picker out of every refresh.
+/// Reads only the form's fields. The two buttons are leaves of their own
+/// because their enabled state follows the load state a refresh flips;
+/// keeping that dependency out of this body is what keeps the segmented
+/// picker out of every refresh.
 struct SandboxPortsToolbar: View {
     let sandboxID: String
+    @Bindable var form: SandboxPortsForm
     @Binding var isWorking: Bool
-
-    @State private var sandboxPortText = ""
-    @State private var hostPortText = ""
-    @State private var networkProtocol = "tcp"
 
     var body: some View {
         HStack(spacing: 10) {
-            TextField("Sandbox port", text: $sandboxPortText, prompt: Text("8080"))
+            TextField("Sandbox port", text: $form.sandboxPortText, prompt: Text("8080"))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 110)
 
@@ -72,11 +86,11 @@ struct SandboxPortsToolbar: View {
                 .font(.system(size: 10))
                 .foregroundStyle(AppColors.textSecondary)
 
-            TextField("Host port", text: $hostPortText, prompt: Text("auto"))
+            TextField("Host port", text: $form.hostPortText, prompt: Text("auto"))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 110)
 
-            Picker("", selection: $networkProtocol) {
+            Picker("", selection: $form.networkProtocol) {
                 Text("TCP").tag("tcp")
                 Text("UDP").tag("udp")
             }
@@ -85,13 +99,7 @@ struct SandboxPortsToolbar: View {
 
             Spacer()
 
-            SandboxPortsExposeButton(
-                sandboxID: sandboxID,
-                sandboxPortText: sandboxPortText,
-                hostPortText: hostPortText,
-                networkProtocol: networkProtocol,
-                isWorking: $isWorking
-            )
+            SandboxPortsExposeButton(sandboxID: sandboxID, form: form, isWorking: $isWorking)
 
             SandboxPortsRefreshButton(sandboxID: sandboxID, isWorking: $isWorking)
         }
@@ -105,9 +113,7 @@ struct SandboxPortsToolbar: View {
 /// `sandboxID` are loaded and idle.
 struct SandboxPortsExposeButton: View {
     let sandboxID: String
-    let sandboxPortText: String
-    let hostPortText: String
-    let networkProtocol: String
+    let form: SandboxPortsForm
     @Binding var isWorking: Bool
 
     @Environment(SandboxesViewModel.self) private var vm
@@ -125,23 +131,23 @@ struct SandboxPortsExposeButton: View {
             vm.exposedPortsActionsAvailable(for: sandboxID, daemonManager: daemonManager, client: client),
             !isWorking
         else { return false }
-        guard let port = UInt32(sandboxPortText), port > 0, port < 65536 else { return false }
-        if !hostPortText.isEmpty {
-            guard let host = UInt32(hostPortText), host > 0, host < 65536 else { return false }
+        guard let port = UInt32(form.sandboxPortText), port > 0, port < 65536 else { return false }
+        if !form.hostPortText.isEmpty {
+            guard let host = UInt32(form.hostPortText), host > 0, host < 65536 else { return false }
         }
         return true
     }
 
     private func expose() {
-        guard let port = UInt32(sandboxPortText) else { return }
-        let hostPort = UInt32(hostPortText) ?? 0
+        guard let port = UInt32(form.sandboxPortText) else { return }
+        let hostPort = UInt32(form.hostPortText) ?? 0
         isWorking = true
         Task {
             _ = await vm.exposePort(
                 sandboxID: sandboxID,
                 sandboxPort: port,
                 hostPort: hostPort,
-                networkProtocol: networkProtocol,
+                networkProtocol: form.networkProtocol,
                 client: client
             )
             isWorking = false
