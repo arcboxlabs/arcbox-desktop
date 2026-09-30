@@ -1,0 +1,154 @@
+import Foundation
+import Testing
+
+@testable import ArcBoxClient
+
+/// An executable script standing in for a binary that answers `--version`.
+private struct FakeBinary {
+    /// Unique to this fake. The kernel runs the script as `<interpreter> <path> --version`, so a
+    /// path carrying the marker puts it on the child's command line, where `pgrep -f` finds it.
+    let marker: String
+    let path: String
+    private let directory: URL
+
+    init(_ script: String) throws {
+        let marker = UUID().uuidString
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-version-\(marker)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let file = directory.appendingPathComponent("fake-\(marker)")
+        try Data(script.utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
+        self.marker = marker
+        self.path = file.path
+        self.directory = directory
+    }
+
+    /// Never exits on its own. `exec -a` keeps the marker as the sleep's `argv[0]`, and because
+    /// nothing is forked, SIGTERM to the child leaves no orphan holding the stdout pipe open.
+    static func hanging() throws -> FakeBinary {
+        try FakeBinary("#!/bin/bash\nexec -a \"$0\" /bin/sleep 30\n")
+    }
+
+    func remove() {
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    /// Whether a process carrying the marker on its command line is alive.
+    func isRunning() async throws -> Bool {
+        let pgrep = Process()
+        pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        pgrep.arguments = ["-f", marker]
+        pgrep.standardOutput = FileHandle.nullDevice
+        try await runCancellableProcess(pgrep)
+        return pgrep.terminationStatus == 0
+    }
+
+    /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
+    func waitUntilRunning() async throws -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(2)
+        while clock.now < deadline {
+            if try await isRunning() { return true }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        return false
+    }
+}
+
+/// How long a new task needs to get onto the main actor right now.
+private func mainActorLatency() async -> Duration {
+    let clock = ContinuousClock()
+    let requestedAt = clock.now
+    return await Task { @MainActor in clock.now - requestedAt }.value
+}
+
+struct BinaryVersionTests {
+    @Test func returnsTheTrimmedVersionLineWithoutBlockingTheMainActor() async throws {
+        let fake = try FakeBinary("#!/bin/sh\nsleep 0.5\necho 'arcbox-helper 9.9.9'\n")
+        defer { fake.remove() }
+
+        // From the main actor, as `installHelper` calls it.
+        let version = Task { @MainActor in try await binaryVersion(fake.path) }
+        try #require(try await fake.waitUntilRunning())
+        let latency = await mainActorLatency()
+
+        #expect(latency < .milliseconds(50), "main actor took \(latency) to schedule a task")
+        let value = try await version.value
+        #expect(value == "arcbox-helper 9.9.9")
+    }
+
+    @Test func readsOutputLargerThanThePipeBuffer() async throws {
+        // ~220 KiB: a reader that waits for the exit first deadlocks against the 64 KiB pipe.
+        let fake = try FakeBinary(
+            """
+            #!/bin/sh
+            i=0
+            while [ $i -lt 8000 ]; do echo 'arcbox-helper 9.9.9 padding'; i=$((i+1)); done
+
+            """
+        )
+        defer { fake.remove() }
+
+        let version = try await binaryVersion(fake.path)
+
+        #expect(version?.hasSuffix("arcbox-helper 9.9.9 padding") == true)
+        #expect(version?.split(separator: "\n").count == 8000)
+    }
+
+    @Test func returnsNilAfterTerminatingAChildThatOutlivesTheTimeout() async throws {
+        let fake = try FakeBinary.hanging()
+        defer { fake.remove() }
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        let version = try await binaryVersion(fake.path, timeout: .seconds(1))
+
+        let elapsed = clock.now - startedAt
+        #expect(version == nil)
+        #expect(elapsed < .milliseconds(1500), "returned after \(elapsed)")
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
+    }
+
+    @Test func timeoutTerminatesAndReapsTheChild() async throws {
+        let fake = try FakeBinary.hanging()
+        defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+        process.arguments = ["--version"]
+
+        let run = Task { try await runCapturingStandardOutput(process, timeout: .milliseconds(500)) }
+        try #require(try await fake.waitUntilRunning(), "the marker must find the child while it runs")
+
+        await #expect(throws: ProcessTimedOut.self) { try await run.value }
+
+        #expect(!process.isRunning)
+        #expect(process.terminationReason == .uncaughtSignal)
+        let runningAfterTimeout = try await fake.isRunning()
+        #expect(!runningAfterTimeout)
+    }
+
+    @Test func returnsNilForAMissingOrFailingBinary() async throws {
+        let missing = try await binaryVersion("/nonexistent/arcbox-helper")
+        #expect(missing == nil)
+
+        let failing = try FakeBinary("#!/bin/sh\necho 'arcbox-helper 9.9.9'\nexit 3\n")
+        defer { failing.remove() }
+        let failed = try await binaryVersion(failing.path)
+        #expect(failed == nil)
+    }
+
+    @Test func cancellationTerminatesTheChildAndPropagates() async throws {
+        let fake = try FakeBinary.hanging()
+        defer { fake.remove() }
+
+        let version = Task { try await binaryVersion(fake.path) }
+        try #require(try await fake.waitUntilRunning())
+        version.cancel()
+
+        await #expect(throws: CancellationError.self) { try await version.value }
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
+    }
+}
