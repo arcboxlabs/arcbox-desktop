@@ -20,6 +20,22 @@ final class SparklineGeometryTests: XCTestCase {
             "a pointer just inside the leading edge is still on the oldest sample")
     }
 
+    /// The pointer and the plot share one coordinate space (the figure's), so
+    /// the sample under the pointer is the one drawn there: a quarter of the
+    /// way across 60 samples is sample 15, and the ends land on the first and
+    /// last samples' centres exactly.
+    func testPointerLandsOnTheSampleDrawnThere() {
+        XCTAssertEqual(SparklineGeometry.sampleOffset(atX: 37.5, count: 60, width: 150), 15)
+        XCTAssertEqual(SparklineGeometry.sampleOffset(atX: 0, count: 60, width: 150), 0)
+        XCTAssertEqual(SparklineGeometry.sampleOffset(atX: 150, count: 60, width: 150), 59)
+        for offset in [0, 1, 29, 30, 58, 59] {
+            let x = SparklineGeometry.x(forSample: offset, count: 60, width: 150)
+            XCTAssertEqual(
+                SparklineGeometry.sampleOffset(atX: x, count: 60, width: 150), offset,
+                "the pointer on sample \(offset)'s own x must pick it")
+        }
+    }
+
     func testPointerPastAnEdgeClampsToThatEdge() {
         XCTAssertEqual(SparklineGeometry.sampleOffset(atX: -25, count: 60, width: 300), 0)
         XCTAssertEqual(SparklineGeometry.sampleOffset(atX: 1_000, count: 60, width: 300), 59)

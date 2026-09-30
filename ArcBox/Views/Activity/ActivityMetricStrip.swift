@@ -230,9 +230,10 @@ private struct Sparkline: View {
     let domain: ClosedRange<Double>?
     @Binding var scrubbedIndex: Int?
 
-    /// The width the last layout gave the figure, so a pointer position can be
-    /// read back as a sample.
-    @State private var width: CGFloat = 0
+    /// The frame the last layout gave the figure — the coordinate space the
+    /// pointer reports in and the plot is drawn in — so a pointer position can
+    /// be read back as a sample.
+    @State private var figure: CGSize = .zero
 
     /// The two diameters are Charts' `symbolSize` 16 and 40 — areas, in points
     /// squared — so the marker keeps the size it had.
@@ -286,23 +287,36 @@ private struct Sparkline: View {
                 with: .color(tint)
             )
         }
+        // The negative padding puts this view's frame back on the figure: the
+        // canvas overhangs it by `overflow` on every side and draws the plot
+        // translated by the same amount, so a pointer location here is a plot
+        // coordinate as it stands.
         .padding(-Self.overflow)
-        .onGeometryChange(for: CGFloat.self) {
-            $0.size.width - 2 * Self.overflow
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
         } action: {
-            width = $0
+            figure = $0
         }
         .onContinuousHover(coordinateSpace: .local) { phase in
             switch phase {
-            case .active(let location): scrub(atX: location.x - Self.overflow)
+            case .active(let location): scrub(atX: location.x)
             case .ended: scrubbedIndex = nil
             }
         }
-        // Hover stops reporting while the button is down; a press-and-drag
-        // scrubs through the gesture instead.
+        // Hover stops reporting while the button is down, and a tracking area
+        // sends no exit during a drag: a press-and-drag scrubs through the
+        // gesture, and releasing outside the figure lets go the way leaving it
+        // does.
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                .onChanged { scrub(atX: $0.location.x - Self.overflow) }
+                .onChanged { scrub(atX: $0.location.x) }
+                .onEnded { value in
+                    if CGRect(origin: .zero, size: figure).contains(value.location) {
+                        scrub(atX: value.location.x)
+                    } else {
+                        scrubbedIndex = nil
+                    }
+                }
         )
         .accessibilityHidden(true)
     }
@@ -319,7 +333,7 @@ private struct Sparkline: View {
     }
 
     private func scrub(atX x: CGFloat) {
-        guard let offset = SparklineGeometry.sampleOffset(atX: x, count: points.count, width: width) else {
+        guard let offset = SparklineGeometry.sampleOffset(atX: x, count: points.count, width: figure.width) else {
             return
         }
         scrubbedIndex = points[offset].index
