@@ -379,7 +379,7 @@ final class KubernetesState {
 
         let task = Task<K8sClient, Error> {
             let kubeconfig = try await client.kubernetesKubeconfig()
-            return try K8sClient(config: try KubeConfig(yaml: kubeconfig))
+            return try K8sClient(config: try await KubeConfig.load(yaml: kubeconfig))
         }
         clientResolution = (generation, task)
 

@@ -162,6 +162,7 @@
 		853F2D06A878BE9A867BE3FD /* CreateOperationErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DFE1C88F20E40C1A36A384C /* CreateOperationErrorTests.swift */; };
 		868F62A98F4BD1023DD79167 /* FleetEnrollmentCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92FD51B5947EFEEFD73D00F9 /* FleetEnrollmentCoordinatorTests.swift */; };
 		869B14DB25CD44955C7C32AE /* ContainersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C69EC561EEA79ADE5A9000 /* ContainersViewModel.swift */; };
+		8914AD6D656F288E31B65499 /* K8sExecCredentialTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */; };
 		8939A06F20FE4F92A72E3372 /* ImageTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E17CF68FBBA9447E1B15371 /* ImageTypes.swift */; };
 		8AADBD7B0F4EA3F0068957BF /* ErrorReportingScrubTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522820EEBA49BC66D525CE20 /* ErrorReportingScrubTests.swift */; };
 		8BBBA54130403D89D35986F7 /* ImageLayerChainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C964312D5336EE55A8E4680B /* ImageLayerChainTests.swift */; };
@@ -618,6 +619,7 @@
 		FBA33C724456FCDF5A3E52AD /* AuthSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionTests.swift; sourceTree = "<group>"; };
 		FDE313F40E79E409C942B1EE /* AboutWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindow.swift; sourceTree = "<group>"; };
 		FEA9D33B25DF9BB204D4B637 /* DaemonNotificationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonNotificationRules.swift; sourceTree = "<group>"; };
+		FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = K8sExecCredentialTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1315,6 +1317,7 @@
 				35969670AC4F826B4A3BB567 /* ImagesListViewControllerTests.swift */,
 				A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */,
 				605BB22FC0AA7C64CE841ECE /* K8sClientTLSTests.swift */,
+				FF809FDC72658A4C1838D856 /* K8sExecCredentialTests.swift */,
 				7B6FDB677AE01E62877A17AC /* K8sModelsTests.swift */,
 				0F065A1CBDA891A5647FE6F6 /* K8sWatchTests.swift */,
 				C83FBFE31C0C7B96918BFCC6 /* KubernetesListViewControllerTests.swift */,
@@ -1786,6 +1789,7 @@
 				E0C997A42E6F8D8B4D9C26FF /* ImagesListViewControllerTests.swift in Sources */,
 				0BCE503CC2BF6C2BEC9DC4EA /* ImagesViewModelTests.swift in Sources */,
 				61A1DC4C6B46C767E5DD09E6 /* K8sClientTLSTests.swift in Sources */,
+				8914AD6D656F288E31B65499 /* K8sExecCredentialTests.swift in Sources */,
 				F40C3E6023452858EEEA893F /* K8sModelsTests.swift in Sources */,
 				25E25D58DAE59E9EB433B6F5 /* K8sWatchTests.swift in Sources */,
 				A8374C7CC46723B1764B2F43 /* KeychainTokenStoreTests.swift in Sources */,
