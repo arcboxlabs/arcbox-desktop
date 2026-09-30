@@ -49,25 +49,37 @@ private struct FakePlugin {
         try FakePlugin("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
     }
 
+    /// Prints a valid credential and exits, leaving behind a grandchild that inherited stdout
+    /// and keeps the pipe open for 30 s. Its `argv[0]` is the marker plus `-child`.
+    static func leavingAGrandchildOnStdout() throws -> FakePlugin {
+        try FakePlugin(
+            """
+            #!/bin/bash
+            (exec -a "$0-child" /bin/sleep 30) &
+            echo '\(credentialJSON)'
+
+            """
+        )
+    }
+
     func remove() {
         try? FileManager.default.removeItem(at: directory)
     }
 
     /// Whether a process carrying the marker on its command line is alive.
     func isRunning() async throws -> Bool {
-        let pgrep = Process()
-        pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-        pgrep.arguments = ["-f", marker]
-        pgrep.standardOutput = FileHandle.nullDevice
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-            pgrep.terminationHandler = { _ in continuation.resume() }
-            do {
-                try pgrep.run()
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
-        return pgrep.terminationStatus == 0
+        try await run("/usr/bin/pgrep", ["-f", marker]) == 0
+    }
+
+    /// Whether the grandchild `leavingAGrandchildOnStdout()` forks is alive.
+    func grandchildIsRunning() async throws -> Bool {
+        try await run("/usr/bin/pgrep", ["-f", "\(marker)-child"]) == 0
+    }
+
+    /// Kills that grandchild; nothing in the code under test can, it is not in the child's
+    /// process group.
+    func killGrandchild() async throws {
+        _ = try await run("/usr/bin/pkill", ["-KILL", "-f", "\(marker)-child"])
     }
 
     /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
@@ -79,6 +91,23 @@ private struct FakePlugin {
             try await Task.sleep(for: .milliseconds(20))
         }
         return false
+    }
+
+    /// Runs a tool to completion and returns its exit status, waiting on `terminationHandler`.
+    private func run(_ tool: String, _ arguments: [String]) async throws -> Int32 {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        process.standardOutput = FileHandle.nullDevice
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            process.terminationHandler = { _ in continuation.resume() }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+        return process.terminationStatus
     }
 }
 
@@ -145,6 +174,24 @@ final class K8sExecCredentialTests: XCTestCase {
             command: name, args: [], env: [ExecEnv(name: "PATH", value: plugin.directory.path)])
 
         XCTAssertEqual(token, "tok-123")
+    }
+
+    func testTokenIsReturnedWhenAGrandchildKeepsStdoutOpen() async throws {
+        let plugin = try FakePlugin.leavingAGrandchildOnStdout()
+        defer { plugin.remove() }
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        // The default 15 s timeout is far away; the plugin's exit must end the call, not EOF.
+        let token = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [])
+
+        let elapsed = clock.now - startedAt
+        XCTAssertEqual(token, "tok-123")
+        XCTAssertLessThan(elapsed, .seconds(1), "returned after \(elapsed)")
+        // The scenario is real only if the grandchild is still there holding the pipe.
+        let grandchildAlive = try await plugin.grandchildIsRunning()
+        XCTAssertTrue(grandchildAlive, "the fake must leave a grandchild on stdout")
+        try await plugin.killGrandchild()
     }
 
     func testStalledPluginIsTerminatedAtTheTimeoutWithoutBlockingTheMainActor() async throws {

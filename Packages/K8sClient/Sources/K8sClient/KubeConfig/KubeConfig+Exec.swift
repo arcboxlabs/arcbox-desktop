@@ -111,12 +111,27 @@ private struct ProcessExit: Sendable {
 /// How long a terminated child gets to honour SIGTERM before it is killed.
 private let processTerminationGrace: Duration = .seconds(2)
 
+/// How long EOF may lag the child's exit before the read is cut short. A child that has
+/// exited already closed its write end, so EOF follows at once; only a grandchild that
+/// inherited stdout can still hold the pipe open, and the call does not wait for it.
+private let processOutputDrainGrace: Duration = .milliseconds(200)
+
+/// What a child of the capture group reports back to it.
+private enum ProcessEvent {
+    case exited
+    case outputEnded
+    case drainExpired
+}
+
 /// Runs `process` and returns everything it wrote to standard output, up to `outputLimit`
 /// bytes.
 ///
 /// The read runs alongside the wait, so a child that writes more than the pipe holds still
-/// exits. When `timeout` elapses first, the output exceeds `outputLimit`, or the caller is
-/// cancelled, the child is terminated and reaped before the error propagates.
+/// exits, and the child's exit — not EOF — bounds the call: output arriving after the exit is
+/// read for `processOutputDrainGrace`, then the read stops and the parent's read end is
+/// closed. When `timeout` elapses first, the output exceeds `outputLimit`, or the caller is
+/// cancelled, the child is terminated and reaped before the error propagates. A grandchild
+/// that inherited stdout is neither waited for nor killed: `Process` offers no process group.
 private func runCapturingStandardOutput(
     _ process: Process,
     timeout: Duration,
@@ -124,6 +139,7 @@ private func runCapturingStandardOutput(
 ) async throws -> Data {
     let stdout = Pipe()
     process.standardOutput = stdout
+    let reader = stdout.fileHandleForReading
     let exit = process.armExit()
     // Nothing else starts before the launch succeeds: `run()` closes the parent's write end
     // only when it launches the child, so a reader armed earlier would wait for EOF forever.
@@ -132,34 +148,56 @@ private func runCapturingStandardOutput(
     do {
         try process.run()
     } catch {
-        try? stdout.fileHandleForReading.close()
+        try? reader.close()
         try? stdout.fileHandleForWriting.close()
         throw error
     }
-    return try await withThrowingTaskGroup(of: Data?.self) { group in
-        group.addTask { try await stdout.fileHandleForReading.readToEndOfFile(limit: outputLimit) }
+    defer { try? reader.close() }
+
+    // The reader is its own task so that it can be cancelled on its own once the child is
+    // gone. The group still cannot finish before it does: the child awaiting it cancels it
+    // when the group is torn down.
+    let capture = Task { try await reader.readToEndOfFile(limit: outputLimit) }
+    try await withThrowingTaskGroup(of: ProcessEvent.self) { group in
         group.addTask {
             try await process.waitForExit(exit)
-            return nil
+            return .exited
         }
         group.addTask {
             try await Task.sleep(for: timeout)
             throw ProcessTimedOut()
         }
+        group.addTask {
+            try await withTaskCancellationHandler {
+                _ = try await capture.value
+            } onCancel: {
+                capture.cancel()
+            }
+            return .outputEnded
+        }
         defer { group.cancelAll() }
-        // EOF and the exit land in either order; the status is valid only after the exit.
-        var output: Data?
-        var hasExited = false
-        while output == nil || !hasExited {
-            guard let result = try await group.next() else { break }
-            if let result {
-                output = result
-            } else {
-                hasExited = true
+        var exited = false
+        var outputEnded = false
+        while !(exited && outputEnded) {
+            guard let event = try await group.next() else { break }
+            switch event {
+            case .exited:
+                exited = true
+                if !outputEnded {
+                    group.addTask {
+                        try await Task.sleep(for: processOutputDrainGrace)
+                        capture.cancel()
+                        return .drainExpired
+                    }
+                }
+            case .outputEnded:
+                outputEnded = true
+            case .drainExpired:
+                break
             }
         }
-        return output ?? Data()
     }
+    return try await capture.value
 }
 
 extension Process {
@@ -201,7 +239,7 @@ extension Process {
 extension FileHandle {
     /// Reads until EOF without blocking a thread: chunks arrive on the readability callback.
     /// Stops reading and throws `ProcessOutputLimitExceeded` once more than `limit` bytes have
-    /// arrived.
+    /// arrived; cancellation stops it too and returns what has arrived so far.
     fileprivate func readToEndOfFile(limit: Int) async throws -> Data {
         let (chunks, feed) = AsyncStream<Data>.makeStream()
         readabilityHandler = { handle in

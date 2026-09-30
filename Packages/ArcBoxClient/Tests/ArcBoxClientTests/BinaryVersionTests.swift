@@ -41,18 +41,40 @@ private struct FakeBinary {
         try FakeBinary("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
     }
 
+    /// Prints its version and exits, leaving behind a grandchild that inherited stdout and
+    /// keeps the pipe open for 30 s. Its `argv[0]` is the marker plus `-child`.
+    static func leavingAGrandchildOnStdout() throws -> FakeBinary {
+        try FakeBinary(
+            """
+            #!/bin/bash
+            (exec -a "$0-child" /bin/sleep 30) &
+            echo 'arcbox-helper 9.9.9'
+
+            """
+        )
+    }
+
     func remove() {
         try? FileManager.default.removeItem(at: directory)
     }
 
     /// Whether a process carrying the marker on its command line is alive.
     func isRunning() async throws -> Bool {
-        let pgrep = Process()
-        pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-        pgrep.arguments = ["-f", marker]
-        pgrep.standardOutput = FileHandle.nullDevice
-        try await runCancellableProcess(pgrep)
-        return pgrep.terminationStatus == 0
+        try await pgrep(marker)
+    }
+
+    /// Whether the grandchild `leavingAGrandchildOnStdout()` forks is alive.
+    func grandchildIsRunning() async throws -> Bool {
+        try await pgrep("\(marker)-child")
+    }
+
+    /// Kills that grandchild; nothing in the code under test can, it is not in the child's
+    /// process group.
+    func killGrandchild() async throws {
+        let pkill = Process()
+        pkill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+        pkill.arguments = ["-KILL", "-f", "\(marker)-child"]
+        try await runCancellableProcess(pkill)
     }
 
     /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
@@ -64,6 +86,15 @@ private struct FakeBinary {
             try await Task.sleep(for: .milliseconds(20))
         }
         return false
+    }
+
+    private func pgrep(_ pattern: String) async throws -> Bool {
+        let pgrep = Process()
+        pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        pgrep.arguments = ["-f", pattern]
+        pgrep.standardOutput = FileHandle.nullDevice
+        try await runCancellableProcess(pgrep)
+        return pgrep.terminationStatus == 0
     }
 }
 
@@ -115,6 +146,24 @@ struct BinaryVersionTests {
         #expect(lines.count == 8000)
         #expect(lines.last == "arcbox-helper 9.9.9 padding")
         #expect(process.terminationStatus == 0)
+    }
+
+    @Test func returnsTheVersionWhenAGrandchildKeepsStdoutOpen() async throws {
+        let fake = try FakeBinary.leavingAGrandchildOnStdout()
+        defer { fake.remove() }
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        // The timeout is far away; the child's exit must end the call, not EOF.
+        let version = try await binaryVersion(fake.path, timeout: .seconds(30))
+
+        let elapsed = clock.now - startedAt
+        #expect(version == "arcbox-helper 9.9.9")
+        #expect(elapsed < .seconds(1), "returned after \(elapsed)")
+        // The scenario is real only if the grandchild is still there holding the pipe.
+        let grandchildAlive = try await fake.grandchildIsRunning()
+        #expect(grandchildAlive, "the fake must leave a grandchild on stdout")
+        try await fake.killGrandchild()
     }
 
     @Test func returnsNilWhenTheBinaryWritesMoreThan64KiB() async throws {
