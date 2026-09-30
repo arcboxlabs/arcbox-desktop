@@ -8,6 +8,11 @@ import ServiceManagement
 /// The daemon is bundled under `Contents/Frameworks/` using the app profile's
 /// launchd label (`com.arcboxlabs.desktop.daemon` or `...dev.daemon`).
 /// and managed by launchd. `KeepAlive` in the plist ensures automatic restart on crash.
+///
+/// Quitting the app unregisters the daemon. launchd then sends SIGTERM and, after the
+/// plist's `ExitTimeOut`, SIGKILL; the daemon spends that window draining its API servers
+/// and stopping the VM, so ``disableDaemon()`` waits for the process to exit and the quit
+/// finishes only once the VM is down.
 @Observable
 @MainActor
 public final class DaemonManager {
@@ -72,6 +77,15 @@ public final class DaemonManager {
     nonisolated static var profileDataDirectory: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(dataDirectoryName)
     }
+
+    /// The lock a running daemon holds for its lifetime; see ``DaemonLock``.
+    nonisolated static var daemonLockFile: URL {
+        profileDataDirectory.appendingPathComponent("run/daemon.lock")
+    }
+
+    /// How long ``disableDaemon()`` waits for the daemon to exit. launchd SIGKILLs it at
+    /// the plist's `ExitTimeOut` (45 s), so this only needs a little slack past that.
+    static let shutdownTimeout: Duration = .seconds(50)
 
     nonisolated public var daemonService: SMAppService {
         SMAppService.agent(plistName: Self.daemonPlistName)

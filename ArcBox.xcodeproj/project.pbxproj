@@ -93,6 +93,7 @@
 		510B8922C820BE4607F7817B /* RunnerHostViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6BC28A842D0A91FA84517CC /* RunnerHostViewModel.swift */; };
 		519C116D9CC62268CE4859D4 /* ExternalTerminalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D70EF1BF223C47C7B8E71A5 /* ExternalTerminalApp.swift */; };
 		525ECDE24CB1E8ADC7AADB49 /* UpdaterDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */; };
+		52735B353D820FECE0BF871D /* DaemonLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26FECB4CA53A425E613E71A2 /* DaemonLockTests.swift */; };
 		53B84DC35DF078E19C8D7780 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E217254D0827A011E01C3F05 /* StatusItemController.swift */; };
 		547AB2E719C9C6B7F66046F7 /* ServicesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85296C05DC9D33C7930366D7 /* ServicesListViewController.swift */; };
 		57A8D35B23CC870EDEAF7605 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98123C19CE4AB275C8D899E2 /* AppNotification.swift */; };
@@ -356,6 +357,7 @@
 		24D2CE72E40718D37B0293D1 /* StatePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatePlaceholderView.swift; sourceTree = "<group>"; };
 		269B74A3C7704AB81139FA52 /* ContainerLogsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsModels.swift; sourceTree = "<group>"; };
 		269F743D5217D0B08810DB1F /* ContainersBatchConcurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersBatchConcurrencyTests.swift; sourceTree = "<group>"; };
+		26FECB4CA53A425E613E71A2 /* DaemonLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonLockTests.swift; sourceTree = "<group>"; };
 		27130DDA57D2645C7E81D75D /* GuestDataMountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestDataMountTests.swift; sourceTree = "<group>"; };
 		27C52C15D6902B3EAB6307AA /* DockerTerminalSessionIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerTerminalSessionIntegrationTests.swift; sourceTree = "<group>"; };
 		297FCAB334AF289575D13F72 /* NetworksListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworksListView.swift; sourceTree = "<group>"; };
@@ -1152,6 +1154,7 @@
 			isa = PBXGroup;
 			children = (
 				5B20797EBE3F932D8DDAD42C /* ArcBoxClientTests.swift */,
+				26FECB4CA53A425E613E71A2 /* DaemonLockTests.swift */,
 				EF45523D23D3F96612423943 /* HelperInstallErrorTests.swift */,
 				B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */,
 			);
@@ -1731,6 +1734,7 @@
 				4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */,
 				A537498E1D8181BB0230E199 /* ContentViewColumnLayoutTests.swift in Sources */,
 				853F2D06A878BE9A867BE3FD /* CreateOperationErrorTests.swift in Sources */,
+				52735B353D820FECE0BF871D /* DaemonLockTests.swift in Sources */,
 				351718A1033DD049AED78108 /* DaemonNotificationRulesTests.swift in Sources */,
 				BAB560B0FEE9F5C4D53BAAA7 /* DaemonRegistrationFailureTests.swift in Sources */,
 				EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */,

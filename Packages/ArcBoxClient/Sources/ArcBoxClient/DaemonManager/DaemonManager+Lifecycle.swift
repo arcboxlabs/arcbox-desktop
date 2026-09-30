@@ -157,16 +157,40 @@ extension DaemonManager {
         }
     }
 
-    /// Unregister the daemon from launchd.
+    /// Unregister the daemon from launchd and wait for the process to exit.
+    ///
+    /// launchd sends SIGTERM on unregister and SIGKILL after the plist's `ExitTimeOut`.
+    /// The daemon spends that window draining its API servers and stopping the VM, and
+    /// a kill inside it leaves the guest's disks dirty. `SMAppService.unregister()` does
+    /// not promise to return only once the process is gone, so completion is read from
+    /// the daemon's own liveness signal, the flock on `daemon.lock`.
     public func disableDaemon() async {
         stopWatching()
         errorMessage = nil
         state = .stopping
+        let wasEnabled = daemonService.status == .enabled
 
         do {
             try await daemonService.unregister()
         } catch {
             errorMessage = error.localizedDescription
+            state = .stopped
+            return
+        }
+
+        // Only a registration this app owned is being stopped by launchd now. A daemon
+        // started some other way (`abctl daemon start`, a CLI-installed agent) keeps its
+        // lock and is not ours to wait for.
+        if wasEnabled {
+            let lockFile = Self.daemonLockFile
+            let exited = await DaemonLock.waitUntilReleased(at: lockFile, timeout: Self.shutdownTimeout)
+            if !exited {
+                ClientLog.daemon.warning(
+                    """
+                    Daemon still holds \(lockFile.path, privacy: .public) after \
+                    \(Self.shutdownTimeout, privacy: .public); launchd should have killed it by now
+                    """)
+            }
         }
 
         state = .stopped
