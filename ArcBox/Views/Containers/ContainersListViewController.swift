@@ -17,66 +17,6 @@ final class ContainersListViewController: NSViewController,
         let deleteGroup: @MainActor (String, [String]) -> Void
     }
 
-    private struct Snapshot: Equatable {
-        let loadState: LoadPhase
-        let hasContainers: Bool
-        let roots: [ContainerListNodePresentation]
-        let expandedGroups: Set<String>
-        let searchText: String
-        let selectedID: String?
-
-        init(viewModel: ContainersViewModel) {
-            loadState = viewModel.loadState
-            hasContainers = !viewModel.containers.isEmpty
-            expandedGroups = viewModel.expandedGroups
-            searchText = viewModel.searchText
-            selectedID = viewModel.selectedID
-
-            let groups = viewModel.composeGroups.map {
-                (
-                    project: $0.project,
-                    containers: $0.containers.map(ContainerListPresentation.init)
-                )
-            }
-            let activeGroups = groups.filter {
-                $0.containers.contains { $0.container.isRunning }
-            }
-            let stoppedGroups = groups.filter {
-                !$0.containers.contains { $0.container.isRunning }
-            }
-            let standalone = viewModel.standaloneContainers.map(
-                ContainerListPresentation.init
-            )
-            let runningStandalone = standalone.filter(\.container.isRunning)
-            let stoppedStandalone = standalone.filter { !$0.container.isRunning }
-
-            var roots: [ContainerListNodePresentation] = []
-            if !activeGroups.isEmpty || !runningStandalone.isEmpty {
-                roots.append(.section("In Use"))
-                roots.append(
-                    contentsOf: activeGroups.map {
-                        .compose(project: $0.project, containers: $0.containers)
-                    })
-                roots.append(contentsOf: runningStandalone.map(Self.containerNode))
-            }
-            if !stoppedGroups.isEmpty || !stoppedStandalone.isEmpty {
-                roots.append(.section("Stopped"))
-                roots.append(
-                    contentsOf: stoppedGroups.map {
-                        .compose(project: $0.project, containers: $0.containers)
-                    })
-                roots.append(contentsOf: stoppedStandalone.map(Self.containerNode))
-            }
-            self.roots = roots
-        }
-
-        private static func containerNode(
-            _ container: ContainerListPresentation
-        ) -> ContainerListNodePresentation {
-            .container(container)
-        }
-    }
-
     private static let sectionCellIdentifier = NSUserInterfaceItemIdentifier(
         "ContainerSectionCell"
     )
@@ -98,23 +38,14 @@ final class ContainersListViewController: NSViewController,
         title: "No containers yet",
         prompt: "Quick start:",
         commands: [
-            .init(
-                command: "docker run -d nginx",
-                description: "Run nginx server"
-            ),
-            .init(
-                command: "docker run -it ubuntu bash",
-                description: "Interactive Ubuntu shell"
-            ),
-            .init(
-                command: "docker compose up -d",
-                description: "Start compose project"
-            ),
+            .init(command: "docker run -d nginx", description: "Run nginx server"),
+            .init(command: "docker run -it ubuntu bash", description: "Interactive Ubuntu shell"),
+            .init(command: "docker compose up -d", description: "Start compose project"),
         ]
     )
 
-    private var snapshot: Snapshot?
-    private var rootNodes: [ContainerListNode] = []
+    private var snapshot: ContainerListSnapshot?
+    private let tree = ContainerListTree()
     private var loadingTitle: String
     private var useDNS: Bool
     private var actions: Actions
@@ -126,6 +57,13 @@ final class ContainersListViewController: NSViewController,
     private var deleteAlert: NSAlert?
     private var isApplyingExpansion = false
     private var isApplyingSelection = false
+
+    #if DEBUG
+        /// Completed `render` passes, and a hook that fires after each one;
+        /// tests use them to await and time a single snapshot update.
+        private(set) var renderCount = 0
+        var renderObserver: (@MainActor () -> Void)?
+    #endif
 
     init(
         viewModel: ContainersViewModel,
@@ -149,27 +87,19 @@ final class ContainersListViewController: NSViewController,
         let container = NSView()
         setUpOutlineView()
 
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        placeholderView.translatesAutoresizingMaskIntoConstraints = false
-        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(scrollView)
-        container.addSubview(placeholderView)
-        container.addSubview(emptyStateView)
-
-        NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            scrollView.topAnchor.constraint(equalTo: container.topAnchor, constant: 6),
-            scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            placeholderView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            placeholderView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            placeholderView.topAnchor.constraint(equalTo: container.topAnchor),
-            placeholderView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            emptyStateView.topAnchor.constraint(equalTo: container.topAnchor),
-            emptyStateView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-        ])
+        let fills: [(view: NSView, topInset: CGFloat)] = [
+            (scrollView, 6), (placeholderView, 0), (emptyStateView, 0),
+        ]
+        for (subview, topInset) in fills {
+            subview.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(subview)
+            NSLayoutConstraint.activate([
+                subview.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                subview.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                subview.topAnchor.constraint(equalTo: container.topAnchor, constant: topInset),
+                subview.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            ])
+        }
         view = container
     }
 
@@ -206,8 +136,7 @@ final class ContainersListViewController: NSViewController,
             )
         case .loaded:
             if useDNSChanged {
-                reloadOutline(expandedGroups: snapshot.expandedGroups)
-                applySelection(snapshot.selectedID)
+                reconfigureVisibleContainerCells()
             }
         }
     }
@@ -217,7 +146,7 @@ final class ContainersListViewController: NSViewController,
         numberOfChildrenOfItem item: Any?
     ) -> Int {
         guard let item = item as? ContainerListNode else {
-            return rootNodes.count
+            return tree.roots.count
         }
         return item.children.count
     }
@@ -228,7 +157,7 @@ final class ContainersListViewController: NSViewController,
         ofItem item: Any?
     ) -> Any {
         guard let item = item as? ContainerListNode else {
-            return rootNodes[index]
+            return tree.roots[index]
         }
         return item.children[index]
     }
@@ -250,17 +179,9 @@ final class ContainersListViewController: NSViewController,
         item: Any
     ) -> NSView? {
         guard let node = item as? ContainerListNode else { return nil }
-        switch node.presentation {
-        case .section(let title):
-            return sectionCell(title: title)
-        case .compose(let project, let containers):
-            return composeCell(
-                project: project,
-                containers: containers.map(\.container)
-            )
-        case .container(let container):
-            return containerCell(container.container)
-        }
+        let cell = dequeueCell(for: node.presentation)
+        configure(cell, for: node.presentation)
+        return cell
     }
 
     func outlineView(_: NSOutlineView, isGroupItem item: Any) -> Bool {
@@ -361,7 +282,7 @@ final class ContainersListViewController: NSViewController,
 
     private func observeAndRender() {
         let snapshot = withObservationTracking {
-            Snapshot(viewModel: viewModel)
+            ContainerListSnapshot(viewModel: viewModel)
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 self?.observeAndRender()
@@ -370,7 +291,7 @@ final class ContainersListViewController: NSViewController,
         render(snapshot)
     }
 
-    private func render(_ snapshot: Snapshot) {
+    private func render(_ snapshot: ContainerListSnapshot) {
         let previous = self.snapshot
         let rootsChanged = previous?.roots != snapshot.roots
         let expansionChanged =
@@ -383,10 +304,19 @@ final class ContainersListViewController: NSViewController,
 
         self.snapshot = snapshot
         if rootsChanged {
-            rootNodes = snapshot.roots.map(ContainerListNode.init)
-            reloadOutline(expandedGroups: snapshot.expandedGroups)
+            if tree.isEmpty {
+                // An empty outline has no rows, expansion, or selection to keep,
+                // so a fresh load is the diff with nothing left to preserve.
+                tree.replace(with: snapshot.roots)
+                reloadOutline(expandedGroups: snapshot.expandedGroups)
+            } else {
+                applyIncrementalUpdate(
+                    to: snapshot.roots,
+                    expandedGroups: snapshot.expandedGroups
+                )
+            }
         } else if expansionChanged {
-            applyExpansion(snapshot.expandedGroups)
+            applyExpansion(snapshot.expandedGroups, to: tree.roots)
         }
 
         if rootsChanged || presentationChanged {
@@ -421,6 +351,10 @@ final class ContainersListViewController: NSViewController,
         if case .loaded = snapshot.loadState {
             applySelection(snapshot.selectedID)
         }
+        #if DEBUG
+            renderCount += 1
+            renderObserver?()
+        #endif
     }
 
     private func showPlaceholder(
@@ -507,15 +441,53 @@ extension ContainersListViewController {
         return menu
     }
 
-    private func sectionCell(title: String) -> NSTableCellView {
-        let cell =
-            outlineView.makeView(
+    private func dequeueCell(
+        for presentation: ContainerListNodePresentation
+    ) -> NSTableCellView {
+        switch presentation {
+        case .section:
+            return outlineView.makeView(
                 withIdentifier: Self.sectionCellIdentifier,
                 owner: nil
             ) as? NSTableCellView ?? makeSectionCell()
-        cell.textField?.stringValue = title
-        cell.setAccessibilityLabel(title)
-        return cell
+        case .compose:
+            let cell =
+                outlineView.makeView(
+                    withIdentifier: Self.composeCellIdentifier,
+                    owner: nil
+                ) as? ContainerGroupTableCellView ?? ContainerGroupTableCellView()
+            cell.identifier = Self.composeCellIdentifier
+            return cell
+        case .container:
+            let cell =
+                outlineView.makeView(
+                    withIdentifier: Self.containerCellIdentifier,
+                    owner: nil
+                ) as? ContainerTableCellView ?? ContainerTableCellView()
+            cell.identifier = Self.containerCellIdentifier
+            return cell
+        }
+    }
+
+    private func configure(
+        _ cell: NSTableCellView,
+        for presentation: ContainerListNodePresentation
+    ) {
+        switch presentation {
+        case .section(let title):
+            cell.textField?.stringValue = title
+            cell.setAccessibilityLabel(title)
+        case .compose(let project, let containers):
+            guard let cell = cell as? ContainerGroupTableCellView else { return }
+            configureComposeCell(
+                cell,
+                project: project,
+                containers: containers.map(\.container)
+            )
+        case .container(let container):
+            guard let cell = cell as? ContainerTableCellView else { return }
+            configureContainerCell(cell, container: container.container)
+        }
     }
 
     private func makeSectionCell() -> NSTableCellView {
@@ -539,16 +511,11 @@ extension ContainersListViewController {
         return cell
     }
 
-    private func composeCell(
+    private func configureComposeCell(
+        _ cell: ContainerGroupTableCellView,
         project: String,
         containers: [ContainerViewModel]
-    ) -> ContainerGroupTableCellView {
-        let cell =
-            outlineView.makeView(
-                withIdentifier: Self.composeCellIdentifier,
-                owner: nil
-            ) as? ContainerGroupTableCellView ?? ContainerGroupTableCellView()
-        cell.identifier = Self.composeCellIdentifier
+    ) {
         let ids = containers.map(\.id)
         cell.configure(
             project: project,
@@ -561,18 +528,12 @@ extension ContainersListViewController {
                 self?.confirmDeleteGroup(project: project, expectedIDs: ids)
             }
         )
-        return cell
     }
 
-    private func containerCell(
-        _ container: ContainerViewModel
-    ) -> ContainerTableCellView {
-        let cell =
-            outlineView.makeView(
-                withIdentifier: Self.containerCellIdentifier,
-                owner: nil
-            ) as? ContainerTableCellView ?? ContainerTableCellView()
-        cell.identifier = Self.containerCellIdentifier
+    private func configureContainerCell(
+        _ cell: ContainerTableCellView,
+        container: ContainerViewModel
+    ) {
         cell.configure(
             container: container,
             useDNS: useDNS,
@@ -586,29 +547,101 @@ extension ContainersListViewController {
                 self?.confirmDeleteContainer(container.id)
             }
         )
-        return cell
     }
 
     private func reloadOutline(expandedGroups: Set<String>) {
-        isApplyingSelection = true
-        isApplyingExpansion = true
-        outlineView.reloadData()
-        isApplyingExpansion = false
-        isApplyingSelection = false
-        applyExpansion(expandedGroups)
+        applyingSelection {
+            applyingExpansion {
+                outlineView.reloadData()
+            }
+        }
+        applyExpansion(expandedGroups, to: tree.roots)
     }
 
-    private func applyExpansion(_ expandedGroups: Set<String>) {
-        isApplyingExpansion = true
-        defer { isApplyingExpansion = false }
-        for node in rootNodes {
-            guard case .compose(let project, _) = node.presentation else {
+    /// Edits the outline row by row instead of reloading it, so rows that did
+    /// not change keep their views, expansion, and selection.
+    private func applyIncrementalUpdate(
+        to roots: [ContainerListNodePresentation],
+        expandedGroups: Set<String>
+    ) {
+        let update = tree.update(to: roots)
+        if !update.steps.isEmpty {
+            applyingSelection {
+                applyingExpansion {
+                    outlineView.beginUpdates()
+                    for step in update.steps {
+                        apply(step)
+                    }
+                    outlineView.endUpdates()
+                }
+            }
+        }
+        applyExpansion(expandedGroups, to: update.repositionedGroups)
+        for node in update.reconfigured {
+            reconfigureVisibleCell(for: node)
+        }
+    }
+
+    private func apply(_ step: ContainerListTree.Step) {
+        switch step {
+        case .remove(let parent, let index):
+            outlineView.removeItems(
+                at: IndexSet(integer: index),
+                inParent: parent,
+                withAnimation: []
+            )
+        case .insert(let parent, let index, _):
+            outlineView.insertItems(
+                at: IndexSet(integer: index),
+                inParent: parent,
+                withAnimation: []
+            )
+        case .move(let parent, let from, let to):
+            outlineView.moveItem(at: from, inParent: parent, to: to, inParent: parent)
+        }
+    }
+
+    private func reconfigureVisibleCell(for node: ContainerListNode) {
+        let row = outlineView.row(forItem: node)
+        guard
+            row >= 0,
+            let cell = outlineView.view(
+                atColumn: 0,
+                row: row,
+                makeIfNecessary: false
+            ) as? NSTableCellView
+        else {
+            return
+        }
+        configure(cell, for: node.presentation)
+    }
+
+    private func reconfigureVisibleContainerCells() {
+        for row in 0..<outlineView.numberOfRows {
+            guard
+                let node = outlineView.item(atRow: row) as? ContainerListNode,
+                case .container = node.presentation
+            else {
                 continue
             }
-            if expandedGroups.contains(project) {
-                outlineView.expandItem(node)
-            } else {
-                outlineView.collapseItem(node)
+            reconfigureVisibleCell(for: node)
+        }
+    }
+
+    private func applyExpansion(
+        _ expandedGroups: Set<String>,
+        to nodes: [ContainerListNode]
+    ) {
+        applyingExpansion {
+            for node in nodes {
+                guard case .compose(let project, _) = node.presentation else {
+                    continue
+                }
+                if expandedGroups.contains(project) {
+                    outlineView.expandItem(node)
+                } else {
+                    outlineView.collapseItem(node)
+                }
             }
         }
     }
@@ -675,16 +708,14 @@ extension ContainersListViewController {
         action()
     }
 
+    private func applyingExpansion(_ action: () -> Void) {
+        isApplyingExpansion = true
+        defer { isApplyingExpansion = false }
+        action()
+    }
+
     private func node(forContainerID id: String) -> ContainerListNode? {
-        for root in rootNodes {
-            if root.id == .container(id) {
-                return root
-            }
-            if let child = root.children.first(where: { $0.id == .container(id) }) {
-                return child
-            }
-        }
-        return nil
+        tree.node(for: .container(id))
     }
 
     private func container(at row: Int) -> ContainerViewModel? {
