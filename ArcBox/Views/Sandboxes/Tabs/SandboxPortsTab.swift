@@ -3,11 +3,12 @@ import SwiftUI
 
 /// Ports tab: expose sandbox ports on the host (loopback) and remove mappings.
 ///
-/// The tab composes two leaves that each observe only what they render:
+/// The tab composes leaves that each observe only what they render:
 /// `SandboxPortsToolbar` (the expose form, with its segmented protocol picker)
-/// and `SandboxPortsContent` (the mapping list). A refreshed mapping list
-/// therefore never re-measures the toolbar's `NSSegmentedControl`, whose every
-/// measurement re-runs its own view graph.
+/// and `SandboxPortsContent` (the mapping list). A refresh flips the view
+/// model's load state and replaces the mapping list; neither reaches the
+/// toolbar, so its `NSSegmentedControl` — whose every measurement re-runs its
+/// own view graph — is never re-measured by one.
 struct SandboxPortsTab: View {
     let sandbox: SandboxViewModel
 
@@ -15,7 +16,7 @@ struct SandboxPortsTab: View {
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(\.arcboxClient) private var client
 
-    /// Set while an expose or unexpose call is in flight; both leaves disable
+    /// Set while an expose or unexpose call is in flight; the leaves disable
     /// their actions on it.
     @State private var isWorking = false
 
@@ -40,21 +41,22 @@ struct SandboxPortsTab: View {
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: .sandboxChanged)) { _ in
-            refreshExposedPorts(
-                vm, sandboxID: sandbox.id, client: client, runtimeReady: daemonManager.canExposePorts)
+            refreshExposedPorts(vm, sandboxID: sandbox.id, client: client, daemonManager: daemonManager)
         }
         .errorToast(message: Bindable(vm).exposedPortsRefreshError)
     }
 }
 
-/// The expose form: sandbox port, host port, protocol, and the expose and refresh buttons.
+/// The expose form: sandbox port, host port, protocol, and the expose and
+/// refresh buttons.
+///
+/// Reads only its own text fields and protocol. The two buttons are leaves of
+/// their own because their enabled state follows the load state a refresh
+/// flips; keeping that dependency out of this body is what keeps the
+/// segmented picker out of every refresh.
 struct SandboxPortsToolbar: View {
     let sandboxID: String
     @Binding var isWorking: Bool
-
-    @Environment(SandboxesViewModel.self) private var vm
-    @Environment(DaemonManager.self) private var daemonManager
-    @Environment(\.arcboxClient) private var client
 
     @State private var sandboxPortText = ""
     @State private var hostPortText = ""
@@ -83,46 +85,51 @@ struct SandboxPortsToolbar: View {
 
             Spacer()
 
-            Button("Expose", action: expose)
-                .disabled(!canExpose)
+            SandboxPortsExposeButton(
+                sandboxID: sandboxID,
+                sandboxPortText: sandboxPortText,
+                hostPortText: hostPortText,
+                networkProtocol: networkProtocol,
+                isWorking: $isWorking
+            )
 
-            Button {
-                refreshExposedPorts(
-                    vm, sandboxID: sandboxID, client: client, runtimeReady: daemonManager.canExposePorts)
-            } label: {
-                Label("Refresh port mappings", systemImage: "arrow.clockwise")
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 12))
-            }
-            .buttonStyle(.plain)
-            .disabled(!canRefresh)
-            .help("Refresh")
+            SandboxPortsRefreshButton(sandboxID: sandboxID, isWorking: $isWorking)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .recordingBodyEvaluation(of: Self.self)
     }
+}
+
+/// The Expose button; enabled once the form validates and the mappings of
+/// `sandboxID` are loaded and idle.
+struct SandboxPortsExposeButton: View {
+    let sandboxID: String
+    let sandboxPortText: String
+    let hostPortText: String
+    let networkProtocol: String
+    @Binding var isWorking: Bool
+
+    @Environment(SandboxesViewModel.self) private var vm
+    @Environment(DaemonManager.self) private var daemonManager
+    @Environment(\.arcboxClient) private var client
+
+    var body: some View {
+        Button("Expose", action: expose)
+            .disabled(!canExpose)
+            .recordingBodyEvaluation(of: Self.self)
+    }
 
     private var canExpose: Bool {
-        guard actionsAvailable else { return false }
+        guard
+            vm.exposedPortsActionsAvailable(for: sandboxID, daemonManager: daemonManager, client: client),
+            !isWorking
+        else { return false }
         guard let port = UInt32(sandboxPortText), port > 0, port < 65536 else { return false }
         if !hostPortText.isEmpty {
             guard let host = UInt32(hostPortText), host > 0, host < 65536 else { return false }
         }
         return true
-    }
-
-    private var actionsAvailable: Bool {
-        daemonManager.canExposePorts
-            && client != nil
-            && vm.exposedPortsSandboxID == sandboxID
-            && vm.exposedPortsLoadState == .loaded
-            && !vm.isLoadingExposedPorts
-            && !isWorking
-    }
-
-    private var canRefresh: Bool {
-        daemonManager.canExposePorts && client != nil && !vm.isLoadingExposedPorts && !isWorking
     }
 
     private func expose() {
@@ -139,6 +146,30 @@ struct SandboxPortsToolbar: View {
             )
             isWorking = false
         }
+    }
+}
+
+/// The Refresh button; enabled while the daemon can answer and no load is in flight.
+struct SandboxPortsRefreshButton: View {
+    let sandboxID: String
+    @Binding var isWorking: Bool
+
+    @Environment(SandboxesViewModel.self) private var vm
+    @Environment(DaemonManager.self) private var daemonManager
+    @Environment(\.arcboxClient) private var client
+
+    var body: some View {
+        Button {
+            refreshExposedPorts(vm, sandboxID: sandboxID, client: client, daemonManager: daemonManager)
+        } label: {
+            Label("Refresh port mappings", systemImage: "arrow.clockwise")
+                .labelStyle(.iconOnly)
+                .font(.system(size: 12))
+        }
+        .buttonStyle(.plain)
+        .disabled(!vm.canRefreshExposedPorts(daemonManager: daemonManager, client: client) || isWorking)
+        .help("Refresh")
+        .recordingBodyEvaluation(of: Self.self)
     }
 }
 
@@ -178,10 +209,9 @@ struct SandboxPortsContent: View {
                 } actions: {
                     Button("Retry") {
                         refreshExposedPorts(
-                            vm, sandboxID: sandboxID, client: client,
-                            runtimeReady: daemonManager.canExposePorts)
+                            vm, sandboxID: sandboxID, client: client, daemonManager: daemonManager)
                     }
-                    .disabled(!canRefresh)
+                    .disabled(!vm.canRefreshExposedPorts(daemonManager: daemonManager, client: client) || isWorking)
                 }
             case .loaded:
                 loadedContent
@@ -260,24 +290,14 @@ struct SandboxPortsContent: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
-            .disabled(!actionsAvailable)
+            .disabled(
+                !vm.exposedPortsActionsAvailable(for: sandboxID, daemonManager: daemonManager, client: client)
+                    || isWorking
+            )
             .help("Remove mapping")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-    }
-
-    private var actionsAvailable: Bool {
-        daemonManager.canExposePorts
-            && client != nil
-            && vm.exposedPortsSandboxID == sandboxID
-            && vm.exposedPortsLoadState == .loaded
-            && !vm.isLoadingExposedPorts
-            && !isWorking
-    }
-
-    private var canRefresh: Bool {
-        daemonManager.canExposePorts && client != nil && !vm.isLoadingExposedPorts && !isWorking
     }
 
     private func unexpose(_ mapping: SandboxExposedPort) {
@@ -294,18 +314,46 @@ struct SandboxPortsContent: View {
     }
 }
 
-/// Reloads the mappings of `sandboxID` when it is still the selected sandbox
-/// and the daemon can answer.
+/// Reloads the mappings of `sandboxID` when, at the moment the task runs, it
+/// is still the selected sandbox and the daemon can still answer.
 private func refreshExposedPorts(
     _ vm: SandboxesViewModel,
     sandboxID: String,
     client: ArcBoxClient?,
-    runtimeReady: Bool
+    daemonManager: DaemonManager
 ) {
-    guard runtimeReady, client != nil else { return }
     Task {
-        guard !Task.isCancelled, vm.selectedID == sandboxID else { return }
+        guard
+            !Task.isCancelled,
+            vm.selectedID == sandboxID,
+            daemonManager.canExposePorts,
+            client != nil
+        else { return }
         await vm.loadExposedPorts(for: sandboxID, client: client)
+    }
+}
+
+extension SandboxesViewModel {
+    /// Expose and unexpose are available once the mappings of `sandboxID`
+    /// are loaded and no load is in flight.
+    ///
+    /// The view model's flags come first in both conjunctions so a body that
+    /// evaluates them observes the same properties whether or not the daemon
+    /// is ready; `&&` would otherwise stop reading at a stopped daemon.
+    fileprivate func exposedPortsActionsAvailable(
+        for sandboxID: String,
+        daemonManager: DaemonManager,
+        client: ArcBoxClient?
+    ) -> Bool {
+        exposedPortsSandboxID == sandboxID
+            && exposedPortsLoadState == .loaded
+            && !isLoadingExposedPorts
+            && daemonManager.canExposePorts
+            && client != nil
+    }
+
+    fileprivate func canRefreshExposedPorts(daemonManager: DaemonManager, client: ArcBoxClient?) -> Bool {
+        !isLoadingExposedPorts && daemonManager.canExposePorts && client != nil
     }
 }
 
