@@ -18,6 +18,30 @@ struct ActivityMetricStrip: View {
     let networkHistory: [ActivityViewModel.MetricPoint]
 
     var body: some View {
+        ActivityMetricTiles(
+            stats: stats,
+            cpuHistory: cpuHistory,
+            memoryHistory: memoryHistory,
+            networkHistory: networkHistory
+        )
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .glassSurface()
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+    }
+}
+
+/// The strip's tiles without the glass around them — the part that changes
+/// when a figure's rendering does, and so the part a review render captures.
+struct ActivityMetricTiles: View {
+    let stats: MachineResourceStats?
+    let cpuHistory: [ActivityViewModel.MetricPoint]
+    let memoryHistory: [ActivityViewModel.MetricPoint]
+    let networkHistory: [ActivityViewModel.MetricPoint]
+
+    var body: some View {
         LazyVGrid(
             columns: [GridItem(.adaptive(minimum: 170), spacing: 20)],
             alignment: .leading,
@@ -62,12 +86,6 @@ struct ActivityMetricStrip: View {
 
             PressureTile(stats: stats)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .glassSurface()
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
     }
 }
 
