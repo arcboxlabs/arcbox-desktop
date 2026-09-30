@@ -1,0 +1,193 @@
+name: Republish CDN
+
+# Re-publishes an already-released DMG to the release CDN from its GitHub
+# Release asset, and regenerates the Sparkle appcast item and latest.json for
+# its channel. Exists to restore or seed the CDN without rebuilding the DMG:
+# the release asset is the exact file users downloaded, Ed25519 signatures are
+# deterministic, and the build number is the tag's commit count, so the item
+# comes out identical to what the release run would have published.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to republish (e.g. v1.37.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-dmg-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  SPARKLE_VERSION: '2.9.0'
+
+permissions:
+  contents: read
+
+jobs:
+  republish:
+    name: Republish ${{ inputs.tag }}
+    # sign_update ships in Sparkle's macOS distribution.
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      CDN_BASE: https://release.arcboxcdn.com/desktop
+
+    steps:
+      # The tag's tree: xtask and CHANGELOG.md as they were at release time,
+      # and HEAD's commit count is the build number that DMG carries.
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore xtask cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            xtask/target/
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-xtask-${{ hashFiles('xtask/Cargo.lock') }}-${{ hashFiles('xtask/Cargo.toml', 'xtask/src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-xtask-${{ hashFiles('xtask/Cargo.lock') }}-
+            ${{ runner.os }}-${{ runner.arch }}-cargo-xtask-
+
+      - name: Resolve release metadata
+        id: resolve
+        run: cargo xtask release resolve --tag "$TAG"
+
+      - name: Download release asset
+        id: asset
+        run: |
+          set -euo pipefail
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir artifacts \
+            --pattern '*.dmg' --pattern '*.dmg.sha256'
+          DMG_PATH=$(find artifacts -maxdepth 1 -type f -name '*.dmg' -print -quit)
+          [ -n "$DMG_PATH" ] || { echo "::error::no DMG asset on release $TAG"; exit 1; }
+          (cd artifacts && shasum -a 256 -c "$(basename "$DMG_PATH").sha256")
+          {
+            echo "dmg=$(basename "$DMG_PATH")"
+            echo "dmg_path=$DMG_PATH"
+            echo "build_number=$(git rev-list --count HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Cache Sparkle sign_update
+        id: sparkle_cache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/sparkle-bin
+          key: sparkle-sign-update-${{ env.SPARKLE_VERSION }}
+
+      - name: Download Sparkle sign_update
+        if: steps.sparkle_cache.outputs.cache-hit != 'true'
+        run: |
+          SPARKLE_VER="${{ env.SPARKLE_VERSION }}"
+          curl -fSL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz" \
+            -o "$RUNNER_TEMP/Sparkle.tar.xz"
+          tar xJf "$RUNNER_TEMP/Sparkle.tar.xz" -C "$RUNNER_TEMP"
+          mkdir -p /tmp/sparkle-bin
+          cp "$RUNNER_TEMP/bin/sign_update" /tmp/sparkle-bin/sign_update
+          chmod +x /tmp/sparkle-bin/sign_update
+
+      - name: Sign DMG with Sparkle EdDSA
+        id: sparkle_sign
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          DMG_PATH: ${{ steps.asset.outputs.dmg_path }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "::error::SPARKLE_PRIVATE_KEY secret is not set"
+            exit 1
+          fi
+          KEY_FILE="$(mktemp)"
+          chmod 600 "$KEY_FILE"
+          trap 'rm -f "$KEY_FILE"' EXIT
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+          SIGN_OUTPUT=$(/tmp/sparkle-bin/sign_update "$DMG_PATH" -f "$KEY_FILE" 2>&1) || {
+            echo "::error::sign_update failed"
+            echo "$SIGN_OUTPUT"
+            exit 1
+          }
+          ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+          [ -n "$ED_SIGNATURE" ] || { echo "::error::no EdDSA signature in sign_update output"; exit 1; }
+          DMG_LENGTH=$(echo "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
+          [ -n "$DMG_LENGTH" ] || DMG_LENGTH=$(stat -f%z "$DMG_PATH")
+          echo "ed_signature=$ED_SIGNATURE" >> "$GITHUB_OUTPUT"
+          echo "dmg_length=$DMG_LENGTH" >> "$GITHUB_OUTPUT"
+
+      # Same rendering as the release run: Sparkle shows the notes inline.
+      - name: Render curated release notes HTML
+        run: |
+          cargo xtask release notes --version "${{ steps.resolve.outputs.version }}" --output release-notes.md
+          gh api markdown -f mode=gfm -f context="$GITHUB_REPOSITORY" -F text=@release-notes.md > notes.html
+          [ -s notes.html ]
+
+      - name: Fetch the live appcast and latest.json
+        id: existing
+        run: |
+          CHANNEL="${{ steps.resolve.outputs.channel }}"
+          mkdir -p existing
+          if curl -fsSL --max-time 15 "$CDN_BASE/appcast/${CHANNEL}.xml" -o existing/appcast.xml; then
+            echo "appcast=existing/appcast.xml" >> "$GITHUB_OUTPUT"
+          fi
+          if curl -fsSL --max-time 15 "$CDN_BASE/latest.json" -o existing/latest.json; then
+            echo "latest=existing/latest.json" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stage DMG, appcast and latest.json
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.resolve.outputs.version }}"
+          CHANNEL="${{ steps.resolve.outputs.channel }}"
+          DMG_NAME="${{ steps.asset.outputs.dmg }}"
+          mkdir -p "cdn-staging/desktop/${VERSION}" cdn-staging/desktop/appcast
+          cp "${{ steps.asset.outputs.dmg_path }}" "cdn-staging/desktop/${VERSION}/${DMG_NAME}"
+          cp "${{ steps.asset.outputs.dmg_path }}.sha256" "cdn-staging/desktop/${VERSION}/${DMG_NAME}.sha256"
+
+          APPCAST_ARGS=(
+            --version "$VERSION"
+            --build-number "${{ steps.asset.outputs.build_number }}"
+            --dmg-url "$CDN_BASE/${VERSION}/${DMG_NAME}"
+            --dmg-length "${{ steps.sparkle_sign.outputs.dmg_length }}"
+            --ed-signature "${{ steps.sparkle_sign.outputs.ed_signature }}"
+            --channel "$CHANNEL"
+            --release-notes-html notes.html
+            --output "cdn-staging/desktop/appcast/${CHANNEL}.xml"
+          )
+          [ -n "${{ steps.existing.outputs.appcast }}" ] && APPCAST_ARGS+=(--existing "${{ steps.existing.outputs.appcast }}")
+          cargo xtask release appcast "${APPCAST_ARGS[@]}"
+
+          LATEST_ARGS=(--version "$VERSION" --channel "$CHANNEL" --output cdn-staging/desktop/latest.json)
+          [ -n "${{ steps.existing.outputs.latest }}" ] && LATEST_ARGS+=(--existing "${{ steps.existing.outputs.latest }}")
+          cargo xtask release latest-json "${LATEST_ARGS[@]}"
+
+          echo "=== CDN staging ==="
+          find cdn-staging -type f | sort
+
+      - name: Publish to R2
+        uses: arcboxlabs/actions/r2-publish@v1
+        with:
+          account-id: ${{ vars.R2_ACCOUNT_ID }}
+          access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          bucket: arcboxcdn-release
+          source-dir: cdn-staging
+          index-files: |
+            desktop/appcast/${{ steps.resolve.outputs.channel }}.xml
+            desktop/latest.json
+          strict-verify: "true"
+          verify-urls: |
+            https://release.arcboxcdn.com/desktop/${{ steps.resolve.outputs.version }}/${{ steps.asset.outputs.dmg }}
+            https://release.arcboxcdn.com/desktop/appcast/${{ steps.resolve.outputs.channel }}.xml
+            https://release.arcboxcdn.com/desktop/latest.json
