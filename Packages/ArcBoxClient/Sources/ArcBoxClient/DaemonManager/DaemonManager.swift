@@ -49,7 +49,9 @@ public final class DaemonManager {
     /// Timestamp of the last message received from the gRPC setup status stream.
     public internal(set) var lastMessageTime: Date?
 
-    nonisolated static var isDevelopmentProfile: Bool {
+    /// Whether this bundle runs the development profile (`~/.arcbox-dev`, the `arcbox-dev`
+    /// Docker context, its own daemon label and sign-in item).
+    nonisolated public static var isDevelopmentProfile: Bool {
         (Bundle.main.object(forInfoDictionaryKey: "ArcBoxProfile") as? String)?
             .caseInsensitiveCompare("development") == .orderedSame
     }

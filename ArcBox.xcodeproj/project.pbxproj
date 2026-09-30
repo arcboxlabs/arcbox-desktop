@@ -54,6 +54,7 @@
 		2C12FA161C343D99BD2E8AFD /* NetworksListViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA27F4AC273B14038EDB6593 /* NetworksListViewControllerTests.swift */; };
 		2C918E08295E3751C9FD1EC1 /* MachineDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C7ADBBD83C5F92EEBAAD88 /* MachineDetailView.swift */; };
 		2D13FABE82FCAF045B2CF25D /* LoadPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4AA61258823B0E929F4520 /* LoadPhase.swift */; };
+		2D4EAAD232C7444E6F227707 /* AppDelegateTestHostTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91F830C5D7EEFBF144197C5B /* AppDelegateTestHostTests.swift */; };
 		2EFFFF0AEC16386829FAC491 /* AuthSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA33C724456FCDF5A3E52AD /* AuthSessionTests.swift */; };
 		31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */; };
 		31A9DB06B08CC74D635ECB8A /* NetworksListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297FCAB334AF289575D13F72 /* NetworksListView.swift */; };
@@ -471,6 +472,7 @@
 		903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewVolumeSheet.swift; sourceTree = "<group>"; };
 		9101DCB26B0BB5B8DE4CAE70 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		915561BEEE49F5E27F4B0D40 /* OnboardingWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWindowController.swift; sourceTree = "<group>"; };
+		91F830C5D7EEFBF144197C5B /* AppDelegateTestHostTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTestHostTests.swift; sourceTree = "<group>"; };
 		920C9CA81449FA23CEC17EF6 /* SandboxFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxFilesTab.swift; sourceTree = "<group>"; };
 		9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterDelegate.swift; sourceTree = "<group>"; };
 		92FD51B5947EFEEFD73D00F9 /* FleetEnrollmentCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetEnrollmentCoordinatorTests.swift; sourceTree = "<group>"; };
@@ -1266,6 +1268,7 @@
 			isa = PBXGroup;
 			children = (
 				3CD990EEEF43CDA673BC1816 /* ActivityRowGroupingTests.swift */,
+				91F830C5D7EEFBF144197C5B /* AppDelegateTestHostTests.swift */,
 				1A9181A312D267BBD4687762 /* AppPreferencesTests.swift */,
 				1DC5F65FECB2F80BA3AF1D84 /* ArcBoxClientErrorTests.swift */,
 				C3421445408D28697F7CAE4F /* AsyncSequenceBatchedTests.swift */,
@@ -1719,6 +1722,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0EB4E66405DD58C377BCE0E6 /* ActivityRowGroupingTests.swift in Sources */,
+				2D4EAAD232C7444E6F227707 /* AppDelegateTestHostTests.swift in Sources */,
 				11168BDC9BB01B20733A9063 /* AppPreferencesTests.swift in Sources */,
 				C94515858BC220B73B93EC5D /* ArcBoxClientErrorTests.swift in Sources */,
 				6276E31C6E2F736A7B5F41E0 /* ArcBoxClientTests.swift in Sources */,
