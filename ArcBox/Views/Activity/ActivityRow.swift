@@ -30,6 +30,14 @@ nonisolated struct ActivityRow: Identifiable, Equatable, Sendable {
     let networkTransmitBytesPerSecond: Double
     let pids: UInt32
 
+    /// CPU at the precision the column shows — whole percent — which is what
+    /// the column sorts on. Idle containers report small, distinct fractions of
+    /// a percent that change every sample; sorted on those, twenty rows that
+    /// all read "0%" were dealt a fresh random order each second, and the table
+    /// tore down and rebuilt every row view it moved (17 ms a tick against 6 ms
+    /// with the order stable, `ActivityTickBenchmarkTests`).
+    var displayedCPUPercent: Double { cpuPercent.rounded(.toNearestOrEven) }
+
     /// Combined throughput, so the paired read/write columns sort on the figure
     /// the column actually shows.
     var diskBytesPerSecond: Double { diskReadBytesPerSecond + diskWriteBytesPerSecond }
@@ -150,7 +158,7 @@ nonisolated enum ActivityRowGrouping {
         let projects = members.map { project, members in
             ActivityRowGroup(
                 summary: .project(named: project, totalling: members),
-                children: members.sorted(using: comparators)
+                children: members.sorted { precedes($0, $1, using: comparators) }
             )
         }
         let loose = standalone.map { ActivityRowGroup(summary: $0, children: []) }
@@ -159,9 +167,10 @@ nonisolated enum ActivityRowGrouping {
         }
     }
 
-    /// Applies a table's comparators in order, as `sorted(using:)` would to the
-    /// rows themselves — the summaries are what order the groups, and they are
-    /// not a flat array the table can sort on its own.
+    /// Applies a table's comparators in order, then settles what they leave
+    /// tied by title and finally by ID, so the order is total: rows the table
+    /// cannot tell apart keep their places from one sample to the next instead
+    /// of swapping on whatever `sorted` makes of an unordered pair.
     private static func precedes(
         _ lhs: ActivityRow,
         _ rhs: ActivityRow,
@@ -174,6 +183,10 @@ nonisolated enum ActivityRowGrouping {
             case .orderedSame: continue
             }
         }
-        return false
+        switch lhs.title.localizedStandardCompare(rhs.title) {
+        case .orderedAscending: return true
+        case .orderedDescending: return false
+        case .orderedSame: return lhs.id < rhs.id
+        }
     }
 }

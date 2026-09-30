@@ -24,7 +24,7 @@ struct ActivityContainerTable: View {
     let hasLoaded: Bool
 
     @State private var sortOrder = [
-        KeyPathComparator(\ActivityRow.cpuPercent, order: .reverse)
+        KeyPathComparator(\ActivityRow.displayedCPUPercent, order: .reverse)
     ]
     @State private var selection: ActivityRow.ID?
     @State private var disclosureState = ActivityRowDisclosureState()
@@ -53,7 +53,7 @@ struct ActivityContainerTable: View {
             .disabledCustomizationBehavior(.visibility)
             .customizationID("container")
 
-            TableColumn("CPU", value: \.cpuPercent) { row in
+            TableColumn("CPU", value: \.displayedCPUPercent) { row in
                 reading(StatsFormat.percent(row.cpuPercent), isProject: row.isProject)
             }
             .width(min: 56, ideal: 68)
