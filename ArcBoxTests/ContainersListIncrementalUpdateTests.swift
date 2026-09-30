@@ -280,11 +280,13 @@ final class ContainersListIncrementalUpdateTests: XCTestCase {
         let slowest = zip(durations.indices, durations).sorted { $0.1 > $1.1 }.prefix(3)
             .map { "#\($0.0) \($0.1)" }
         print("PERF snapshot mutation x60: median \(median), max \(max), slowest \(slowest)")
+        // The reload count is the guard: a regression to whole-list reloads is
+        // structural, not a timing outlier. The wall-clock bounds only fence off
+        // the hang class — locally the median is ~0.5 ms and the maximum ~4 ms,
+        // and CI runners are several times slower and noisier than that.
         XCTAssertEqual(outlineView.updateCounts.reloads, reloadsBefore)
-        XCTAssertLessThan(median, .milliseconds(5))
-        // Steady-state mutations measure under 4 ms; the bound leaves room for a
-        // machine that is also building other projects.
-        XCTAssertLessThan(max, .milliseconds(20))
+        XCTAssertLessThan(median, .milliseconds(10))
+        XCTAssertLessThan(max, .milliseconds(100))
         XCTAssertEqual(outlineView.selectedRow, row(forContainer: "solo-0", in: outlineView))
         assertOutlineMatchesViewModel(harness)
     }
