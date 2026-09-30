@@ -1,6 +1,24 @@
 import AppKit
 import Foundation
 
+/// Symbol images and configurations shared by every container row. Resolving
+/// an SF Symbol costs a lookup per `NSImage(systemSymbolName:)`, and a list of
+/// a few dozen rows did that for each cell it built.
+private enum ContainerListSymbols {
+    static let group = NSImage(systemSymbolName: "square.3.layers.3d", accessibilityDescription: nil)
+    static let container = NSImage(systemSymbolName: "shippingbox", accessibilityDescription: nil)
+    static let trash = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: nil)
+    static let link = NSImage(systemSymbolName: "link", accessibilityDescription: nil)
+    static let play = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
+    static let stop = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: nil)
+    static let expanded = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: nil)
+    static let collapsed = NSImage(systemSymbolName: "chevron.right", accessibilityDescription: nil)
+
+    static let disclosureConfiguration = NSImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    static let groupConfiguration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+    static let containerConfiguration = NSImage.SymbolConfiguration(pointSize: 16, weight: .regular)
+}
+
 @MainActor
 final class ContainerGroupTableCellView: NSTableCellView, ResourceListActionDisplaying {
     private let disclosureImageView = NSImageView()
@@ -26,7 +44,7 @@ final class ContainerGroupTableCellView: NSTableCellView, ResourceListActionDisp
             "ContainerGroupDisclosureImage"
         )
         disclosureImageView.contentTintColor = .secondaryLabelColor
-        disclosureImageView.symbolConfiguration = .init(pointSize: 10, weight: .regular)
+        disclosureImageView.symbolConfiguration = ContainerListSymbols.disclosureConfiguration
         disclosureImageView.setAccessibilityElement(false)
         disclosureImageView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -36,11 +54,8 @@ final class ContainerGroupTableCellView: NSTableCellView, ResourceListActionDisp
         iconBox.fillColor = .quaternarySystemFill
         iconBox.translatesAutoresizingMaskIntoConstraints = false
 
-        groupImageView.image = NSImage(
-            systemSymbolName: "square.3.layers.3d",
-            accessibilityDescription: nil
-        )
-        groupImageView.symbolConfiguration = .init(pointSize: 14, weight: .regular)
+        groupImageView.image = ContainerListSymbols.group
+        groupImageView.symbolConfiguration = ContainerListSymbols.groupConfiguration
         groupImageView.setAccessibilityElement(false)
         groupImageView.translatesAutoresizingMaskIntoConstraints = false
         iconBox.addSubview(groupImageView)
@@ -75,17 +90,19 @@ final class ContainerGroupTableCellView: NSTableCellView, ResourceListActionDisp
             identifier: "ContainerGroupDeleteButton",
             action: #selector(deletePressed)
         )
-        deleteButton.image = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: nil)
+        deleteButton.image = ContainerListSymbols.trash
+
+        // Hidden before they join the stack: hiding an arranged view afterwards
+        // makes the stack detach it through KVO, one layout pass per view.
+        busyIndicator.isHidden = true
+        toggleButton.isHidden = true
+        deleteButton.isHidden = true
 
         actions.setViews([busyIndicator, toggleButton, deleteButton], in: .center)
         actions.orientation = .horizontal
         actions.alignment = .centerY
         actions.spacing = 4
         actions.translatesAutoresizingMaskIntoConstraints = false
-
-        busyIndicator.isHidden = true
-        toggleButton.isHidden = true
-        deleteButton.isHidden = true
 
         setUpLayout(labels: labels)
     }
@@ -170,10 +187,7 @@ final class ContainerGroupTableCellView: NSTableCellView, ResourceListActionDisp
         projectLabel.textColor = hasRunning ? .labelColor : .secondaryLabelColor
         countLabel.stringValue = "\(runningCount)/\(containers.count)"
         groupImageView.contentTintColor = hasRunning ? .controlAccentColor : .tertiaryLabelColor
-        toggleButton.image = NSImage(
-            systemSymbolName: hasRunning ? "stop.fill" : "play.fill",
-            accessibilityDescription: nil
-        )
+        toggleButton.image = hasRunning ? ContainerListSymbols.stop : ContainerListSymbols.play
         toggleButton.toolTip = hasRunning ? "Stop project containers" : "Start project containers"
         toggleButton.setAccessibilityLabel(
             "\(hasRunning ? "Stop" : "Start") containers in \(project)"
@@ -207,10 +221,8 @@ final class ContainerGroupTableCellView: NSTableCellView, ResourceListActionDisp
     }
 
     func setExpanded(_ isExpanded: Bool) {
-        disclosureImageView.image = NSImage(
-            systemSymbolName: isExpanded ? "chevron.down" : "chevron.right",
-            accessibilityDescription: nil
-        )
+        disclosureImageView.image =
+            isExpanded ? ContainerListSymbols.expanded : ContainerListSymbols.collapsed
     }
 
     private func configureButton(
@@ -286,7 +298,7 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         iconBox.translatesAutoresizingMaskIntoConstraints = false
 
         containerImageView.imageScaling = .scaleProportionallyDown
-        containerImageView.symbolConfiguration = .init(pointSize: 16, weight: .regular)
+        containerImageView.symbolConfiguration = ContainerListSymbols.containerConfiguration
         containerImageView.setAccessibilityElement(false)
         containerImageView.translatesAutoresizingMaskIntoConstraints = false
         iconBox.addSubview(containerImageView)
@@ -327,7 +339,7 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
             identifier: "ContainerLinkButton",
             action: #selector(linkPressed)
         )
-        linkButton.image = NSImage(systemSymbolName: "link", accessibilityDescription: nil)
+        linkButton.image = ContainerListSymbols.link
 
         busyIndicator.identifier = NSUserInterfaceItemIdentifier("ContainerBusyIndicator")
         busyIndicator.style = .spinning
@@ -345,18 +357,20 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
             identifier: "ContainerDeleteButton",
             action: #selector(deletePressed)
         )
-        deleteButton.image = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: nil)
+        deleteButton.image = ContainerListSymbols.trash
+
+        // Hidden before they join the stack: hiding an arranged view afterwards
+        // makes the stack detach it through KVO, one layout pass per view.
+        linkButton.isHidden = true
+        busyIndicator.isHidden = true
+        toggleButton.isHidden = true
+        deleteButton.isHidden = true
 
         actions.setViews([linkButton, busyIndicator, toggleButton, deleteButton], in: .center)
         actions.orientation = .horizontal
         actions.alignment = .centerY
         actions.spacing = 4
         actions.translatesAutoresizingMaskIntoConstraints = false
-
-        linkButton.isHidden = true
-        busyIndicator.isHidden = true
-        toggleButton.isHidden = true
-        deleteButton.isHidden = true
 
         setUpLayout(labels: labels)
     }
@@ -450,12 +464,8 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        iconTask?.cancel()
-        iconTask = nil
+        resetIcon()
         representedID = nil
-        representedIconURL = nil
-        showsRemoteIcon = false
-        containerImageView.image = nil
         busyIndicator.stopAnimation(nil)
         statusProgressIndicator.stopAnimation(nil)
         ports = []
@@ -464,6 +474,9 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         onDelete = nil
     }
 
+    /// Fills the cell for `container`. Calling it again for the same container
+    /// updates the row in place and keeps a remote icon that is already showing
+    /// or loading, so a state flip does not blink the icon back to the fallback.
     func configure(
         container: ContainerViewModel,
         useDNS: Bool,
@@ -471,7 +484,8 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         onToggle: @escaping @MainActor () -> Void,
         onDelete: @escaping @MainActor () -> Void
     ) {
-        prepareForReuse()
+        let iconURL = Self.iconURL(container.iconURL)
+        let keepsIcon = representedID == container.id && representedIconURL == iconURL
 
         representedID = container.id
         nameLabel.stringValue = container.name
@@ -496,10 +510,7 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         )
         self.onOpenPort = onOpenPort
 
-        toggleButton.image = NSImage(
-            systemSymbolName: container.isRunning ? "stop.fill" : "play.fill",
-            accessibilityDescription: nil
-        )
+        toggleButton.image = container.isRunning ? ContainerListSymbols.stop : ContainerListSymbols.play
         toggleButton.toolTip = container.isRunning ? "Stop container" : "Start container"
         toggleButton.setAccessibilityLabel(
             "\(container.isRunning ? "Stop" : "Start") \(container.name)"
@@ -513,6 +524,7 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         toggleButton.isEnabled = !isBusy
         deleteButton.isEnabled = true
         self.onDelete = onDelete
+        self.onToggle = isBusy ? nil : onToggle
         if isBusy {
             busyIndicator.setAccessibilityLabel("Updating \(container.name)")
             busyIndicator.startAnimation(nil)
@@ -520,18 +532,20 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         } else {
             busyIndicator.stopAnimation(nil)
             statusProgressIndicator.stopAnimation(nil)
-            self.onToggle = onToggle
         }
         updateActionVisibility()
 
-        showFallbackIcon()
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel(
             "\(container.name), \(container.image), \(container.state.label)"
         )
+        if !keepsIcon {
+            resetIcon()
+            showFallbackIcon()
+            loadIcon(iconURL, representedID: container.id)
+        }
         updateColors()
-        loadIcon(container.iconURL, representedID: container.id)
     }
 
     func setShowsActions(_ showsActions: Bool) {
@@ -559,14 +573,21 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
         labelsToActionsConstraint?.isActive = showsActions
     }
 
-    private func loadIcon(_ iconURL: String?, representedID: String) {
-        guard
-            let iconURL,
-            !iconURL.isEmpty,
-            let url = URL(string: iconURL)
-        else {
-            return
-        }
+    private static func iconURL(_ iconURL: String?) -> URL? {
+        guard let iconURL, !iconURL.isEmpty else { return nil }
+        return URL(string: iconURL)
+    }
+
+    private func resetIcon() {
+        iconTask?.cancel()
+        iconTask = nil
+        representedIconURL = nil
+        showsRemoteIcon = false
+        containerImageView.image = nil
+    }
+
+    private func loadIcon(_ url: URL?, representedID: String) {
+        guard let url else { return }
 
         representedIconURL = url
         iconTask = Task { [weak self] in
@@ -609,10 +630,7 @@ final class ContainerTableCellView: NSTableCellView, ResourceListActionDisplayin
 
     private func showFallbackIcon() {
         showsRemoteIcon = false
-        containerImageView.image = NSImage(
-            systemSymbolName: "shippingbox",
-            accessibilityDescription: nil
-        )
+        containerImageView.image = ContainerListSymbols.container
         containerImageView.contentTintColor = fallbackColor
     }
 
