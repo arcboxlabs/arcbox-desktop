@@ -30,6 +30,17 @@ private struct FakeBinary {
         try FakeBinary("#!/bin/bash\nexec -a \"$0\" /bin/sleep 30\n")
     }
 
+    /// Like `hanging()`, but ignores SIGTERM: `trap '' TERM` sets the disposition the exec'd
+    /// sleep inherits.
+    static func ignoringTermination() throws -> FakeBinary {
+        try FakeBinary("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /bin/sleep 30\n")
+    }
+
+    /// Writes 2 MiB to stdout and exits.
+    static func writingTwoMebibytes() throws -> FakeBinary {
+        try FakeBinary("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
+    }
+
     func remove() {
         try? FileManager.default.removeItem(at: directory)
     }
@@ -63,6 +74,11 @@ private func mainActorLatency() async -> Duration {
     return await Task { @MainActor in clock.now - requestedAt }.value
 }
 
+/// The descriptors this process holds open; `/dev/fd` lists them.
+private func openFileDescriptorCount() throws -> Int {
+    try FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count
+}
+
 struct BinaryVersionTests {
     @Test func returnsTheTrimmedVersionLineWithoutBlockingTheMainActor() async throws {
         let fake = try FakeBinary("#!/bin/sh\nsleep 0.5\necho 'arcbox-helper 9.9.9'\n")
@@ -89,11 +105,42 @@ struct BinaryVersionTests {
             """
         )
         defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+
+        let output = try await runCapturingStandardOutput(process, timeout: .seconds(5), outputLimit: 1 << 20)
+
+        let text = try #require(String(bytes: output, encoding: .utf8))
+        let lines = text.split(separator: "\n")
+        #expect(lines.count == 8000)
+        #expect(lines.last == "arcbox-helper 9.9.9 padding")
+        #expect(process.terminationStatus == 0)
+    }
+
+    @Test func returnsNilWhenTheBinaryWritesMoreThan64KiB() async throws {
+        let fake = try FakeBinary.writingTwoMebibytes()
+        defer { fake.remove() }
 
         let version = try await binaryVersion(fake.path)
 
-        #expect(version?.hasSuffix("arcbox-helper 9.9.9 padding") == true)
-        #expect(version?.split(separator: "\n").count == 8000)
+        #expect(version == nil)
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
+    }
+
+    @Test func outputBeyondTheLimitTerminatesTheChild() async throws {
+        let fake = try FakeBinary.writingTwoMebibytes()
+        defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+
+        await #expect(throws: ProcessOutputLimitExceeded.self) {
+            try await runCapturingStandardOutput(process, timeout: .seconds(5), outputLimit: 1 << 20)
+        }
+
+        #expect(!process.isRunning)
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
     }
 
     @Test func returnsNilAfterTerminatingAChildThatOutlivesTheTimeout() async throws {
@@ -118,7 +165,9 @@ struct BinaryVersionTests {
         process.executableURL = URL(fileURLWithPath: fake.path)
         process.arguments = ["--version"]
 
-        let run = Task { try await runCapturingStandardOutput(process, timeout: .milliseconds(500)) }
+        let run = Task {
+            try await runCapturingStandardOutput(process, timeout: .milliseconds(500), outputLimit: 1 << 20)
+        }
         try #require(try await fake.waitUntilRunning(), "the marker must find the child while it runs")
 
         await #expect(throws: ProcessTimedOut.self) { try await run.value }
@@ -127,6 +176,45 @@ struct BinaryVersionTests {
         #expect(process.terminationReason == .uncaughtSignal)
         let runningAfterTimeout = try await fake.isRunning()
         #expect(!runningAfterTimeout)
+    }
+
+    @Test func killsAChildThatIgnoresSIGTERM() async throws {
+        let fake = try FakeBinary.ignoringTermination()
+        defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+        process.arguments = ["--version"]
+        let timeout: Duration = .milliseconds(500)
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        await #expect(throws: ProcessTimedOut.self) {
+            try await runCapturingStandardOutput(process, timeout: timeout, outputLimit: 1 << 20)
+        }
+
+        let elapsed = clock.now - startedAt
+        #expect(elapsed > timeout + processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        #expect(elapsed < timeout + processTerminationGrace + .milliseconds(500), "returned after \(elapsed)")
+        #expect(!process.isRunning)
+        #expect(process.terminationReason == .uncaughtSignal)
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
+    }
+
+    @Test func failedLaunchLeavesNoReaderBehind() async throws {
+        let before = try openFileDescriptorCount()
+
+        for _ in 0..<40 {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/nonexistent/arcbox-helper")
+            await #expect(throws: (any Error).self) {
+                try await runCapturingStandardOutput(process, timeout: .seconds(1), outputLimit: 1 << 20)
+            }
+        }
+
+        // A reader started before the launch held both pipe ends per attempt (80 here).
+        let leaked = try openFileDescriptorCount() - before
+        #expect(leaked < 20, "\(leaked) descriptors left open by 40 failed launches")
     }
 
     @Test func returnsNilForAMissingOrFailingBinary() async throws {

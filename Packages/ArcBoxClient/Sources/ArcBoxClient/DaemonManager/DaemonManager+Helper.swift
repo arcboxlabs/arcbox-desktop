@@ -447,8 +447,9 @@ struct HelperVersion: Comparable, Sendable {
 
 /// Runs `<binary> --version` and returns the trimmed stdout (e.g. "arcbox-helper 1.0.0").
 ///
-/// Returns `nil` when `path` is not executable, when the command fails, or when it has not
-/// exited after `timeout` (the child is terminated then). Throws only `CancellationError`.
+/// Returns `nil` when `path` is not executable, when the command fails, when it writes more
+/// than 64 KiB, or when it has not exited after `timeout` (the child is terminated then).
+/// Throws only `CancellationError`.
 ///
 /// `installHelper` runs this three times per launch from the main actor, and the first launch
 /// after an update — Gatekeeper scanning the fresh `arcbox-helper` — stretches each run to
@@ -461,7 +462,7 @@ nonisolated func binaryVersion(_ path: String, timeout: Duration = .seconds(5)) 
     process.standardError = FileHandle.nullDevice
     let output: Data
     do {
-        output = try await runCapturingStandardOutput(process, timeout: timeout)
+        output = try await runCapturingStandardOutput(process, timeout: timeout, outputLimit: 64 << 10)
     } catch let cancellation as CancellationError {
         throw cancellation
     } catch {

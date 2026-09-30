@@ -38,6 +38,17 @@ private struct FakePlugin {
         try FakePlugin("#!/bin/bash\nexec -a \"$0\" /bin/sleep 30\n")
     }
 
+    /// Like `stalled()`, but ignores SIGTERM: `trap '' TERM` sets the disposition the exec'd
+    /// sleep inherits.
+    static func ignoringTermination() throws -> FakePlugin {
+        try FakePlugin("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /bin/sleep 30\n")
+    }
+
+    /// Writes 2 MiB to stdout and exits.
+    static func writingTwoMebibytes() throws -> FakePlugin {
+        try FakePlugin("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
+    }
+
     func remove() {
         try? FileManager.default.removeItem(at: directory)
     }
@@ -78,8 +89,16 @@ private func mainActorLatency() async -> Duration {
     return await Task { @MainActor in clock.now - requestedAt }.value
 }
 
+/// The descriptors this process holds open; `/dev/fd` lists them.
+private func openFileDescriptorCount() throws -> Int {
+    try FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count
+}
+
 @available(macOS 15.0, *)
 final class K8sExecCredentialTests: XCTestCase {
+
+    /// `KubeConfig+Exec.swift` kills a child that ignores SIGTERM this long after the timeout.
+    private let terminationGrace: Duration = .seconds(2)
 
     private func kubeconfig(execCommand: String) -> String {
         """
@@ -154,6 +173,42 @@ final class K8sExecCredentialTests: XCTestCase {
         XCTAssertFalse(runningAfterTimeout, "the plugin must be terminated")
     }
 
+    func testPluginIgnoringSIGTERMIsKilledAfterTheGrace() async throws {
+        let plugin = try FakePlugin.ignoringTermination()
+        defer { plugin.remove() }
+        let timeout: Duration = .seconds(1)
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        do {
+            _ = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: timeout)
+            XCTFail("a plugin that outlives the timeout must fail")
+        } catch KubeConfigError.execPluginFailed(let message) {
+            XCTAssertTrue(message.contains("timed out"), message)
+        }
+
+        let elapsed = clock.now - startedAt
+        XCTAssertGreaterThan(
+            elapsed, timeout + terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        XCTAssertLessThan(elapsed, timeout + terminationGrace + .milliseconds(500), "returned after \(elapsed)")
+        let stillRunning = try await plugin.isRunning()
+        XCTAssertFalse(stillRunning, "the plugin must be killed")
+    }
+
+    func testPluginOutputBeyondTheLimitIsAnError() async throws {
+        let plugin = try FakePlugin.writingTwoMebibytes()
+        defer { plugin.remove() }
+
+        do {
+            _ = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [])
+            XCTFail("2 MiB of output must be refused")
+        } catch KubeConfigError.execPluginFailed(let message) {
+            XCTAssertEqual(message, "exec plugin wrote more than 1048576 bytes")
+        }
+        let stillRunning = try await plugin.isRunning()
+        XCTAssertFalse(stillRunning, "the plugin must be terminated")
+    }
+
     func testNonZeroExitReportsTheStatus() async throws {
         let plugin = try FakePlugin("#!/bin/sh\nexit 7\n")
         defer { plugin.remove() }
@@ -210,6 +265,22 @@ final class K8sExecCredentialTests: XCTestCase {
         } catch {
             XCTAssertEqual((error as NSError).domain, NSCocoaErrorDomain, "\(error)")
         }
+    }
+
+    func testMissingPluginLeavesNoReaderBehind() async throws {
+        let config = try KubeConfig(yaml: kubeconfig(execCommand: "/nonexistent/plugin"))
+        let before = try openFileDescriptorCount()
+
+        for _ in 0..<40 {
+            do {
+                _ = try await config.resolvingCredentials()
+                XCTFail("a missing plugin must fail")
+            } catch {}
+        }
+
+        // A reader started before the launch held both pipe ends per attempt (80 here).
+        let leaked = try openFileDescriptorCount() - before
+        XCTAssertLessThan(leaked, 20, "\(leaked) descriptors left open by 40 failed launches")
     }
 
     func testLoadResolvesTheToken() async throws {
