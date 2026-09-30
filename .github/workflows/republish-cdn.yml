@@ -74,7 +74,11 @@ jobs:
             --pattern '*.dmg' --pattern '*.dmg.sha256'
           DMG_PATH=$(find artifacts -maxdepth 1 -type f -name '*.dmg' -print -quit)
           [ -n "$DMG_PATH" ] || { echo "::error::no DMG asset on release $TAG"; exit 1; }
-          (cd artifacts && shasum -a 256 -c "$(basename "$DMG_PATH").sha256")
+          # Compare digests rather than `shasum -c`: sidecars from older
+          # releases name the DMG by the build machine's absolute path.
+          EXPECTED=$(cut -d' ' -f1 "${DMG_PATH}.sha256")
+          ACTUAL=$(shasum -a 256 "$DMG_PATH" | cut -d' ' -f1)
+          [ "$EXPECTED" = "$ACTUAL" ] || { echo "::error::sha256 mismatch for $DMG_PATH"; exit 1; }
           {
             echo "dmg=$(basename "$DMG_PATH")"
             echo "dmg_path=$DMG_PATH"

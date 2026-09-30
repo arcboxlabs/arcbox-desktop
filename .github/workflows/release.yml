@@ -554,10 +554,11 @@ jobs:
             .build/DerivedData/ModuleCache.noindex/
           key: ${{ steps.xcode_build_cache.outputs.cache-primary-key }}
 
+      # Hash by basename so `shasum -c` works wherever the user downloads to.
       - name: Generate checksum
         run: |
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
-          shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
+          (cd "$(dirname "$DMG_PATH")" && shasum -a 256 "$(basename "$DMG_PATH")" > "$(basename "$DMG_PATH").sha256")
           cat "${DMG_PATH}.sha256"
 
       - name: Cache Sparkle sign_update
