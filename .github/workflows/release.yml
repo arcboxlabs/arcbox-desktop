@@ -945,7 +945,7 @@ jobs:
       # DMG first, appcast + latest.json last, so Sparkle never sees an item
       # whose enclosure is not live yet.
       - name: Publish to R2
-        uses: arcboxlabs/actions/r2-publish@v1
+        uses: arcboxlabs/actions/r2-publish@v2
         with:
           account-id: ${{ vars.R2_ACCOUNT_ID }}
           access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
