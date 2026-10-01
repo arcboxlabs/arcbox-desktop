@@ -6,6 +6,13 @@ import SwiftUI
 struct ContainerLogsContent: View {
     let model: ContainerLogsModel
 
+    /// The zero-height view after the last row that following scrolls to. It
+    /// sits outside the lazy stack on purpose: resolving a row's id makes
+    /// SwiftUI walk every item of the `ForEach` (`LazyStack.firstIndex(of:)`),
+    /// which is what made a batch cost grow with the buffer — 20 ms at 6,000
+    /// lines against 11 ms at 600 — while a plain view's frame is on record.
+    private static let endID = "end-of-log"
+
     var body: some View {
         VStack(spacing: 0) {
             if model.isLoading && model.logEntries.isEmpty {
@@ -42,26 +49,30 @@ struct ContainerLogsContent: View {
     private var logList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(model.filteredEntries) { entry in
-                        ContainerLogsRow(entry: entry)
-                            .id(entry.id)
+                VStack(spacing: 0) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(model.filteredEntries) { entry in
+                            ContainerLogsRow(entry: entry)
+                        }
                     }
-                }
-                .padding(.vertical, 4)
-            }
-            .onAppear {
-                // Jump to bottom immediately for historical logs
-                if let last = model.filteredEntries.last {
-                    proxy.scrollTo(last.id, anchor: .bottom)
+                    .padding(.vertical, 4)
+                    Color.clear
+                        .frame(height: 0)
+                        .id(Self.endID)
                 }
             }
-            // Unanimated: animating a jump to the end of a lazy stack makes SwiftUI
-            // walk the list to resolve the target, and a followed container pays that
-            // on every line.
+            // Historical logs open at their last line.
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
+            // Unanimated: animating a jump to the end makes SwiftUI walk the list
+            // to resolve the target, and a followed container pays that on every line.
             .onChange(of: model.logEntries.count) {
-                if model.isFollowing, let last = model.filteredEntries.last {
-                    proxy.scrollTo(last.id, anchor: .bottom)
+                if model.isFollowing {
+                    proxy.scrollTo(Self.endID, anchor: .bottom)
+                }
+            }
+            .onChange(of: model.isFollowing) { _, isFollowing in
+                if isFollowing {
+                    proxy.scrollTo(Self.endID, anchor: .bottom)
                 }
             }
         }
