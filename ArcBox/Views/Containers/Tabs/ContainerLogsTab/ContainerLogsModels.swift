@@ -1,3 +1,4 @@
+import DockerClient
 import Foundation
 
 /// Filter for log streams
@@ -32,6 +33,14 @@ struct LogEntry: Identifiable {
         self.time = timestamp.map(LogTimestamp.localTime)
         self.stream = stream
         self.message = message
+    }
+
+    init(_ line: DockerLogLine) {
+        self.init(
+            timestamp: line.timestamp,
+            stream: line.stream == .stderr ? .stderr : .stdout,
+            message: line.message
+        )
     }
 }
 

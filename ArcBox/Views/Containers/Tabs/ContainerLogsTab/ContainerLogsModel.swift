@@ -66,13 +66,7 @@ final class ContainerLogsModel {
                 tail: 500,
                 timestamps: true
             )
-            logEntries = historyLines.map { line in
-                LogEntry(
-                    timestamp: line.timestamp,
-                    stream: line.stream == .stderr ? .stderr : .stdout,
-                    message: line.message
-                )
-            }
+            logEntries = historyLines.map(LogEntry.init)
         } catch {
             if !Task.isCancelled {
                 errorMessage = error.localizedDescription
@@ -101,17 +95,7 @@ final class ContainerLogsModel {
             do {
                 for try await lines in stream.batched(every: Self.appendInterval) {
                     if Task.isCancelled { break }
-                    logEntries.append(
-                        contentsOf: lines.map { line in
-                            LogEntry(
-                                timestamp: line.timestamp,
-                                stream: line.stream == .stderr ? .stderr : .stdout,
-                                message: line.message
-                            )
-                        })
-                    if logEntries.count > maxLogEntries {
-                        logEntries.removeFirst(logEntries.count - maxLogEntries)
-                    }
+                    append(lines)
                 }
             } catch {
                 if !Task.isCancelled {
@@ -119,6 +103,17 @@ final class ContainerLogsModel {
                     isFollowing = false
                 }
             }
+        }
+    }
+
+    /// Appends one batch of streamed lines, dropping the oldest past `maxLogEntries`.
+    ///
+    /// Every line a followed container logs lands here, so this is the path whose
+    /// cost the batch regression test pins.
+    func append(_ lines: [DockerLogLine]) {
+        logEntries.append(contentsOf: lines.map(LogEntry.init))
+        if logEntries.count > maxLogEntries {
+            logEntries.removeFirst(logEntries.count - maxLogEntries)
         }
     }
 

@@ -263,6 +263,7 @@
 		D4FFF718B8B6D79B469D2C3C /* GuestExportFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 738233A82C7BAA825F73EE2F /* GuestExportFixture.swift */; };
 		D555C507200C70946F381C91 /* RunnerImagePreparationStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A6D7A71C8A071AB76AE2C /* RunnerImagePreparationStatusView.swift */; };
 		D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */; };
+		D6AD2BCBE1B11E5DEBE49581 /* ContainerLogsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD40E95EB28988589F4ED87B /* ContainerLogsRow.swift */; };
 		D6D1C18BADA9AB8CAE608A7F /* SidebarAccountButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */; };
 		D7149FCB6052803F6900926B /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D50E2875839AD5944467DBC0 /* Sentry */; };
 		D745D0D7EF5FF65174C47F28 /* NewVolumeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */; };
@@ -551,6 +552,7 @@
 		B9EDD0CCB1C4698A31FC1ED1 /* LocalRootFSOutlineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineView.swift; sourceTree = "<group>"; };
 		BA69DFAC30647687529C962A /* ContainersListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListView.swift; sourceTree = "<group>"; };
 		BA990161E9F1709745BE5796 /* SandboxModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxModel.swift; sourceTree = "<group>"; };
+		BD40E95EB28988589F4ED87B /* ContainerLogsRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsRow.swift; sourceTree = "<group>"; };
 		BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageModel.swift; sourceTree = "<group>"; };
 		BDF2337ED21F8382F7ABB29A /* VolumeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeModel.swift; sourceTree = "<group>"; };
 		BEA74DBE71D29DEB680F08E7 /* SwiftTermView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTermView.swift; sourceTree = "<group>"; };
@@ -1239,6 +1241,7 @@
 				3C8BC15AE11A092FC1C1C267 /* ContainerLogsContent.swift */,
 				45D481BC91D8F67BAA688619 /* ContainerLogsModel.swift */,
 				269B74A3C7704AB81139FA52 /* ContainerLogsModels.swift */,
+				BD40E95EB28988589F4ED87B /* ContainerLogsRow.swift */,
 				FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */,
 				28A1CFE3E8F56BF095A78AD7 /* ContainerLogsToolbar.swift */,
 			);
@@ -1576,6 +1579,7 @@
 				A5041C698CD41D977D5F963D /* ContainerLogsContent.swift in Sources */,
 				0E42DD1DDB459E2058A6181B /* ContainerLogsModel.swift in Sources */,
 				2754C5F694613CA3A06DBC7E /* ContainerLogsModels.swift in Sources */,
+				D6AD2BCBE1B11E5DEBE49581 /* ContainerLogsRow.swift in Sources */,
 				48014023336A8AD5D1B21A27 /* ContainerLogsTab.swift in Sources */,
 				C243E6FAF73C09AB9E69BD23 /* ContainerLogsToolbar.swift in Sources */,
 				8E9980682D9BB81A4CB35673 /* ContainerModel.swift in Sources */,

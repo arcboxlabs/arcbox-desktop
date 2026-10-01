@@ -44,7 +44,7 @@ struct ContainerLogsContent: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(model.filteredEntries) { entry in
-                        logLineView(entry)
+                        ContainerLogsRow(entry: entry)
                             .id(entry.id)
                     }
                 }
@@ -65,25 +65,5 @@ struct ContainerLogsContent: View {
                 }
             }
         }
-    }
-
-    private func logLineView(_ entry: LogEntry) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            if let time = entry.time {
-                Text(time)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(AppColors.textMuted)
-                    .lineLimit(1)
-                Text(" ")
-                    .font(.system(size: 12, design: .monospaced))
-            }
-            Text(entry.message)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(entry.stream == .stderr ? Color.red.opacity(0.85) : AppColors.text)
-                .textSelection(.enabled)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 1)
     }
 }
