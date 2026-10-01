@@ -15,6 +15,7 @@ import XCTest
 final class ContainerLogsBatchTests: XCTestCase {
     private static let batches = 200
     private static let batchSize = 10
+    private static let roundSize = 25
     /// `ContainerLogsModel.maxLogEntries`: at that size every batch also trims the buffer.
     private static let cap = 10_000
     private static let bufferSizes = [600, 3_000, 6_000, cap]
@@ -33,10 +34,18 @@ final class ContainerLogsBatchTests: XCTestCase {
         }
     }
 
-    /// Each batch evaluates no more rows than are visible plus the batch, and the
-    /// median per batch stays within 1.5x of the smallest buffer's. The run at the
-    /// cap is held to the largest uncapped buffer instead: it is the one where the
-    /// block trim lands, a linear step paid once per `trimBlock` lines.
+    /// Three things hold at every buffer size. Each batch evaluates no more rows than
+    /// are visible plus the batch. Following scrolled to the end marker and to nothing
+    /// else, and the filter cache never rescanned the buffer: those two counters are
+    /// the regression guards for the per-batch `scrollTo(row.id)` walk and the
+    /// per-read filter pass this series removed. Behind them the timing ratio is a
+    /// coarse backstop: the median per batch within 2x of the smallest buffer's (the
+    /// cap against the largest uncapped buffer, where the block trim lands). The
+    /// pre-fix code measured 1.84 unfiltered, 3.07 with a search and 2.00 with the
+    /// stream filter at 6,000 lines on an M-series Mac, and CI's slower runner put a
+    /// fixed build at 1.55 once against a 1.5 bound — so 2 is what still separates
+    /// the filter regressions from runner noise, and the marker guard covers the
+    /// unfiltered one.
     private func assertFlat(runs: [BatchRun]) {
         for run in runs { print(run.summary) }
         let uncapped = runs.filter { $0.seeded < Self.cap }
@@ -47,10 +56,18 @@ final class ContainerLogsBatchTests: XCTestCase {
             )
             let baseline = run.seeded < Self.cap ? uncapped.first! : uncapped.last!
             XCTAssertLessThanOrEqual(
-                run.median / baseline.median, 1.5,
+                run.median / baseline.median, 2,
                 "\(run.label): median per batch at \(run.seeded) lines is \(run.median) vs \(baseline.median) at \(baseline.seeded)"
             )
         }
+        XCTAssertEqual(
+            ContainerLogsDiagnostics.filterRescans, 0, "a batch must extend the filter cache, not rebuild it")
+        let scrolls = ContainerLogsDiagnostics.scrollTargets
+        XCTAssertEqual(scrolls.count, Self.batches * runs.count, "following scrolls once per batch")
+        XCTAssertTrue(
+            scrolls.allSatisfy { $0 == AnyHashable(ContainerLogsContent.endID) },
+            "following must scroll to the end marker, never to a row: \(Set(scrolls))"
+        )
     }
 
     // MARK: - Harness
@@ -123,22 +140,28 @@ final class ContainerLogsBatchTests: XCTestCase {
         }
     }
 
-    /// Hosts a tab per buffer size, one after another, and appends `batches` batches
-    /// to each.
+    /// Hosts a tab per buffer size and appends `batches` batches to each, `roundSize`
+    /// at a time in rotation, so that load on the machine lands on every size alike
+    /// instead of on whichever ran while it struck.
     private func runBatches(search: String, stream: LogStreamFilter) throws -> [BatchRun] {
+        let buffers = try Self.bufferSizes.map { try HostedBuffer(seeded: $0, search: search, stream: stream) }
+        defer { buffers.forEach { $0.host.close() } }
+        BodyEvaluationCounter.reset()
+        ContainerLogsDiagnostics.reset()
+        for _ in 0..<(Self.batches / Self.roundSize) {
+            for buffer in buffers {
+                for _ in 0..<Self.roundSize { buffer.batch() }
+            }
+        }
         let filters = [search.isEmpty ? nil : "search=\(search)", stream == .all ? nil : "stream=\(stream)"]
         let label = filters.compactMap { $0 }.joined(separator: " ")
-        return try Self.bufferSizes.map { seeded in
-            let buffer = try HostedBuffer(seeded: seeded, search: search, stream: stream)
-            defer { buffer.host.close() }
-            BodyEvaluationCounter.reset()
-            for _ in 0..<Self.batches { buffer.batch() }
-            return BatchRun(
+        return buffers.map {
+            BatchRun(
                 label: label.isEmpty ? "unfiltered" : label,
-                seeded: seeded,
-                visibleRows: buffer.visibleRows,
-                perBatch: buffer.perBatch,
-                rowsPerBatch: buffer.rowsPerBatch
+                seeded: $0.seeded,
+                visibleRows: $0.visibleRows,
+                perBatch: $0.perBatch,
+                rowsPerBatch: $0.rowsPerBatch
             )
         }
     }

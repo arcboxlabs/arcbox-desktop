@@ -56,6 +56,9 @@ final class ContainerLogsModel {
         guard filterCache.searchText == searchText, filterCache.streamFilter == streamFilter,
             let scannedLastID = filterCache.scannedLastID
         else {
+            #if DEBUG
+                ContainerLogsDiagnostics.filterRescans += 1
+            #endif
             filterCache = FilterCache(
                 searchText: searchText,
                 streamFilter: streamFilter,

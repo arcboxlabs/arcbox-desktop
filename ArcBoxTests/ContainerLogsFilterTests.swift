@@ -79,6 +79,43 @@ final class ContainerLogsFilterTests: XCTestCase {
         XCTAssertEqual(model.filteredEntries.map(\.message), ["listening socket closed", "panic: nil map"])
     }
 
+    /// The cache rebuilds on a filter change and on a write that bypasses `append(_:)`,
+    /// once each, and never on an append or a trim.
+    func testAppendsExtendTheCacheWithoutRescanning() {
+        let model = ContainerLogsModel()
+        var next = 0
+        model.append(ContainerLogsFixtures.lines(from: &next, count: 600))
+        model.searchText = "failed"
+        ContainerLogsDiagnostics.reset()
+
+        _ = model.filteredEntries
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 1, "the first read under a filter scans the buffer")
+        _ = model.filteredEntries
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 1, "a second read reuses the cache")
+
+        for _ in 0..<50 {
+            model.append(ContainerLogsFixtures.lines(from: &next, count: 10))
+            _ = model.filteredEntries
+        }
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 1, "appends extend the cache")
+        model.append(ContainerLogsFixtures.lines(from: &next, count: model.maxLogEntries))
+        _ = model.filteredEntries
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 1, "a trim at the cap drops from the cache")
+
+        model.streamFilter = .stderr
+        _ = model.filteredEntries
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 2, "a filter change rescans once")
+
+        model.logEntries = Self.entries(from: 0, count: 40)
+        _ = model.filteredEntries
+        _ = model.filteredEntries
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 3, "a write outside append(_:) rescans once")
+
+        model.clearLogs()
+        _ = model.filteredEntries
+        XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 4, "clearing is such a write")
+    }
+
     // MARK: - Oracle
 
     /// The filter as the tab computed it before the cache: a full pass over the buffer.

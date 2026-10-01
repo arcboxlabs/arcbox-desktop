@@ -11,7 +11,7 @@ struct ContainerLogsContent: View {
     /// SwiftUI walk every item of the `ForEach` (`LazyStack.firstIndex(of:)`),
     /// which is what made a batch cost grow with the buffer — 20 ms at 6,000
     /// lines against 11 ms at 600 — while a plain view's frame is on record.
-    private static let endID = "end-of-log"
+    static let endID = "end-of-log"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -70,14 +70,23 @@ struct ContainerLogsContent: View {
             // pays that on every line.
             .onChange(of: model.logEntries.last?.id) {
                 if model.isFollowing {
-                    proxy.scrollTo(Self.endID, anchor: .bottom)
+                    scrollToEnd(proxy)
                 }
             }
             .onChange(of: model.isFollowing) { _, isFollowing in
                 if isFollowing {
-                    proxy.scrollTo(Self.endID, anchor: .bottom)
+                    scrollToEnd(proxy)
                 }
             }
         }
+    }
+
+    /// The one place the content scrolls. The end marker is the only target it ever
+    /// asks for; the batch test holds it to that.
+    private func scrollToEnd(_ proxy: ScrollViewProxy) {
+        #if DEBUG
+            ContainerLogsDiagnostics.scrollTargets.append(Self.endID)
+        #endif
+        proxy.scrollTo(Self.endID, anchor: .bottom)
     }
 }

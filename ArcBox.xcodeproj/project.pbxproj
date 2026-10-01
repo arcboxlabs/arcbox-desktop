@@ -42,6 +42,7 @@
 		1C9ADBD51C57E8C3938500CA /* ContainerListCellPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */; };
 		1CA50DB029E0C7A18CAF87A2 /* LocalRootFSOutlineCoordinator+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45A5AAA9B74A59E7543D8D0 /* LocalRootFSOutlineCoordinator+Actions.swift */; };
 		1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */; };
+		1E6D14685602844F41F2F2C8 /* ContainerLogsDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A3EDCCF0839B20D620BA92 /* ContainerLogsDiagnostics.swift */; };
 		1FB4D8B5B61B82155960542D /* NetworksListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 089AAF447EC30EF108B76EF7 /* NetworksListViewController.swift */; };
 		20C4C1664AC3D1942C7D72CD /* SandboxesViewModel+GRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829D8DC499E6339D13A2ADE7 /* SandboxesViewModel+GRPC.swift */; };
 		21D545F71EFE312362029E61 /* SandboxPortsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EB6AEBF371E6B88EF8D08E /* SandboxPortsTab.swift */; };
@@ -465,6 +466,7 @@
 		725E693E00BCEB4D0ADE7A25 /* FleetControlClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FleetControlClient; path = Packages/FleetControlClient; sourceTree = SOURCE_ROOT; };
 		738233A82C7BAA825F73EE2F /* GuestExportFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestExportFixture.swift; sourceTree = "<group>"; };
 		747AB46D7603C23FB9112444 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		75A3EDCCF0839B20D620BA92 /* ContainerLogsDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsDiagnostics.swift; sourceTree = "<group>"; };
 		7607A876F6C88A440DA53BE1 /* SidebarAccountButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarAccountButton.swift; sourceTree = "<group>"; };
 		769B6260DD087F5B16E7407D /* MachinesListViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesListViewControllerTests.swift; sourceTree = "<group>"; };
 		77BE672A52785F040AC6CEB2 /* ExternalTerminalDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalDiscovery.swift; sourceTree = "<group>"; };
@@ -1249,6 +1251,7 @@
 			isa = PBXGroup;
 			children = (
 				3C8BC15AE11A092FC1C1C267 /* ContainerLogsContent.swift */,
+				75A3EDCCF0839B20D620BA92 /* ContainerLogsDiagnostics.swift */,
 				45D481BC91D8F67BAA688619 /* ContainerLogsModel.swift */,
 				269B74A3C7704AB81139FA52 /* ContainerLogsModels.swift */,
 				BD40E95EB28988589F4ED87B /* ContainerLogsRow.swift */,
@@ -1592,6 +1595,7 @@
 				E7E796A682B8956706429D45 /* ContainerListCells.swift in Sources */,
 				1BC0DF2E6DAA6E0A94058B5F /* ContainerListModels.swift in Sources */,
 				A5041C698CD41D977D5F963D /* ContainerLogsContent.swift in Sources */,
+				1E6D14685602844F41F2F2C8 /* ContainerLogsDiagnostics.swift in Sources */,
 				0E42DD1DDB459E2058A6181B /* ContainerLogsModel.swift in Sources */,
 				2754C5F694613CA3A06DBC7E /* ContainerLogsModels.swift in Sources */,
 				D6AD2BCBE1B11E5DEBE49581 /* ContainerLogsRow.swift in Sources */,
