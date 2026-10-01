@@ -117,8 +117,10 @@ struct ProcessRunningTests {
 
     @Test func killsAChildThatIgnoresSIGTERM() async throws {
         // The script's `trap` must be in place when SIGTERM arrives at the deadline, or bash
-        // just dies and proves nothing; the deadline leaves bash most of the kill grace to
-        // start on a loaded host.
+        // just dies and proves nothing. The deadline is measured from the launch, so it cannot
+        // wait for the trap; just under the grace leaves bash the most time a fixed deadline
+        // can (Gatekeeper's first-launch cost is already paid by the fixture), and the
+        // `#require` below names the precondition when a host still misses it.
         let fake = try await FakeExecutable.ignoringTermination()
         defer { fake.remove() }
         let process = Process()
@@ -147,8 +149,11 @@ struct ProcessRunningTests {
         // The reader trips the limit within milliseconds of `head` starting and terminates the
         // child, which ignores SIGTERM; the timeout then fires inside the 2 s kill grace. The
         // limit is the cause and must be the error, and the child is still reaped before it
-        // propagates. The deadline sits just under the grace so that bash may take up to that
-        // long to start on a loaded host and the deadline still lands inside the grace.
+        // propagates. The deadline must fall between the limit tripping and the kill, and both
+        // are measured from the launch, so a fixed deadline cannot wait for `head` to appear;
+        // just under the grace gives it the most slack a fixed deadline can — bash may take up
+        // to that long to start (Gatekeeper's first-launch cost is already paid by the fixture)
+        // — and the `#require` below names the precondition when a host still misses it.
         let fake = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
         defer { fake.remove() }
         let process = Process()
