@@ -46,6 +46,7 @@
 		20C4C1664AC3D1942C7D72CD /* SandboxesViewModel+GRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829D8DC499E6339D13A2ADE7 /* SandboxesViewModel+GRPC.swift */; };
 		21D545F71EFE312362029E61 /* SandboxPortsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EB6AEBF371E6B88EF8D08E /* SandboxPortsTab.swift */; };
 		22A38E75CD6CB3074F3BB6D4 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A8FF41635473729BF0A36E /* StatusBadge.swift */; };
+		22C1101C68F592CB713470EE /* DockerContextCLITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80F417D63F3D05748E236EDA /* DockerContextCLITests.swift */; };
 		2437ABD6C32B0F3CE43F3125 /* FleetControlClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5E3A017A70860929AA45F0 /* FleetControlClientTests.swift */; };
 		245366143B64E30BF77A6BAE /* SandboxFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920C9CA81449FA23CEC17EF6 /* SandboxFilesTab.swift */; };
 		25E25D58DAE59E9EB433B6F5 /* K8sWatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F065A1CBDA891A5647FE6F6 /* K8sWatchTests.swift */; };
@@ -84,6 +85,7 @@
 		466BD76F6F334FBAEA392BD5 /* HelperInstallErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF45523D23D3F96612423943 /* HelperInstallErrorTests.swift */; };
 		46717964B62163546276C1D1 /* AboutView+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC98017408ED56AFF734125A /* AboutView+Sections.swift */; };
 		46B6C9A7C600F539CFF338FE /* VolumesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88EB2359E678AC8E1EEEB83A /* VolumesListViewController.swift */; };
+		4755D2FD442AB24F84B34426 /* DockerCLIResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AC6C575DD6BA2301F43E85 /* DockerCLIResolverTests.swift */; };
 		477DF414090DADD3A631F50B /* SandboxesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21565AF3B3606525539AE506 /* SandboxesListView.swift */; };
 		47F7DA566708A3959A5AEB8D /* SystemVmBackendModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BC46E06601AA9D330AF049 /* SystemVmBackendModel.swift */; };
 		48014023336A8AD5D1B21A27 /* ContainerLogsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */; };
@@ -233,6 +235,7 @@
 		BA8E4BE30E5FBB6B8548E214 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657D7543F1D47988AEC3339D /* AppDelegate.swift */; };
 		BAB560B0FEE9F5C4D53BAAA7 /* DaemonRegistrationFailureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FC6CD087B9A223CE8E3250 /* DaemonRegistrationFailureTests.swift */; };
 		BB6DA9C1B509BF12CDA5A92E /* ImageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185A238D021D6C976574528C /* ImageDetailView.swift */; };
+		BC2DB6597FC8C4219DB1B34F /* DockerContextCLI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845946FC9C9F5412C9179939 /* DockerContextCLI.swift */; };
 		BD0363ABBB77C56F049EE2E4 /* LayerMergeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4E1595F793A3AD5691E191D /* LayerMergeBadge.swift */; };
 		BD99D14EC5ED57BA1FF283CC /* DockerContextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064086AEC8C204E8224DF45A /* DockerContextManager.swift */; };
 		BDE44A1851827C2069778F08 /* ImageFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BE02225F61EF92333916B1 /* ImageFilesTab.swift */; };
@@ -476,6 +479,7 @@
 		7D5BDCAAF11D1A6B52990E28 /* ContainerViewModel+Mapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContainerViewModel+Mapping.swift"; sourceTree = "<group>"; };
 		7DDFA2EDA7A3AC8448696F91 /* VolumeFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeFilesTab.swift; sourceTree = "<group>"; };
 		80010452354615CAC08FAF1D /* ContainersListViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListViewControllerTests.swift; sourceTree = "<group>"; };
+		80F417D63F3D05748E236EDA /* DockerContextCLITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerContextCLITests.swift; sourceTree = "<group>"; };
 		816C59570B7C65B9288056A8 /* SandboxNotificationRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxNotificationRulesTests.swift; sourceTree = "<group>"; };
 		81FCCED6F39D73E946107243 /* MachineEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineEmptyStateView.swift; sourceTree = "<group>"; };
 		823F87591055C314EC29BF67 /* ToolbarSeparator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarSeparator.swift; sourceTree = "<group>"; };
@@ -483,6 +487,7 @@
 		829D8DC499E6339D13A2ADE7 /* SandboxesViewModel+GRPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SandboxesViewModel+GRPC.swift"; sourceTree = "<group>"; };
 		8357344FFAC2AB6F56EE95EC /* MachinesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinesListViewController.swift; sourceTree = "<group>"; };
 		83FBE0C82E0EB430C69EB944 /* GuestDataMount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestDataMount.swift; sourceTree = "<group>"; };
+		845946FC9C9F5412C9179939 /* DockerContextCLI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerContextCLI.swift; sourceTree = "<group>"; };
 		85296C05DC9D33C7930366D7 /* ServicesListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesListViewController.swift; sourceTree = "<group>"; };
 		85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSService.swift; sourceTree = "<group>"; };
 		85EB02E7DC54A70CDFD0C694 /* SheetErrorMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetErrorMessage.swift; sourceTree = "<group>"; };
@@ -498,6 +503,7 @@
 		903FA72CEF39142ADA5CA378 /* NewVolumeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewVolumeSheet.swift; sourceTree = "<group>"; };
 		9101DCB26B0BB5B8DE4CAE70 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		915561BEEE49F5E27F4B0D40 /* OnboardingWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWindowController.swift; sourceTree = "<group>"; };
+		91AC6C575DD6BA2301F43E85 /* DockerCLIResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerCLIResolverTests.swift; sourceTree = "<group>"; };
 		91F830C5D7EEFBF144197C5B /* AppDelegateTestHostTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTestHostTests.swift; sourceTree = "<group>"; };
 		920C9CA81449FA23CEC17EF6 /* SandboxFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxFilesTab.swift; sourceTree = "<group>"; };
 		9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterDelegate.swift; sourceTree = "<group>"; };
@@ -825,6 +831,7 @@
 			isa = PBXGroup;
 			children = (
 				0EDE93A683D2613C431BEBF2 /* DockerCLIResolver.swift */,
+				845946FC9C9F5412C9179939 /* DockerContextCLI.swift */,
 				064086AEC8C204E8224DF45A /* DockerContextManager.swift */,
 				6AC42E91F0BCACABF173B87F /* DockerTerminalSession.swift */,
 			);
@@ -1328,6 +1335,8 @@
 				535894F6E4F12A71E906ED02 /* DaemonNotificationRulesTests.swift */,
 				C4FC6CD087B9A223CE8E3250 /* DaemonRegistrationFailureTests.swift */,
 				F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */,
+				91AC6C575DD6BA2301F43E85 /* DockerCLIResolverTests.swift */,
+				80F417D63F3D05748E236EDA /* DockerContextCLITests.swift */,
 				06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */,
 				27C52C15D6902B3EAB6307AA /* DockerTerminalSessionIntegrationTests.swift */,
 				522820EEBA49BC66D525CE20 /* ErrorReportingScrubTests.swift */,
@@ -1620,6 +1629,7 @@
 				7611F110DA849DA460755BE4 /* DetailTabPicker.swift in Sources */,
 				632810E9B138C535A11E7EBF /* DiagnosticBundleExporter.swift in Sources */,
 				6EE6805F5EC85742CC665575 /* DockerCLIResolver.swift in Sources */,
+				BC2DB6597FC8C4219DB1B34F /* DockerContextCLI.swift in Sources */,
 				BD99D14EC5ED57BA1FF283CC /* DockerContextManager.swift in Sources */,
 				15FFC6590CB1CDFE38CFD3EA /* DockerEventMonitor.swift in Sources */,
 				6EE78011A83F450B9E754CAB /* DockerTerminalSession.swift in Sources */,
@@ -1814,6 +1824,8 @@
 				351718A1033DD049AED78108 /* DaemonNotificationRulesTests.swift in Sources */,
 				BAB560B0FEE9F5C4D53BAAA7 /* DaemonRegistrationFailureTests.swift in Sources */,
 				EE2D38BC76500BF768EEE20F /* DeepLinkTests.swift in Sources */,
+				4755D2FD442AB24F84B34426 /* DockerCLIResolverTests.swift in Sources */,
+				22C1101C68F592CB713470EE /* DockerContextCLITests.swift in Sources */,
 				8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */,
 				D16762EE419CC9055CDD90FF /* DockerTerminalSessionIntegrationTests.swift in Sources */,
 				8AADBD7B0F4EA3F0068957BF /* ErrorReportingScrubTests.swift in Sources */,
