@@ -18,17 +18,22 @@ enum LogStream {
 
 /// A single log entry with metadata
 struct LogEntry: Identifiable {
-    let id = UUID()
+    /// Allocated in arrival order, so a buffer is sorted by `id`: `ContainerLogsModel`'s
+    /// filter cache drops a trimmed head and extends by an appended tail by comparing
+    /// ids, and never has to search the buffer.
+    let id: Int
     /// The raw Docker timestamp, which is what `Copy logs` writes out.
     let timestamp: String?
-    /// `timestamp` as local wall-clock time, resolved once here. The view body runs for
-    /// every row on every new line, and `ISO8601DateFormatter` is far too slow to sit in
+    /// `timestamp` as local wall-clock time, resolved once here. A row's body runs each
+    /// time the row is laid out, and `ISO8601DateFormatter` is far too slow to sit in
     /// that path — doing so hung the app on containers that log steadily.
     let time: String?
     let stream: LogStream
     let message: String
 
     init(timestamp: String?, stream: LogStream, message: String) {
+        self.id = Self.nextID
+        Self.nextID += 1
         self.timestamp = timestamp
         self.time = timestamp.map(LogTimestamp.localTime)
         self.stream = stream
@@ -42,6 +47,10 @@ struct LogEntry: Identifiable {
             message: line.message
         )
     }
+
+    /// Main-actor state like every entry's creation site; the module's default isolation
+    /// makes the compiler hold callers to that.
+    private static var nextID = 0
 }
 
 enum LogTimestamp {

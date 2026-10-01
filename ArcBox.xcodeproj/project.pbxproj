@@ -249,6 +249,7 @@
 		C8C56406446AE0906E11100C /* InfoTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED1683EF0A3490B8B7B5CF6 /* InfoTableView.swift */; };
 		C94515858BC220B73B93EC5D /* ArcBoxClientErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC5F65FECB2F80BA3AF1D84 /* ArcBoxClientErrorTests.swift */; };
 		C9850114DD3E3F1B3C22E09D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */; };
+		C9DE020C046663275EC9767F /* ContainerLogsFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4146DF71A57F8A1ED79D8947 /* ContainerLogsFilterTests.swift */; };
 		CA35C83C2741D945EF23C5E3 /* VolumeViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867A6CA0B4DD07BE74610FCB /* VolumeViewModel+Docker.swift */; };
 		CC2502232C562D3167B2F3D2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B37EA00E3A32B9866C9BE293 /* Sparkle */; };
 		CCAF8E87C516B0ACE300BDCD /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A76C0B459745654F31B3B2 /* PodsListView.swift */; };
@@ -401,6 +402,7 @@
 		3ED1683EF0A3490B8B7B5CF6 /* InfoTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoTableView.swift; sourceTree = "<group>"; };
 		3F3DBF7CBDB3176071B996D3 /* RunnerHostStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostStatus.swift; sourceTree = "<group>"; };
 		4009DCC81EA64B23A77FB0C4 /* ServicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesViewModel.swift; sourceTree = "<group>"; };
+		4146DF71A57F8A1ED79D8947 /* ContainerLogsFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsFilterTests.swift; sourceTree = "<group>"; };
 		420516961E57589A91B445DA /* VolumesViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VolumesViewModel+Docker.swift"; sourceTree = "<group>"; };
 		43B8FF992E687C114ADB8E32 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		43EBEB3FD3F7F3D2E7DF91B0 /* PodsListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListViewController.swift; sourceTree = "<group>"; };
@@ -1316,6 +1318,7 @@
 				3750055AEC4C49576A78A909 /* ByteFormattingTests.swift */,
 				A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */,
 				671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */,
+				4146DF71A57F8A1ED79D8947 /* ContainerLogsFilterTests.swift */,
 				68E865C1248DD29069506046 /* ContainerLogsFixtures.swift */,
 				EDE0E04FE403500007EAF74B /* ContainerLogsFollowingTests.swift */,
 				269F743D5217D0B08810DB1F /* ContainersBatchConcurrencyTests.swift */,
@@ -1792,6 +1795,7 @@
 				70996419B03971A57B1DCF0F /* ByteFormattingTests.swift in Sources */,
 				31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */,
 				1C9ADBD51C57E8C3938500CA /* ContainerListCellPerformanceTests.swift in Sources */,
+				C9DE020C046663275EC9767F /* ContainerLogsFilterTests.swift in Sources */,
 				593269294B66A331F9D9F744 /* ContainerLogsFixtures.swift in Sources */,
 				C23203D748724EA2E6914E81 /* ContainerLogsFollowingTests.swift in Sources */,
 				427F8A6DBC4047172A310627 /* ContainersBatchConcurrencyTests.swift in Sources */,
