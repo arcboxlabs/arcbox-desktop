@@ -14,9 +14,12 @@ import XCTest
 /// `ActivityViewModel.ingest` — the same path the stream drives — and measures
 /// the wall time each one costs the main thread.
 ///
-/// The budgets are on the median, not the maximum, and sit at several times
-/// the median measured on an M-series host in a Debug build (2026-10-01, see
-/// the PR), so a slower CI runner does not fail them on noise.
+/// The budgets are on the median, not the maximum, and sit at three times or
+/// more the median a `macos-26-arm64` CI runner measures — 2.5–4.5× what an
+/// M-series host sees in a Debug build (2026-10-01, PR #409: sparklines 0.56–
+/// 1.04 ms locally, 2.55 ms on CI) — so the runner does not fail them on noise.
+/// CI shows a part's numbers only in the failure message; `xcpretty` swallows
+/// the `[activity-bench]` line a passing run prints.
 ///
 /// `ARCBOX_ACTIVITY_BENCH_TICKS` lengthens the loop so `sample(1)` can
 /// attribute the cost; the default is short enough for CI.
@@ -33,30 +36,34 @@ final class ActivityTickBenchmarkTests: XCTestCase {
     private static let shuffles = ProcessInfo.processInfo.environment["ARCBOX_ACTIVITY_BENCH_SHUFFLE"] == "1"
 
     /// The three sparklines alone — the headline figures held still so only
-    /// the histories move. Measured at 0.56 ms with Canvas; the Swift Charts
-    /// figures it replaced took 5.26 ms, so this is the gate that would catch
-    /// them coming back.
+    /// the histories move. 0.56–1.04 ms with Canvas locally, 2.55 ms on CI;
+    /// the Swift Charts figures they replaced took 5.26 ms locally, so 13 ms or
+    /// more on CI, and this is the gate that would catch them coming back.
     func testSparklineTickStaysWithinBudget() throws {
         let tick = try measureTick(of: .sparklines)
-        XCTAssertLessThan(tick.median, .milliseconds(2), "a history sample costs the sparklines \(tick)")
+        XCTAssertLessThan(tick.median, .milliseconds(8), "a history sample costs the sparklines \(tick)")
     }
 
     /// The strip: four tiles with live headlines. Most of it is text —
     /// re-rasterizing the glyphs of every tile's display list and compositing
-    /// the `numericText` transition — not the figures: 3.5 ms measured, 1.6 ms
-    /// with the transition removed (and the animation tail 160 ms → 13 ms).
+    /// the `numericText` transition — not the figures: 2.7–3.5 ms locally,
+    /// 1.6 ms with the transition removed (and the animation tail 160 ms →
+    /// 13 ms). CI's duration for this test puts its median near 5–7 ms; the
+    /// budget is a smoke gate against an order-of-magnitude regression.
     func testStripTickStaysWithinBudget() throws {
         let tick = try measureTick(of: .strip)
-        XCTAssertLessThan(tick.median, .milliseconds(12), "the strip costs \(tick) per sample")
+        XCTAssertLessThan(tick.median, .milliseconds(40), "the strip costs \(tick) per sample")
     }
 
     /// The whole screen with twenty containers. The table is the bulk of it:
     /// SwiftUI's `Table` reloads every row whose cells changed and re-measures
-    /// their heights, about 0.3 ms per changed row: 7–10 ms measured here,
-    /// 16.7 ms with the Swift Charts strip, 25 ms when every row re-sorts.
+    /// their heights, about 0.3 ms per changed row: 7–10 ms locally (16.7 ms
+    /// with the Swift Charts strip, 25 ms when every row re-sorts), and CI's
+    /// duration for this test puts its median near 20–28 ms. A smoke gate, as
+    /// above.
     func testActivityTickStaysWithinBudget() throws {
         let tick = try measureTick(of: .screen)
-        XCTAssertLessThan(tick.median, .milliseconds(30), "one sample costs the screen \(tick)")
+        XCTAssertLessThan(tick.median, .milliseconds(100), "one sample costs the screen \(tick)")
     }
 
     private func measureTick(of part: ActivityBenchmarkHost.Part) throws -> TickTiming {
