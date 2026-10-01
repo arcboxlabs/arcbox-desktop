@@ -253,12 +253,14 @@ final class K8sExecCredentialTests: XCTestCase {
         let clock = ContinuousClock()
         let startedAt = clock.now
 
-        // The default 15 s timeout is far away; the plugin's exit must end the call, not EOF.
+        // The default 15 s timeout is far away; the plugin's exit must end the call, not EOF
+        // (the grandchild holds the pipe for 30 s). Bash start-up alone is 0.1–0.35 s and
+        // more under a loaded test host, so the bound only has to beat those two.
         let token = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [])
 
         let elapsed = clock.now - startedAt
         XCTAssertEqual(token, "tok-123")
-        XCTAssertLessThan(elapsed, .seconds(1), "returned after \(elapsed)")
+        XCTAssertLessThan(elapsed, .seconds(5), "returned after \(elapsed)")
         // The scenario is real only if the grandchild is still there holding the pipe.
         let grandchildAlive = try await plugin.grandchildIsRunning()
         XCTAssertTrue(grandchildAlive, "the fake must leave a grandchild on stdout")

@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import ProcessSupport
 
 extension DaemonManager {
     // MARK: - Helper Lifecycle
