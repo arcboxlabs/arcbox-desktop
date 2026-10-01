@@ -17,7 +17,7 @@ final class TimeMachineExclusionTests: XCTestCase {
     }
 
     func testExcludingCreatesTheDirectoryAndAddsTheExclusion() async throws {
-        let tmutil = try FakeExecutable.recordingArguments()
+        let tmutil = try await FakeExecutable.recordingArguments()
         defer { tmutil.remove() }
 
         try await TimeMachineExclusion(tmutilPath: tmutil.path).update(dataPath, includeInBackups: false)
@@ -27,7 +27,7 @@ final class TimeMachineExclusionTests: XCTestCase {
     }
 
     func testIncludingRemovesTheExclusion() async throws {
-        let tmutil = try FakeExecutable.recordingArguments()
+        let tmutil = try await FakeExecutable.recordingArguments()
         defer { tmutil.remove() }
 
         try await TimeMachineExclusion(tmutilPath: tmutil.path).update(dataPath, includeInBackups: true)
@@ -36,7 +36,7 @@ final class TimeMachineExclusionTests: XCTestCase {
     }
 
     func testFailureReportsTmutilsStderr() async throws {
-        let tmutil = try FakeExecutable.recordingArguments(
+        let tmutil = try await FakeExecutable.recordingArguments(
             exitingWith: 1, standardError: "tmutil: addexclusion requires Full Disk Access privileges.\n")
         defer { tmutil.remove() }
 
@@ -49,7 +49,7 @@ final class TimeMachineExclusionTests: XCTestCase {
     }
 
     func testASilentFailureReportsTheExitStatus() async throws {
-        let tmutil = try FakeExecutable.recordingArguments(exitingWith: 3)
+        let tmutil = try await FakeExecutable.recordingArguments(exitingWith: 3)
         defer { tmutil.remove() }
 
         do {
@@ -62,7 +62,7 @@ final class TimeMachineExclusionTests: XCTestCase {
 
     func testAHungTmutilIsTerminatedAtTheTimeout() async throws {
         // The Settings toggle stays disabled while this runs, so the call has to return.
-        let tmutil = try FakeExecutable.hanging()
+        let tmutil = try await FakeExecutable.hanging()
         defer { tmutil.remove() }
         let timeout: Duration = .milliseconds(500)
         let clock = ContinuousClock()

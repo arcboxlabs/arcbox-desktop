@@ -10,7 +10,7 @@ final class DockerContextCLITests: XCTestCase {
     }
 
     func testCreatesTheContextForTheSocket() async throws {
-        let docker = try FakeExecutable.recordingArguments()
+        let docker = try await FakeExecutable.recordingArguments()
         defer { docker.remove() }
 
         try await createArcBoxContext(with: docker)
@@ -25,7 +25,7 @@ final class DockerContextCLITests: XCTestCase {
     }
 
     func testAnExistingContextIsNotAFailure() async throws {
-        let docker = try FakeExecutable.recordingArguments(
+        let docker = try await FakeExecutable.recordingArguments(
             exitingWith: 1, standardError: "context \"arcbox\" already exists\n")
         defer { docker.remove() }
 
@@ -33,7 +33,7 @@ final class DockerContextCLITests: XCTestCase {
     }
 
     func testFailureReportsTheCLIsStderr() async throws {
-        let docker = try FakeExecutable.recordingArguments(
+        let docker = try await FakeExecutable.recordingArguments(
             exitingWith: 1, standardError: "open /Users/me/.docker/contexts/meta: permission denied\n")
         defer { docker.remove() }
 
@@ -46,7 +46,7 @@ final class DockerContextCLITests: XCTestCase {
     }
 
     func testASilentFailureReportsTheExitStatus() async throws {
-        let docker = try FakeExecutable.recordingArguments(exitingWith: 2)
+        let docker = try await FakeExecutable.recordingArguments(exitingWith: 2)
         defer { docker.remove() }
 
         do {
@@ -58,7 +58,7 @@ final class DockerContextCLITests: XCTestCase {
     }
 
     func testAHungCLIIsTerminatedAtTheTimeout() async throws {
-        let docker = try FakeExecutable.hanging()
+        let docker = try await FakeExecutable.hanging()
         defer { docker.remove() }
         let timeout: Duration = .milliseconds(500)
         let clock = ContinuousClock()

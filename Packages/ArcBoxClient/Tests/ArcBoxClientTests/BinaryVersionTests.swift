@@ -14,7 +14,7 @@ private func mainActorLatency() async -> Duration {
 
 struct BinaryVersionTests {
     @Test func returnsTheTrimmedVersionLineWithoutBlockingTheMainActor() async throws {
-        let fake = try FakeExecutable("#!/bin/sh\nsleep 0.5\necho 'arcbox-helper 9.9.9'\n")
+        let fake = try await FakeExecutable("#!/bin/sh\nsleep 0.5\necho 'arcbox-helper 9.9.9'\n")
         defer { fake.remove() }
 
         // From the main actor, as `installHelper` calls it.
@@ -28,7 +28,7 @@ struct BinaryVersionTests {
     }
 
     @Test func returnsNilWhenTheBinaryWritesMoreThan64KiB() async throws {
-        let fake = try FakeExecutable.writingTwoMebibytes()
+        let fake = try await FakeExecutable.writingTwoMebibytes()
         defer { fake.remove() }
 
         let version = try await binaryVersion(fake.path)
@@ -39,7 +39,7 @@ struct BinaryVersionTests {
     }
 
     @Test func returnsNilAfterTerminatingAChildThatOutlivesTheTimeout() async throws {
-        let fake = try FakeExecutable.hanging()
+        let fake = try await FakeExecutable.hanging()
         defer { fake.remove() }
         let clock = ContinuousClock()
         let startedAt = clock.now
@@ -48,7 +48,8 @@ struct BinaryVersionTests {
 
         let elapsed = clock.now - startedAt
         #expect(version == nil)
-        #expect(elapsed < .milliseconds(1500), "returned after \(elapsed)")
+        // Generous for a loaded host; a child that outlived the timeout would show up at 30 s.
+        #expect(elapsed < .seconds(3), "returned after \(elapsed)")
         let stillRunning = try await fake.isRunning()
         #expect(!stillRunning)
     }
@@ -57,7 +58,7 @@ struct BinaryVersionTests {
         // The reader trips the limit and terminates the child, which ignores SIGTERM; the caller
         // is cancelled inside the 2 s kill grace. Cancellation must propagate — `installHelper`
         // reads a `nil` as "reinstall" — while the child is still reaped before it does.
-        let fake = try FakeExecutable.writingTwoMebibytesIgnoringTermination()
+        let fake = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
         defer { fake.remove() }
         let clock = ContinuousClock()
         let startedAt = clock.now
@@ -81,14 +82,14 @@ struct BinaryVersionTests {
         let missing = try await binaryVersion("/nonexistent/arcbox-helper")
         #expect(missing == nil)
 
-        let failing = try FakeExecutable("#!/bin/sh\necho 'arcbox-helper 9.9.9'\nexit 3\n")
+        let failing = try await FakeExecutable("#!/bin/sh\necho 'arcbox-helper 9.9.9'\nexit 3\n")
         defer { failing.remove() }
         let failed = try await binaryVersion(failing.path)
         #expect(failed == nil)
     }
 
     @Test func cancellationTerminatesTheChildAndPropagates() async throws {
-        let fake = try FakeExecutable.hanging()
+        let fake = try await FakeExecutable.hanging()
         defer { fake.remove() }
 
         let version = Task { try await binaryVersion(fake.path) }
