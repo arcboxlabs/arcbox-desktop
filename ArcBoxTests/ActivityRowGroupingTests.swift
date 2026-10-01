@@ -93,6 +93,46 @@ final class ActivityRowGroupingTests: XCTestCase {
             "members sort by the same comparator as the groups")
     }
 
+    /// The CPU column sorts on the whole percent it displays, so the fractions
+    /// an idle container's counter jitters through cannot reorder rows that
+    /// all read the same.
+    func testCPUSortIgnoresSubPercentJitter() {
+        let byDisplayedCPU = [KeyPathComparator(\ActivityRow.displayedCPUPercent, order: .reverse)]
+        let before = ActivityRowGrouping.groups(
+            for: [row(id: "c", cpu: 0.04), row(id: "a", cpu: 0.31), row(id: "b", cpu: 0.12)],
+            projects: [:],
+            sortedBy: byDisplayedCPU
+        )
+        let after = ActivityRowGrouping.groups(
+            for: [row(id: "c", cpu: 0.27), row(id: "a", cpu: 0.02), row(id: "b", cpu: 0.4)],
+            projects: [:],
+            sortedBy: byDisplayedCPU
+        )
+
+        XCTAssertEqual(before.map(\.summary.title), ["a", "b", "c"], "all three read 0%, so title decides")
+        XCTAssertEqual(after.map(\.summary.title), ["a", "b", "c"], "and a new sample cannot shuffle them")
+        XCTAssertEqual(
+            ActivityRowGrouping.groups(
+                for: [row(id: "a", cpu: 0.4), row(id: "b", cpu: 1.6)],
+                projects: [:],
+                sortedBy: byDisplayedCPU
+            ).map(\.summary.title),
+            ["b", "a"],
+            "a difference the column shows still sorts")
+    }
+
+    /// Rows the comparators leave tied keep a fixed order — by title, then by
+    /// ID — inside a project as well as at the top level.
+    func testTiedRowsOrderByTitleThenID() {
+        let groups = ActivityRowGrouping.groups(
+            for: [row(id: "3", title: "web"), row(id: "2", title: "api"), row(id: "1", title: "web")],
+            projects: ["1": "stack", "2": "stack", "3": "stack"],
+            sortedBy: [KeyPathComparator(\ActivityRow.pids)]
+        )
+
+        XCTAssertEqual(groups.first?.children.map(\.id), ["2", "1", "3"])
+    }
+
     /// Selection and the table's saved disclosure state are keyed by ID, so a
     /// project must never be able to impersonate a container.
     func testProjectIDsCannotCollideWithContainerIDs() {
@@ -123,6 +163,7 @@ final class ActivityRowGroupingTests: XCTestCase {
 
     private func row(
         id: String,
+        title: String? = nil,
         cpu: Double = 0,
         memory: UInt64 = 0,
         memoryLimit: UInt64 = 0,
@@ -132,7 +173,7 @@ final class ActivityRowGroupingTests: XCTestCase {
     ) -> ActivityRow {
         ActivityRow(
             id: id,
-            title: id,
+            title: title ?? id,
             kind: .container(id: id),
             cpuPercent: cpu,
             memoryCurrentBytes: memory,

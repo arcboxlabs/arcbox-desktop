@@ -24,7 +24,7 @@ struct ActivityContainerTable: View {
     let hasLoaded: Bool
 
     @State private var sortOrder = [
-        KeyPathComparator(\ActivityRow.cpuPercent, order: .reverse)
+        KeyPathComparator(\ActivityRow.displayedCPUPercent, order: .reverse)
     ]
     @State private var selection: ActivityRow.ID?
     @State private var disclosureState = ActivityRowDisclosureState()
@@ -35,6 +35,9 @@ struct ActivityContainerTable: View {
     @AppStorage("activity.containerColumns") private var storedColumnLayout = Data()
 
     var body: some View {
+        // Once per sample, not once per reader: the rows and the empty state
+        // both want the grouping, and it sorts every row each time it runs.
+        let groups = groups
         Table(
             of: ActivityRow.self,
             selection: $selection,
@@ -50,7 +53,7 @@ struct ActivityContainerTable: View {
             .disabledCustomizationBehavior(.visibility)
             .customizationID("container")
 
-            TableColumn("CPU", value: \.cpuPercent) { row in
+            TableColumn("CPU", value: \.displayedCPUPercent) { row in
                 reading(StatsFormat.percent(row.cpuPercent), isProject: row.isProject)
             }
             .width(min: 56, ideal: 68)
@@ -101,7 +104,7 @@ struct ActivityContainerTable: View {
         }
         .tableStyle(.inset)
         .alternatingRowBackgrounds()
-        .overlay { emptyState }
+        .overlay { emptyState(groups: groups) }
         .contextMenu(forSelectionType: ActivityRow.ID.self) { ids in
             menu(for: ids)
         } primaryAction: { ids in
@@ -117,7 +120,7 @@ struct ActivityContainerTable: View {
     /// cannot tell "nothing is running" from "nothing matches" without redoing
     /// the same work.
     @ViewBuilder
-    private var emptyState: some View {
+    private func emptyState(groups: [ActivityRowGroup]) -> some View {
         if !hasLoaded {
             EmptyView()
         } else if containers.isEmpty {

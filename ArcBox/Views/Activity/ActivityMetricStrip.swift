@@ -1,5 +1,4 @@
 import ArcBoxClient
-import Charts
 import SwiftUI
 
 /// The machine-wide metric bar that floats over the container table.
@@ -12,6 +11,30 @@ struct ActivityMetricStrip: View {
     /// representatively-shaped stand-ins for the caller to redact, so the strip
     /// reaches its real size immediately and nothing moves when the numbers
     /// arrive.
+    let stats: MachineResourceStats?
+    let cpuHistory: [ActivityViewModel.MetricPoint]
+    let memoryHistory: [ActivityViewModel.MetricPoint]
+    let networkHistory: [ActivityViewModel.MetricPoint]
+
+    var body: some View {
+        ActivityMetricTiles(
+            stats: stats,
+            cpuHistory: cpuHistory,
+            memoryHistory: memoryHistory,
+            networkHistory: networkHistory
+        )
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .glassSurface()
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+    }
+}
+
+/// The strip's tiles without the glass around them — the part that changes
+/// when a figure's rendering does, and so the part a review render captures.
+struct ActivityMetricTiles: View {
     let stats: MachineResourceStats?
     let cpuHistory: [ActivityViewModel.MetricPoint]
     let memoryHistory: [ActivityViewModel.MetricPoint]
@@ -62,12 +85,6 @@ struct ActivityMetricStrip: View {
 
             PressureTile(stats: stats)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .glassSurface()
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
     }
 }
 
@@ -86,8 +103,8 @@ private enum MetricTint {
 /// A metric with history. Selecting a point on the sparkline rewinds the
 /// headline to that sample and says how long ago it was, which is the whole
 /// reason to keep a minute of history on screen rather than just the latest
-/// number. `chartXSelection` decides what counts as selecting — the platform's
-/// convention, not ours.
+/// number. Pointing at the figure selects, as `chartXSelection` did on the Mac;
+/// leaving it lets go.
 private struct SparklineTile: View {
     let title: LocalizedStringKey
     let points: [ActivityViewModel.MetricPoint]
@@ -197,8 +214,15 @@ private struct LiveValueAnimation<V: Equatable>: ViewModifier {
 // MARK: - Figures
 
 /// A filled line over the rolling history, scrubbable with the pointer. The
-/// tile's headline carries the value in text, so the chart itself stays out of
+/// tile's headline carries the value in text, so the figure itself stays out of
 /// the accessibility tree rather than announcing sixty unlabelled samples.
+///
+/// Drawn with `Canvas` rather than Swift Charts. A `Chart` re-resolves every
+/// mark through its scales on every sample: three of them cost 4.4 ms of
+/// main-thread time per tick (measured 2026-10-01, `ActivityTickBenchmarkTests`),
+/// the App Hangs Sentry filed as ARCBOX-DESKTOP-SWIFT-3G. Two paths through
+/// sixty points cost microseconds. The pointer maps back to a sample through
+/// `SparklineGeometry`, which is where the layout rules live.
 private struct Sparkline: View {
     let points: [ActivityViewModel.MetricPoint]
     let tint: Color
@@ -206,54 +230,113 @@ private struct Sparkline: View {
     let domain: ClosedRange<Double>?
     @Binding var scrubbedIndex: Int?
 
+    /// The frame the last layout gave the figure — the coordinate space the
+    /// pointer reports in and the plot is drawn in — so a pointer position can
+    /// be read back as a sample.
+    @State private var figure: CGSize = .zero
+
+    /// The two diameters are Charts' `symbolSize` 16 and 40 — areas, in points
+    /// squared — so the marker keeps the size it had.
+    private static let markerDiameter: CGFloat = 4.5
+    private static let scrubbingMarkerDiameter: CGFloat = 7
+    /// The canvas reaches this far past the figure on every side so a marker
+    /// on the newest sample, or on a sample at the top of the range, is drawn
+    /// whole rather than clipped at the edge, as the chart's symbol was.
+    private static let overflow = scrubbingMarkerDiameter / 2
+
     var body: some View {
-        Chart {
-            ForEach(points) { point in
-                AreaMark(x: .value("Sample", point.index), y: .value("Value", point.value))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [tint.opacity(0.35), tint.opacity(0.02)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .interpolationMethod(.monotone)
-                LineMark(x: .value("Sample", point.index), y: .value("Value", point.value))
-                    .foregroundStyle(tint)
-                    .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                    .interpolationMethod(.monotone)
-            }
+        Canvas { context, size in
+            context.translateBy(x: Self.overflow, y: Self.overflow)
+            let size = CGSize(width: size.width - 2 * Self.overflow, height: size.height - 2 * Self.overflow)
+            let values = points.map(\.value)
+            let geometry = SparklineGeometry(
+                values: values,
+                domain: domain ?? SparklineGeometry.autoDomain(for: values),
+                size: size
+            )
+            context.fill(
+                geometry.area,
+                with: .linearGradient(
+                    Gradient(colors: [tint.opacity(0.35), tint.opacity(0.02)]),
+                    startPoint: .zero,
+                    endPoint: CGPoint(x: 0, y: size.height)
+                )
+            )
+            context.stroke(
+                geometry.line,
+                with: .color(tint),
+                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+            )
+
             // The marker follows the pointer while scrubbing and returns to the
             // newest sample when it leaves, so there is always exactly one.
-            if let marked = marked {
-                RuleMark(x: .value("Sample", marked.index))
-                    .foregroundStyle(tint.opacity(scrubbedIndex == nil ? 0 : 0.35))
-                    .lineStyle(StrokeStyle(lineWidth: 1))
-                PointMark(x: .value("Sample", marked.index), y: .value("Value", marked.value))
-                    .foregroundStyle(tint)
-                    .symbolSize(scrubbedIndex == nil ? 16 : 40)
+            guard let offset = markedOffset, offset < geometry.points.count else { return }
+            let marked = geometry.points[offset]
+            if scrubbedIndex != nil {
+                var rule = Path()
+                rule.move(to: CGPoint(x: marked.x, y: 0))
+                rule.addLine(to: CGPoint(x: marked.x, y: size.height))
+                context.stroke(rule, with: .color(tint.opacity(0.35)), style: StrokeStyle(lineWidth: 1))
+            }
+            let diameter = scrubbedIndex == nil ? Self.markerDiameter : Self.scrubbingMarkerDiameter
+            context.fill(
+                Path(
+                    ellipseIn: CGRect(
+                        x: marked.x - diameter / 2, y: marked.y - diameter / 2,
+                        width: diameter, height: diameter)),
+                with: .color(tint)
+            )
+        }
+        // The negative padding puts this view's frame back on the figure: the
+        // canvas overhangs it by `overflow` on every side and draws the plot
+        // translated by the same amount, so a pointer location here is a plot
+        // coordinate as it stands.
+        .padding(-Self.overflow)
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
+        } action: {
+            figure = $0
+        }
+        .onContinuousHover(coordinateSpace: .local) { phase in
+            switch phase {
+            case .active(let location): scrub(atX: location.x)
+            case .ended: scrubbedIndex = nil
             }
         }
-        .chartXAxis(.hidden)
-        .chartYAxis(.hidden)
-        .chartYScale(domain: domain ?? autoDomain)
-        .chartLegend(.hidden)
-        .chartXSelection(value: $scrubbedIndex)
-        // No `liveValueAnimation` here. Animating a `Chart` re-resolves every
-        // mark on every frame, and sliding three sparklines by one sample each
-        // second cost nine times the rest of the strip in main-thread time.
+        // Hover stops reporting while the button is down, and a tracking area
+        // sends no exit during a drag: a press-and-drag scrubs through the
+        // gesture, and releasing outside the figure lets go the way leaving it
+        // does.
+        .gesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                .onChanged { scrub(atX: $0.location.x) }
+                .onEnded { value in
+                    if CGRect(origin: .zero, size: figure).contains(value.location) {
+                        scrub(atX: value.location.x)
+                    } else {
+                        scrubbedIndex = nil
+                    }
+                }
+        )
         .accessibilityHidden(true)
     }
 
-    private var marked: ActivityViewModel.MetricPoint? {
-        guard let scrubbedIndex else { return points.last }
-        return points.first { $0.index == scrubbedIndex } ?? points.last
+    /// Position in `points` of the marked sample: the scrubbed one while it is
+    /// still on screen, otherwise the newest.
+    private var markedOffset: Int? {
+        guard let scrubbedIndex,
+            let offset = points.firstIndex(where: { $0.index == scrubbedIndex })
+        else {
+            return points.indices.last
+        }
+        return offset
     }
 
-    /// Headroom above the observed peak so a flat-zero series still renders.
-    private var autoDomain: ClosedRange<Double> {
-        let peak = points.map(\.value).max() ?? 1
-        return 0...max(peak * 1.2, 1)
+    private func scrub(atX x: CGFloat) {
+        guard let offset = SparklineGeometry.sampleOffset(atX: x, count: points.count, width: figure.width) else {
+            return
+        }
+        scrubbedIndex = points[offset].index
     }
 }
 
