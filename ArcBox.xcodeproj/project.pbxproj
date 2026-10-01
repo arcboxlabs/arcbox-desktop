@@ -89,6 +89,7 @@
 		47F7DA566708A3959A5AEB8D /* SystemVmBackendModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BC46E06601AA9D330AF049 /* SystemVmBackendModel.swift */; };
 		48014023336A8AD5D1B21A27 /* ContainerLogsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB364896F740E811FBE1B04D /* ContainerLogsTab.swift */; };
 		49FAEF3B0E9CDCD51E78EB26 /* ContainersListViewBodyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDD0BC8797B1E992161C753 /* ContainersListViewBodyTests.swift */; };
+		4AB472D135BD14054A2F10FC /* ErrorReportingCancellationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D0C27C33F90E9D29022E6E /* ErrorReportingCancellationTests.swift */; };
 		4B14BB17843A552B8D1B51BA /* ExternalTerminalDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BE672A52785F040AC6CEB2 /* ExternalTerminalDiscovery.swift */; };
 		4C3BC465BFE58BF0D59AFE78 /* OnboardingWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915561BEEE49F5E27F4B0D40 /* OnboardingWindowController.swift */; };
 		4D2029E55A7979B8BD9EE89A /* ContainersViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */; };
@@ -401,6 +402,7 @@
 		420516961E57589A91B445DA /* VolumesViewModel+Docker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VolumesViewModel+Docker.swift"; sourceTree = "<group>"; };
 		43B8FF992E687C114ADB8E32 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		43EBEB3FD3F7F3D2E7DF91B0 /* PodsListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListViewController.swift; sourceTree = "<group>"; };
+		44D0C27C33F90E9D29022E6E /* ErrorReportingCancellationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReportingCancellationTests.swift; sourceTree = "<group>"; };
 		454ED6CBDC3B851667C70AF8 /* TerminalViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalViewController.swift; sourceTree = "<group>"; };
 		45D481BC91D8F67BAA688619 /* ContainerLogsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsModel.swift; sourceTree = "<group>"; };
 		46D7B7F6B349A602A7BA973E /* SandboxSnapshotsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxSnapshotsTab.swift; sourceTree = "<group>"; };
@@ -1322,6 +1324,7 @@
 				F5B3B3C54B6D49C6198E9E26 /* DeepLinkTests.swift */,
 				06DFFB59D72F27F14A233B81 /* DockerEventMonitorTests.swift */,
 				27C52C15D6902B3EAB6307AA /* DockerTerminalSessionIntegrationTests.swift */,
+				44D0C27C33F90E9D29022E6E /* ErrorReportingCancellationTests.swift */,
 				522820EEBA49BC66D525CE20 /* ErrorReportingScrubTests.swift */,
 				92FD51B5947EFEEFD73D00F9 /* FleetEnrollmentCoordinatorTests.swift */,
 				239658775BBC68EB492EF715 /* FleetViewModelTests.swift */,
@@ -1796,6 +1799,7 @@
 				8466B000B68A87CEECA6756F /* DockerEventMonitorTests.swift in Sources */,
 				D16762EE419CC9055CDD90FF /* DockerTerminalSessionIntegrationTests.swift in Sources */,
 				10BF9836AD03078EA2AD53D8 /* ErrorCancellationTests.swift in Sources */,
+				4AB472D135BD14054A2F10FC /* ErrorReportingCancellationTests.swift in Sources */,
 				8AADBD7B0F4EA3F0068957BF /* ErrorReportingScrubTests.swift in Sources */,
 				2437ABD6C32B0F3CE43F3125 /* FleetControlClientTests.swift in Sources */,
 				868F62A98F4BD1023DD79167 /* FleetEnrollmentCoordinatorTests.swift in Sources */,
