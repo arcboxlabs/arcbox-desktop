@@ -86,7 +86,8 @@ final class ContainerLogsFilterTests: XCTestCase {
         var next = 0
         model.append(ContainerLogsFixtures.lines(from: &next, count: 600))
         model.searchText = "failed"
-        ContainerLogsDiagnostics.reset()
+        ContainerLogsDiagnostics.startRecording()
+        defer { ContainerLogsDiagnostics.stopRecording() }
 
         _ = model.filteredEntries
         XCTAssertEqual(ContainerLogsDiagnostics.filterRescans, 1, "the first read under a filter scans the buffer")

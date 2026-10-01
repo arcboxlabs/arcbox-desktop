@@ -62,12 +62,10 @@ final class ContainerLogsBatchTests: XCTestCase {
         }
         XCTAssertEqual(
             ContainerLogsDiagnostics.filterRescans, 0, "a batch must extend the filter cache, not rebuild it")
-        let scrolls = ContainerLogsDiagnostics.scrollTargets
-        XCTAssertEqual(scrolls.count, Self.batches * runs.count, "following scrolls once per batch")
-        XCTAssertTrue(
-            scrolls.allSatisfy { $0 == AnyHashable(ContainerLogsContent.endID) },
-            "following must scroll to the end marker, never to a row: \(Set(scrolls))"
-        )
+        XCTAssertEqual(
+            ContainerLogsDiagnostics.scrollsToEnd, Self.batches * runs.count,
+            "following scrolls to the end once per batch")
+        XCTAssertEqual(ContainerLogsDiagnostics.scrollsElsewhere, 0, "following must never scroll to a row")
     }
 
     // MARK: - Harness
@@ -147,7 +145,8 @@ final class ContainerLogsBatchTests: XCTestCase {
         let buffers = try Self.bufferSizes.map { try HostedBuffer(seeded: $0, search: search, stream: stream) }
         defer { buffers.forEach { $0.host.close() } }
         BodyEvaluationCounter.reset()
-        ContainerLogsDiagnostics.reset()
+        ContainerLogsDiagnostics.startRecording()
+        defer { ContainerLogsDiagnostics.stopRecording() }
         for _ in 0..<(Self.batches / Self.roundSize) {
             for buffer in buffers {
                 for _ in 0..<Self.roundSize { buffer.batch() }

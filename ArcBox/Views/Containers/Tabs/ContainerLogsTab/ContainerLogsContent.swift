@@ -85,7 +85,7 @@ struct ContainerLogsContent: View {
     /// asks for; the batch test holds it to that.
     private func scrollToEnd(_ proxy: ScrollViewProxy) {
         #if DEBUG
-            ContainerLogsDiagnostics.scrollTargets.append(Self.endID)
+            ContainerLogsDiagnostics.recordScroll(to: Self.endID)
         #endif
         proxy.scrollTo(Self.endID, anchor: .bottom)
     }

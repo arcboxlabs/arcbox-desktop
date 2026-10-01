@@ -57,7 +57,7 @@ final class ContainerLogsModel {
             let scannedLastID = filterCache.scannedLastID
         else {
             #if DEBUG
-                ContainerLogsDiagnostics.filterRescans += 1
+                ContainerLogsDiagnostics.recordFilterRescan()
             #endif
             filterCache = FilterCache(
                 searchText: searchText,
