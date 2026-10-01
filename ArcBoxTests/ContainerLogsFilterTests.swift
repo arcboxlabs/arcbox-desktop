@@ -7,7 +7,7 @@ import XCTest
 /// full rescan it replaces, through every way the buffer and the filters change.
 @MainActor
 final class ContainerLogsFilterTests: XCTestCase {
-    func testFilteredEntriesMatchAFullRescanThroughAppendsTrimsAndFilterChanges() {
+    func testFilteredEntriesMatchAFullRescanThroughAppendsTrimsAndFilterChanges() throws {
         let model = ContainerLogsModel()
         var next = 0
         model.append(ContainerLogsFixtures.lines(from: &next, count: 600))
@@ -40,15 +40,25 @@ final class ContainerLogsFilterTests: XCTestCase {
         model.append(ContainerLogsFixtures.lines(from: &next, count: 50))
         assertMatchesRescan(model, "after clearing and appending")
 
-        // Replacing the buffer with lines older than those already scanned rescans.
+        // Replacing the buffer outright: newer lines, older lines prepended, older
+        // lines alone, and a replacement that keeps both ends but drops a matching
+        // line in between — the case endpoint ids alone would miss.
         let older = Self.entries(from: 0, count: 40)
         let newer = Self.entries(from: 40, count: 40)
         model.logEntries = newer
         assertMatchesRescan(model, "after replacing the buffer")
+        model.logEntries = older + newer
+        assertMatchesRescan(model, "after prepending older lines")
         model.logEntries = older
         assertMatchesRescan(model, "after replacing the buffer with older lines")
         model.logEntries = older + newer
-        assertMatchesRescan(model, "after prepending the newer lines again")
+        var gapped = model.logEntries
+        let droppedMatch = try XCTUnwrap(
+            gapped.indices.dropFirst().dropLast().first { gapped[$0].message.contains("failed") })
+        gapped.remove(at: droppedMatch)
+        model.logEntries = gapped
+        assertMatchesRescan(model, "after removing a matching line from the middle")
+        XCTAssertFalse(model.filteredEntries.contains { $0.id == (older + newer)[droppedMatch].id })
 
         model.searchText = ""
         XCTAssertEqual(model.filteredEntries.map(\.id), model.logEntries.map(\.id))

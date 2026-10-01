@@ -11,7 +11,14 @@ import Foundation
 /// own view graph on every measurement — stays out of that invalidation scope.
 @Observable
 final class ContainerLogsModel {
-    var logEntries: [LogEntry] = []
+    /// The buffer. `append(_:)` is the one writer the filter cache follows; a write
+    /// from anywhere else — a history load, `clearLogs`, a test — rescans on the
+    /// next read.
+    var logEntries: [LogEntry] = [] {
+        didSet {
+            if !isAppending { filterCache.scannedLastID = nil }
+        }
+    }
     var searchText = ""
     var streamFilter: LogStreamFilter = .all
     var isFollowing = true
@@ -23,6 +30,7 @@ final class ContainerLogsModel {
     @ObservationIgnored private var containerID = ""
     /// Derived from `logEntries` and the filters on read; not observed state.
     @ObservationIgnored private var filterCache = FilterCache()
+    @ObservationIgnored private var isAppending = false
 
     let maxLogEntries = 10_000
     /// How long lines may wait to be shown. Long enough to fold a burst into one list
@@ -32,36 +40,36 @@ final class ContainerLogsModel {
     /// The lines the search text and stream filter keep, in buffer order.
     ///
     /// With no filter this is the buffer itself, shared, not copied. With one, it is
-    /// a cache that follows the buffer incrementally: entries are allocated ids in
-    /// arrival order and the buffer only ever grows at the tail and shrinks at the
-    /// head, so a batch costs the batch and a trim costs the trimmed lines. Only a
-    /// filter change rescans the buffer, which `localizedCaseInsensitiveContains`
-    /// made the most expensive part of a batch (~24 ms at 6,000 lines).
+    /// a cache that follows `append(_:)`: ids are allocated in arrival order, so a
+    /// batch extends the cache by the lines past the last id it scanned and a trim
+    /// drops the matches below the buffer's first id — the batch costs the batch.
+    /// Only a filter change, or a write to `logEntries` from anywhere else, rescans
+    /// the buffer, the pass `localizedCaseInsensitiveContains` made the most
+    /// expensive part of a batch (~24 ms at 6,000 lines).
     var filteredEntries: [LogEntry] {
         guard isFiltered else { return logEntries }
-        let lastID = logEntries.last?.id ?? -1
-        if filterCache.searchText != searchText || filterCache.streamFilter != streamFilter
-            || lastID < filterCache.scannedID
-        {
-            // A new filter, or a buffer replaced by older lines: start over.
+        guard filterCache.searchText == searchText, filterCache.streamFilter == streamFilter,
+            let scannedLastID = filterCache.scannedLastID
+        else {
             filterCache = FilterCache(
                 searchText: searchText,
                 streamFilter: streamFilter,
                 entries: logEntries.filter(matches),
-                scannedID: lastID
+                scannedLastID: logEntries.last?.id
             )
             return filterCache.entries
         }
-        let firstID = logEntries.first?.id ?? Int.max
-        filterCache.entries.removeFirst(filterCache.entries.prefix { $0.id < firstID }.count)
-        if lastID > filterCache.scannedID {
-            var start = logEntries.endIndex
-            while start > logEntries.startIndex, logEntries[start - 1].id > filterCache.scannedID {
-                start -= 1
-            }
-            filterCache.entries.append(contentsOf: logEntries[start...].filter(matches))
-            filterCache.scannedID = lastID
+        guard let first = logEntries.first, let last = logEntries.last else {
+            filterCache.entries = []
+            return []
         }
+        filterCache.entries.removeFirst(filterCache.entries.prefix { $0.id < first.id }.count)
+        var start = logEntries.endIndex
+        while start > logEntries.startIndex, logEntries[start - 1].id > scannedLastID {
+            start -= 1
+        }
+        filterCache.entries.append(contentsOf: logEntries[start...].filter(matches))
+        filterCache.scannedLastID = last.id
         return filterCache.entries
     }
 
@@ -148,6 +156,8 @@ final class ContainerLogsModel {
     /// Every line a followed container logs lands here, so this is the path whose
     /// cost the batch regression test pins.
     func append(_ lines: [DockerLogLine]) {
+        isAppending = true
+        defer { isAppending = false }
         logEntries.append(contentsOf: lines.map(LogEntry.init))
         if logEntries.count > maxLogEntries {
             logEntries.removeFirst(logEntries.count - maxLogEntries)
@@ -184,11 +194,12 @@ final class ContainerLogsModel {
     }
 }
 
-/// `filteredEntries` as of the last read: the matches among the buffer's lines
-/// with `id <= scannedID`, for the filter `(searchText, streamFilter)`.
+/// `filteredEntries` as of the last read: the matches, for the filter
+/// `(searchText, streamFilter)`, among the buffer's lines up to `scannedLastID`.
 private struct FilterCache {
     var searchText = ""
     var streamFilter = LogStreamFilter.all
     var entries: [LogEntry] = []
-    var scannedID = -1
+    /// `nil` when the buffer was empty or was written outside `append(_:)`: rescan.
+    var scannedLastID: Int?
 }
