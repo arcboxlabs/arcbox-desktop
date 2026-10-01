@@ -31,6 +31,23 @@ final class ContainerLogsFollowingTests: XCTestCase {
         XCTAssertGreaterThan(tab.scrollView.documentHeight, heightBefore)
     }
 
+    /// At the cap a batch can trim as well as append — a block at a time, so
+    /// the count and the document height stand still or shrink — and only a
+    /// scroll keyed on the last line keeps the end in view.
+    func testFollowingKeepsTheLastLineVisibleAtTheBufferCap() throws {
+        var tab = try HostedLogsTab(seeded: 10_000)
+        defer { tab.close() }
+        XCTAssertEqual(tab.model.logEntries.count, tab.model.maxLogEntries)
+
+        for batch in 0..<20 {
+            tab.appendBatch()
+            XCTAssertLessThanOrEqual(tab.model.logEntries.count, tab.model.maxLogEntries)
+            XCTAssertGreaterThanOrEqual(
+                tab.model.logEntries.count, tab.model.maxLogEntries - ContainerLogsModel.trimBlock)
+            XCTAssertTrue(tab.scrollView.isScrolledToBottom, "batch \(batch) left the end out of view")
+        }
+    }
+
     func testScrollingUpDoesNotPauseFollowingAndTheNextBatchReturnsToTheEnd() throws {
         var tab = try HostedLogsTab(seeded: 600)
         defer { tab.close() }

@@ -16,11 +16,17 @@ enum LogStream {
     case stderr
 }
 
-/// A single log entry with metadata
-struct LogEntry: Identifiable {
+/// A single log entry with metadata.
+///
+/// A class, not a struct: SwiftUI's `ForEach` keeps the array it was handed, so
+/// every append copies the buffer, and every copy of a record with three heap
+/// strings is three retains and 64 bytes per line, times the buffer, per batch.
+/// A reference is one retain. The entry is immutable, so sharing is safe.
+final class LogEntry: Identifiable {
     /// Allocated in arrival order, so a buffer is sorted by `id`: `ContainerLogsModel`'s
     /// filter cache drops a trimmed head and extends by an appended tail by comparing
-    /// ids, and never has to search the buffer.
+    /// ids, and never has to search the buffer. Process-wide, so two models' entries
+    /// never share an id.
     let id: Int
     /// The raw Docker timestamp, which is what `Copy logs` writes out.
     let timestamp: String?
@@ -40,7 +46,7 @@ struct LogEntry: Identifiable {
         self.message = message
     }
 
-    init(_ line: DockerLogLine) {
+    convenience init(_ line: DockerLogLine) {
         self.init(
             timestamp: line.timestamp,
             stream: line.stream == .stderr ? .stderr : .stdout,

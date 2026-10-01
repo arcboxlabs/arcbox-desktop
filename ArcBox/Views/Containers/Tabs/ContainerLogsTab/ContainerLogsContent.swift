@@ -63,9 +63,12 @@ struct ContainerLogsContent: View {
             }
             // Historical logs open at their last line.
             .defaultScrollAnchor(.bottom, for: .initialOffset)
-            // Unanimated: animating a jump to the end makes SwiftUI walk the list
-            // to resolve the target, and a followed container pays that on every line.
-            .onChange(of: model.logEntries.count) {
+            // Keyed on the last line, not the count: at the buffer cap a batch trims
+            // as many lines as it appends and the count stands still, and the view
+            // would drift off the end. Unanimated: animating a jump to the end makes
+            // SwiftUI walk the list to resolve the target, and a followed container
+            // pays that on every line.
+            .onChange(of: model.logEntries.last?.id) {
                 if model.isFollowing {
                     proxy.scrollTo(Self.endID, anchor: .bottom)
                 }

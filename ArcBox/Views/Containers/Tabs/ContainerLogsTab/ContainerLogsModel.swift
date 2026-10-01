@@ -33,6 +33,11 @@ final class ContainerLogsModel {
     @ObservationIgnored private var isAppending = false
 
     let maxLogEntries = 10_000
+    /// How many lines a trim at the cap drops at once. Dropping the head of a
+    /// 10,000-entry array, and the copy forced by the `ForEach` still holding the
+    /// previous array, are linear in the buffer; paying them once per block instead
+    /// of once per batch keeps a batch at the cap the price of a batch below it.
+    static let trimBlock = 1_000
     /// How long lines may wait to be shown. Long enough to fold a burst into one list
     /// rebuild, short enough to still read as live.
     static let appendInterval = Duration.milliseconds(100)
@@ -151,7 +156,8 @@ final class ContainerLogsModel {
         }
     }
 
-    /// Appends one batch of streamed lines, dropping the oldest past `maxLogEntries`.
+    /// Appends one batch of streamed lines; past `maxLogEntries` the oldest
+    /// `trimBlock` lines go with the excess.
     ///
     /// Every line a followed container logs lands here, so this is the path whose
     /// cost the batch regression test pins.
@@ -160,7 +166,7 @@ final class ContainerLogsModel {
         defer { isAppending = false }
         logEntries.append(contentsOf: lines.map(LogEntry.init))
         if logEntries.count > maxLogEntries {
-            logEntries.removeFirst(logEntries.count - maxLogEntries)
+            logEntries.removeFirst(logEntries.count - maxLogEntries + Self.trimBlock)
         }
     }
 

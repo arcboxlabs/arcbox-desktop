@@ -30,8 +30,8 @@ final class ContainerLogsFilterTests: XCTestCase {
         model.searchText = "failed"
         model.streamFilter = .all
         model.append(ContainerLogsFixtures.lines(from: &next, count: model.maxLogEntries))
-        XCTAssertEqual(model.logEntries.count, model.maxLogEntries)
-        assertMatchesRescan(model, "after trimming to the cap")
+        XCTAssertEqual(model.logEntries.count, model.maxLogEntries - ContainerLogsModel.trimBlock)
+        assertMatchesRescan(model, "after trimming at the cap")
         model.append(ContainerLogsFixtures.lines(from: &next, count: 10))
         assertMatchesRescan(model, "after a batch at the cap")
 
