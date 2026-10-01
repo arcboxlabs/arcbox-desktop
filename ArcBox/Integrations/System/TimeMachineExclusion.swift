@@ -30,6 +30,11 @@ nonisolated struct TimeMachineExclusion: Sendable {
 
     /// Lifts the exclusion of `path` when `included`, else excludes it. Creates `path` first:
     /// `tmutil addexclusion` refuses a path that does not exist.
+    ///
+    /// `@concurrent`: the Settings view awaits this from the main actor, which a plain
+    /// `nonisolated` async function would inherit under approachable concurrency; the directory
+    /// creation belongs on the global executor.
+    @concurrent
     func update(_ path: String, includeInBackups included: Bool) async throws {
         if !FileManager.default.fileExists(atPath: path) {
             try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)

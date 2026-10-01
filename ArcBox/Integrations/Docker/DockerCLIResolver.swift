@@ -22,7 +22,9 @@ nonisolated enum DockerCLIResolver {
     }
 
     /// The first `name` in `path`'s colon-separated directories that is executable, as `which`
-    /// reports it.
+    /// reports it — except that an empty entry is skipped where `which` reads it as the current
+    /// directory: that would run whatever `docker` sits in the app's working directory, and a
+    /// GUI app's `PATH` comes from launchd, which never carries one.
     static func executable(named name: String, onPath path: String) -> String? {
         path.split(separator: ":", omittingEmptySubsequences: true)
             .lazy

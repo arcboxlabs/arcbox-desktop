@@ -57,7 +57,7 @@ nonisolated enum DockerContextManager {
                 if useArcBox {
                     try await switchToArcBox()
                 } else {
-                    try restorePreviousContext()
+                    try await restorePreviousContext()
                 }
                 completion(.success(()))
             } catch {
@@ -70,6 +70,11 @@ nonisolated enum DockerContextManager {
 
     /// Switch the Docker CLI context to use ArcBox's socket.
     /// Saves the previous context so it can be restored later.
+    ///
+    /// `@concurrent`: `update` awaits this from the main actor, which a plain `nonisolated`
+    /// async function would inherit under approachable concurrency; the config read and write
+    /// below belong on the global executor.
+    @concurrent
     private static func switchToArcBox() async throws {
         let config = try readConfig()
         guard let dockerPath = DockerCLIResolver.findDockerCLI() else {
@@ -106,7 +111,8 @@ nonisolated enum DockerContextManager {
     /// Restore the Docker CLI context to what it was before ArcBox started.
     /// Always restores if a previous context was saved, regardless of the current toggle state,
     /// to avoid leaving the user's Docker CLI pointing at a dead socket.
-    private static func restorePreviousContext() throws {
+    @concurrent
+    private static func restorePreviousContext() async throws {
         // Always restore if we previously saved a context — even if the toggle was turned off since.
         guard let previousContext = UserDefaults.standard.string(forKey: previousContextKey) else {
             // No saved context — nothing to restore.
