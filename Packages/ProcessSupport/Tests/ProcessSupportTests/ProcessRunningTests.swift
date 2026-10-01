@@ -218,4 +218,43 @@ struct ProcessRunningTests {
         let stillRunning = try await fake.isRunning()
         #expect(!stillRunning)
     }
+
+    @Test func timeoutOnAPlainRunTerminatesAndReapsTheChild() async throws {
+        let fake = try FakeExecutable.hanging()
+        defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        await #expect(throws: ProcessTimedOut.self) {
+            try await runCancellableProcess(process, timeout: .milliseconds(500))
+        }
+
+        let elapsed = clock.now - startedAt
+        #expect(elapsed < .milliseconds(1500), "returned after \(elapsed)")
+        #expect(!process.isRunning)
+        #expect(process.terminationReason == .uncaughtSignal)
+        let stillRunning = try await fake.isRunning()
+        #expect(!stillRunning)
+    }
+
+    @Test func capturesStandardErrorAlone() async throws {
+        let fake = try FakeExecutable("#!/bin/sh\necho out\necho err >&2\nexit 3\n")
+        defer { fake.remove() }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: fake.path)
+        process.standardOutput = FileHandle.nullDevice
+
+        let output = try await runCapturingStandardError(process, timeout: .seconds(5), outputLimit: 1 << 20)
+
+        #expect(output == Data("err\n".utf8))
+        #expect(process.terminationStatus == 3)
+    }
+
+    @Test func timeoutErrorsDescribeThemselves() {
+        #expect(
+            ProcessTimedOut(timeout: .seconds(10)).errorDescription == "The process did not exit within 10 seconds.")
+        #expect(ProcessOutputLimitExceeded(limit: 65536).errorDescription == "The process wrote more than 65536 bytes.")
+    }
 }
