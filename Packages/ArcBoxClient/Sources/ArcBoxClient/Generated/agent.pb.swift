@@ -162,6 +162,13 @@ public struct Arcbox_V1_SystemInfo: Sendable {
   /// still be starting sets it true.
   public var distroInitPending: Bool = false
 
+  /// IPv4 address of the guest's bridge NIC (the vmnet interface the Mac
+  /// reaches directly), or empty when the guest has none or it has no
+  /// address yet. The host registers `<machine>.arcbox.local` at this
+  /// address; `ip_addresses` keeps listing every interface, so an older
+  /// host that ignores this field sees exactly what it saw before.
+  public var bridgeIpAddress: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -1457,7 +1464,7 @@ extension Arcbox_V1_AgentPingResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SystemInfo"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}kernel_version\0\u{3}os_name\0\u{3}os_version\0\u{1}arch\0\u{3}total_memory\0\u{3}available_memory\0\u{3}cpu_count\0\u{3}load_average\0\u{1}hostname\0\u{1}uptime\0\u{3}ip_addresses\0\u{3}distro_init_pending\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}kernel_version\0\u{3}os_name\0\u{3}os_version\0\u{1}arch\0\u{3}total_memory\0\u{3}available_memory\0\u{3}cpu_count\0\u{3}load_average\0\u{1}hostname\0\u{1}uptime\0\u{3}ip_addresses\0\u{3}distro_init_pending\0\u{3}bridge_ip_address\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1477,6 +1484,7 @@ extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
       case 10: try { try decoder.decodeSingularUInt64Field(value: &self.uptime) }()
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.ipAddresses) }()
       case 12: try { try decoder.decodeSingularBoolField(value: &self.distroInitPending) }()
+      case 13: try { try decoder.decodeSingularStringField(value: &self.bridgeIpAddress) }()
       default: break
       }
     }
@@ -1519,6 +1527,9 @@ extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
     if self.distroInitPending != false {
       try visitor.visitSingularBoolField(value: self.distroInitPending, fieldNumber: 12)
     }
+    if !self.bridgeIpAddress.isEmpty {
+      try visitor.visitSingularStringField(value: self.bridgeIpAddress, fieldNumber: 13)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1535,6 +1546,7 @@ extension Arcbox_V1_SystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
     if lhs.uptime != rhs.uptime {return false}
     if lhs.ipAddresses != rhs.ipAddresses {return false}
     if lhs.distroInitPending != rhs.distroInitPending {return false}
+    if lhs.bridgeIpAddress != rhs.bridgeIpAddress {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
