@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import ProcessSupport
 
 nonisolated struct DockerMigrationSource: Equatable, Sendable {
     enum Kind: String, Sendable {
@@ -42,7 +43,6 @@ nonisolated private struct DockerContextInspectionError: LocalizedError {
 nonisolated private enum DockerContextError: LocalizedError {
     case invalidConfiguration(String)
     case dockerCLIUnavailable
-    case contextCreationFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -50,8 +50,6 @@ nonisolated private enum DockerContextError: LocalizedError {
             "~/.docker/config.json is invalid: \(detail) Repair or move the file, then try again."
         case .dockerCLIUnavailable:
             "The Docker CLI was not found. Install it in a standard location, then try again."
-        case .contextCreationFailed(let detail):
-            "docker context create failed: \(detail)"
         }
     }
 }
@@ -84,22 +82,16 @@ nonisolated enum DockerContextManager {
 
     /// Finds a Docker Desktop or OrbStack candidate without relying on the
     /// current context, which ArcBox may already have switched to itself.
+    @concurrent
     static func detectMigrationSource() async throws -> DockerMigrationSource? {
-        let task = Task.detached(priority: .utility) { () throws -> DockerMigrationSource? in
-            let contexts = try readDockerContexts()
-            let previousContext = UserDefaults.standard.string(forKey: previousContextKey)
-            return try selectMigrationSource(
-                from: contexts,
-                previousContext: previousContext,
-                homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
-                socketExists: FileManager.default.fileExists(atPath:)
-            )
-        }
-        return try await withTaskCancellationHandler {
-            try await task.value
-        } onCancel: {
-            task.cancel()
-        }
+        let contexts = try await readDockerContexts()
+        let previousContext = UserDefaults.standard.string(forKey: previousContextKey)
+        return try selectMigrationSource(
+            from: contexts,
+            previousContext: previousContext,
+            homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            socketExists: FileManager.default.fileExists(atPath:)
+        )
     }
 
     static func decodeDockerContexts(_ data: Data) throws -> [DockerContextDescription] {
@@ -179,8 +171,12 @@ nonisolated enum DockerContextManager {
         )
     }
 
-    private static func readDockerContexts() throws -> [DockerContextDescription] {
-        guard let dockerCLI = DockerCLIResolver.findDockerCLI() else {
+    @concurrent
+    static func readDockerContexts(
+        dockerPath: String? = DockerCLIResolver.findDockerCLI(),
+        timeout: Duration = .seconds(3)
+    ) async throws -> [DockerContextDescription] {
+        guard let dockerPath else {
             let paths = migrationSocketPaths(
                 homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path
             )
@@ -195,41 +191,36 @@ nonisolated enum DockerContextManager {
         }
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: dockerCLI)
+        process.executableURL = URL(fileURLWithPath: dockerPath)
         process.arguments = ["context", "ls", "--format", "{{json .}}"]
-        let output = Pipe()
-        let error = Pipe()
-        process.standardOutput = output
-        process.standardError = error
+        let stderr = Pipe()
+        process.standardError = stderr
+        defer {
+            try? stderr.fileHandleForReading.close()
+            try? stderr.fileHandleForWriting.close()
+        }
+        let diagnostics = Task {
+            try await stderr.fileHandleForReading.readToEndOfFile(limit: 64 << 10)
+        }
+        defer { diagnostics.cancel() }
 
+        let output: Data
         do {
-            try process.run()
-        } catch {
-            logger.warning(
-                "Unable to inspect Docker contexts: \(error.localizedDescription, privacy: .private)"
-            )
-            throw error
-        }
-
-        let deadline = Date().addingTimeInterval(3)
-        while process.isRunning, !Task.isCancelled, Date() < deadline {
-            Thread.sleep(forTimeInterval: 0.05)
-        }
-        let timedOut = process.isRunning && !Task.isCancelled
-        if process.isRunning {
-            process.terminate()
-            process.waitUntilExit()
-        }
-        try Task.checkCancellation()
-        if timedOut {
+            output = try await runCapturingStandardOutput(process, timeout: timeout, outputLimit: 1 << 20)
+        } catch is ProcessTimedOut {
             throw DockerContextInspectionError("Docker context inspection timed out.")
         }
+
+        // A descendant may retain stderr after the CLI exits. Bound that drain like stdout.
+        let drain = Task {
+            try? await Task.sleep(for: processOutputDrainGrace)
+            diagnostics.cancel()
+        }
+        defer { drain.cancel() }
+        let errorOutput = try await diagnostics.value
+        try Task.checkCancellation()
         guard process.terminationStatus == 0 else {
-            let message =
-                String(
-                    data: error.fileHandleForReading.readDataToEndOfFile(),
-                    encoding: .utf8
-                ) ?? ""
+            let message = String(data: errorOutput, encoding: .utf8) ?? ""
             logger.warning("Docker context inspection failed: \(message, privacy: .private)")
             let detail = message.trimmingCharacters(in: .whitespacesAndNewlines)
             throw DockerContextInspectionError(
@@ -237,7 +228,7 @@ nonisolated enum DockerContextManager {
             )
         }
 
-        return try decodeDockerContexts(output.fileHandleForReading.readDataToEndOfFile())
+        return try decodeDockerContexts(output)
     }
 
     private static func migrationSocketPaths(
@@ -281,81 +272,59 @@ nonisolated enum DockerContextManager {
 
     /// Switch the Docker CLI context to use ArcBox's socket.
     /// Saves the previous context so it can be restored later.
+    ///
+    /// `@concurrent`: `update` awaits this from the main actor, which a plain `nonisolated`
+    /// async function would inherit under approachable concurrency; the config read and write
+    /// below belong on the global executor.
+    @concurrent
     private static func switchToArcBox() async throws {
-        try await Task.detached {
-            let config = try readConfig()
-            guard let dockerPath = DockerCLIResolver.findDockerCLI() else {
-                throw DockerContextError.dockerCLIUnavailable
-            }
+        let config = try readConfig()
+        guard let dockerPath = DockerCLIResolver.findDockerCLI() else {
+            throw DockerContextError.dockerCLIUnavailable
+        }
 
-            // Keep the context from before this ArcBox session, including Docker's
-            // implicit "default" context when the key is absent.
-            let hadSavedContext = UserDefaults.standard.string(forKey: previousContextKey) != nil
+        // Keep the context from before this ArcBox session, including Docker's
+        // implicit "default" context when the key is absent.
+        let hadSavedContext = UserDefaults.standard.string(forKey: previousContextKey) != nil
+        if !hadSavedContext {
+            UserDefaults.standard.set(
+                config["currentContext"] as? String ?? "default",
+                forKey: previousContextKey
+            )
+        }
+
+        do {
+            try await DockerContextCLI(dockerPath: dockerPath).createContext(
+                named: arcboxContextName, host: arcboxSocketPath, description: "ArcBox Desktop")
+
+            var updatedConfig = config
+            updatedConfig["currentContext"] = arcboxContextName
+            try writeConfig(updatedConfig)
+        } catch {
             if !hadSavedContext {
-                UserDefaults.standard.set(
-                    config["currentContext"] as? String ?? "default",
-                    forKey: previousContextKey
-                )
+                UserDefaults.standard.removeObject(forKey: previousContextKey)
             }
+            throw error
+        }
 
-            do {
-                try createArcBoxContext(dockerPath: dockerPath)
-
-                var updatedConfig = config
-                updatedConfig["currentContext"] = arcboxContextName
-                try writeConfig(updatedConfig)
-            } catch {
-                if !hadSavedContext {
-                    UserDefaults.standard.removeObject(forKey: previousContextKey)
-                }
-                throw error
-            }
-
-            logger.info("Switched Docker context to \(arcboxContextName, privacy: .public)")
-        }.value
+        logger.info("Switched Docker context to \(arcboxContextName, privacy: .public)")
     }
 
     /// Restore the Docker CLI context to what it was before ArcBox started.
     /// Always restores if a previous context was saved, regardless of the current toggle state,
     /// to avoid leaving the user's Docker CLI pointing at a dead socket.
+    @concurrent
     private static func restorePreviousContext() async throws {
-        try await Task.detached {
-            // Always restore if we previously saved a context — even if the toggle was turned off since.
-            guard let previousContext = UserDefaults.standard.string(forKey: previousContextKey) else {
-                // No saved context — nothing to restore.
-                return
-            }
-            var config = try readConfig()
-            config["currentContext"] = previousContext
-            try writeConfig(config)
-            UserDefaults.standard.removeObject(forKey: previousContextKey)
-            logger.info("Restored previous Docker context")
-        }.value
-    }
-
-    /// Creates the ArcBox context in Docker's context meta store.
-    private static func createArcBoxContext(dockerPath: String) throws {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: dockerPath)
-        proc.arguments = [
-            "context", "create", arcboxContextName,
-            "--docker", "host=\(arcboxSocketPath)",
-            "--description", "ArcBox Desktop",
-        ]
-        proc.standardOutput = FileHandle.nullDevice
-        let errPipe = Pipe()
-        proc.standardError = errPipe
-        try proc.run()
-        proc.waitUntilExit()
-        // Exit 0 = created, non-zero with "already exists" = OK, otherwise fail
-        if proc.terminationStatus == 0 { return }
-        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-        let errMsg = (String(data: errData, encoding: .utf8) ?? "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if errMsg.contains("already exists") { return }
-        throw DockerContextError.contextCreationFailed(
-            errMsg.isEmpty ? "exit status \(proc.terminationStatus)" : errMsg
-        )
+        // Always restore if we previously saved a context — even if the toggle was turned off since.
+        guard let previousContext = UserDefaults.standard.string(forKey: previousContextKey) else {
+            // No saved context — nothing to restore.
+            return
+        }
+        var config = try readConfig()
+        config["currentContext"] = previousContext
+        try writeConfig(config)
+        UserDefaults.standard.removeObject(forKey: previousContextKey)
+        logger.info("Restored previous Docker context")
     }
 
     // MARK: - Config File I/O

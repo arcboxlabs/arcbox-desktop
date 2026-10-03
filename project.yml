@@ -27,6 +27,8 @@ packages:
     path: Packages/DockerClient
   K8sClient:
     path: Packages/K8sClient
+  ProcessSupport:
+    path: Packages/ProcessSupport
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
     from: 1.0.0
@@ -153,6 +155,7 @@ targets:
       - package: FleetPlatformClient
       - package: DockerClient
       - package: K8sClient
+      - package: ProcessSupport
       - package: SwiftTerm
       - package: Sparkle
       - package: sentry-cocoa
@@ -245,9 +248,18 @@ targets:
       - path: Packages/ArcBoxAuth/Tests/ArcBoxAuthTests
       - path: Packages/FleetControlClient/Tests/FleetControlClientTests
       - path: Packages/FleetPlatformClient/Tests/FleetPlatformClientTests
+      - path: Packages/ProcessSupport/Tests/ProcessSupportTests
     dependencies:
       - target: ArcBox
       - package: K8sClient
+      # Listed, like K8sClient, because test sources call it directly. Xcode builds a
+      # product the host and this bundle share as one dynamic framework, so there is
+      # one copy; a static product such as ArcBoxClient instead resolves through the
+      # host executable and must NOT be listed here (a second, static copy).
+      - package: ProcessSupport
+      # Fake executables for the process-launching tests; only this bundle links it.
+      - package: ProcessSupport
+        product: ProcessSupportTesting
     settings:
       base:
         BUNDLE_LOADER: $(TEST_HOST)

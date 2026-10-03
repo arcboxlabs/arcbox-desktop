@@ -1,175 +1,17 @@
+import ProcessSupport
+import ProcessSupportTesting
 import XCTest
 
 @testable import K8sClient
 
-/// An executable script standing in for an exec credential plugin.
-private struct FakePlugin {
-    /// Unique to this fake. The kernel runs the script as `<interpreter> <path> ...`, so a path
-    /// carrying the marker puts it on the child's command line, where `pgrep -f` finds it.
-    let marker: String
-    let path: String
-    let directory: URL
+private let credentialJSON = """
+    {"apiVersion":"client.authentication.k8s.io/v1beta1","kind":"ExecCredential","status":{"token":"tok-123"}}
+    """
 
-    static let credentialJSON = """
-        {"apiVersion":"client.authentication.k8s.io/v1beta1","kind":"ExecCredential","status":{"token":"tok-123"}}
-        """
-
-    init(named name: String = "plugin", _ script: String) throws {
-        let marker = UUID().uuidString
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("k8s-exec-\(marker)")
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let file = directory.appendingPathComponent("\(name)-\(marker)")
-        try Data(script.utf8).write(to: file)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
-        self.marker = marker
-        self.path = file.path
-        self.directory = directory
-    }
-
+extension FakeExecutable {
     /// Prints a valid credential.
-    static func token() throws -> FakePlugin {
-        try FakePlugin("#!/bin/sh\necho '\(credentialJSON)'\n")
-    }
-
-    /// Never exits on its own. `exec -a` keeps the marker as the sleep's `argv[0]`, and because
-    /// nothing is forked, SIGTERM to the child leaves no orphan holding the stdout pipe open.
-    static func stalled() throws -> FakePlugin {
-        try FakePlugin("#!/bin/bash\nexec -a \"$0\" /bin/sleep 30\n")
-    }
-
-    /// Like `stalled()`, but ignores SIGTERM: `trap '' TERM` sets the disposition the exec'd
-    /// sleep inherits.
-    static func ignoringTermination() throws -> FakePlugin {
-        try FakePlugin("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /bin/sleep 30\n")
-    }
-
-    /// Writes 2 MiB to stdout and exits.
-    static func writingTwoMebibytes() throws -> FakePlugin {
-        try FakePlugin("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
-    }
-
-    /// Writes 2 MiB and ignores SIGTERM: once the reader stops at its limit the write blocks,
-    /// and only SIGKILL ends the plugin.
-    static func writingTwoMebibytesIgnoringTermination() throws -> FakePlugin {
-        try FakePlugin("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
-    }
-
-    /// Prints a valid credential and exits, leaving behind a grandchild that inherited stdout
-    /// and keeps the pipe open for 30 s. Its `argv[0]` is the marker plus `-child`.
-    static func leavingAGrandchildOnStdout() throws -> FakePlugin {
-        try FakePlugin(
-            """
-            #!/bin/bash
-            (exec -a "$0-child" /bin/sleep 30) &
-            echo '\(credentialJSON)'
-
-            """
-        )
-    }
-
-    /// Like `leavingAGrandchildOnStdout()`, but waits for `release()` first, so the test — not
-    /// bash's start-up time — decides when the plugin exits.
-    static func leavingAGrandchildOnStdoutWhenReleased() throws -> FakePlugin {
-        let plugin = try FakePlugin(
-            """
-            #!/bin/bash
-            read _ < "$(dirname "$0")/release"
-            (exec -a "$0-child" /bin/sleep 30) &
-            echo '\(credentialJSON)'
-
-            """
-        )
-        guard mkfifo(plugin.releasePath, 0o600) == 0 else {
-            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
-        }
-        return plugin
-    }
-
-    /// Lets a `leavingAGrandchildOnStdoutWhenReleased()` fake continue. The write end is
-    /// opened non-blocking: with no reader — the plugin is already gone — `open` fails with
-    /// ENXIO and the test fails, where a blocking open would hang the test host for good.
-    func release() throws {
-        let fifo = open(releasePath, O_WRONLY | O_NONBLOCK)
-        guard fifo >= 0 else { throw ReleaseFailed(code: errno) }
-        defer { close(fifo) }
-        var newline: UInt8 = 0x0A
-        guard write(fifo, &newline, 1) == 1 else { throw ReleaseFailed(code: errno) }
-    }
-
-    struct ReleaseFailed: Error, CustomStringConvertible {
-        let code: Int32
-
-        var description: String {
-            code == ENXIO
-                ? "the plugin is already gone: nothing reads the release FIFO"
-                : String(cString: strerror(code))
-        }
-    }
-
-    private var releasePath: String {
-        directory.appendingPathComponent("release").path
-    }
-
-    func remove() {
-        try? FileManager.default.removeItem(at: directory)
-    }
-
-    /// Whether a process carrying the marker on its command line is alive.
-    func isRunning() async throws -> Bool {
-        try await run("/usr/bin/pgrep", ["-f", marker]) == 0
-    }
-
-    /// Whether the grandchild `leavingAGrandchildOnStdout()` forks is alive.
-    func grandchildIsRunning() async throws -> Bool {
-        try await run("/usr/bin/pgrep", ["-f", "\(marker)-child"]) == 0
-    }
-
-    /// Kills that grandchild; nothing in the code under test can, it is not in the child's
-    /// process group.
-    func killGrandchild() async throws {
-        _ = try await run("/usr/bin/pkill", ["-KILL", "-f", "\(marker)-child"])
-    }
-
-    /// Polls until the fake's own program runs, or two seconds pass. `exec -a "$0"` puts the
-    /// path first on the command line, where the interpreter's `/bin/bash <path>` had it
-    /// second — so this also means the script's `trap` has run.
-    func waitUntilExecuted() async throws -> Bool {
-        let clock = ContinuousClock()
-        let deadline = clock.now + .seconds(2)
-        while clock.now < deadline {
-            if try await run("/usr/bin/pgrep", ["-f", "^\(path)"]) == 0 { return true }
-            try await Task.sleep(for: .milliseconds(20))
-        }
-        return false
-    }
-
-    /// Polls until the child shows up or two seconds pass; a fixed sleep raced the spawn.
-    func waitUntilRunning() async throws -> Bool {
-        let clock = ContinuousClock()
-        let deadline = clock.now + .seconds(2)
-        while clock.now < deadline {
-            if try await isRunning() { return true }
-            try await Task.sleep(for: .milliseconds(20))
-        }
-        return false
-    }
-
-    /// Runs a tool to completion and returns its exit status, waiting on `terminationHandler`.
-    private func run(_ tool: String, _ arguments: [String]) async throws -> Int32 {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: tool)
-        process.arguments = arguments
-        process.standardOutput = FileHandle.nullDevice
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-            process.terminationHandler = { _ in continuation.resume() }
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
-        return process.terminationStatus
+    fileprivate static func token() async throws -> FakeExecutable {
+        try await FakeExecutable("#!/bin/sh\necho '\(credentialJSON)'\n")
     }
 }
 
@@ -187,9 +29,6 @@ private func openFileDescriptorCount() throws -> Int {
 
 @available(macOS 15.0, *)
 final class K8sExecCredentialTests: XCTestCase {
-
-    /// `KubeConfig+Exec.swift` kills a child that ignores SIGTERM this long after the timeout.
-    private let terminationGrace: Duration = .seconds(2)
 
     private func kubeconfig(execCommand: String) -> String {
         """
@@ -218,16 +57,16 @@ final class K8sExecCredentialTests: XCTestCase {
 
     /// Registers the grandchild's removal before any assertion can throw and leave a 30 s
     /// sleeper behind.
-    private func killGrandchildOnTeardown(of plugin: FakePlugin) {
+    private func killGrandchildOnTeardown(of plugin: FakeExecutable) {
         addTeardownBlock {
-            try await plugin.killGrandchild()
+            plugin.killGrandchild()
         }
     }
 
     // MARK: - runExecPlugin
 
     func testPluginTokenIsReturned() async throws {
-        let plugin = try FakePlugin.token()
+        let plugin = try await FakeExecutable.token()
         defer { plugin.remove() }
 
         let token = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [])
@@ -236,7 +75,7 @@ final class K8sExecCredentialTests: XCTestCase {
     }
 
     func testBareCommandResolvesOnThePathTheKubeconfigSets() async throws {
-        let plugin = try FakePlugin(named: "fake-auth-plugin", "#!/bin/sh\necho '\(FakePlugin.credentialJSON)'\n")
+        let plugin = try await FakeExecutable(named: "fake-auth-plugin", "#!/bin/sh\necho '\(credentialJSON)'\n")
         defer { plugin.remove() }
         let name = URL(fileURLWithPath: plugin.path).lastPathComponent
 
@@ -247,38 +86,45 @@ final class K8sExecCredentialTests: XCTestCase {
     }
 
     func testTokenIsReturnedWhenAGrandchildKeepsStdoutOpen() async throws {
-        let plugin = try FakePlugin.leavingAGrandchildOnStdout()
+        let plugin = try await FakeExecutable.leavingAGrandchildOnStdout(printing: credentialJSON)
         defer { plugin.remove() }
         killGrandchildOnTeardown(of: plugin)
         let clock = ContinuousClock()
         let startedAt = clock.now
 
-        // The default 15 s timeout is far away; the plugin's exit must end the call, not EOF.
+        // The default 15 s timeout is far away; the plugin's exit must end the call, not EOF
+        // (the grandchild holds the pipe for 30 s). Bash start-up alone is 0.1–0.35 s and
+        // more under a loaded test host, so the bound only has to beat those two.
         let token = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [])
 
         let elapsed = clock.now - startedAt
         XCTAssertEqual(token, "tok-123")
-        XCTAssertLessThan(elapsed, .seconds(1), "returned after \(elapsed)")
+        XCTAssertLessThan(elapsed, .seconds(5), "returned after \(elapsed)")
         // The scenario is real only if the grandchild is still there holding the pipe.
         let grandchildAlive = try await plugin.grandchildIsRunning()
         XCTAssertTrue(grandchildAlive, "the fake must leave a grandchild on stdout")
     }
 
     func testExitJustBeforeTheDeadlineIsNotATimeout() async throws {
-        // The plugin exits 100 ms before the deadline and EOF never comes (a grandchild holds
+        // The plugin exits 150 ms before the deadline and EOF never comes (a grandchild holds
         // stdout), so the deadline falls inside the 200 ms drain that follows the exit. A
         // timeout that kept racing through the drain reported this successful exit as a
         // timeout. The exit is released by the test rather than timed with `sleep`, because
-        // bash alone takes 0.1–0.35 s to start.
-        let plugin = try FakePlugin.leavingAGrandchildOnStdoutWhenReleased()
+        // bash alone takes 0.1–0.35 s to start — and seconds on a loaded host, which is what
+        // the 3 s deadline leaves room for: the plugin must be blocked in `read` by the release.
+        let plugin = try await FakeExecutable.leavingAGrandchildOnStdoutWhenReleased(printing: credentialJSON)
         defer { plugin.remove() }
         killGrandchildOnTeardown(of: plugin)
-        let timeout: Duration = .seconds(1)
+        let timeout: Duration = .seconds(3)
+        let clock = ContinuousClock()
+        let startedAt = clock.now
 
         let resolution = Task {
             try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: timeout)
         }
-        try await Task.sleep(for: timeout - .milliseconds(100))
+        let running = try await plugin.waitUntilRunning()
+        XCTAssertTrue(running, "the plugin must be running before it is released")
+        try await Task.sleep(until: startedAt + timeout - .milliseconds(150), clock: clock)
         try plugin.release()
 
         let token = try await resolution.value
@@ -286,7 +132,7 @@ final class K8sExecCredentialTests: XCTestCase {
     }
 
     func testStalledPluginIsTerminatedAtTheTimeoutWithoutBlockingTheMainActor() async throws {
-        let plugin = try FakePlugin.stalled()
+        let plugin = try await FakeExecutable.hanging()
         defer { plugin.remove() }
         let clock = ContinuousClock()
         let startedAt = clock.now
@@ -306,30 +152,47 @@ final class K8sExecCredentialTests: XCTestCase {
         } catch KubeConfigError.execPluginFailed(let message) {
             XCTAssertTrue(message.contains("timed out"), message)
         }
-        XCTAssertLessThan(clock.now - startedAt, .milliseconds(1500))
+        // Generous for a loaded host; a plugin that outlived the timeout would show up at 30 s.
+        XCTAssertLessThan(clock.now - startedAt, .seconds(3))
         let runningAfterTimeout = try await plugin.isRunning()
         XCTAssertFalse(runningAfterTimeout, "the plugin must be terminated")
     }
 
     func testLimitTrippedBeforeTheTimeoutIsReportedAsTheLimit() async throws {
-        // The reader trips the limit within milliseconds and terminates the plugin, which
-        // ignores SIGTERM; the 1 s timeout then fires inside the 2 s kill grace. The limit is
-        // the cause and must be the error, and the plugin is still reaped before it propagates.
-        let plugin = try FakePlugin.writingTwoMebibytesIgnoringTermination()
+        // The reader trips the limit within milliseconds of `head` starting and terminates the
+        // plugin, which ignores SIGTERM; the timeout then fires inside the 2 s kill grace. The
+        // limit is the cause and must be the error, and the plugin is still reaped before it
+        // propagates. The deadline must fall between the limit tripping and the kill, and both
+        // are measured from the launch, so a fixed deadline cannot wait for `head` to appear;
+        // just under the grace gives it the most slack a fixed deadline can — bash may take up
+        // to that long to start (Gatekeeper's first-launch cost is already paid by the fixture)
+        // — and the assertion below names the precondition when a host still misses it.
+        let plugin = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
         defer { plugin.remove() }
+        let timeout = processTerminationGrace - .milliseconds(100)
         let clock = ContinuousClock()
         let startedAt = clock.now
 
+        let resolution = Task {
+            try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: timeout)
+        }
+        let executed = try await plugin.waitUntilExecuted()
+        XCTAssertTrue(executed, "`head` must be running before the deadline")
+        let executedAt = clock.now
+
         do {
-            _ = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: .seconds(1))
+            _ = try await resolution.value
             XCTFail("2 MiB of output must be refused")
         } catch KubeConfigError.execPluginFailed(let message) {
             XCTAssertEqual(message, "exec plugin wrote more than 1048576 bytes")
         }
 
         let elapsed = clock.now - startedAt
-        XCTAssertGreaterThan(elapsed, terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
-        XCTAssertLessThan(elapsed, terminationGrace + .seconds(1), "returned after \(elapsed)")
+        XCTAssertGreaterThan(elapsed, processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        // Measured from `head` running, so a slow bash start does not count against it.
+        let sinceExecuted = clock.now - executedAt
+        XCTAssertLessThan(
+            sinceExecuted, processTerminationGrace + .seconds(1), "returned \(sinceExecuted) after the plugin ran")
         let stillRunning = try await plugin.isRunning()
         XCTAssertFalse(stillRunning, "the plugin must be killed")
     }
@@ -338,7 +201,7 @@ final class K8sExecCredentialTests: XCTestCase {
         // The reader trips the limit and terminates the plugin, which ignores SIGTERM; the caller
         // is cancelled inside the 2 s kill grace. Cancellation is what the caller asked for and
         // must propagate, while the plugin is still reaped before it does.
-        let plugin = try FakePlugin.writingTwoMebibytesIgnoringTermination()
+        let plugin = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
         defer { plugin.remove() }
         let clock = ContinuousClock()
         let startedAt = clock.now
@@ -360,20 +223,31 @@ final class K8sExecCredentialTests: XCTestCase {
         } catch is CancellationError {
         }
         let elapsed = clock.now - startedAt
-        XCTAssertGreaterThan(elapsed, terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        XCTAssertGreaterThan(elapsed, processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
         let stillRunning = try await plugin.isRunning()
         XCTAssertFalse(stillRunning, "the plugin must be killed")
     }
 
     func testPluginIgnoringSIGTERMIsKilledAfterTheGrace() async throws {
-        let plugin = try FakePlugin.ignoringTermination()
+        // The script's `trap` must be in place when SIGTERM arrives at the deadline, or bash
+        // just dies and proves nothing. The deadline is measured from the launch, so it cannot
+        // wait for the trap; just under the grace leaves bash the most time a fixed deadline
+        // can (Gatekeeper's first-launch cost is already paid by the fixture), and the
+        // assertion below names the precondition when a host still misses it.
+        let plugin = try await FakeExecutable.ignoringTermination()
         defer { plugin.remove() }
-        let timeout: Duration = .seconds(1)
+        let timeout = processTerminationGrace - .milliseconds(100)
         let clock = ContinuousClock()
         let startedAt = clock.now
 
+        let resolution = Task {
+            try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: timeout)
+        }
+        let executed = try await plugin.waitUntilExecuted()
+        XCTAssertTrue(executed, "the plugin must install its trap before the deadline")
+
         do {
-            _ = try await KubeConfig.runExecPlugin(command: plugin.path, args: [], env: [], timeout: timeout)
+            _ = try await resolution.value
             XCTFail("a plugin that outlives the timeout must fail")
         } catch KubeConfigError.execPluginFailed(let message) {
             XCTAssertTrue(message.contains("timed out"), message)
@@ -381,14 +255,15 @@ final class K8sExecCredentialTests: XCTestCase {
 
         let elapsed = clock.now - startedAt
         XCTAssertGreaterThan(
-            elapsed, timeout + terminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
-        XCTAssertLessThan(elapsed, timeout + terminationGrace + .milliseconds(500), "returned after \(elapsed)")
+            elapsed, timeout + processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
+        // Generous for a loaded host; a plugin that outlived the kill would show up at 30 s.
+        XCTAssertLessThan(elapsed, timeout + processTerminationGrace + .seconds(2), "returned after \(elapsed)")
         let stillRunning = try await plugin.isRunning()
         XCTAssertFalse(stillRunning, "the plugin must be killed")
     }
 
     func testPluginOutputBeyondTheLimitIsAnError() async throws {
-        let plugin = try FakePlugin.writingTwoMebibytes()
+        let plugin = try await FakeExecutable.writingTwoMebibytes()
         defer { plugin.remove() }
 
         do {
@@ -402,7 +277,7 @@ final class K8sExecCredentialTests: XCTestCase {
     }
 
     func testNonZeroExitReportsTheStatus() async throws {
-        let plugin = try FakePlugin("#!/bin/sh\nexit 7\n")
+        let plugin = try await FakeExecutable("#!/bin/sh\nexit 7\n")
         defer { plugin.remove() }
 
         do {
@@ -414,7 +289,7 @@ final class K8sExecCredentialTests: XCTestCase {
     }
 
     func testMissingTokenIsReported() async throws {
-        let plugin = try FakePlugin("#!/bin/sh\necho '{\"status\":{}}'\n")
+        let plugin = try await FakeExecutable("#!/bin/sh\necho '{\"status\":{}}'\n")
         defer { plugin.remove() }
 
         do {
@@ -476,7 +351,7 @@ final class K8sExecCredentialTests: XCTestCase {
     }
 
     func testLoadResolvesTheToken() async throws {
-        let plugin = try FakePlugin.token()
+        let plugin = try await FakeExecutable.token()
         defer { plugin.remove() }
 
         let config = try await KubeConfig.load(yaml: kubeconfig(execCommand: plugin.path))

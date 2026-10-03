@@ -48,6 +48,8 @@ UI reflects work started from `docker`, `abctl`, or `kubectl` without a refresh.
 
 Keep Docker Desktop or OrbStack running, then choose **Help → Migrate from Docker Desktop or OrbStack…**. First-time setup also offers migration after the ArcBox runtime is ready.
 
+Source detection reports Docker CLI failures and stops a CLI that exceeds its inspection deadline.
+
 Review the resource counts, warnings, and required replacements before choosing **Migrate Now**. ArcBox checks the replacement targets again before starting and requires a new preview if they change. ArcBox copies supported resources without deleting them from the source. Migration can stop source containers that use the copied volumes. Keep ArcBox and the source engine open until migration completes. If both source engines are detected, select the source with `docker context use` and check again.
 
 ## How it fits together

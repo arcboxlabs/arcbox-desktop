@@ -149,8 +149,6 @@ private struct SparklineTile: View {
 /// Label, headline number, a figure (sparkline or gauge) and a caption, at the
 /// one shape every tile in the strip shares.
 private struct MetricTile<Figure: View>: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     let title: LocalizedStringKey
     let value: String
     let caption: String
@@ -169,12 +167,18 @@ private struct MetricTile<Figure: View>: View {
                 // The label is known before the sample is; redacting it would
                 // claim the screen knows less than it does.
                 .unredacted()
+            // The headline changes every second and snaps. Rolling it under
+            // `numericText` re-rasterized the glyphs for every frame of the
+            // 0.3 s animation — 107–200 ms of main-thread CPU per sample, about
+            // 15 % of a core for as long as the screen was open — and inside
+            // an `.animation` the default `interpolate` transition crossfades
+            // two sets of digits instead (36 ms); without either the tail is
+            // 0.25 ms (2026-10-01, `ActivityTickBenchmarkTests`). Tabular
+            // digits keep the figure from drifting as its digits change.
             Text(value)
                 .font(.system(.title2, design: .rounded, weight: .semibold))
                 .monospacedDigit()
-                .contentTransition(reduceMotion ? .identity : .numericText())
                 .foregroundStyle(valueColor)
-                .liveValueAnimation(value)
             figure
                 .frame(height: 30)
             Text(caption)
@@ -190,7 +194,9 @@ private struct MetricTile<Figure: View>: View {
 // MARK: - Motion
 
 extension View {
-    /// Settles a value that the stream, not the user, changed.
+    /// Settles a figure that the stream, not the user, changed — the gauge,
+    /// not the headline text, which a per-sample animation only makes costlier
+    /// (see `MetricTile`).
     ///
     /// Critically damped, because nothing here was thrown: overshoot belongs to
     /// motion a gesture handed momentum to. Dropped outright under Reduce

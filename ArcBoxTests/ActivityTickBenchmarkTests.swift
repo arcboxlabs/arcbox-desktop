@@ -45,14 +45,25 @@ final class ActivityTickBenchmarkTests: XCTestCase {
     }
 
     /// The strip: four tiles with live headlines. Most of it is text —
-    /// re-rasterizing the glyphs of every tile's display list and compositing
-    /// the `numericText` transition — not the figures: 2.7–3.5 ms locally,
-    /// 1.6 ms with the transition removed (and the animation tail 160 ms →
-    /// 13 ms). CI's duration for this test puts its median near 5–7 ms; the
-    /// budget is a smoke gate against an order-of-magnitude regression.
+    /// re-rasterizing the glyphs of every tile's display list — not the
+    /// figures: 1.7 ms locally since the headlines snap (2.7–3.5 ms while they
+    /// rolled under `numericText`). CI's duration for this test puts its
+    /// median near 5–7 ms; the tick budget is a smoke gate against an
+    /// order-of-magnitude regression.
+    ///
+    /// The tail gate is the one that catches the headlines being animated
+    /// again. `tail-cpu` is 0.25 ms with them snapping; 36 ms when the default
+    /// `interpolate` transition crossfades them under an `.animation`; and
+    /// 107–200 ms under `numericText` (measured 2026-10-01, Debug, Apple
+    /// Silicon) — about 15 % of a core for as long as the Activity screen or
+    /// the menu-bar popover was open. 20 ms is 80× the local median and still
+    /// a fifth of the regression it exists to catch; CI's slower main thread
+    /// moves both the measurement and the regression the same way.
     func testStripTickStaysWithinBudget() throws {
         let tick = try measureTick(of: .strip)
         XCTAssertLessThan(tick.median, .milliseconds(40), "the strip costs \(tick) per sample")
+        XCTAssertLessThan(
+            tick.animationTail, .milliseconds(20), "the strip keeps the main thread busy after a sample: \(tick)")
     }
 
     /// The whole screen with twenty containers. The table is the bulk of it:
@@ -108,10 +119,11 @@ final class ActivityTickBenchmarkTests: XCTestCase {
                 })
         }
 
-        // A tick also starts animations — the headline's `numericText`
-        // transition, the gauge — that keep the main thread drawing for the
-        // next 0.3 s. Price that tail in main-thread CPU time, since the ticks
-        // above only see the frame the sample lands in.
+        // A tick can also start animations — the pressure gauge's, or a
+        // headline transition like the `numericText` roll the strip used to
+        // carry — that keep the main thread drawing for the next 0.3 s. Price
+        // that tail in main-thread CPU time, since the ticks above only see
+        // the frame the sample lands in.
         var tails: [Duration] = []
         for _ in 0..<5 {
             vm.ingest(feed.next())

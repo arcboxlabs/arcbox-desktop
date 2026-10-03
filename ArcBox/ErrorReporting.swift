@@ -7,6 +7,14 @@ import ArcBoxClient
 /// every error reaching Sentry has the same shape. Also bridges errors to
 /// PostHog (via ``Analytics``) for product-level error rate tracking.
 ///
+/// Cancellation is not an error. A view disappearing, a daemon restart or the
+/// app quitting cancels whatever call was in flight, and that arrives as
+/// `CancellationError` or as the `RPCError` grpc-swift wraps one in
+/// (`Error/isCancellation`). ``send(_:tags:)`` drops those before either
+/// backend sees them. Call sites keep their own cancellation handling keyed
+/// on the task, not on the error's shape: a cancellation the transport
+/// manufactured while the task is alive is a failure the UI should show.
+///
 /// Usage:
 /// ```swift
 /// } catch {
@@ -24,12 +32,14 @@ nonisolated enum ErrorReporting {
         operation: String
     ) {
         let category = classify(error)
-
-        SentrySDK.capture(error: error) { scope in
-            scope.setTag(value: domain.rawValue, key: "error_domain")
-            scope.setTag(value: operation, key: "operation")
-            scope.setTag(value: category.rawValue, key: "error_category")
-        }
+        let sent = send(
+            error,
+            tags: [
+                "error_domain": domain.rawValue,
+                "operation": operation,
+                "error_category": category.rawValue,
+            ])
+        guard sent else { return }
 
         // Bridge to PostHog for product-level error rate tracking.
         Analytics.capture(
@@ -39,6 +49,25 @@ nonisolated enum ErrorReporting {
                 "operation": operation,
                 "category": category.rawValue,
             ])
+    }
+
+    /// Hand `error` to Sentry under `tags`.
+    ///
+    /// The one path to `SentrySDK.capture(error:)`, shared by the app's own
+    /// captures and by ``SentryDiagnosticsSink``, so the cancellation guard
+    /// lives here once. Returns `false` when the error was dropped as
+    /// cancellation; `true` means Sentry was handed the event, which is a
+    /// no-op while Sentry is not initialized.
+    @discardableResult
+    static func send(_ error: Error, tags: [String: String]) -> Bool {
+        guard !error.isCancellation else { return false }
+
+        SentrySDK.capture(error: error) { scope in
+            for (key, value) in tags {
+                scope.setTag(value: value, key: key)
+            }
+        }
+        return true
     }
 
     // MARK: - Error Domain
@@ -69,7 +98,6 @@ nonisolated enum ErrorReporting {
         case notFound
         case conflict
         case timeout
-        case cancelled
         case unknown
     }
 
@@ -78,8 +106,6 @@ nonisolated enum ErrorReporting {
     /// `ArcBoxClient.userMessage(for:)` so the classification stays close to
     /// the capture site without pulling in the client package.
     static func classify(_ error: Error) -> ErrorCategory {
-        if error is CancellationError { return .cancelled }
-
         let desc = String(describing: error)
 
         if desc.contains("UNAVAILABLE") || desc.contains("unavailable")
@@ -125,11 +151,7 @@ nonisolated struct SentryDiagnosticsSink: DiagnosticsSink {
     }
 
     func capture(_ error: Error, tags: [String: String]) {
-        SentrySDK.capture(error: error) { scope in
-            for (key, value) in tags {
-                scope.setTag(value: value, key: key)
-            }
-        }
+        ErrorReporting.send(error, tags: tags)
     }
 }
 
