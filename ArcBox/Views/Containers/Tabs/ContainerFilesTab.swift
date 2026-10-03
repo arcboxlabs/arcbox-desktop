@@ -139,7 +139,7 @@ struct ContainerFilesTab: View {
                 .padding(.horizontal, 20)
 
             Text(
-                "Container filesystems are browsed through the read-only ~/ArcBox export, "
+                "Container filesystems are browsed through the read-only ~/ArcBox/docker export, "
                     + "merging the container's writable layer over the image layers below it."
             )
             .font(.system(size: 12))

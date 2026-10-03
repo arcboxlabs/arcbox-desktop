@@ -159,7 +159,7 @@ struct VolumeFilesTab: View {
             return
         }
 
-        // The mount point is a guest path; browse it through the ~/ArcBox export.
+        // The mount point is a guest path; browse it through the ~/ArcBox/docker export.
         guard let hostURL = GuestDataMount.hostURL(forGuestPath: mountPoint) else {
             rootURL = nil
             errorMessage = "Volume mount point is outside the guest data root."

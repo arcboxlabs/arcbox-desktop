@@ -1,15 +1,17 @@
 import Foundation
 
-/// Maps guest data paths to their host location under `~/ArcBox`.
+/// Maps guest data paths to their host location under `~/ArcBox/docker`.
 ///
 /// The ArcBox daemon exports the guest's docker data root (`/var/lib/docker`)
-/// read-only over NFSv4 and mounts it at `~/ArcBox`; the containerd data root
+/// read-only over NFSv4 and mounts it at `~/ArcBox/docker` — `docker/` under
+/// its host mount root `~/ArcBox`, a plain folder that also holds every
+/// running machine's root at `machines/<name>`; the containerd data root
 /// (`/var/lib/containerd`, where the containerd image store keeps every
-/// snapshot) rides along as a child export at `~/ArcBox/containerd`. Guest
-/// paths — volume mountpoints, image/container layer directories — are
+/// snapshot) rides along as a child export at `~/ArcBox/docker/containerd`.
+/// Guest paths — volume mountpoints, image/container layer directories — are
 /// browsed on the host via a prefix rewrite:
-/// `/var/lib/docker/<rest>` → `~/ArcBox/<rest>` and
-/// `/var/lib/containerd/<rest>` → `~/ArcBox/containerd/<rest>`.
+/// `/var/lib/docker/<rest>` → `~/ArcBox/docker/<rest>` and
+/// `/var/lib/containerd/<rest>` → `~/ArcBox/docker/containerd/<rest>`.
 nonisolated enum GuestDataMount {
     /// Guest docker data root the export corresponds to.
     /// Mirrors `DOCKER_DATA_MOUNT_POINT` in the runtime.
@@ -19,12 +21,19 @@ nonisolated enum GuestDataMount {
     /// Mirrors `CONTAINERD_DATA_MOUNT_POINT` in the runtime.
     static let guestContainerdRoot = "/var/lib/containerd"
 
-    /// Host mount point of the read-only guest data export.
-    static var rootURL: URL {
+    /// The daemon's host mount root, `~/ArcBox`. Mirrors
+    /// `HostMountLayout::under_home` in the runtime.
+    static var hostMountRoot: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("ArcBox")
     }
 
-    /// Whether the guest data export is currently mounted at `~/ArcBox`.
+    /// Host mount point of the read-only guest data export: `docker/` under
+    /// the host mount root.
+    static var rootURL: URL {
+        hostMountRoot.appendingPathComponent("docker")
+    }
+
+    /// Whether the guest data export is currently mounted at `~/ArcBox/docker`.
     static var isMounted: Bool {
         var isDirectory: ObjCBool = false
         return FileManager.default.fileExists(atPath: rootURL.path, isDirectory: &isDirectory)
@@ -39,7 +48,7 @@ nonisolated enum GuestDataMount {
     /// export once the URL is standardized downstream.
     ///
     /// `exportRoot` is where the export is mounted. It is a parameter rather
-    /// than a hardcoded `~/ArcBox` so that the resolution rules layered on top
+    /// than a hardcoded `~/ArcBox/docker` so that the resolution rules layered on top
     /// of it — truncation, exclusion counting — can be exercised against a
     /// directory tree the caller controls instead of a live NFS mount.
     static func hostURL(forGuestPath guestPath: String, exportRoot: URL = rootURL) -> URL? {
@@ -82,8 +91,8 @@ nonisolated enum GuestDataMount {
     /// the read-only bind).
     static func unavailableMessage(subject: String) -> String {
         if isMounted {
-            return "\(subject) isn't present in the ~/ArcBox export."
+            return "\(subject) isn't present in the ~/ArcBox/docker export."
         }
-        return "Guest data isn't mounted at ~/ArcBox. Ensure the ArcBox daemon is running."
+        return "Guest data isn't mounted at ~/ArcBox/docker. Ensure the ArcBox daemon is running."
     }
 }
