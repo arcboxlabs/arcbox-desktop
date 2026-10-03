@@ -1,5 +1,51 @@
 # Changelog
 
+## [1.38.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.37.1...v1.38.0) (2026-10-03)
+
+
+### Features
+
+* **notifications:** notify when a container exits on its own ([#384](https://github.com/arcboxlabs/arcbox-desktop/issues/384)) ([c2018b3](https://github.com/arcboxlabs/arcbox-desktop/commit/c2018b335348357cace039827fb70d97a1f51b46))
+* **onboarding:** add Docker environment migration ([#368](https://github.com/arcboxlabs/arcbox-desktop/issues/368)) ([16c58b1](https://github.com/arcboxlabs/arcbox-desktop/commit/16c58b1f320b91d67b555a239b20bd47140c44a0))
+
+
+### Bug Fixes
+
+* **about:** give the About panel its size back after the controller lands ([#405](https://github.com/arcboxlabs/arcbox-desktop/issues/405)) ([de2f409](https://github.com/arcboxlabs/arcbox-desktop/commit/de2f40911072998e4188202063252206baf14da5))
+* **app:** keep the test host from booting the app and prompting for the keychain ([7933c2c](https://github.com/arcboxlabs/arcbox-desktop/commit/7933c2c8d7e5a9b560038c962a48cadf81cf5203))
+* **daemon:** let the daemon stop its VM before launchd kills it on quit ([4dd3398](https://github.com/arcboxlabs/arcbox-desktop/commit/4dd33987b0d80cc454fad4de0a2a2d49718af45a))
+* **diagnostics:** stop reporting cancelled calls to Sentry ([#411](https://github.com/arcboxlabs/arcbox-desktop/issues/411)) ([04e72e7](https://github.com/arcboxlabs/arcbox-desktop/commit/04e72e724f6612fa7170b47052872138d9a9b8ec))
+* run the helper version probe and kubeconfig exec plugins off the main actor ([#407](https://github.com/arcboxlabs/arcbox-desktop/issues/407)) ([9092ffd](https://github.com/arcboxlabs/arcbox-desktop/commit/9092ffd7b6cc739101d72374f84b0d44e13f6cc4))
+* **ui:** improve accessibility and protect logged identifiers ([#416](https://github.com/arcboxlabs/arcbox-desktop/issues/416)) ([d3a8529](https://github.com/arcboxlabs/arcbox-desktop/commit/d3a85297eced29b80c6c86d78856ab41ab90642f))
+
+
+### Refactoring
+
+* one ProcessSupport package for every child process the app waits for ([#413](https://github.com/arcboxlabs/arcbox-desktop/issues/413)) ([26ee380](https://github.com/arcboxlabs/arcbox-desktop/commit/26ee380b5efc393cd403d6aa1c4421a655b5a05f))
+
+
+### Performance
+
+* **activity:** draw the sparklines with Canvas instead of Swift Charts ([#409](https://github.com/arcboxlabs/arcbox-desktop/issues/409)) ([098a65a](https://github.com/arcboxlabs/arcbox-desktop/commit/098a65a1235bad9cb4059c895e7e4d26388a5ace))
+* **activity:** stop rolling the live headline digits every second ([#412](https://github.com/arcboxlabs/arcbox-desktop/issues/412)) ([8ccb027](https://github.com/arcboxlabs/arcbox-desktop/commit/8ccb02729759c1656f9a120d506cfdabcdfacc25))
+* **containers:** update the container list incrementally instead of reloading it ([#408](https://github.com/arcboxlabs/arcbox-desktop/issues/408)) ([43641b4](https://github.com/arcboxlabs/arcbox-desktop/commit/43641b4e483f9549e4807f13d38bb2a2eea38dfb))
+* **logs:** process log batches incrementally ([#414](https://github.com/arcboxlabs/arcbox-desktop/issues/414)) ([1d531c0](https://github.com/arcboxlabs/arcbox-desktop/commit/1d531c0b56baf4cdf53db65c7ffba4d7df67fb1e))
+* **ui:** keep segmented pickers out of hot invalidation scopes (App Hang cluster) ([#406](https://github.com/arcboxlabs/arcbox-desktop/issues/406)) ([a145c2c](https://github.com/arcboxlabs/arcbox-desktop/commit/a145c2cdd7e90b0e846d4131a90757376580e6be))
+
+
+### Documentation
+
+* **agents:** document app performance and process rules ([#410](https://github.com/arcboxlabs/arcbox-desktop/issues/410)) ([89c0625](https://github.com/arcboxlabs/arcbox-desktop/commit/89c0625d695a7cc84ee5c58c5fcb10027fb9ebe0))
+
+
+### CI
+
+* pin arcboxlabs/actions/r2-publish@v2 ([f8de307](https://github.com/arcboxlabs/arcbox-desktop/commit/f8de307cb7778473952b68ffddf1e77d192d7d8d))
+* **release:** add a CDN republish workflow fed from the release DMG ([65e628c](https://github.com/arcboxlabs/arcbox-desktop/commit/65e628c29c8fa03c36cdf06bed57490ec7c1a514))
+* **release:** publish the DMG and appcast to Cloudflare R2 via r2-publish ([dac4318](https://github.com/arcboxlabs/arcbox-desktop/commit/dac4318dee15c3bd8b3f2ecc783171a19e690333))
+* **release:** write the DMG checksum by basename and compare digests on republish ([de9ce76](https://github.com/arcboxlabs/arcbox-desktop/commit/de9ce76ba9a1fa1a75ca1478f1657be51a59eb6d))
+* **republish:** publish from a Linux job, r2-publish has no macOS install path ([70b621c](https://github.com/arcboxlabs/arcbox-desktop/commit/70b621cde6d6fa79231a0d9dbe70cfeb0841a2e4))
+
 ## [1.37.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.37.0...v1.37.1) (2026-09-30)
 
 
