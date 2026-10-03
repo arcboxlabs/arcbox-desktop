@@ -47,6 +47,7 @@ final class LogPrivacyLintRuleTests: XCTestCase {
             #"Log.notifications.debug("\(notification.category.rawValue, privacy: .public) notifications are off")"#,
             #"Log.startup.info("PostHog initialized (opted \(optedOut ? "out" : "in", privacy: .public))")"#,
             #"Log.docker.debug("Debounced \(coalescedCount, privacy: .public) \(type, privacy: .public) events")"#,
+            #"ClientLog.daemon.warning("Daemon still holds the lock after \(Self.shutdownTimeout, privacy: .public)")"#,
             #"Log.container.info("Created container \(id, privacy: .private(mask: .hash))")"#,
             #"Log.image.info("Pulled image \(reference, privacy: .private)")"#,
         ] {

@@ -187,7 +187,7 @@ extension DaemonManager {
             if !exited {
                 ClientLog.daemon.warning(
                     """
-                    Daemon still holds \(lockFile.path, privacy: .public) after \
+                    Daemon still holds \(lockFile.path, privacy: .private) after \
                     \(Self.shutdownTimeout, privacy: .public); launchd should have killed it by now
                     """)
             }
