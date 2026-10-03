@@ -106,19 +106,19 @@ final class AccessibilityAuditTests: XCTestCase {
         tab.click()
     }
 
-    /// The lists show a startup placeholder until the daemon answers. Wait for
-    /// the placeholder's transitional wording to leave the window so the audit
-    /// sees rows, not the spinner. A daemon that never comes up is this Mac's
-    /// problem, not the UI's, so that skips the audit instead of failing it.
+    /// The lists show a loading placeholder until the daemon answers. Wait for
+    /// that placeholder to go, so the audit sees rows or an empty state, not
+    /// the spinner. Keyed on the placeholder's accessibility identifier rather
+    /// than its wording: a resource named "Loading" must not hold the wait.
+    /// A daemon that never comes up is this Mac's problem, not the UI's, so
+    /// that skips the audit instead of failing it.
     private func waitForListToSettle() throws {
-        let transitional = NSPredicate(
-            format: "label CONTAINS 'Starting' OR label CONTAINS 'Loading' OR label CONTAINS 'Waiting'"
-        )
-        let placeholders = app.windows.firstMatch.staticTexts.matching(transitional)
-        let settled = expectation(for: NSPredicate(format: "count == 0"), evaluatedWith: placeholders)
+        let loading = app.windows.firstMatch.descendants(matching: .any)
+            .matching(identifier: "placeholder.loading")
+        let settled = expectation(for: NSPredicate(format: "count == 0"), evaluatedWith: loading)
         guard XCTWaiter().wait(for: [settled], timeout: 60) == .completed else {
             throw XCTSkip(
-                "the daemon did not come up within 60s; still showing \(placeholders.firstMatch.label)")
+                "the daemon did not come up within 60s; a list still shows \(loading.firstMatch.label)")
         }
     }
 }
