@@ -4,8 +4,16 @@ import XCTest
 
 @MainActor
 final class GuestDataMountTests: XCTestCase {
+    /// Where the daemon mounts the docker export: `docker/` under the host
+    /// mount root `~/ArcBox`.
     private var arcboxRoot: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("ArcBox")
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("ArcBox/docker")
+    }
+
+    func testExportIsMountedUnderTheHostMountRoot() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        XCTAssertEqual(GuestDataMount.hostMountRoot, home.appendingPathComponent("ArcBox"))
+        XCTAssertEqual(GuestDataMount.rootURL, arcboxRoot)
     }
 
     func testVolumePathMapsUnderArcBox() {
