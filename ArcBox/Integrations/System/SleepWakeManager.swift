@@ -85,14 +85,14 @@ final class SleepWakeManager {
                     paused.append(id)
                 } catch {
                     logger.error(
-                        "Failed to pause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                        "Failed to pause container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
                     )
                 }
             }
             pausedByUs = Set(paused)
             logger.info("Paused \(paused.count) containers for sleep")
         } catch {
-            logger.error("Failed to list containers for sleep pause: \(error.localizedDescription, privacy: .public)")
+            logger.error("Failed to list containers for sleep pause: \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -112,7 +112,7 @@ final class SleepWakeManager {
             } catch {
                 failed.insert(id)
                 logger.error(
-                    "Failed to unpause container \(id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    "Failed to unpause container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
                 )
             }
         }

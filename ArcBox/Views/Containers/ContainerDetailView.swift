@@ -28,6 +28,7 @@ struct ContainerDetailView: View {
                     Image(systemName: "cube")
                         .font(.system(size: 32))
                         .foregroundStyle(AppColors.textMuted)
+                        .accessibilityHidden(true)
                     Text("No Selection")
                         .foregroundStyle(AppColors.textSecondary)
                         .font(.system(size: 15))

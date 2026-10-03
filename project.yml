@@ -275,6 +275,31 @@ targets:
         SWIFT_VERSION: 6.0
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/$(ARCBOX_PRODUCT_NAME).app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/$(ARCBOX_PRODUCT_NAME)
 
+  # Xcode's accessibility audit over a launched app. Its own scheme, not part
+  # of `make test`: the lists only leave their startup placeholders when the
+  # bundle's daemon runs, which takes the signed development build that
+  # `make audit-accessibility` produces.
+  ArcBoxUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: ArcBoxUITests
+    dependencies:
+      - target: ArcBox
+    settings:
+      base:
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: 422ACSY6Y5
+        GENERATE_INFOPLIST_FILE: YES
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        MARKETING_VERSION: 1.0
+        PRODUCT_BUNDLE_IDENTIFIER: com.arcboxlabs.desktop.uitests
+        PRODUCT_NAME: $(TARGET_NAME)
+        SWIFT_VERSION: 6.0
+        TEST_TARGET_NAME: ArcBox
+
 schemes:
   ArcBox:
     build:
@@ -292,3 +317,15 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  ArcBoxUITests:
+    build:
+      targets:
+        ArcBox: all
+        ArcBoxUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ArcBoxUITests

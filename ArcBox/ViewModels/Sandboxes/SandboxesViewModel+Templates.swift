@@ -70,7 +70,7 @@ extension SandboxesViewModel {
             // conversion. The daemon applies no read deadline to sandbox RPCs.
             let template = try await client.templates.build(request, metadata: metadata)
             Log.sandbox.info(
-                "Promoted snapshot \(snapshotID, privacy: .public) → template \(template.name, privacy: .public)"
+                "Promoted snapshot \(snapshotID, privacy: .private(mask: .hash)) → template \(template.name, privacy: .private)"
             )
             await loadTemplates(client: client)
             return SandboxTemplateViewModel(from: template)

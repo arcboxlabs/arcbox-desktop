@@ -38,6 +38,7 @@ struct SandboxesListView: View {
                     }
                 )
                 .help("New Sandbox")
+                .accessibilityLabel("New sandbox")
                 .disabled(!sandboxActionsAvailable)
             }
         }

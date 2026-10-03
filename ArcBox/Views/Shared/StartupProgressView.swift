@@ -66,6 +66,7 @@ struct StartupProgressView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 36))
                 .foregroundStyle(AppColors.error)
+                .accessibilityHidden(true)
 
             Text("Daemon Cannot Start")
                 .font(.system(size: 14, weight: .semibold))
@@ -93,6 +94,7 @@ struct StartupProgressView: View {
             statusIcon(status)
                 .frame(width: 14, height: 14)
                 .padding(.top, 1)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(step.label)
@@ -105,6 +107,8 @@ struct StartupProgressView: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(statusDescription(status))
     }
 
     @ViewBuilder
@@ -129,6 +133,16 @@ struct StartupProgressView: View {
             Image(systemName: "minus.circle")
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textMuted)
+        }
+    }
+
+    private func statusDescription(_ status: StepStatus) -> String {
+        switch status {
+        case .pending: "Pending"
+        case .running: "In progress"
+        case .completed: "Completed"
+        case .failed: "Failed"
+        case .skipped: "Skipped"
         }
     }
 

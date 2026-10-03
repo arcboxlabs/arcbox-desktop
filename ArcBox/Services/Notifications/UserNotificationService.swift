@@ -41,7 +41,10 @@ final class UserNotificationService: NSObject {
     private func deliver(_ notification: AppNotification) async {
         guard defaults.bool(forKey: notification.category.preferenceKey) else {
             Log.notifications.debug(
-                "Suppressed \(notification.identifier, privacy: .public): \(notification.category.rawValue, privacy: .public) notifications are off"
+                """
+                Suppressed \(notification.identifier, privacy: .private(mask: .hash)): \
+                \(notification.category.rawValue, privacy: .public) notifications are off
+                """
             )
             return
         }
@@ -58,7 +61,7 @@ final class UserNotificationService: NSObject {
                 UNNotificationRequest(identifier: notification.identifier, content: content, trigger: nil))
         } catch {
             Log.notifications.error(
-                "Failed to deliver \(notification.identifier, privacy: .public): \(error.localizedDescription, privacy: .private)"
+                "Failed to deliver \(notification.identifier, privacy: .private(mask: .hash)): \(error.localizedDescription, privacy: .private)"
             )
         }
     }
@@ -114,7 +117,7 @@ extension UserNotificationService: UNUserNotificationCenterDelegate {
         else { return [.banner, .sound] }
 
         Log.notifications.debug(
-            "Suppressed \(notification.request.identifier, privacy: .public): already on screen")
+            "Suppressed \(notification.request.identifier, privacy: .private(mask: .hash)): already on screen")
         return []
     }
 

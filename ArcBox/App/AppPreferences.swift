@@ -37,9 +37,15 @@ enum AppPreferences {
             "includeTimeMachine": false,
             "switchDockerContextAutomatically": true,
             "pauseContainersWhileSleeping": true,
-            AppNotification.Category.sandbox.preferenceKey: true,
-            AppNotification.Category.daemonHealth.preferenceKey: true,
         ])
+
+        // Delivery is gated by `bool(forKey:)`, which reads an unregistered key
+        // as false. Registering from `allCases` is what stops a new category
+        // from silently shipping switched off.
+        userDefaults.register(
+            defaults: Dictionary(
+                uniqueKeysWithValues: AppNotification.Category.allCases.map { ($0.preferenceKey, true) }
+            ))
     }
 
     static func hasCompletedOnboarding(in userDefaults: UserDefaults = .standard) -> Bool {

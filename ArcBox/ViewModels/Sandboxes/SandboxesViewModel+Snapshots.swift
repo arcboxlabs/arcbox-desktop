@@ -83,7 +83,12 @@ extension SandboxesViewModel {
             // No per-call timeout: checkpointing pauses the VM and writes
             // vmstate + guest memory to disk, which can exceed the default.
             let response = try await client.snapshots.checkpoint(request, metadata: metadata)
-            Log.sandbox.info("Checkpointed \(id, privacy: .public) → \(response.snapshotID, privacy: .public)")
+            Log.sandbox.info(
+                """
+                Checkpointed \(id, privacy: .private(mask: .hash)) → \
+                \(response.snapshotID, privacy: .private(mask: .hash))
+                """
+            )
             await loadSnapshots(for: id, client: client)
         } catch is CancellationError {
             // The view initiating the operation went away.
@@ -116,7 +121,12 @@ extension SandboxesViewModel {
                 metadata: metadata,
                 options: ArcBoxClient.defaultCallOptions
             )
-            Log.sandbox.info("Restored \(snapshotID, privacy: .public) → \(response.id, privacy: .public)")
+            Log.sandbox.info(
+                """
+                Restored \(snapshotID, privacy: .private(mask: .hash)) → \
+                \(response.id, privacy: .private(mask: .hash))
+                """
+            )
             await loadSandboxes(client: client)
             return response.id
         } catch is CancellationError {

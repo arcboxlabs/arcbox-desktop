@@ -20,6 +20,7 @@ struct GeneralSettingsView: View {
     @AppStorage("externalTerminal") private var externalTerminal = ExternalTerminalApp.terminalBundleIdentifier
     @AppStorage("telemetryEnabled") private var telemetryEnabled = true
     @AppStorage(AppNotification.Category.sandbox.preferenceKey) private var notifySandboxResults = true
+    @AppStorage(AppNotification.Category.container.preferenceKey) private var notifyContainerCrashes = true
     @AppStorage(AppNotification.Category.daemonHealth.preferenceKey) private var notifyDaemonProblems = true
 
     @State private var isExportingDiagnostics = false
@@ -78,7 +79,7 @@ struct GeneralSettingsView: View {
 
             Section("Notifications") {
                 LabeledContent {
-                    Toggle("", isOn: $notifySandboxResults)
+                    Toggle("Sandbox execution results", isOn: $notifySandboxResults)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -89,7 +90,18 @@ struct GeneralSettingsView: View {
                     }
                 }
                 LabeledContent {
-                    Toggle("", isOn: $notifyDaemonProblems)
+                    Toggle("Container crashes", isOn: $notifyContainerCrashes)
+                        .labelsHidden()
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Container crashes")
+                        Text("When a container exits on its own with a non-zero code.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent {
+                    Toggle("Daemon problems", isOn: $notifyDaemonProblems)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -107,7 +119,7 @@ struct GeneralSettingsView: View {
 
             Section("Privacy") {
                 LabeledContent {
-                    Toggle("", isOn: $telemetryEnabled)
+                    Toggle("Share usage data", isOn: $telemetryEnabled)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -128,7 +140,7 @@ struct GeneralSettingsView: View {
                     Text("Dark").tag("dark")
                 }
                 LabeledContent {
-                    Picker("", selection: $externalTerminalSelection) {
+                    Picker("External terminal app", selection: $externalTerminalSelection) {
                         ForEach(externalTerminalApps) { app in
                             Text(app.displayName).tag(app.id)
                         }

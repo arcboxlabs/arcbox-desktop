@@ -624,7 +624,12 @@ private final class ImageTableCellView: NSTableCellView, ResourceListActionDispl
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel(
-            "\(image.fullName), \(image.sizeDisplay), \(image.inUse ? "In Use" : "Unused")"
+            [
+                image.fullName,
+                image.architecture == "amd64" ? "amd64" : nil,
+                image.sizeDisplay,
+                image.inUse ? "In Use" : "Unused",
+            ].compactMap { $0 }.joined(separator: ", ")
         )
         updateColors()
 

@@ -31,7 +31,7 @@ extension DaemonManager {
 
     nonisolated private static func performDaemonVerification(at path: String) async -> String? {
         guard FileManager.default.fileExists(atPath: path) else {
-            ClientLog.daemon.error("Daemon binary not found at \(path, privacy: .public)")
+            ClientLog.daemon.error("Daemon binary not found at \(path, privacy: .private)")
             return "Daemon binary not found at expected path."
         }
 
@@ -80,10 +80,10 @@ extension DaemonManager {
         ]
         let missing = required.filter { !plist.contains($0) }
         if !missing.isEmpty {
-            let list = missing.joined(separator: ", ")
-            ClientLog.daemon.error("Daemon missing entitlements: \(list, privacy: .public)")
+            let missingEntitlements = missing.joined(separator: ", ")
+            ClientLog.daemon.error("Daemon missing entitlements: \(missingEntitlements, privacy: .public)")
             return
-                "Daemon binary is missing required entitlements: \(list).\nRe-sign with Developer ID and proper entitlements."
+                "Daemon binary is missing required entitlements: \(missingEntitlements).\nRe-sign with Developer ID and proper entitlements."
         }
 
         ClientLog.daemon.info("Daemon binary verified OK (signature + entitlements)")

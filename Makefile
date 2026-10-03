@@ -41,7 +41,7 @@ PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
-.PHONY: build build-runnable build-runnable-rust test resolve format lint lint-xtask test-xtask generate-xcodeproj bump-arcbox verify-arcbox-protobuf build-rust prefetch dmg dmg-signed dmg-release clean help
+.PHONY: build build-runnable check-runnable-prerequisites build-runnable-rust test audit-accessibility resolve format lint lint-xtask test-xtask generate-xcodeproj bump-arcbox verify-arcbox-protobuf build-rust prefetch dmg dmg-signed dmg-release clean help
 
 help:
 	@echo "ArcBox build targets:"
@@ -49,6 +49,8 @@ help:
 	@echo "  make build          Build the Swift app (Debug, no Rust binaries)"
 	@echo "  make build-runnable Build a complete signed ArcBox Dev app for debugging"
 	@echo "  make test           Build and run the test suite"
+	@echo "  make audit-accessibility"
+	@echo "                         Run Xcode's accessibility audit over the signed ArcBox Dev app"
 	@echo "  make resolve        Update Package.resolved after a Package.swift change"
 	@echo "  make format         Apply swift-format in place"
 	@echo "  make lint           Run swift-format --strict and swiftlint (as CI does)"
@@ -116,6 +118,7 @@ HOST_RUST_ENV = /usr/bin/env -i \
 	CARGO_TARGET_DIR="$(ARCBOX_HOST_TARGET_DIR)"
 
 CONFIGURATION ?= Debug
+SCHEME ?= ArcBox
 DESTINATION ?= platform=macOS
 DERIVED_DATA_PATH ?= .build/DerivedData
 
@@ -136,7 +139,7 @@ DERIVED_DATA_PATH ?= .build/DerivedData
 # lockfile stale. Run `make resolve` after changing any Package.swift.
 XCODEBUILD_FLAGS = \
 	-project ArcBox.xcodeproj \
-	-scheme ArcBox \
+	-scheme $(SCHEME) \
 	-configuration $(CONFIGURATION) \
 	-destination '$(DESTINATION)' \
 	-derivedDataPath $(DERIVED_DATA_PATH) \
@@ -164,7 +167,35 @@ XCODEBUILD_FLAGS = \
 build:
 	$(XCODE_ENV) xcodebuild build $(XCODEBUILD_FLAGS)
 
-build-runnable:
+# Everything build-runnable needs to produce a bundle whose daemon survives
+# launch, shared with the UI audit so both run against the same app.
+RUNNABLE_BUILD_VARS = \
+	CONFIGURATION=Debug \
+	DERIVED_DATA_PATH=.build/DerivedData-Runnable \
+	SKIP_RUST_BUILD=0 \
+	ARCBOX_STAGE_RESOURCES=1 \
+	XCODE_AD_HOC_SIGN=0 \
+	ARCBOX_PROFILE=development \
+	ARCBOX_PRODUCT_BUNDLE_IDENTIFIER=com.arcboxlabs.desktop.dev \
+	ARCBOX_PRODUCT_NAME=ArcBox \
+	ARCBOX_APP_DISPLAY_NAME='ArcBox Dev' \
+	ARCBOX_HOST_TARGET_DIR='$(ARCBOX_HOST_TARGET_DIR)' \
+	ARCBOX_HOST_BIN_DIR='$(ARCBOX_HOST_BIN_DIR)' \
+	DAEMON_SIGN_IDENTITY='$(SIGN_IDENTITY)'
+
+build-runnable: check-runnable-prerequisites
+	$(MAKE) build $(RUNNABLE_BUILD_VARS)
+
+# Xcode's accessibility audit (XCUIApplication.performAccessibilityAudit) over
+# the main flows of the launched app. Runs the ArcBoxUITests scheme against the
+# development build, because the container, image, volume and machine lists
+# only leave their startup placeholders once the bundle's daemon is running.
+# Not part of `make test`: it needs the Developer ID certificate and a daemon
+# on this Mac, and it drives the UI while it runs.
+audit-accessibility: check-runnable-prerequisites
+	$(MAKE) test SCHEME=ArcBoxUITests $(RUNNABLE_BUILD_VARS)
+
+check-runnable-prerequisites:
 	@actual_commit=$$(/usr/bin/git -C "$(ARCBOX_DIR)" rev-parse HEAD) || exit 1; \
 	expected_commit=$$(/usr/bin/git -C "$(ARCBOX_DIR)" rev-parse "$(ARCBOX_VERSION)^{commit}") || exit 1; \
 	if [ "$$actual_commit" != "$$expected_commit" ]; then \
@@ -188,19 +219,6 @@ build-runnable:
 		echo "ERROR: Node.js is unavailable; it is required to build guest agents." >&2; \
 		exit 1; \
 	fi
-	$(MAKE) build \
-		CONFIGURATION=Debug \
-		DERIVED_DATA_PATH=.build/DerivedData-Runnable \
-		SKIP_RUST_BUILD=0 \
-		ARCBOX_STAGE_RESOURCES=1 \
-		XCODE_AD_HOC_SIGN=0 \
-		ARCBOX_PROFILE=development \
-		ARCBOX_PRODUCT_BUNDLE_IDENTIFIER=com.arcboxlabs.desktop.dev \
-		ARCBOX_PRODUCT_NAME=ArcBox \
-		ARCBOX_APP_DISPLAY_NAME='ArcBox Dev' \
-		ARCBOX_HOST_TARGET_DIR='$(ARCBOX_HOST_TARGET_DIR)' \
-		ARCBOX_HOST_BIN_DIR='$(ARCBOX_HOST_BIN_DIR)' \
-		DAEMON_SIGN_IDENTITY='$(SIGN_IDENTITY)'
 
 test:
 	$(XCODE_ENV) xcodebuild test $(XCODEBUILD_FLAGS)

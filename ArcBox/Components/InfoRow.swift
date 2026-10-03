@@ -20,6 +20,8 @@ struct InfoRow: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(label): \(value)")
+                .accessibilityHint("Opens in the browser")
             } else {
                 Text(value)
                     .font(.system(size: 13))
@@ -28,6 +30,9 @@ struct InfoRow: View {
                     .textSelection(.enabled)
             }
         }
+        // A plain row reads as one "label, value" element; a link row keeps
+        // its button separate so it stays activatable.
+        .accessibilityElement(children: link == nil ? .combine : .contain)
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
         .overlay(alignment: .bottom) {

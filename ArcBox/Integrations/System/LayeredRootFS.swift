@@ -77,7 +77,7 @@ nonisolated struct LayeredRootFS {
                     Log.container.error(
                         """
                         layer \(index, privacy: .public) excluded from merge: \
-                        \(error.localizedDescription, privacy: .public)
+                        \(error.localizedDescription, privacy: .private)
                         """
                     )
                     excluded.formUnion(index..<layers.count)

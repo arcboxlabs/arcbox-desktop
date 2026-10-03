@@ -22,6 +22,7 @@ struct AppNotification: Equatable {
 extension AppNotification {
     enum Category: String, CaseIterable {
         case sandbox
+        case container
         case daemonHealth
 
         /// Preference gating delivery. Registered in `AppPreferences`, so an
@@ -29,6 +30,7 @@ extension AppNotification {
         var preferenceKey: String {
             switch self {
             case .sandbox: "notifySandboxResults"
+            case .container: "notifyContainerCrashes"
             case .daemonHealth: "notifyDaemonProblems"
             }
         }

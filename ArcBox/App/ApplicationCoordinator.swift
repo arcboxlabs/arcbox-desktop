@@ -319,6 +319,9 @@ final class ApplicationCoordinator: NSObject {
         sandboxEventMonitor.onEvent = { [weak self] event in
             self?.notifications.handleSandboxEvent(event)
         }
+        eventMonitor.onEvent = { [weak self] event in
+            self?.notifications.handleDockerEvent(event)
+        }
         notifications.start()
     }
 
@@ -531,6 +534,7 @@ final class ApplicationCoordinator: NSObject {
             sandboxEventMonitor.stop()
             machineEventMonitor.stop()
             sleepWakeManager.stop()
+            notifications.runtimeStopped()
             updateDockerContext(useArcBox: false)
         }
     }
@@ -547,7 +551,7 @@ final class ApplicationCoordinator: NSObject {
                 appVM.dockerContextRetry = nil
             case let .failure(error):
                 Log.context.error(
-                    "Failed to update Docker context: \(error.localizedDescription, privacy: .public)"
+                    "Failed to update Docker context: \(error.localizedDescription, privacy: .private)"
                 )
                 if let retry = self.appVM.dockerContextRetry, case .preference = retry {
                     return
@@ -665,7 +669,7 @@ final class ApplicationCoordinator: NSObject {
 
         let configuration = FleetPlatformConfiguration.current
         Log.fleet.info(
-            "Creating FleetPlatformClient for \(configuration.baseURL.absoluteString, privacy: .public)"
+            "Creating FleetPlatformClient for \(configuration.baseURL.absoluteString, privacy: .private)"
         )
         fleetPlatformClient = FleetPlatformClient(
             configuration: configuration,
