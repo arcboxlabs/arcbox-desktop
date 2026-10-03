@@ -401,7 +401,6 @@
 		27C52C15D6902B3EAB6307AA /* DockerTerminalSessionIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerTerminalSessionIntegrationTests.swift; sourceTree = "<group>"; };
 		28A1CFE3E8F56BF095A78AD7 /* ContainerLogsToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsToolbar.swift; sourceTree = "<group>"; };
 		297FCAB334AF289575D13F72 /* NetworksListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworksListView.swift; sourceTree = "<group>"; };
-		2AE551C5D80CB452F4260E86 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		2C3753C264CC9C48E733F64D /* ProcessSupport */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ProcessSupport; path = Packages/ProcessSupport; sourceTree = SOURCE_ROOT; };
 		2D053B8542825698996A16FE /* ArcBoxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcBoxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D2C529811ECBAD82E110BC4 /* AuthTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthTestSupport.swift; sourceTree = "<group>"; };
@@ -474,6 +473,7 @@
 		671B7887F139FB04342B9EC5 /* ContainerListCellPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerListCellPerformanceTests.swift; sourceTree = "<group>"; };
 		68009FEC4A2F0EB046ACCA4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		68B7685DAD23E5427C0F9911 /* NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDetailView.swift; sourceTree = "<group>"; };
+		68FD048401D9884E96A52412 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		69038D73EF8AC0CC09D4B39C /* NavItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavItem.swift; sourceTree = "<group>"; };
 		699A57392F1D9366CFA78BAF /* VolumesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumesViewModel.swift; sourceTree = "<group>"; };
 		6AC42E91F0BCACABF173B87F /* DockerTerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerTerminalSession.swift; sourceTree = "<group>"; };
@@ -544,6 +544,7 @@
 		A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParserTests.swift; sourceTree = "<group>"; };
 		A1FE07EA71512ACEE609B537 /* RunnerHostCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostCapability.swift; sourceTree = "<group>"; };
 		A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
+		A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig; sourceTree = "<group>"; };
 		A37BB3605830EBE3A1625452 /* PodModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodModel.swift; sourceTree = "<group>"; };
 		A45A5AAA9B74A59E7543D8D0 /* LocalRootFSOutlineCoordinator+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalRootFSOutlineCoordinator+Actions.swift"; sourceTree = "<group>"; };
 		A517313E1085B62A40075622 /* OnboardingWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWindowControllerTests.swift; sourceTree = "<group>"; };
@@ -625,7 +626,6 @@
 		E38681FE9A98E55B1608E662 /* SandboxEventsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxEventsTab.swift; sourceTree = "<group>"; };
 		E3A8FF41635473729BF0A36E /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		E610512C9106BB92A47DC044 /* ContainersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersViewModelTests.swift; sourceTree = "<group>"; };
-		E623344ED5D66F68D4FBB116 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		E69E766A830CB3A26231BA11 /* FleetSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FleetSettingsView.swift; sourceTree = "<group>"; };
 		E8632512053E9C750CAA97F9 /* MachineTerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineTerminalSession.swift; sourceTree = "<group>"; };
 		E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnersViewModelTests.swift; sourceTree = "<group>"; };
@@ -971,7 +971,7 @@
 				AC70A79B919D909CF6D811B4 /* arcbox.version */,
 				32C86546753C11A9E6CA8CB8 /* CHANGELOG.md */,
 				DC225BF252CB33BB34E74A79 /* ArcBox */,
-				BD8BCA65D40988FD938DC06D /* arcbox-desktop-wt-a11y */,
+				A6889022EABCBEE366F350AC /* arcbox-desktop */,
 				AC4AAD074C3A39ADAB6FAD7B /* ArcBoxAuthTests */,
 				C8B7319F3F54C908E990038A /* ArcBoxClientTests */,
 				F40F93A7C5C0CC3834C9D722 /* ArcBoxTests */,
@@ -1189,6 +1189,16 @@
 			path = Machines;
 			sourceTree = "<group>";
 		};
+		A6889022EABCBEE366F350AC /* arcbox-desktop */ = {
+			isa = PBXGroup;
+			children = (
+				A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */,
+				68FD048401D9884E96A52412 /* Version.xcconfig */,
+			);
+			name = "arcbox-desktop";
+			path = .;
+			sourceTree = "<group>";
+		};
 		AC4AAD074C3A39ADAB6FAD7B /* ArcBoxAuthTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -1219,16 +1229,6 @@
 				5A87C9445565D341EA85D2F4 /* ExternalTerminalLauncher.swift */,
 			);
 			path = Terminal;
-			sourceTree = "<group>";
-		};
-		BD8BCA65D40988FD938DC06D /* arcbox-desktop-wt-a11y */ = {
-			isa = PBXGroup;
-			children = (
-				2AE551C5D80CB452F4260E86 /* Local.xcconfig */,
-				E623344ED5D66F68D4FBB116 /* Version.xcconfig */,
-			);
-			name = "arcbox-desktop-wt-a11y";
-			path = .;
 			sourceTree = "<group>";
 		};
 		C8B7319F3F54C908E990038A /* ArcBoxClientTests */ = {
@@ -1964,7 +1964,7 @@
 /* Begin XCBuildConfiguration section */
 		30201713747F358DB9057B09 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2AE551C5D80CB452F4260E86 /* Local.xcconfig */;
+			baseConfigurationReference = A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -2055,7 +2055,7 @@
 		};
 		A05F50A0D3A02115582BD519 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E623344ED5D66F68D4FBB116 /* Version.xcconfig */;
+			baseConfigurationReference = 68FD048401D9884E96A52412 /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -2102,7 +2102,7 @@
 		};
 		B65D4F0FCC4C62119FDE962D /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2AE551C5D80CB452F4260E86 /* Local.xcconfig */;
+			baseConfigurationReference = A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -2221,7 +2221,7 @@
 		};
 		FA16326409B9B381CDC02A57 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2AE551C5D80CB452F4260E86 /* Local.xcconfig */;
+			baseConfigurationReference = A2B92BFA23F4133B8488DDD8 /* Local.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
