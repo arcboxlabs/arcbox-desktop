@@ -6,6 +6,13 @@ import SwiftUI
 struct ContainerLogsContent: View {
     let model: ContainerLogsModel
 
+    /// The zero-height view after the last row that following scrolls to. It
+    /// sits outside the lazy stack on purpose: resolving a row's id makes
+    /// SwiftUI walk every item of the `ForEach` (`LazyStack.firstIndex(of:)`),
+    /// which is what made a batch cost grow with the buffer — 20 ms at 6,000
+    /// lines against 11 ms at 600 — while a plain view's frame is on record.
+    static let endID = "end-of-log"
+
     var body: some View {
         VStack(spacing: 0) {
             if model.isLoading && model.logEntries.isEmpty {
@@ -43,48 +50,44 @@ struct ContainerLogsContent: View {
     private var logList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(model.filteredEntries) { entry in
-                        logLineView(entry)
-                            .id(entry.id)
+                VStack(spacing: 0) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(model.filteredEntries) { entry in
+                            ContainerLogsRow(entry: entry)
+                        }
                     }
-                }
-                .padding(.vertical, 4)
-            }
-            .onAppear {
-                // Jump to bottom immediately for historical logs
-                if let last = model.filteredEntries.last {
-                    proxy.scrollTo(last.id, anchor: .bottom)
+                    .padding(.vertical, 4)
+                    Color.clear
+                        .frame(height: 0)
+                        .id(Self.endID)
                 }
             }
-            // Unanimated: animating a jump to the end of a lazy stack makes SwiftUI
-            // walk the list to resolve the target, and a followed container pays that
-            // on every line.
-            .onChange(of: model.logEntries.count) {
-                if model.isFollowing, let last = model.filteredEntries.last {
-                    proxy.scrollTo(last.id, anchor: .bottom)
+            // Historical logs open at their last line.
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
+            // Keyed on the last line, not the count: at the buffer cap a batch trims
+            // as many lines as it appends and the count stands still, and the view
+            // would drift off the end. Unanimated: animating a jump to the end makes
+            // SwiftUI walk the list to resolve the target, and a followed container
+            // pays that on every line.
+            .onChange(of: model.logEntries.last?.id) {
+                if model.isFollowing {
+                    scrollToEnd(proxy)
+                }
+            }
+            .onChange(of: model.isFollowing) { _, isFollowing in
+                if isFollowing {
+                    scrollToEnd(proxy)
                 }
             }
         }
     }
 
-    private func logLineView(_ entry: LogEntry) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            if let time = entry.time {
-                Text(time)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(AppColors.textMuted)
-                    .lineLimit(1)
-                Text(" ")
-                    .font(.system(size: 12, design: .monospaced))
-            }
-            Text(entry.message)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(entry.stream == .stderr ? Color.red.opacity(0.85) : AppColors.text)
-                .textSelection(.enabled)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 1)
+    /// The one place the content scrolls. The end marker is the only target it ever
+    /// asks for; the batch test holds it to that.
+    private func scrollToEnd(_ proxy: ScrollViewProxy) {
+        #if DEBUG
+            ContainerLogsDiagnostics.recordScroll(to: Self.endID)
+        #endif
+        proxy.scrollTo(Self.endID, anchor: .bottom)
     }
 }
