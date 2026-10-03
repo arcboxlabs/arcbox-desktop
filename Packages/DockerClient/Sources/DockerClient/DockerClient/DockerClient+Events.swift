@@ -9,6 +9,26 @@ extension DockerClient {
         public let type: String  // "container", "image", "network", "volume", …
         public let action: String  // "start", "stop", "die", "create", "destroy", …
         public let actorID: String?
+        /// The event's `Actor.Attributes`. On a container `die` this carries
+        /// `exitCode`, `name` and `image`; Compose-managed containers also
+        /// carry their `com.docker.compose.*` labels.
+        public let attributes: [String: String]
+        /// When the daemon recorded the event.
+        public let date: Date
+
+        public init(
+            type: String,
+            action: String,
+            actorID: String?,
+            attributes: [String: String] = [:],
+            date: Date
+        ) {
+            self.type = type
+            self.action = action
+            self.actorID = actorID
+            self.attributes = attributes
+            self.date = date
+        }
     }
 
     /// Stream real-time events from the Docker daemon.
@@ -56,9 +76,22 @@ extension DockerClient {
 
                             let actor = json["Actor"] as? [String: Any]
                             let actorID = actor?["ID"] as? String
+                            let attributes = actor?["Attributes"] as? [String: String] ?? [:]
+                            // `timeNano` is finer, but at present-day values it
+                            // is past the range where a Double holds every
+                            // integer, so reading it back loses the precision
+                            // it was for. `time` is whole seconds, which is all
+                            // any consumer needs.
+                            let date = (json["time"] as? TimeInterval).map(Date.init(timeIntervalSince1970:))
 
                             continuation.yield(
-                                DockerEvent(type: type, action: action, actorID: actorID))
+                                DockerEvent(
+                                    type: type,
+                                    action: action,
+                                    actorID: actorID,
+                                    attributes: attributes,
+                                    date: date ?? Date()
+                                ))
                         }
                     }
                     continuation.finish()

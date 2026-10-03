@@ -335,6 +335,9 @@ final class ApplicationCoordinator: NSObject {
         sandboxEventMonitor.onEvent = { [weak self] event in
             self?.notifications.handleSandboxEvent(event)
         }
+        eventMonitor.onEvent = { [weak self] event in
+            self?.notifications.handleDockerEvent(event)
+        }
         notifications.start()
     }
 
@@ -540,6 +543,7 @@ final class ApplicationCoordinator: NSObject {
             sandboxEventMonitor.stop()
             machineEventMonitor.stop()
             sleepWakeManager.stop()
+            notifications.runtimeStopped()
             updateDockerContext(useArcBox: false)
         }
     }
