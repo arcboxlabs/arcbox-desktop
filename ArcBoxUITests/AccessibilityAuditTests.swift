@@ -107,18 +107,18 @@ final class AccessibilityAuditTests: XCTestCase {
     }
 
     /// The lists show a startup placeholder until the daemon answers. Wait for
-    /// the subtitle to leave its transitional wording so the audit sees rows,
-    /// not the spinner. A daemon that never comes up is this Mac's problem,
-    /// not the UI's, so that skips the audit instead of failing it.
+    /// the placeholder's transitional wording to leave the window so the audit
+    /// sees rows, not the spinner. A daemon that never comes up is this Mac's
+    /// problem, not the UI's, so that skips the audit instead of failing it.
     private func waitForListToSettle() throws {
         let transitional = NSPredicate(
-            format: "NOT (title CONTAINS 'Starting') AND NOT (title CONTAINS 'Loading')"
-                + " AND NOT (title CONTAINS 'Waiting')"
+            format: "label CONTAINS 'Starting' OR label CONTAINS 'Loading' OR label CONTAINS 'Waiting'"
         )
-        let window = app.windows.firstMatch
-        let settled = expectation(for: transitional, evaluatedWith: window)
+        let placeholders = app.windows.firstMatch.staticTexts.matching(transitional)
+        let settled = expectation(for: NSPredicate(format: "count == 0"), evaluatedWith: placeholders)
         guard XCTWaiter().wait(for: [settled], timeout: 60) == .completed else {
-            throw XCTSkip("the daemon did not come up within 60s; window is \(window.title)")
+            throw XCTSkip(
+                "the daemon did not come up within 60s; still showing \(placeholders.firstMatch.label)")
         }
     }
 }
