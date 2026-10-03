@@ -45,11 +45,17 @@ extension MenuBarView {
 
                 Spacer(minLength: 0)
 
+                // Changes every second while the popover is open, and snaps.
+                // Nothing animates the sample landing, so the `numericText`
+                // transition this carried never ran — and on the Activity
+                // screen the same roll cost ~15 % of a core (`MetricTile`), so
+                // it stays off here rather than wait for an animation to wake
+                // it. Tabular digits keep the figure centred as digits change.
                 Text(percent.map { String(format: "%.0f%%", $0) } ?? "—")
                     .font(.system(size: 20, weight: .semibold))
+                    .monospacedDigit()
                     .foregroundStyle(tint)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .contentTransition(.numericText())
 
                 Gauge(value: min(max(percent ?? 0, 0), 100), in: 0...100) {
                     EmptyView()
