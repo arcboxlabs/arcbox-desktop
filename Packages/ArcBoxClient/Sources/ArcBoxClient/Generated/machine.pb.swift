@@ -144,6 +144,9 @@ public struct Arcbox_V1_MachineSystemInfo: Sendable {
   /// Guest IP addresses (excluding loopback).
   public var ipAddresses: [String] = []
 
+  /// IPv4 address of the guest's bridge NIC, empty when it has none.
+  public var bridgeIpAddress: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -455,6 +458,16 @@ public struct Arcbox_V1_MachineNetwork: Sendable {
 
   /// MAC address of the bridge NAT NIC used for host-side vmnet routing on macOS.
   public var bridgeMacAddress: String = String()
+
+  /// IPv4 address of the bridge NIC: the address the Mac reaches directly
+  /// and the one `<machine>.arcbox.local` resolves to. Empty until the
+  /// machine has reported it.
+  public var bridgeIpAddress: String = String()
+
+  /// The name the host's DNS answers for this machine while it runs
+  /// (`<machine>.<local domain>`). Empty when the machine has no bridge
+  /// address to register.
+  public var dnsName: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -890,7 +903,7 @@ extension Arcbox_V1_MachinePingResponse: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Arcbox_V1_MachineSystemInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineSystemInfo"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}kernel_version\0\u{3}os_name\0\u{3}os_version\0\u{1}arch\0\u{3}total_memory\0\u{3}available_memory\0\u{3}cpu_count\0\u{3}load_average\0\u{1}hostname\0\u{1}uptime\0\u{3}ip_addresses\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}kernel_version\0\u{3}os_name\0\u{3}os_version\0\u{1}arch\0\u{3}total_memory\0\u{3}available_memory\0\u{3}cpu_count\0\u{3}load_average\0\u{1}hostname\0\u{1}uptime\0\u{3}ip_addresses\0\u{3}bridge_ip_address\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -909,6 +922,7 @@ extension Arcbox_V1_MachineSystemInfo: SwiftProtobuf.Message, SwiftProtobuf._Mes
       case 9: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
       case 10: try { try decoder.decodeSingularUInt64Field(value: &self.uptime) }()
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.ipAddresses) }()
+      case 12: try { try decoder.decodeSingularStringField(value: &self.bridgeIpAddress) }()
       default: break
       }
     }
@@ -948,6 +962,9 @@ extension Arcbox_V1_MachineSystemInfo: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if !self.ipAddresses.isEmpty {
       try visitor.visitRepeatedStringField(value: self.ipAddresses, fieldNumber: 11)
     }
+    if !self.bridgeIpAddress.isEmpty {
+      try visitor.visitSingularStringField(value: self.bridgeIpAddress, fieldNumber: 12)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -963,6 +980,7 @@ extension Arcbox_V1_MachineSystemInfo: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if lhs.hostname != rhs.hostname {return false}
     if lhs.uptime != rhs.uptime {return false}
     if lhs.ipAddresses != rhs.ipAddresses {return false}
+    if lhs.bridgeIpAddress != rhs.bridgeIpAddress {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1483,7 +1501,7 @@ extension Arcbox_V1_MachineHardware: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Arcbox_V1_MachineNetwork: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineNetwork"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}ip_address\0\u{1}gateway\0\u{3}mac_address\0\u{3}dns_servers\0\u{3}bridge_mac_address\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}ip_address\0\u{1}gateway\0\u{3}mac_address\0\u{3}dns_servers\0\u{3}bridge_mac_address\0\u{3}bridge_ip_address\0\u{3}dns_name\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1496,6 +1514,8 @@ extension Arcbox_V1_MachineNetwork: SwiftProtobuf.Message, SwiftProtobuf._Messag
       case 3: try { try decoder.decodeSingularStringField(value: &self.macAddress) }()
       case 4: try { try decoder.decodeRepeatedStringField(value: &self.dnsServers) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self.bridgeMacAddress) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.bridgeIpAddress) }()
+      case 7: try { try decoder.decodeSingularStringField(value: &self.dnsName) }()
       default: break
       }
     }
@@ -1517,6 +1537,12 @@ extension Arcbox_V1_MachineNetwork: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if !self.bridgeMacAddress.isEmpty {
       try visitor.visitSingularStringField(value: self.bridgeMacAddress, fieldNumber: 5)
     }
+    if !self.bridgeIpAddress.isEmpty {
+      try visitor.visitSingularStringField(value: self.bridgeIpAddress, fieldNumber: 6)
+    }
+    if !self.dnsName.isEmpty {
+      try visitor.visitSingularStringField(value: self.dnsName, fieldNumber: 7)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1526,6 +1552,8 @@ extension Arcbox_V1_MachineNetwork: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if lhs.macAddress != rhs.macAddress {return false}
     if lhs.dnsServers != rhs.dnsServers {return false}
     if lhs.bridgeMacAddress != rhs.bridgeMacAddress {return false}
+    if lhs.bridgeIpAddress != rhs.bridgeIpAddress {return false}
+    if lhs.dnsName != rhs.dnsName {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
