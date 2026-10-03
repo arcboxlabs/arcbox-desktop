@@ -31,7 +31,7 @@ struct OnboardingMigrationPreview: Equatable {
         warnings = response.warnings
         unsupportedResources = response.unsupportedResources
         replacementsRequired = response.replacementsRequired
-        replacements = response.plan.replacements
+        replacements = response.replacements
         stopsSourceContainers = !response.plan.blockers.isEmpty
     }
 
@@ -67,9 +67,10 @@ struct OnboardingMigrationPreview: Equatable {
         return messages
     }
 
-    // Formal prepare omits the full plan. Warnings include required source stops and container names.
+    // Formal prepare omits the full plan; its summary and warnings identify actions that require confirmation.
     func matches(_ response: Arcbox_V1_PrepareMigrationResponse) -> Bool {
-        response.sourceKind == source.kind.rawValue
+        response.hasReplacements
+            && response.sourceKind == source.kind.rawValue
             && URL(fileURLWithPath: response.sourceSocketPath).standardizedFileURL.path
                 == URL(fileURLWithPath: source.socketPath).standardizedFileURL.path
             && response.imageCount == imageCount
@@ -77,6 +78,10 @@ struct OnboardingMigrationPreview: Equatable {
             && response.networkCount == networkCount
             && response.containerCount == containerCount
             && response.replacementsRequired == replacementsRequired
+            && Set(response.replacements.containers) == Set(replacements.containers)
+            && Set(response.replacements.volumes) == Set(replacements.volumes)
+            && Set(response.replacements.networks) == Set(replacements.networks)
+            && Set(response.replacements.imageTags) == Set(replacements.imageTags)
             && Set(response.warnings) == Set(warnings)
     }
 }
@@ -142,6 +147,9 @@ final class OnboardingMigrationModel {
 
     @ObservationIgnored
     private var isTerminating = false
+
+    private static let migrationUpdateRequiredMessage =
+        "ArcBox cannot verify which resources will be replaced. Update and restart ArcBox before migrating."
 
     private static var prepareCallOptions: CallOptions {
         var options = CallOptions.defaults
@@ -231,6 +239,10 @@ final class OnboardingMigrationModel {
                 )
                 return
             }
+            guard response.hasReplacements else {
+                state = .failed(nil, message: Self.migrationUpdateRequiredMessage)
+                return
+            }
 
             let preview = OnboardingMigrationPreview(source: source, response: response)
             if preview.totalResourceCount == 0 && preview.unsupportedResources.isEmpty {
@@ -293,8 +305,9 @@ final class OnboardingMigrationModel {
                 state = .failed(
                     nil,
                     message:
-                        "The source environment changed after the preview. "
-                        + "Review the updated migration plan before continuing."
+                        prepared.hasReplacements
+                        ? "The migration plan changed after the preview. Review the updated plan before continuing."
+                        : Self.migrationUpdateRequiredMessage
                 )
                 return
             }

@@ -80,6 +80,51 @@ final class OnboardingMigrationModelTests: XCTestCase {
         XCTAssertFalse(preview.matches(changed))
     }
 
+    func testChangedReplacementTargetsRequireAnotherPreviewWithTheSameCountsAndWarnings() {
+        let (preview, prepared) = makePreviewAndPreparedResponse(replacements: replacementSummary)
+        let resources: [(String, WritableKeyPath<Arcbox_V1_MigrationReplacementSummary, [String]>)] = [
+            ("containers", \.containers),
+            ("volumes", \.volumes),
+            ("networks", \.networks),
+            ("image tags", \.imageTags),
+        ]
+
+        for (resource, names) in resources {
+            var added = prepared
+            added.replacements[keyPath: names].append("new-target")
+            XCTAssertFalse(preview.matches(added), "Additional \(resource) must require another preview.")
+
+            var renamed = prepared
+            renamed.replacements[keyPath: names][0] = "different-target"
+            XCTAssertFalse(preview.matches(renamed), "Different \(resource) must require another preview.")
+
+            var removed = prepared
+            removed.replacements[keyPath: names].removeLast()
+            XCTAssertFalse(preview.matches(removed), "Removed \(resource) must require another preview.")
+        }
+    }
+
+    func testReplacementOrderDoesNotChangeTheApprovedPreview() {
+        let (preview, prepared) = makePreviewAndPreparedResponse(replacements: replacementSummary)
+        var reordered = prepared
+        reordered.replacements.containers.reverse()
+        reordered.replacements.volumes.reverse()
+        reordered.replacements.networks.reverse()
+        reordered.replacements.imageTags.reverse()
+
+        XCTAssertTrue(preview.matches(reordered))
+    }
+
+    func testMissingReplacementSummaryCannotMatchEvenWhenNoReplacementsAreRequired() {
+        for replacements in [Arcbox_V1_MigrationReplacementSummary(), replacementSummary] {
+            let (preview, prepared) = makePreviewAndPreparedResponse(replacements: replacements)
+            var missingSummary = prepared
+            missingSummary.clearReplacements()
+
+            XCTAssertFalse(preview.matches(missingSummary))
+        }
+    }
+
     func testConfirmationNamesTargetResourcesAndWarnsAboutExistingVolumeData() {
         var replacements = Arcbox_V1_MigrationReplacementSummary()
         replacements.containers = ["database", "worker"]
@@ -138,6 +183,7 @@ final class OnboardingMigrationModelTests: XCTestCase {
         dryRun.plan.source.daemonName = "orbstack"
         dryRun.plan.source.serverVersion = "28.3.3"
         dryRun.plan.replacements = replacements
+        dryRun.replacements = replacements
         dryRun.replacementsRequired =
             !replacements.containers.isEmpty
             || !replacements.volumes.isEmpty
@@ -162,5 +208,14 @@ final class OnboardingMigrationModelTests: XCTestCase {
         prepared.clearPlan()
         prepared.planID = "prepared-migration"
         return (preview, prepared)
+    }
+
+    private var replacementSummary: Arcbox_V1_MigrationReplacementSummary {
+        var summary = Arcbox_V1_MigrationReplacementSummary()
+        summary.containers = ["database", "worker"]
+        summary.volumes = ["postgres-data", "cache"]
+        summary.networks = ["app", "internal"]
+        summary.imageTags = ["postgres:16", "redis:7"]
+        return summary
     }
 }

@@ -177,6 +177,91 @@ final class OnboardingMigrationLifecycleTests: XCTestCase {
         XCTAssertEqual(prepareCount, 1)
     }
 
+    func testChangedReplacementTargetsDoNotRunUntilTheNewPreviewIsConfirmed() async {
+        var previewCount = 0
+        var executionCount = 0
+        var executedPlanIDs: [String] = []
+        let model = OnboardingMigrationModel(
+            detectSource: { self.source },
+            prepareMigration: { request in
+                var response = self.response(for: request)
+                response.volumeCount = 2
+                response.replacementsRequired = true
+                if request.dryRun {
+                    previewCount += 1
+                    response.replacements.volumes = previewCount == 1 ? ["data-a"] : ["data-a", "data-b"]
+                    response.plan.replacements = response.replacements
+                } else {
+                    executionCount += 1
+                    response.replacements.volumes = ["data-b", "data-a"]
+                    response.planID = "prepared-\(executionCount)"
+                }
+                return response
+            },
+            runMigrationStream: { request, receive in
+                executedPlanIDs.append(request.planID)
+                receive(self.completionEvent)
+                return true
+            }
+        )
+        await model.loadPreview()
+        model.startMigration()
+        await model.waitForCompletion()
+
+        XCTAssertTrue(executedPlanIDs.isEmpty)
+        guard case .failed(nil, _) = model.state else {
+            XCTFail("A changed replacement target must invalidate the approved preview.")
+            return
+        }
+
+        await model.loadPreview()
+        guard case .review(let updatedPreview) = model.state else {
+            XCTFail("A new preview must be available for confirmation.")
+            return
+        }
+        XCTAssertEqual(updatedPreview.replacements.volumes, ["data-a", "data-b"])
+        XCTAssertTrue(executedPlanIDs.isEmpty)
+        model.startMigration()
+        await model.waitForCompletion()
+
+        XCTAssertEqual(executedPlanIDs, ["prepared-2"])
+        guard case .completed = model.state else {
+            XCTFail("The migration must run the plan whose replacement targets were confirmed.")
+            return
+        }
+    }
+
+    func testMissingReplacementSummaryInEitherPreparePreventsExecution() async {
+        for missingFromPreview in [true, false] {
+            var prepareCount = 0
+            let model = OnboardingMigrationModel(
+                detectSource: { self.source },
+                prepareMigration: { request in
+                    prepareCount += 1
+                    var response = self.response(for: request)
+                    if request.dryRun == missingFromPreview {
+                        response.clearReplacements()
+                    }
+                    return response
+                },
+                runMigrationStream: { _, _ in
+                    XCTFail("A daemon without a replacement summary must not execute the migration.")
+                    return true
+                }
+            )
+            await model.loadPreview()
+            model.startMigration()
+            await model.waitForCompletion()
+
+            XCTAssertEqual(prepareCount, missingFromPreview ? 1 : 2)
+            guard case .failed(nil, let message) = model.state else {
+                XCTFail("A missing replacement summary must block migration.")
+                return
+            }
+            XCTAssertTrue(message.contains("Update and restart ArcBox"))
+        }
+    }
+
     private var source: DockerMigrationSource {
         DockerMigrationSource(
             kind: .orbStack,
@@ -192,6 +277,7 @@ final class OnboardingMigrationLifecycleTests: XCTestCase {
         response.sourceKind = request.sourceKind
         response.sourceSocketPath = request.sourceSocketPath
         response.imageCount = 1
+        response.replacements = .init()
         if request.dryRun {
             response.plan.source.daemonName = "OrbStack"
         } else {
