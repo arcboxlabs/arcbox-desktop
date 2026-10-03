@@ -261,6 +261,179 @@ public struct Arcbox_V1_ListMachinesResponse: Sendable {
   /// List of machines.
   public var machines: [Arcbox_V1_MachineSummary] = []
 
+  /// The default machine (see SetDefault); empty when none is set.
+  public var defaultMachine: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to clone a machine.
+public struct Arcbox_V1_CloneMachineRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Machine to clone (ID or name); must be stopped.
+  public var id: String = String()
+
+  /// Name of the clone.
+  public var name: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response to clone machine.
+public struct Arcbox_V1_CloneMachineResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The clone's ID.
+  public var id: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to export a machine to an archive.
+public struct Arcbox_V1_ExportMachineRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Machine to export (ID or name); must be stopped.
+  public var id: String = String()
+
+  /// Where to write the archive, on the daemon's host. Must not exist.
+  public var path: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response to export machine.
+public struct Arcbox_V1_ExportMachineResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The archive written.
+  public var path: String = String()
+
+  /// Its size in bytes.
+  public var size: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to import a machine from an archive.
+public struct Arcbox_V1_ImportMachineRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The archive, on the daemon's host.
+  public var path: String = String()
+
+  /// Name for the machine; empty uses the name in the archive.
+  public var name: String = String()
+
+  /// CPUs; 0 uses the archive's value.
+  public var cpus: UInt32 = 0
+
+  /// Memory in bytes; 0 uses the archive's value.
+  public var memory: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response to import machine.
+public struct Arcbox_V1_ImportMachineResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The new machine's ID.
+  public var id: String = String()
+
+  /// Distribution the machine boots (from the archive).
+  public var distro: String = String()
+
+  /// Distribution release.
+  public var distroVersion: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to change a machine's CPU and memory limits.
+public struct Arcbox_V1_SetMachineResourcesRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Machine ID or name.
+  public var id: String = String()
+
+  /// CPUs, 1 through the host's logical CPU count; 0 keeps the current value.
+  public var cpus: UInt32 = 0
+
+  /// Memory in bytes, 512 MiB through the host's physical memory; 0 keeps
+  /// the current value.
+  public var memory: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// A machine's CPU and memory limits after SetResources.
+public struct Arcbox_V1_SetMachineResourcesResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// CPUs the machine boots with from now on.
+  public var cpus: UInt32 = 0
+
+  /// Memory in bytes the machine boots with from now on.
+  public var memory: UInt64 = 0
+
+  /// The machine is running with its previous size; the new one applies
+  /// when it is next started.
+  public var restartRequired: Bool = false
+
+  /// Logical CPUs on the host, the ceiling for `cpus`.
+  public var hostCpus: UInt32 = 0
+
+  /// Physical memory on the host in bytes, the ceiling for `memory`.
+  public var hostMemory: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to set or clear the default machine.
+public struct Arcbox_V1_SetDefaultMachineRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Machine ID or name; empty clears the default.
+  public var id: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -1193,7 +1366,7 @@ extension Arcbox_V1_ListMachinesRequest: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Arcbox_V1_ListMachinesResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ListMachinesResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}machines\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}machines\0\u{3}default_machine\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1202,6 +1375,7 @@ extension Arcbox_V1_ListMachinesResponse: SwiftProtobuf.Message, SwiftProtobuf._
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.machines) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.defaultMachine) }()
       default: break
       }
     }
@@ -1211,11 +1385,355 @@ extension Arcbox_V1_ListMachinesResponse: SwiftProtobuf.Message, SwiftProtobuf._
     if !self.machines.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.machines, fieldNumber: 1)
     }
+    if !self.defaultMachine.isEmpty {
+      try visitor.visitSingularStringField(value: self.defaultMachine, fieldNumber: 2)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Arcbox_V1_ListMachinesResponse, rhs: Arcbox_V1_ListMachinesResponse) -> Bool {
     if lhs.machines != rhs.machines {return false}
+    if lhs.defaultMachine != rhs.defaultMachine {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_CloneMachineRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CloneMachineRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_CloneMachineRequest, rhs: Arcbox_V1_CloneMachineRequest) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_CloneMachineResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CloneMachineResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_CloneMachineResponse, rhs: Arcbox_V1_CloneMachineResponse) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ExportMachineRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ExportMachineRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}path\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.path) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if !self.path.isEmpty {
+      try visitor.visitSingularStringField(value: self.path, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ExportMachineRequest, rhs: Arcbox_V1_ExportMachineRequest) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.path != rhs.path {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ExportMachineResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ExportMachineResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}size\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.path) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.size) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.path.isEmpty {
+      try visitor.visitSingularStringField(value: self.path, fieldNumber: 1)
+    }
+    if self.size != 0 {
+      try visitor.visitSingularUInt64Field(value: self.size, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ExportMachineResponse, rhs: Arcbox_V1_ExportMachineResponse) -> Bool {
+    if lhs.path != rhs.path {return false}
+    if lhs.size != rhs.size {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ImportMachineRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ImportMachineRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}name\0\u{1}cpus\0\u{1}memory\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.path) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.cpus) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.memory) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.path.isEmpty {
+      try visitor.visitSingularStringField(value: self.path, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    if self.cpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.cpus, fieldNumber: 3)
+    }
+    if self.memory != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memory, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ImportMachineRequest, rhs: Arcbox_V1_ImportMachineRequest) -> Bool {
+    if lhs.path != rhs.path {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs.cpus != rhs.cpus {return false}
+    if lhs.memory != rhs.memory {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ImportMachineResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ImportMachineResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}distro\0\u{3}distro_version\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.distro) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.distroVersion) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if !self.distro.isEmpty {
+      try visitor.visitSingularStringField(value: self.distro, fieldNumber: 2)
+    }
+    if !self.distroVersion.isEmpty {
+      try visitor.visitSingularStringField(value: self.distroVersion, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ImportMachineResponse, rhs: Arcbox_V1_ImportMachineResponse) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.distro != rhs.distro {return false}
+    if lhs.distroVersion != rhs.distroVersion {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetMachineResourcesRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetMachineResourcesRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}cpus\0\u{1}memory\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.cpus) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.memory) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if self.cpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.cpus, fieldNumber: 2)
+    }
+    if self.memory != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memory, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetMachineResourcesRequest, rhs: Arcbox_V1_SetMachineResourcesRequest) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.cpus != rhs.cpus {return false}
+    if lhs.memory != rhs.memory {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetMachineResourcesResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetMachineResourcesResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}cpus\0\u{1}memory\0\u{3}restart_required\0\u{3}host_cpus\0\u{3}host_memory\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.cpus) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.memory) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.restartRequired) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.hostCpus) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.hostMemory) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.cpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.cpus, fieldNumber: 1)
+    }
+    if self.memory != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memory, fieldNumber: 2)
+    }
+    if self.restartRequired != false {
+      try visitor.visitSingularBoolField(value: self.restartRequired, fieldNumber: 3)
+    }
+    if self.hostCpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.hostCpus, fieldNumber: 4)
+    }
+    if self.hostMemory != 0 {
+      try visitor.visitSingularUInt64Field(value: self.hostMemory, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetMachineResourcesResponse, rhs: Arcbox_V1_SetMachineResourcesResponse) -> Bool {
+    if lhs.cpus != rhs.cpus {return false}
+    if lhs.memory != rhs.memory {return false}
+    if lhs.restartRequired != rhs.restartRequired {return false}
+    if lhs.hostCpus != rhs.hostCpus {return false}
+    if lhs.hostMemory != rhs.hostMemory {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetDefaultMachineRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetDefaultMachineRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetDefaultMachineRequest, rhs: Arcbox_V1_SetDefaultMachineRequest) -> Bool {
+    if lhs.id != rhs.id {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

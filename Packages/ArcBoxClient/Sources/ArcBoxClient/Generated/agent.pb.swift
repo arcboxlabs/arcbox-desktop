@@ -1152,6 +1152,58 @@ public struct Arcbox_V1_EnsureNfsExportResponse: Sendable {
   public init() {}
 }
 
+/// Ask a distro machine's agent to serve the machine's root filesystem to the
+/// host, read-write, over NFSv3 on the machine's bridge NIC. The host mounts
+/// it under its machine mount root (`~/ArcBoxMachines/<name>` by default). The
+/// System VM answers with an error: its data lives behind `EnsureNfsExportRequest`.
+/// Idempotent: a second request returns the endpoint the first one started.
+public struct Arcbox_V1_EnsureMachineExportRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Addresses the export accepts connections from — the host's own
+  /// addresses on the bridge network. Every other peer is refused, because
+  /// every VM and container on that network can otherwise reach the port
+  /// and the export performs no authentication of its own.
+  public var clientAddresses: [String] = []
+
+  /// The uid and gid the host mounts as. Files the guest owns as
+  /// `guest_uid`/`guest_gid` are shown with these ids, and files created
+  /// or chowned to these ids from the host land as `guest_uid`/`guest_gid`;
+  /// every other id passes through unchanged.
+  public var hostUid: UInt32 = 0
+
+  public var hostGid: UInt32 = 0
+
+  /// The guest account the host user stands in for: root unless the
+  /// machine has a default user.
+  public var guestUid: UInt32 = 0
+
+  public var guestGid: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Response to `EnsureMachineExportRequest`.
+public struct Arcbox_V1_EnsureMachineExportResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// IPv4 address of the bridge NIC the export listens on.
+  public var address: String = String()
+
+  /// TCP port serving both the MOUNT and the NFS protocol.
+  public var port: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Ask the guest agent to DNAT a reserved guest port to a sandbox port.
 public struct Arcbox_V1_SandboxPortForwardRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -3035,6 +3087,91 @@ extension Arcbox_V1_EnsureNfsExportResponse: SwiftProtobuf.Message, SwiftProtobu
 
   public static func ==(lhs: Arcbox_V1_EnsureNfsExportResponse, rhs: Arcbox_V1_EnsureNfsExportResponse) -> Bool {
     if lhs.notes != rhs.notes {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_EnsureMachineExportRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EnsureMachineExportRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}client_addresses\0\u{3}host_uid\0\u{3}host_gid\0\u{3}guest_uid\0\u{3}guest_gid\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedStringField(value: &self.clientAddresses) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.hostUid) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.hostGid) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.guestUid) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.guestGid) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.clientAddresses.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.clientAddresses, fieldNumber: 1)
+    }
+    if self.hostUid != 0 {
+      try visitor.visitSingularUInt32Field(value: self.hostUid, fieldNumber: 2)
+    }
+    if self.hostGid != 0 {
+      try visitor.visitSingularUInt32Field(value: self.hostGid, fieldNumber: 3)
+    }
+    if self.guestUid != 0 {
+      try visitor.visitSingularUInt32Field(value: self.guestUid, fieldNumber: 4)
+    }
+    if self.guestGid != 0 {
+      try visitor.visitSingularUInt32Field(value: self.guestGid, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_EnsureMachineExportRequest, rhs: Arcbox_V1_EnsureMachineExportRequest) -> Bool {
+    if lhs.clientAddresses != rhs.clientAddresses {return false}
+    if lhs.hostUid != rhs.hostUid {return false}
+    if lhs.hostGid != rhs.hostGid {return false}
+    if lhs.guestUid != rhs.guestUid {return false}
+    if lhs.guestGid != rhs.guestGid {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_EnsureMachineExportResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EnsureMachineExportResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}address\0\u{1}port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.address) }()
+      case 2: try { try decoder.decodeSingularUInt32Field(value: &self.port) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.address.isEmpty {
+      try visitor.visitSingularStringField(value: self.address, fieldNumber: 1)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularUInt32Field(value: self.port, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_EnsureMachineExportResponse, rhs: Arcbox_V1_EnsureMachineExportResponse) -> Bool {
+    if lhs.address != rhs.address {return false}
+    if lhs.port != rhs.port {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
