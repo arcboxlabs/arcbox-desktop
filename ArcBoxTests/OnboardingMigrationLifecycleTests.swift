@@ -1,4 +1,5 @@
 import ArcBoxClient
+import GRPCCore
 import XCTest
 
 @testable import ArcBox
@@ -106,15 +107,115 @@ final class OnboardingMigrationLifecycleTests: XCTestCase {
         prepareGate.open()
         await fulfillment(of: [streamStarted], timeout: 2)
         XCTAssertFalse(terminationFinished)
+        XCTAssertTrue(model.migrationMayBeRunning)
 
         continuation.yield(completionEvent)
         await termination.value
         XCTAssertTrue(terminationFinished)
+        XCTAssertFalse(model.migrationMayBeRunning)
         let completed = model.state
         await model.loadPreview()
         model.startMigration()
         XCTAssertEqual(model.state, completed)
         XCTAssertEqual(prepareCount, 2)
+    }
+
+    func testTerminationStopsReconnectsWithoutDeclaringMigrationFinished() async {
+        for terminateDuringBackoff in [false, true] {
+            let streamStarted = expectation(description: "Migration stream started")
+            let terminationFinished = expectation(description: "Termination finished")
+            let disconnectGate = MigrationTestGate()
+            var streamCount = 0
+            let model = OnboardingMigrationModel(
+                detectSource: { self.source },
+                prepareMigration: { self.response(for: $0) },
+                runMigrationStream: { _, receive in
+                    streamCount += 1
+                    if streamCount == 1 {
+                        streamStarted.fulfill()
+                        if !terminateDuringBackoff {
+                            await disconnectGate.wait()
+                        }
+                        throw RPCError(code: .unavailable, message: "Runtime disconnected")
+                    }
+                    receive(self.completionEvent)
+                    return true
+                }
+            )
+            await model.loadPreview()
+            model.startMigration()
+            await fulfillment(of: [streamStarted], timeout: 2)
+            if terminateDuringBackoff {
+                guard case .migrating(_, let progress) = model.state else {
+                    XCTFail("An unavailable runtime must enter reconnect backoff.")
+                    return
+                }
+                XCTAssertEqual(progress.phase, "reconnecting")
+            }
+
+            model.beginTermination()
+            let termination = Task {
+                await model.waitForCompletion()
+                terminationFinished.fulfill()
+            }
+            disconnectGate.open()
+            await fulfillment(of: [terminationFinished], timeout: 2)
+            await termination.value
+
+            XCTAssertEqual(streamCount, 1)
+            XCTAssertTrue(model.migrationMayBeRunning)
+            guard case .failed(_, let message) = model.state else {
+                XCTFail("A disconnected migration must not report completion.")
+                return
+            }
+            XCTAssertTrue(message.contains("runtime will stay running"))
+        }
+    }
+
+    func testMigrationReconnectsToTheSamePlanAndConfirmsCompletion() async {
+        var planIDs: [String] = []
+        let model = OnboardingMigrationModel(
+            detectSource: { self.source },
+            prepareMigration: { self.response(for: $0) },
+            runMigrationStream: { request, receive in
+                planIDs.append(request.planID)
+                if planIDs.count == 1 {
+                    throw RPCError(code: .unavailable, message: "Runtime disconnected")
+                }
+                receive(self.completionEvent)
+                return true
+            }
+        )
+        await model.loadPreview()
+        model.startMigration()
+        await model.waitForCompletion()
+
+        XCTAssertEqual(planIDs, ["reviewed-plan", "reviewed-plan"])
+        XCTAssertFalse(model.migrationMayBeRunning)
+        guard case .completed = model.state else {
+            XCTFail("A recovered stream must complete the original migration.")
+            return
+        }
+    }
+
+    func testDaemonRestartConfirmsTheMigrationIsNoLongerRunning() async {
+        let model = OnboardingMigrationModel(
+            detectSource: { self.source },
+            prepareMigration: { self.response(for: $0) },
+            runMigrationStream: { _, _ in
+                throw RPCError(code: .notFound, message: "Migration plan not found")
+            }
+        )
+        await model.loadPreview()
+        model.startMigration()
+        await model.waitForCompletion()
+
+        XCTAssertFalse(model.migrationMayBeRunning)
+        guard case .failed(_, let message) = model.state else {
+            XCTFail("A missing plan after a daemon restart must fail migration.")
+            return
+        }
+        XCTAssertTrue(message.contains("daemon restarted"))
     }
 
     func testPreviewSurvivesViewCancellationAndSharesPendingRequest() async {

@@ -125,6 +125,9 @@ final class OnboardingMigrationModel {
 
     private(set) var state: State = .idle
 
+    // A lost stream does not cancel the migration running in the daemon.
+    private(set) var migrationMayBeRunning = false
+
     @ObservationIgnored
     private let detectSource: @MainActor () async throws -> DockerMigrationSource?
 
@@ -326,6 +329,7 @@ final class OnboardingMigrationModel {
         var runRequest = Arcbox_V1_RunMigrationRequest()
         runRequest.planID = prepared.planID
         runRequest.allowReplacements = true
+        migrationMayBeRunning = true
 
         state = .migrating(
             preview,
@@ -346,7 +350,7 @@ final class OnboardingMigrationModel {
         preview: OnboardingMigrationPreview
     ) async {
         var retryDelaySeconds: UInt64 = 1
-        while !Task.isCancelled {
+        repeat {
             do {
                 let reachedTerminalEvent = try await runMigrationStream(request) { event in
                     self.receive(event, preview: preview)
@@ -355,6 +359,7 @@ final class OnboardingMigrationModel {
                 retryDelaySeconds = 1
             } catch let error as RPCError {
                 if error.code == .notFound {
+                    migrationMayBeRunning = false
                     state = .failed(
                         preview,
                         message:
@@ -372,6 +377,7 @@ final class OnboardingMigrationModel {
                 return
             }
 
+            guard !isTerminating else { break }
             state = .migrating(
                 preview,
                 OnboardingMigrationProgress(
@@ -385,10 +391,18 @@ final class OnboardingMigrationModel {
             do {
                 try await Task.sleep(for: .seconds(retryDelaySeconds))
             } catch {
-                return
+                break
             }
             retryDelaySeconds = min(retryDelaySeconds * 2, 8)
-        }
+        } while !Task.isCancelled && !isTerminating
+
+        state = .failed(
+            preview,
+            message:
+                "ArcBox could not confirm whether migration finished. "
+                + "The runtime will stay running to avoid interrupting it. "
+                + "Review both environments before trying again."
+        )
     }
 
     nonisolated static func shouldReconnect(after code: RPCError.Code) -> Bool {
@@ -400,6 +414,7 @@ final class OnboardingMigrationModel {
         preview: OnboardingMigrationPreview
     ) {
         if event.done {
+            migrationMayBeRunning = false
             if event.success {
                 state = .completed(preview, warnings: event.warnings)
             } else {

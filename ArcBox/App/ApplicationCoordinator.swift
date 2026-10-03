@@ -285,7 +285,11 @@ final class ApplicationCoordinator: NSObject {
         connectionTask?.cancel()
         connectionTask = nil
         daemonManager.stopWatching()
-        await daemonManager.disableDaemon()
+        if migration.migrationMayBeRunning {
+            Log.daemon.warning("Leaving the runtime running because migration completion could not be confirmed")
+        } else {
+            await daemonManager.disableDaemon()
+        }
     }
 
     private func installWindows() {
