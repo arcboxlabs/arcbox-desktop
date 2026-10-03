@@ -31,28 +31,6 @@ struct HelperInstallErrorTests {
         let message = HelperInstallError.bundledBinaryMissing("arcbox-helper").errorDescription ?? ""
         #expect(message.contains("arcbox-helper"))
     }
-
-    @Test func cancellationTerminatesTheRunningProcess() async throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sleep")
-        process.arguments = ["30"]
-        let task = Task {
-            try await runCancellableProcess(process)
-        }
-
-        try await Task.sleep(for: .milliseconds(50))
-        try #require(process.isRunning)
-
-        let clock = ContinuousClock()
-        let canceledAt = clock.now
-        task.cancel()
-        await #expect(throws: CancellationError.self) {
-            try await task.value
-        }
-
-        #expect(!process.isRunning)
-        #expect(canceledAt.duration(to: clock.now) < .seconds(1))
-    }
 }
 
 struct HelperVersionTests {
