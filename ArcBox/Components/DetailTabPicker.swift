@@ -43,6 +43,17 @@ struct DetailTabPicker<Tab: DetailTab>: ToolbarContent {
     }
 }
 
+/// The selection indicator is one persistent glass capsule that slides between
+/// segments, positioned by `matchedGeometryEffect` against the segment it is
+/// on.
+///
+/// It deliberately does not toggle `glassEffect` per segment and morph the
+/// shapes through a `GlassEffectContainer`. That reads as a moving pill at
+/// rest, but it drives the shape through appear/disappear morphs, and
+/// `GlassEffectTransition.matchedGeometry` then "applies additional scale and
+/// offset effects to content when the identity of the shape does not change
+/// but its content does" — the selection ID is constant while the segment
+/// under it changes, so every switch picked up that extra scale and offset.
 @available(macOS 26.0, *)
 private struct LiquidGlassDetailTabPicker<Tab: DetailTab>: View {
     @Binding var selection: Tab
@@ -51,34 +62,33 @@ private struct LiquidGlassDetailTabPicker<Tab: DetailTab>: View {
     @Namespace private var glassNamespace
 
     var body: some View {
-        GlassEffectContainer(
-            spacing: CGFloat(Tab.allCases.count) * AppMetrics.detailTabSegment
-        ) {
-            HStack(spacing: 2) {
-                ForEach(Tab.allCases) { tab in
-                    Button {
-                        selection = tab
-                    } label: {
-                        Text(tab.rawValue)
-                            .font(.system(size: 12))
-                            .lineLimit(1)
-                            .frame(minWidth: 44, maxWidth: .infinity)
-                            .frame(height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: .infinity)
-                    .foregroundStyle(selection == tab ? .primary : .secondary)
-                    .glassEffect(
-                        selection == tab ? .regular.interactive() : .identity
-                    )
-                    .glassEffectID(
-                        selection == tab ? "selected-detail-tab" : nil,
-                        in: glassNamespace
-                    )
+        HStack(spacing: DetailTabLayout.segmentGap) {
+            ForEach(Tab.allCases) { tab in
+                Button {
+                    selection = tab
+                } label: {
+                    Text(tab.rawValue)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                        .frame(minWidth: 44, maxWidth: .infinity)
+                        .frame(height: 28)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(selection == tab ? .primary : .secondary)
+                .matchedGeometryEffect(id: tab, in: glassNamespace, isSource: true)
             }
-            .padding(2)
+        }
+        .padding(DetailTabLayout.segmentGap)
+        .background {
+            Color.clear
+                .glassEffect(.regular.interactive())
+                .matchedGeometryEffect(
+                    id: selection,
+                    in: glassNamespace,
+                    isSource: false
+                )
         }
         .frame(
             minWidth: DetailTabLayout.minimumWidth(for: Tab.allCases.count),
@@ -86,7 +96,7 @@ private struct LiquidGlassDetailTabPicker<Tab: DetailTab>: View {
             maxWidth: DetailTabLayout.idealWidth(for: Tab.allCases.count)
         )
         .animation(
-            reduceMotion ? nil : .smooth(duration: 0.3),
+            reduceMotion ? nil : .smooth(duration: 0.2),
             value: selection
         )
         .accessibilityRepresentation {
@@ -101,6 +111,9 @@ private struct LiquidGlassDetailTabPicker<Tab: DetailTab>: View {
 }
 
 private enum DetailTabLayout {
+    /// The gap between two segments, and the inset around the whole bar.
+    static let segmentGap: CGFloat = 2
+
     static func minimumWidth(for count: Int) -> CGFloat {
         count <= 2
             ? 3 * AppMetrics.detailTabSegment

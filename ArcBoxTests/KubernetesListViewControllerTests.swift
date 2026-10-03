@@ -8,6 +8,7 @@ final class KubernetesListViewControllerTests: XCTestCase {
     func testPodsStatesRetrySearchAndSelection() async throws {
         let state = KubernetesState(lifecycle: .ready)
         let viewModel = PodsViewModel()
+        viewModel.selectedID = "stale"
         var didRetry = false
         let controller = PodsListViewController(
             state: state,
@@ -20,6 +21,8 @@ final class KubernetesListViewControllerTests: XCTestCase {
         )
         let rootView = controller.view
         let tableView = try XCTUnwrap(findTableView(in: rootView))
+        XCTAssertEqual(viewModel.selectedID, "stale")
+        viewModel.selectedID = nil
 
         XCTAssertFalse(hasText("Loading pods…", in: rootView))
         let loadingPlaceholder = try XCTUnwrap(hostedStateView(in: rootView))
@@ -91,7 +94,8 @@ final class KubernetesListViewControllerTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedID, "alpha")
 
         viewModel.pods.removeAll { $0.id == "alpha" }
-        try await waitUntil { viewModel.selectedID == nil && tableView.selectedRow == -1 }
+        XCTAssertNil(viewModel.selectedID)
+        try await waitUntil { tableView.selectedRow == -1 }
     }
 
     @MainActor
@@ -138,6 +142,7 @@ final class KubernetesListViewControllerTests: XCTestCase {
             service(id: "api", name: "api"),
             service(id: "database", name: "database"),
         ]
+        viewModel.selectedID = "stale"
         viewModel.streamPhase = .live
         let controller = ServicesListViewController(
             state: readyState,
@@ -151,6 +156,8 @@ final class KubernetesListViewControllerTests: XCTestCase {
         let rootView = controller.view
         let tableView = try XCTUnwrap(findTableView(in: rootView))
 
+        XCTAssertEqual(viewModel.selectedID, "stale")
+        viewModel.selectedID = nil
         XCTAssertEqual(tableView.numberOfRows, 2)
         tableView.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
         XCTAssertEqual(viewModel.selectedID, "database")
@@ -185,6 +192,12 @@ final class KubernetesListViewControllerTests: XCTestCase {
             tableView.numberOfRows == 0
                 && self.hasText("No Results", in: rootView)
         }
+
+        viewModel.searchText = ""
+        try await waitUntil { tableView.numberOfRows == 2 && tableView.selectedRow == 1 }
+        viewModel.services.removeAll { $0.id == "database" }
+        XCTAssertNil(viewModel.selectedID)
+        try await waitUntil { tableView.selectedRow == -1 }
     }
 
     @MainActor

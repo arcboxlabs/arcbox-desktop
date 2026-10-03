@@ -99,12 +99,16 @@ private struct ContainerInspectDTO: Decodable {
 private struct ImageInspectDTO: Decodable {
     let config: ImageConfigDTO?
     let containerConfig: ImageConfigDTO?
+    let os: String?
+    let architecture: String?
     let graphDriver: GraphDriverDTO?
     let rootFS: RootFSDTO?
 
     var snapshot: ImageInspectSnapshot {
         ImageInspectSnapshot(
             labels: config?.normalizedLabels ?? containerConfig?.normalizedLabels ?? [:],
+            os: DockerClient.normalized(os),
+            architecture: DockerClient.normalized(architecture),
             rootfsMountPath: graphDriver?.imageRootfsMountPath,
             overlayUpperDir: graphDriver?.overlayUpperDir,
             rootfsLayers: rootFS?.layers ?? []
@@ -114,6 +118,8 @@ private struct ImageInspectDTO: Decodable {
     private enum CodingKeys: String, CodingKey {
         case config = "Config"
         case containerConfig = "ContainerConfig"
+        case os = "Os"
+        case architecture = "Architecture"
         case graphDriver = "GraphDriver"
         case rootFS = "RootFS"
     }
@@ -122,6 +128,8 @@ private struct ImageInspectDTO: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         config = try? container.decodeIfPresent(ImageConfigDTO.self, forKey: .config)
         containerConfig = try? container.decodeIfPresent(ImageConfigDTO.self, forKey: .containerConfig)
+        os = try? container.decodeIfPresent(String.self, forKey: .os)
+        architecture = try? container.decodeIfPresent(String.self, forKey: .architecture)
         graphDriver = try? container.decodeIfPresent(GraphDriverDTO.self, forKey: .graphDriver)
         rootFS = try? container.decodeIfPresent(RootFSDTO.self, forKey: .rootFS)
     }

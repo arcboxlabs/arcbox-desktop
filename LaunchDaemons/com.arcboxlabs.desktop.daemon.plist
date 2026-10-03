@@ -27,6 +27,16 @@
     <key>ThrottleInterval</key>
     <integer>5</integer>
 
+    <!-- Seconds launchd waits after SIGTERM before SIGKILL. Its default for a
+         gui agent is 5 (`launchctl print` shows "exit timeout = 5"), shorter
+         than the daemon's graceful shutdown: two 5s NFS unmount attempts, a 5s
+         API drain, then a VM stop the runtime bounds at 30s. A kill inside
+         that window leaves the guest's disks dirty and the next boot replaying
+         journals. Same value as the `abctl _install` agent and the helper;
+         DaemonManager.shutdownTimeout waits a little past it. -->
+    <key>ExitTimeOut</key>
+    <integer>45</integer>
+
     <!-- Must NOT be Background: that QoS class throttles CPU/I/O, which slows
          the guest VM cold boot past the daemon's agent-wait timeout
          (DEFAULT_STARTUP_TIMEOUT_SECS), causing "timeout waiting for agent"

@@ -59,6 +59,31 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertEqual(sections[1].items.count, 1)
     }
 
+    @MainActor func testParsesHighlightsAsPrimaryProse() {
+        let input = """
+            ## [2.0.0](https://example.com) (2026-04-01)
+
+            ### Highlights
+
+            **Builds finish faster.** Common projects now complete in
+            about half the time.
+
+            > [!IMPORTANT]
+            > Existing projects need no migration.
+
+            ### Features
+
+            * **build:** replace the internal scheduler ([#42](https://example.com/pull/42)) ([abc1234](https://example.com/commit/abc1234))
+            """
+        let release = ChangelogParser.parse(input).first
+
+        XCTAssertEqual(
+            release?.highlights,
+            "Builds finish faster. Common projects now complete in about half the time.\n\nExisting projects need no migration."
+        )
+        XCTAssertEqual(release?.sections.first?.items, ["replace the internal scheduler"])
+    }
+
     // MARK: - Bullet Items
 
     @MainActor func testParsesBulletItems() {
@@ -106,9 +131,9 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertEqual(item, "fix startup crash")
     }
 
-    // MARK: - cleanItem: Issue Link Conversion
+    // MARK: - cleanItem: Issue Link Removal
 
-    @MainActor func testConvertsIssueLinksToPlainText() {
+    @MainActor func testRemovesIssueLinks() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
@@ -118,7 +143,7 @@ final class ChangelogParserTests: XCTestCase {
             """
         let releases = ChangelogParser.parse(input)
         let item = releases.first!.sections.first!.items.first!
-        XCTAssertEqual(item, "fix timeout #202")
+        XCTAssertEqual(item, "fix timeout")
     }
 
     // MARK: - cleanItem: Bold Scope Removal
@@ -133,7 +158,7 @@ final class ChangelogParserTests: XCTestCase {
             """
         let releases = ChangelogParser.parse(input)
         let item = releases.first!.sections.first!.items.first!
-        XCTAssertEqual(item, "settings: wire up functional settings")
+        XCTAssertEqual(item, "wire up functional settings")
     }
 
     // MARK: - cleanItem: Combined Cleanup
@@ -148,7 +173,7 @@ final class ChangelogParserTests: XCTestCase {
             """
         let releases = ChangelogParser.parse(input)
         let item = releases.first!.sections.first!.items.first!
-        XCTAssertEqual(item, "completions: install all bundled completions #205")
+        XCTAssertEqual(item, "install all bundled completions")
     }
 
     // MARK: - Limit Parameter
@@ -183,6 +208,37 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertEqual(one.first?.version, "3.0.0")
     }
 
+    @MainActor func testSkipsMechanicalOnlyReleasesBeforeApplyingLimit() {
+        let input = """
+            ## [3.0.0](https://example.com) (2026-03-01)
+
+            ### Miscellaneous
+
+            * chore(master): release 3.0.0
+
+            ### CI
+
+            * update the build runner
+
+            ## [2.0.0](https://example.com) (2026-02-01)
+
+            ### Bug Fixes
+
+            * **files:** keep mounted folders visible ([#20](https://example.com/pull/20)) ([abc1234](https://example.com/commit/abc1234))
+
+            ## [1.0.0](https://example.com) (2026-01-01)
+
+            ### Security
+
+            * validate downloaded updates
+            """
+
+        let releases = ChangelogParser.parse(input, limit: 2)
+
+        XCTAssertEqual(releases.map(\.version), ["2.0.0", "1.0.0"])
+        XCTAssertEqual(releases.first?.sections.first?.items, ["keep mounted folders visible"])
+    }
+
     // MARK: - Empty / Malformed Input
 
     @MainActor func testEmptyInputReturnsEmpty() {
@@ -202,16 +258,16 @@ final class ChangelogParserTests: XCTestCase {
         XCTAssertTrue(releases.isEmpty)
     }
 
-    @MainActor func testReleaseWithNoSectionsIsIncluded() {
-        // A version header with no ### sections and no items still produces a release
-        // (with empty sections array).
+    @MainActor func testReleaseWithNoUserFacingSectionsIsExcluded() {
         let input = """
             ## [1.0.0](https://example.com) (2026-01-01)
 
+            ### Refactoring
+
+            * migrate the internal presentation layer
             """
         let releases = ChangelogParser.parse(input)
-        XCTAssertEqual(releases.count, 1)
-        XCTAssertTrue(releases.first!.sections.isEmpty)
+        XCTAssertTrue(releases.isEmpty)
     }
 
     @MainActor func testReleaseWithEmptySectionsAreExcluded() {

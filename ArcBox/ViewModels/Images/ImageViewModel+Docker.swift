@@ -6,7 +6,11 @@ import Foundation
 extension ImageViewModel {
     /// Create ImageViewModels from a Docker Engine API ImageSummary.
     /// One ImageSummary can have multiple RepoTags, producing multiple view models.
-    static func fromDocker(_ summary: Components.Schemas.ImageSummary) -> [ImageViewModel] {
+    static func fromDocker(
+        _ summary: Components.Schemas.ImageSummary,
+        os: String = "",
+        architecture: String = ""
+    ) -> [ImageViewModel] {
         let tags = summary.RepoTags.isEmpty ? ["<none>:<none>"] : summary.RepoTags
 
         return tags.map { repoTag in
@@ -20,10 +24,11 @@ extension ImageViewModel {
                 repository: repository,
                 tag: tag,
                 sizeBytes: UInt64(summary.Size),
-                createdAt: Date(timeIntervalSince1970: TimeInterval(summary.Created)),
+                createdAt: summary.Created > 0
+                    ? Date(timeIntervalSince1970: TimeInterval(summary.Created)) : nil,
                 inUse: summary.Containers > 0,
-                os: "",
-                architecture: ""
+                os: os,
+                architecture: architecture
             )
         }
     }

@@ -476,6 +476,47 @@ public struct Arcbox_V1_SetSystemVmBackendRequest: Sendable {
   public init() {}
 }
 
+/// The System VM's CPU and memory limits and the host's capacity.
+public struct Arcbox_V1_SystemVmResources: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// vCPUs the System VM boots with.
+  public var cpus: UInt32 = 0
+
+  /// Memory the System VM boots with, in MiB.
+  public var memoryMb: UInt64 = 0
+
+  /// Logical CPUs on the host; the ceiling for `cpus`.
+  public var hostCpus: UInt32 = 0
+
+  /// Physical memory on the host in MiB; the ceiling for `memory_mb`.
+  public var hostMemoryMb: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Request to change the System VM's CPU and memory limits. A zero field
+/// keeps the current value.
+public struct Arcbox_V1_SetSystemVmResourcesRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// vCPUs, 1 through the host's logical CPU count.
+  public var cpus: UInt32 = 0
+
+  /// Memory in MiB, 512 through the host's physical memory.
+  public var memoryMb: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Request to resolve a container's filesystem layer directories.
 public struct Arcbox_V1_ResolveContainerFsRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -2098,12 +2139,10 @@ public struct Arcbox_V1_SetupStatus: Sendable {
     /// accepts commands. Its container runtime may still be starting.
     case vmReady // = 4
 
-    /// The host services this daemon runs are up: the DNS server and,
-    /// with a Linux VM, the Docker API are bound (a --no-linux-vm daemon
-    /// runs no Docker API). Both fail startup rather than reaching this
-    /// phase if they cannot bind. The Kubernetes proxy is started here
-    /// too but is best-effort — a port 16443 already in use is tolerated
-    /// — so it is the one service this phase does not promise.
+    /// The host services this daemon promises are up: DNS and, with a Linux
+    /// VM, Docker plus any explicitly requested Kubernetes proxy are bound.
+    /// The canonical best-effort 16443 proxy remains the exception: a port
+    /// conflict leaves Kubernetes RPCs unavailable but does not fail startup.
     case networkReady // = 5
 
     /// Startup complete.
@@ -2750,6 +2789,86 @@ extension Arcbox_V1_SetSystemVmBackendRequest: SwiftProtobuf.Message, SwiftProto
 
   public static func ==(lhs: Arcbox_V1_SetSystemVmBackendRequest, rhs: Arcbox_V1_SetSystemVmBackendRequest) -> Bool {
     if lhs.backend != rhs.backend {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SystemVmResources: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SystemVmResources"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}cpus\0\u{3}memory_mb\0\u{3}host_cpus\0\u{3}host_memory_mb\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.cpus) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.memoryMb) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.hostCpus) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.hostMemoryMb) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.cpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.cpus, fieldNumber: 1)
+    }
+    if self.memoryMb != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memoryMb, fieldNumber: 2)
+    }
+    if self.hostCpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.hostCpus, fieldNumber: 3)
+    }
+    if self.hostMemoryMb != 0 {
+      try visitor.visitSingularUInt64Field(value: self.hostMemoryMb, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SystemVmResources, rhs: Arcbox_V1_SystemVmResources) -> Bool {
+    if lhs.cpus != rhs.cpus {return false}
+    if lhs.memoryMb != rhs.memoryMb {return false}
+    if lhs.hostCpus != rhs.hostCpus {return false}
+    if lhs.hostMemoryMb != rhs.hostMemoryMb {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetSystemVmResourcesRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetSystemVmResourcesRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}cpus\0\u{3}memory_mb\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt32Field(value: &self.cpus) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.memoryMb) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.cpus != 0 {
+      try visitor.visitSingularUInt32Field(value: self.cpus, fieldNumber: 1)
+    }
+    if self.memoryMb != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memoryMb, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetSystemVmResourcesRequest, rhs: Arcbox_V1_SetSystemVmResourcesRequest) -> Bool {
+    if lhs.cpus != rhs.cpus {return false}
+    if lhs.memoryMb != rhs.memoryMb {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

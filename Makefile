@@ -14,9 +14,6 @@
 #   make dmg-release ARCBOX_DIR=arcbox-core SIGN_IDENTITY="..." NOTARIZE=1
 
 ARCBOX_DIR ?= $(shell cd ../arcbox 2>/dev/null && pwd)
-ifneq ($(strip $(ARCBOX_DIR)),)
-override ARCBOX_DIR := $(abspath $(ARCBOX_DIR))
-endif
 ARCBOX_VERSION := $(strip $(shell /bin/cat arcbox.version))
 SIGN_IDENTITY ?= $(shell security find-identity -v -p codesigning 2>/dev/null \
 	| grep -o '"Developer ID Application: ArcBox, Inc\.[^"]*"' \
@@ -91,6 +88,8 @@ help:
 # specific Xcode, pass XCODE_DEVELOPER_DIR=... (a separate name, so the
 # poisoned DEVELOPER_DIR cannot leak in through it).
 XCODE_DEVELOPER_DIR ?=
+XCODE_SIGN_IDENTITY ?=
+CURRENT_PROJECT_VERSION ?=
 CARGO_BIN_DIR ?= $(dir $(shell command -v cargo 2>/dev/null))
 NODE_BIN_DIR ?= $(dir $(shell command -v node 2>/dev/null))
 SYSTEM_DEVELOPER_DIR = $(shell /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/xcode-select -p)
@@ -146,7 +145,8 @@ XCODEBUILD_FLAGS = \
 	-skipPackagePluginValidation \
 	-skipMacroValidation \
 	$(XCODEBUILD_EXTRA) \
-	$(if $(filter 1,$(XCODE_AD_HOC_SIGN)),CODE_SIGN_IDENTITY=-) \
+	$(if $(CURRENT_PROJECT_VERSION),CURRENT_PROJECT_VERSION=$(CURRENT_PROJECT_VERSION)) \
+	$(if $(XCODE_SIGN_IDENTITY),CODE_SIGN_IDENTITY='$(XCODE_SIGN_IDENTITY)' CODE_SIGN_STYLE=Manual,$(if $(filter 1,$(XCODE_AD_HOC_SIGN)),CODE_SIGN_IDENTITY=-)) \
 	SKIP_RUST_BUILD=$(SKIP_RUST_BUILD) \
 	ARCBOX_STAGE_RESOURCES=$(ARCBOX_STAGE_RESOURCES) \
 	ARCBOX_CARGO_BIN_DIR='$(CARGO_BIN_DIR)' \

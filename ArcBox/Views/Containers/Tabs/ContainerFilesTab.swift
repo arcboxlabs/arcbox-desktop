@@ -37,7 +37,7 @@ struct ContainerFilesTab: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
         .task(id: outlineReloadID) {
-            await resolveRootPath()
+            await resolveRootPath(requestID: outlineReloadID)
         }
     }
 
@@ -47,7 +47,7 @@ struct ContainerFilesTab: View {
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textSecondary)
 
-            Text(stack.rootURL?.path ?? container.resolvedRootFSMountPath ?? "No rootfs mount path")
+            Text("/")
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundStyle(AppColors.textSecondary)
                 .lineLimit(1)
@@ -103,6 +103,7 @@ struct ContainerFilesTab: View {
             LocalRootFSOutlineView(
                 rootURL: rootURL,
                 layers: stack.layers,
+                displayRootPath: "/",
                 showHiddenFiles: showHiddenFiles,
                 reloadID: outlineReloadID,
                 selectedPath: $selectedPath,
@@ -140,7 +141,7 @@ struct ContainerFilesTab: View {
             .multilineTextAlignment(.center)
             .padding(.horizontal, 20)
 
-            Button("Refresh") {
+            Button(FilesTabPathResolution.retryTitle) {
                 refresh()
             }
             .buttonStyle(.bordered)
@@ -154,12 +155,17 @@ struct ContainerFilesTab: View {
         refreshToken = UUID()
     }
 
-    private func resolveRootPath() async {
+    private func resolveRootPath(requestID: String) async {
+        guard requestID == outlineReloadID, !Task.isCancelled else { return }
         errorMessage = nil
         isLoadingRoot = true
         selectedPath = nil
         stack = LayerStack()
-        defer { isLoadingRoot = false }
+        defer {
+            if requestID == outlineReloadID, !Task.isCancelled {
+                isLoadingRoot = false
+            }
+        }
 
         // Inspect-provided path (classic graph drivers) is already a merged
         // rootfs; under the containerd image store inspect carries no paths,
@@ -168,10 +174,22 @@ struct ContainerFilesTab: View {
         if let mountPath = container.resolvedRootFSMountPath {
             guestPaths = [mountPath]
         } else {
-            guestPaths = await resolveViaDaemon()
+            let resolution = await resolveViaDaemon()
+            guard requestID == outlineReloadID, !Task.isCancelled else { return }
+            switch resolution {
+            case .resolved(let paths):
+                guestPaths = paths
+            case .failed(let message):
+                errorMessage = message
+                return
+            case .cancelled:
+                return
+            }
         }
 
-        stack = await LayerStack.resolve(guestPaths: guestPaths)
+        let resolvedStack = await LayerStack.resolve(guestPaths: guestPaths)
+        guard requestID == outlineReloadID, !Task.isCancelled else { return }
+        stack = resolvedStack
         guard stack.rootURL != nil else {
             errorMessage = Self.unresolvedMessage(guestPaths: guestPaths)
             return
@@ -197,24 +215,29 @@ struct ContainerFilesTab: View {
     /// containerd's snapshotter, so the daemon queries the guest and returns
     /// guest paths: the writable (upper) layer the container wrote, followed
     /// by the image layers below it — overlay precedence order.
-    private func resolveViaDaemon() async -> [String] {
-        guard let arcboxClient else { return [] }
+    private func resolveViaDaemon() async -> FilesTabPathResolution {
+        guard let arcboxClient else {
+            return .failed("ArcBox daemon is unavailable.")
+        }
         var request = Arcbox_V1_ResolveContainerFsRequest()
         request.containerID = container.id
-        do {
-            let response = try await arcboxClient.system.resolveContainerFs(
-                request, options: ArcBoxClient.defaultCallOptions)
-            var paths: [String] = []
-            if !response.upperDir.isEmpty {
-                paths.append(response.upperDir)
+        return await FilesTabPathResolution.resolve(
+            subject: "container",
+            operation: {
+                let response = try await arcboxClient.system.resolveContainerFs(
+                    request, options: ArcBoxClient.defaultCallOptions)
+                var paths: [String] = []
+                if !response.upperDir.isEmpty {
+                    paths.append(response.upperDir)
+                }
+                paths.append(contentsOf: response.lowerDirs.filter { !$0.isEmpty })
+                return paths
+            },
+            onFailure: { error in
+                Log.daemon.error(
+                    "Failed to resolve container fs: \(error.localizedDescription, privacy: .private)")
             }
-            paths.append(contentsOf: response.lowerDirs.filter { !$0.isEmpty })
-            return paths
-        } catch {
-            Log.daemon.error(
-                "Failed to resolve container fs: \(error.localizedDescription, privacy: .private)")
-            return []
-        }
+        )
     }
 
     private func revealSelectedInFinder() {

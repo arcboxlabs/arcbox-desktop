@@ -1,6 +1,16 @@
 import DockerClient
 import SwiftUI
 
+nonisolated private enum TimeMachineSettingError: LocalizedError {
+    case commandFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .commandFailed(let detail): detail
+        }
+    }
+}
+
 struct StorageSettingsView: View {
     @Environment(\.dockerClient) private var docker
 
@@ -8,6 +18,9 @@ struct StorageSettingsView: View {
     /// Tracks whether the Time Machine exclusion has been applied this session, to avoid
     /// spawning tmutil on every onAppear.
     @State private var timeMachineExclusionApplied = false
+    @State private var isUpdatingTimeMachine = false
+    @State private var timeMachineErrorMessage: String?
+    @State private var failedTimeMachineValue: Bool?
     // Reset state
     @State private var showResetDockerAlert = false
     @State private var isResetting = false
@@ -23,15 +36,36 @@ struct StorageSettingsView: View {
     var body: some View {
         Form {
             Section("Data") {
-                Toggle("Include data in Time Machine backups", isOn: $includeTimeMachine)
-                    .onChange(of: includeTimeMachine) { _, include in
-                        updateTimeMachineExclusion(include: include)
+                Toggle(
+                    "Include data in Time Machine backups",
+                    isOn: Binding(
+                        get: { includeTimeMachine },
+                        set: { updateTimeMachineExclusion(include: $0) }
+                    )
+                )
+                .disabled(isUpdatingTimeMachine)
+                .onAppear {
+                    guard !timeMachineExclusionApplied else { return }
+                    timeMachineExclusionApplied = true
+                    updateTimeMachineExclusion(include: includeTimeMachine)
+                }
+
+                if isUpdatingTimeMachine {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+
+                if let timeMachineErrorMessage {
+                    Label(timeMachineErrorMessage, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    if let failedTimeMachineValue {
+                        Button("Try Again") {
+                            updateTimeMachineExclusion(include: failedTimeMachineValue)
+                        }
+                        .font(.caption)
                     }
-                    .onAppear {
-                        guard !timeMachineExclusionApplied else { return }
-                        timeMachineExclusionApplied = true
-                        updateTimeMachineExclusion(include: includeTimeMachine)
-                    }
+                }
             }
 
             Section("Danger Zone") {
@@ -73,29 +107,50 @@ struct StorageSettingsView: View {
 
     private func updateTimeMachineExclusion(include: Bool) {
         let path = Self.arcboxDataPath
-        Task.detached {
-            let fm = FileManager.default
-            // Ensure the directory exists before calling tmutil
-            if !fm.fileExists(atPath: path) {
-                try? fm.createDirectory(atPath: path, withIntermediateDirectories: true)
+        timeMachineErrorMessage = nil
+        failedTimeMachineValue = nil
+        isUpdatingTimeMachine = true
+        Task {
+            do {
+                try await Self.setTimeMachineExclusion(include: include, path: path)
+                includeTimeMachine = include
+            } catch {
+                failedTimeMachineValue = include
+                timeMachineErrorMessage =
+                    "The Time Machine setting was not changed: \(error.localizedDescription) "
+                    + "Check Full Disk Access in System Settings > Privacy & Security, then try again."
+            }
+            isUpdatingTimeMachine = false
+        }
+    }
+
+    nonisolated private static func setTimeMachineExclusion(include: Bool, path: String) async throws {
+        try await Task.detached {
+            let fileManager = FileManager.default
+            if !fileManager.fileExists(atPath: path) {
+                try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true)
             }
 
-            let proc = Process()
-            proc.executableURL = URL(fileURLWithPath: "/usr/bin/tmutil")
-            proc.arguments = include ? ["removeexclusion", path] : ["addexclusion", path]
-            proc.standardOutput = FileHandle.nullDevice
-            proc.standardError = FileHandle.nullDevice
-            do {
-                try proc.run()
-                proc.waitUntilExit()
-                if proc.terminationStatus != 0 {
-                    // Revert toggle on failure
-                    await MainActor.run { includeTimeMachine = !include }
-                }
-            } catch {
-                await MainActor.run { includeTimeMachine = !include }
-            }
-        }
+            let process = Process()
+            let errorPipe = Pipe()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/tmutil")
+            process.arguments = include ? ["removeexclusion", path] : ["addexclusion", path]
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = errorPipe
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus != 0 else { return }
+
+            let detail = String(
+                data: errorPipe.fileHandleForReading.readDataToEndOfFile(),
+                encoding: .utf8
+            )?.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw TimeMachineSettingError.commandFailed(
+                detail?.isEmpty == false
+                    ? detail ?? ""
+                    : "tmutil exited with status \(process.terminationStatus)."
+            )
+        }.value
     }
 
     // MARK: - Reset Operations

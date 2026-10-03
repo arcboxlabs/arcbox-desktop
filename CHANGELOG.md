@@ -1,6 +1,179 @@
 # Changelog
 
+## [1.37.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.37.0...v1.37.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **activity:** stop animating the sparklines on every sample ([ef0578f](https://github.com/arcboxlabs/arcbox-desktop/commit/ef0578f35b1e0ef6710fdf7fbee5e0a445cef683))
+* **containers:** keep the logs tab off the main thread's critical path ([0aa0ea1](https://github.com/arcboxlabs/arcbox-desktop/commit/0aa0ea19fbc59005c269e79255c1da02c29a6786))
+* **containers:** stop the Docker client running out of connections ([2393376](https://github.com/arcboxlabs/arcbox-desktop/commit/23933765ccaf2a64f03aeec5ae23bff08f082297))
+* **k8s:** make the watch streams authenticate against k3s ([33c72dd](https://github.com/arcboxlabs/arcbox-desktop/commit/33c72ddbe7b0f3b1b844af69e341aea9b5b4128f))
+* **k8s:** report a stuck watch once and keep backing off while it fails ([c60257d](https://github.com/arcboxlabs/arcbox-desktop/commit/c60257d0fd790905437ecf14974dd8c5bf86deb1))
+* **startup:** file startup failures under one issue instead of one per launch ([036790e](https://github.com/arcboxlabs/arcbox-desktop/commit/036790e5483917d8b0893dca2ba144442fa90942))
+* **startup:** name the two things that make daemon registration fail ([bebf107](https://github.com/arcboxlabs/arcbox-desktop/commit/bebf10779c554c5b8483c89964d5b164078e2b82))
+* **startup:** say why the daemon failed, not just that it did ([f100307](https://github.com/arcboxlabs/arcbox-desktop/commit/f10030721bf011adb53af458c27f5154f641ec76))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.8.0 ([#403](https://github.com/arcboxlabs/arcbox-desktop/issues/403)) ([62670a3](https://github.com/arcboxlabs/arcbox-desktop/commit/62670a388875fe3a52607180858d04044fdbe111))
+
+## [1.37.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.36.0...v1.37.0) (2026-08-13)
+
+### Highlights
+
+Sandboxes can start from a template now, not just a bare Docker image. The create sheet's Source picker groups the built-in minimal template, your catalog templates and Docker images together, and says which one restores warm and which cold-boots — a template carrying a pre-warmed snapshot reaches READY in under a second instead of booting from scratch. Any snapshot you already have can be promoted into a template from the Snapshots tab; nothing is rebuilt, the checkpoint becomes the template's warm image.
+
+Because a template brings its own defaults, the CPU and memory steppers go down to "Template default" rather than bottoming out at 1 vCPU and 128 MiB. Setting either one replaces the template's defaults for both, and the form tells you so where you set it.
+
+
+### Features
+
+* **sandboxes:** surface the sandbox template catalog (CORE-107) ([#387](https://github.com/arcboxlabs/arcbox-desktop/issues/387)) ([6c1341f](https://github.com/arcboxlabs/arcbox-desktop/commit/6c1341f381ecbd96ee7b197999475eee8be55b02))
+
+
+### Bug Fixes
+
+* **client:** regenerate the template client against v0.6.6 ([#395](https://github.com/arcboxlabs/arcbox-desktop/issues/395)) ([c3c0693](https://github.com/arcboxlabs/arcbox-desktop/commit/c3c069340d4feb050a991bcec458aad056fb006e))
+* **client:** regenerate the template client for the v0.6.6 pin ([#394](https://github.com/arcboxlabs/arcbox-desktop/issues/394)) ([fb67a26](https://github.com/arcboxlabs/arcbox-desktop/commit/fb67a267390f10fd36a00ab345993dfc2bc9e704))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.6.6 ([#391](https://github.com/arcboxlabs/arcbox-desktop/issues/391)) ([1653287](https://github.com/arcboxlabs/arcbox-desktop/commit/16532878a79c828a1d9bf012b672d32bb5a5c619))
+
+## [1.36.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.35.1...v1.36.0) (2026-08-13)
+
+### Highlights
+
+ArcBox keeps running after you close its window, so a sandbox execution that finished and a daemon that died were both invisible until you went back and looked. This build tells you instead: every failed execution, successes that ran long enough to be worth a mention, and a warning when the daemon reports a fatal error or stops responding. Clicking a notification takes you to what it is about.
+
+Each kind can be turned off on its own in General settings. An execution retrying in a loop leaves its latest result on screen rather than one banner per attempt, and nothing interrupts you about a view you already have open.
+
+
+### Features
+
+* **notifications:** notify on sandbox results and daemon health ([#366](https://github.com/arcboxlabs/arcbox-desktop/issues/366)) ([1274aef](https://github.com/arcboxlabs/arcbox-desktop/commit/1274aefcf0af928b62603db2ac04cec8b006eafb))
+
+## [1.35.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.35.0...v1.35.1) (2026-08-12)
+
+### Highlights
+
+1.35.0 never reached anyone, so this is the build that brings Runners with it: sign in, enrol this Mac as a Fleet device, and manage its runners from the new Runners section, which stays current as agent state changes rather than waiting for a refresh.
+
+The Sandboxes Ports tab now reflects the daemon's own record of exposed ports, so mappings made from the CLI or SDK appear, stale rows clear themselves, and Refresh is there when you want to re-check. Analytics honours the Privacy toggle more faithfully too. Detail tabs move their indicator instead of morphing it, and the bundled ArcBox engine moves to v0.6.5.
+
+
+### Bug Fixes
+
+* **ui:** slide the detail tab indicator instead of morphing glass ([#386](https://github.com/arcboxlabs/arcbox-desktop/issues/386)) ([1c34044](https://github.com/arcboxlabs/arcbox-desktop/commit/1c34044a7d633bbbb58d14464d8eb9248855fcca))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.6.5 ([#385](https://github.com/arcboxlabs/arcbox-desktop/issues/385)) ([fb232b0](https://github.com/arcboxlabs/arcbox-desktop/commit/fb232b046d3b74b7db5001c9c8ead3394dce1ce5))
+
+## [1.35.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.34.5...v1.35.0) (2026-08-11)
+
+### Highlights
+
+Runners arrive: sign in, enroll this Mac as a Fleet device, and manage its runners from the new Runners section, which stays current as agent state changes instead of waiting for a refresh.
+
+The Sandboxes Ports tab now reflects the daemon's own record of exposed ports, so mappings made from the CLI or SDK show up, stale rows clear themselves, and Refresh is there when you want to re-check. Analytics also honours the Privacy toggle more faithfully: while it is on, a signed-in account is identified by email and name, and switching it back on after signing in no longer leaves the session anonymous.
+
+
+### Features
+
+* **fleet:** integrate device auth, enrollment, and live runner management ([#320](https://github.com/arcboxlabs/arcbox-desktop/issues/320)) ([faa59dd](https://github.com/arcboxlabs/arcbox-desktop/commit/faa59dd6302501c3addb8405067a38baadd8cb32))
+* **telemetry:** wire up the analytics catalog, identify users, fix opt-out precedence ([#367](https://github.com/arcboxlabs/arcbox-desktop/issues/367)) ([428ead8](https://github.com/arcboxlabs/arcbox-desktop/commit/428ead8c1a2f1c505ba11d61555b6abc4dd418bd))
+
+
+### Bug Fixes
+
+* **build:** isolate signed packaging Xcode environment ([#376](https://github.com/arcboxlabs/arcbox-desktop/issues/376)) ([49d6b64](https://github.com/arcboxlabs/arcbox-desktop/commit/49d6b64a5e5dd251f61164470c4a1c5029864954))
+* **sandboxes:** reconcile authoritative port mappings ([#374](https://github.com/arcboxlabs/arcbox-desktop/issues/374)) ([1781592](https://github.com/arcboxlabs/arcbox-desktop/commit/178159276c4d6abd6f0ea385fe352fa41c936b6a))
+
+
+### Documentation
+
+* **agents:** describe the import order the formatter actually enforces ([#383](https://github.com/arcboxlabs/arcbox-desktop/issues/383)) ([0b1c850](https://github.com/arcboxlabs/arcbox-desktop/commit/0b1c85019f3567f17331669fe6c5fc97217a78eb))
+
+
+### CI
+
+* **release:** fail when the arcbox release has no binaries ([3914472](https://github.com/arcboxlabs/arcbox-desktop/commit/391447260770adedeb06acd0d89add26d416693e))
+* **release:** make the arcbox source build work ([1fd7213](https://github.com/arcboxlabs/arcbox-desktop/commit/1fd721313a0cb9015499161bf88a2f2dd4bdf6ef))
+* **release:** publish the draft as the app that created it ([68e4962](https://github.com/arcboxlabs/arcbox-desktop/commit/68e4962126e13014c814b5377027f9a9d44cef42))
+
+## [1.34.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.34.4...v1.34.5) (2026-08-10)
+
+### Highlights
+
+This is the first build published since 1.34.1, so updating brings 1.34.2 through 1.34.4 along with it.
+
+That means the production pass over Settings, the create sheets, and the terminal tabs; Images, Networks, and Volumes reporting the details their inspectors promised; and the ArcBox v0.6.4 engine, which adds sandbox pause and resume with idle auto-pause.
+
+
+### Refactoring
+
+* **client:** stop linking Sentry from ArcBoxClient, cache the protoc plugin build ([#380](https://github.com/arcboxlabs/arcbox-desktop/issues/380)) ([7c816cf](https://github.com/arcboxlabs/arcbox-desktop/commit/7c816cf61fbeff82b4e6fcb34d903fbf8ead570d))
+
+
+### CI
+
+* fail the release PR when a release has no Highlights ([581a33c](https://github.com/arcboxlabs/arcbox-desktop/commit/581a33c0008255ac8e32f4f7eafa841818f3b754))
+* **release:** publish the GitHub release only once the DMG exists ([094cfcc](https://github.com/arcboxlabs/arcbox-desktop/commit/094cfccfbfe7891266d49be47bca584b3ec0638f))
+
+## [1.34.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.34.3...v1.34.4) (2026-08-10)
+
+### Highlights
+
+The bundled ArcBox engine moves to v0.6.4, which brings sandbox pause and resume, idle auto-pause with transparent resume on the next request, and exposed-port listing for sandboxes.
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.6.4 ([#377](https://github.com/arcboxlabs/arcbox-desktop/issues/377)) ([de8ca68](https://github.com/arcboxlabs/arcbox-desktop/commit/de8ca68fed594b35f13e58e931ddf22e410b5aa8))
+
+
+### CI
+
+* own the arcbox daemon bump end to end ([#379](https://github.com/arcboxlabs/arcbox-desktop/issues/379)) ([1fc0498](https://github.com/arcboxlabs/arcbox-desktop/commit/1fc0498cc3ea85a9f22d11a3310f2c58f28f6fe8))
+
+## [1.34.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.34.2...v1.34.3) (2026-08-10)
+
+### Highlights
+
+Images, Networks, and Volumes now report the details their inspectors promised, and browsing files inside an image or container no longer trips over overlapping requests. Terminal tabs also stop mixing output from a session that has already gone away.
+
+
+### Bug Fixes
+
+* **app:** address production-audit regressions (ABXD-136/137/138/140/149/151) ([#369](https://github.com/arcboxlabs/arcbox-desktop/issues/369)) ([93a77c8](https://github.com/arcboxlabs/arcbox-desktop/commit/93a77c84517af51117cec78f273a016a87d2af0b))
+
+## [1.34.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.34.1...v1.34.2) (2026-08-10)
+
+### Highlights
+
+Settings, the create sheets, and the terminal tabs went through a production pass: controls that never did anything are gone, failures explain themselves, and the app no longer advertises capabilities it does not have.
+
+Turning the Docker context integration on or off is also more forgiving. The setting only sticks once the change succeeds, "Try Again" retries what actually failed, and a startup that ended in failure now restarts the daemon instead of retrying against a dead one.
+
+
+### Bug Fixes
+
+* **app:** align product claims with supported behavior ([c850f1b](https://github.com/arcboxlabs/arcbox-desktop/commit/c850f1bec2c2f1c06fa2522849dd62b02b0cf8cf))
+* **app:** resolve production UX audit findings ([3e0c442](https://github.com/arcboxlabs/arcbox-desktop/commit/3e0c4424fdd405c56deac32fc6f34960c48350a4))
+* **app:** serialize refresh and context updates ([d1bb292](https://github.com/arcboxlabs/arcbox-desktop/commit/d1bb2927d0eeed85bd5b1eb82a30edc56ad153f3))
+* **settings:** preserve Docker context retry intent ([62d3407](https://github.com/arcboxlabs/arcbox-desktop/commit/62d340762ba9c3325cd5d374b359ac7bb10a6ac4))
+* **startup:** restart terminal failure on retry ([97ba68b](https://github.com/arcboxlabs/arcbox-desktop/commit/97ba68be495c37083221db6517560a72428e8e2b))
+
 ## [1.34.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.34.0...v1.34.1) (2026-08-04)
+
+### Highlights
+
+Settings, onboarding, file pickers, and quit progress now open in the expected place and behave more like native macOS surfaces. Container domains also remain visible and show their configured addresses, making local services easier to identify.
 
 
 ### Bug Fixes
@@ -21,6 +194,10 @@
 
 ## [1.34.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.33.0...v1.34.0) (2026-08-03)
 
+### Highlights
+
+Sandbox creation and terminal sessions are now more reliable when connections drop. Retried creation keeps one sandbox identity, while reconnected terminal sessions avoid replaying input.
+
 
 ### Features
 
@@ -32,6 +209,12 @@
 * bump arcbox version to v0.6.2 ([#360](https://github.com/arcboxlabs/arcbox-desktop/issues/360)) ([7d849f0](https://github.com/arcboxlabs/arcbox-desktop/commit/7d849f0dfcacadb60c8d67ddb4c4b78d275e2465))
 
 ## [1.33.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.32.1...v1.33.0) (2026-08-02)
+
+### Highlights
+
+New installs now include guided setup and a replayable Getting Started tour for Machines, Containers, Kubernetes, and Sandboxes.
+
+The main window also behaves more like a native Mac app, with more consistent navigation, resource lists, detail tabs, window sizing, and quit flows.
 
 
 ### Features

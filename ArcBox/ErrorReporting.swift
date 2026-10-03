@@ -1,3 +1,4 @@
+import ArcBoxClient
 @preconcurrency import Sentry
 
 /// Centralized error capture with automatic classification and consistent tagging.
@@ -102,5 +103,42 @@ nonisolated enum ErrorReporting {
         }
 
         return .unknown
+    }
+}
+
+// MARK: - ArcBoxClient Bridge
+
+/// Sends ``ArcBoxClient``'s diagnostics to Sentry.
+///
+/// The client package emits breadcrumbs and errors but deliberately links no
+/// crash reporter — a gRPC client has no business owning one, and depending on
+/// Sentry there dragged its binary artifacts into every protobuf regeneration.
+/// ``AppDelegate/initSentry()`` installs this once Sentry is up.
+///
+/// `nonisolated` because the client calls it from wherever it happens to be —
+/// this target defaults to `MainActor` isolation.
+nonisolated struct SentryDiagnosticsSink: DiagnosticsSink {
+    func add(_ breadcrumb: DiagnosticBreadcrumb) {
+        let crumb = Breadcrumb(level: breadcrumb.level.sentryLevel, category: breadcrumb.category)
+        crumb.message = breadcrumb.message
+        SentrySDK.addBreadcrumb(crumb)
+    }
+
+    func capture(_ error: Error, tags: [String: String]) {
+        SentrySDK.capture(error: error) { scope in
+            for (key, value) in tags {
+                scope.setTag(value: value, key: key)
+            }
+        }
+    }
+}
+
+extension DiagnosticBreadcrumb.Level {
+    nonisolated fileprivate var sentryLevel: SentryLevel {
+        switch self {
+        case .info: .info
+        case .warning: .warning
+        case .error: .error
+        }
     }
 }

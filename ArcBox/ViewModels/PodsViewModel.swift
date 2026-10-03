@@ -6,9 +6,16 @@ import Observation
 @MainActor
 @Observable
 class PodsViewModel {
-    var pods: [PodViewModel] = []
+    var pods: [PodViewModel] = [] {
+        didSet {
+            if let selectedID, !pods.contains(where: { $0.id == selectedID }) {
+                self.selectedID = nil
+            }
+        }
+    }
     var selectedID: String?
     var streamPhase: KubernetesStreamPhase = .connecting
+    var lastStreamUpdate: ContinuousClock.Instant?
     var searchText: String = ""
     var isSearching: Bool = false
 
@@ -32,6 +39,7 @@ class PodsViewModel {
     /// client and the stream.
     func apply(_ items: [Pod]) {
         pods = items.compactMap { Self.mapPod($0) }
+        lastStreamUpdate = ContinuousClock().now
     }
 
     /// Clear all pod data when K8s is stopped.
@@ -39,6 +47,7 @@ class PodsViewModel {
         pods = []
         selectedID = nil
         streamPhase = .connecting
+        lastStreamUpdate = nil
     }
 
     // MARK: - Mapping

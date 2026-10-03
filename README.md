@@ -36,13 +36,19 @@ One three-column window — sources, list, detail — over everything the daemon
   opens onto info, streaming logs, an interactive terminal, and a file browser that reads through the
   overlay layers.
 - **Kubernetes** — pods and services from the daemon-managed k3s cluster.
-- **Machines** — full Linux VMs: create from a distro image, drive the lifecycle, then attach a terminal
-  or browse the guest filesystem.
+- **Machines** — full Linux VMs: create from a distro image, drive the lifecycle, and attach an
+  interactive terminal.
 - **Sandboxes** — disposable microVMs from templates, with ports, snapshots, and an event log.
 - **Activity** — live CPU, memory, and network for the system VM and every running container.
 
 Everything is event-driven: the Docker, machine, and sandbox event streams feed debounced updates, so the
 UI reflects work started from `docker`, `abctl`, or `kubectl` without a refresh.
+
+## Migrate an existing Docker environment
+
+Keep Docker Desktop or OrbStack running, then choose **Help → Migrate from Docker Desktop or OrbStack…**. First-time setup also offers migration after the ArcBox runtime is ready.
+
+Review the resource counts, warnings, and required replacements before choosing **Migrate Now**. ArcBox copies supported resources without deleting them from the source. Migration can stop source containers that use the copied volumes. Keep ArcBox and the source engine open until migration completes. If both source engines are detected, select the source with `docker context use` and check again.
 
 ## How it fits together
 

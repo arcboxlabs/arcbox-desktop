@@ -20,14 +20,13 @@ struct OnboardingView: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var step: OnboardingStep
     @State private var movingForward = true
-    @State private var migration: OnboardingMigrationModel
+    let migration: OnboardingMigrationModel
 
     init(
         orchestrator: StartupOrchestrator,
         initialStep: OnboardingStep,
         isReplay: Bool = false,
-        clientProvider: @escaping @MainActor () -> ArcBoxClient?,
-        onMigrationActivityChanged: @escaping @MainActor (Bool) -> Void,
+        migration: OnboardingMigrationModel,
         onStart: @escaping () -> Void,
         onComplete: @escaping () -> Void,
         onQuit: @escaping () -> Void
@@ -38,12 +37,7 @@ struct OnboardingView: View {
         self.onComplete = onComplete
         self.onQuit = onQuit
         _step = State(initialValue: initialStep)
-        _migration = State(
-            initialValue: OnboardingMigrationModel(
-                clientProvider: clientProvider,
-                onMigrationActivityChanged: onMigrationActivityChanged
-            )
-        )
+        self.migration = migration
     }
 
     var body: some View {
@@ -81,7 +75,7 @@ struct OnboardingView: View {
 
             guard step == .setup else { return }
             switch migration.state {
-            case .review, .failed:
+            case .review, .preparing, .migrating, .completed, .failed:
                 move(to: .migration, forward: true)
             default:
                 break
@@ -144,7 +138,7 @@ struct OnboardingView: View {
                 capabilityCell(
                     "Kubernetes",
                     symbol: NavItem.pods.sfSymbol,
-                    detail: "Manage local pods and services."
+                    detail: "Inspect local pods and services."
                 )
             }
 
@@ -154,7 +148,7 @@ struct OnboardingView: View {
                 capabilityCell(
                     "Linux VMs",
                     symbol: NavItem.machines.sfSymbol,
-                    detail: "Full Linux machines with terminal and files."
+                    detail: "Full Linux machines with terminal access."
                 )
                 Divider()
                 capabilityCell(
@@ -234,7 +228,7 @@ struct OnboardingView: View {
 
     @ViewBuilder
     private var setupPage: some View {
-        if orchestrator.isReady {
+        if orchestrator.isRuntimeReady {
             switch migration.state {
             case .idle, .checking:
                 VStack(spacing: 16) {
@@ -320,7 +314,7 @@ struct OnboardingView: View {
                     }
                 }
             case .setup:
-                if orchestrator.isReady {
+                if orchestrator.isRuntimeReady {
                     switch migration.state {
                     case .idle, .checking:
                         Button("Skip for Now", action: onComplete)
@@ -332,7 +326,7 @@ struct OnboardingView: View {
                             .controlSize(.large)
                             .frame(minWidth: 132)
                             .disabled(true)
-                    case .review, .failed:
+                    case .review, .preparing, .migrating, .failed:
                         Spacer()
                         Button("Continue") {}
                             .buttonStyle(.borderedProminent)
@@ -427,7 +421,7 @@ struct OnboardingView: View {
     }
 
     private var shouldLoadMigrationPreview: Bool {
-        orchestrator.isReady && (!isReplay || step == .migration)
+        orchestrator.isRuntimeReady && (!isReplay || step == .migration)
     }
 
     private func capabilityCell(_ title: String, symbol: String, detail: String) -> some View {

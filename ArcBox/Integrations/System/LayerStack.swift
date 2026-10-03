@@ -1,4 +1,39 @@
+// Foundation precedes local modules per repository import style.
+// swift-format-ignore: OrderedImports
 import Foundation
+
+import ArcBoxClient
+
+nonisolated enum FilesTabPathResolution: Equatable {
+    case resolved([String])
+    case failed(String)
+    case cancelled
+
+    static let retryTitle = "Retry"
+
+    var errorMessage: String? {
+        guard case .failed(let message) = self else { return nil }
+        return message
+    }
+
+    static func resolve(
+        subject: String,
+        operation: () async throws -> [String],
+        onFailure: (Error) -> Void
+    ) async -> FilesTabPathResolution {
+        do {
+            let paths = try await operation()
+            return Task.isCancelled ? .cancelled : .resolved(paths)
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            guard !Task.isCancelled else { return .cancelled }
+            onFailure(error)
+            return .failed(
+                "Couldn’t load \(subject) files. \(ArcBoxClient.userMessage(for: error))")
+        }
+    }
+}
 
 /// What a Files tab is browsing, and how much of it is missing.
 ///

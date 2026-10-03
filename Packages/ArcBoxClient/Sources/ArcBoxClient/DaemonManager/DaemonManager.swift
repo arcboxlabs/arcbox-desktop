@@ -8,6 +8,11 @@ import ServiceManagement
 /// The daemon is bundled under `Contents/Frameworks/` using the app profile's
 /// launchd label (`com.arcboxlabs.desktop.daemon` or `...dev.daemon`).
 /// and managed by launchd. `KeepAlive` in the plist ensures automatic restart on crash.
+///
+/// Quitting the app unregisters the daemon. launchd then sends SIGTERM and, after the
+/// plist's `ExitTimeOut`, SIGKILL; the daemon spends that window draining its API servers
+/// and stopping the VM, so ``disableDaemon()`` waits for the process to exit and the quit
+/// finishes only once the VM is down.
 @Observable
 @MainActor
 public final class DaemonManager {
@@ -44,7 +49,9 @@ public final class DaemonManager {
     /// Timestamp of the last message received from the gRPC setup status stream.
     public internal(set) var lastMessageTime: Date?
 
-    nonisolated static var isDevelopmentProfile: Bool {
+    /// Whether this bundle runs the development profile (`~/.arcbox-dev`, the `arcbox-dev`
+    /// Docker context, its own daemon label and sign-in item).
+    nonisolated public static var isDevelopmentProfile: Bool {
         (Bundle.main.object(forInfoDictionaryKey: "ArcBoxProfile") as? String)?
             .caseInsensitiveCompare("development") == .orderedSame
     }
@@ -61,7 +68,7 @@ public final class DaemonManager {
         isDevelopmentProfile ? "com.arcboxlabs.desktop.dev.daemon" : "com.arcboxlabs.desktop.daemon"
     }
 
-    nonisolated static var daemonPlistName: String {
+    nonisolated public static var daemonPlistName: String {
         "\(daemonLabel).plist"
     }
 
@@ -73,8 +80,30 @@ public final class DaemonManager {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(dataDirectoryName)
     }
 
-    nonisolated var daemonService: SMAppService {
+    /// The lock a running daemon holds for its lifetime; see ``DaemonLock``.
+    nonisolated static var daemonLockFile: URL {
+        profileDataDirectory.appendingPathComponent("run/daemon.lock")
+    }
+
+    /// How long ``disableDaemon()`` waits for the daemon to exit. launchd SIGKILLs it at
+    /// the plist's `ExitTimeOut` (45 s), so this only needs a little slack past that.
+    static let shutdownTimeout: Duration = .seconds(50)
+
+    nonisolated public var daemonService: SMAppService {
         SMAppService.agent(plistName: Self.daemonPlistName)
+    }
+
+    /// What to tell the user when `SMAppService` reports `.requiresApproval`, which the
+    /// framework documents as "the user needs to take action in System Settings before
+    /// the service is eligible to run … returned if the user revokes consent".
+    public static let loginItemsApprovalMessage = """
+        ArcBox is switched off in Login Items, so its background service cannot start. \
+        Turn ArcBox on in System Settings > General > Login Items & Extensions, then retry.
+        """
+
+    /// Opens the pane ``loginItemsApprovalMessage`` names.
+    nonisolated public static func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 
     /// Whether the privileged helper is installed.

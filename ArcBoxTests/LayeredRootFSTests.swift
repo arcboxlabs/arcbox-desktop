@@ -31,7 +31,6 @@ final class LayeredRootFSTests: XCTestCase {
             url: URL(fileURLWithPath: "/\(layer)/\(name)"),
             name: name,
             isDirectory: false,
-            isPackage: false,
             isSymbolicLink: false,
             sizeBytes: 0,
             modifiedDate: nil,
@@ -205,6 +204,41 @@ final class LayeredRootFSTests: XCTestCase {
         let items = try LocalRootFSService.listLayerItems(at: root, showHiddenFiles: false)
 
         XCTAssertEqual(items.map(\.isWhiteout), [false])
+    }
+
+    func testGuestEntriesUseNeutralKinds() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let file = root.appendingPathComponent("settings.conf")
+        let executable = root.appendingPathComponent("run")
+        let directory = root.appendingPathComponent("Example.app", isDirectory: true)
+        let symlink = root.appendingPathComponent("settings-link")
+        try "config".write(to: file, atomically: true, encoding: .utf8)
+        try "#!/bin/sh".write(to: executable, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: symlink, withDestinationURL: file)
+
+        let entries = try LocalRootFSService.listDirectory(at: root, showHiddenFiles: true)
+        let byName = Dictionary(uniqueKeysWithValues: entries.map { ($0.name, $0) })
+
+        XCTAssertEqual(byName["settings.conf"]?.kind, "File")
+        XCTAssertEqual(byName["run"]?.kind, "Executable")
+        XCTAssertEqual(byName["Example.app"]?.kind, "Directory")
+        XCTAssertTrue(try XCTUnwrap(byName["Example.app"]?.isExpandable))
+        XCTAssertEqual(byName["settings-link"]?.kind, "Symlink")
+    }
+
+    @MainActor
+    func testDisplayPathDoesNotExposeHostLayerPath() {
+        let etc = LocalFileNode(entry: item("etc", layer: "host/snapshot").entry, parent: nil)
+        let hosts = LocalFileNode(entry: item("hosts", layer: "host/snapshot/etc").entry, parent: etc)
+
+        XCTAssertEqual(hosts.displayPath(rootPath: "/"), "/etc/hosts")
     }
 
     func testListDirectoryReportsExcludedLayers() throws {

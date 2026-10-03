@@ -14,6 +14,7 @@ struct OnboardingMigrationPreview: Equatable {
     let warnings: [String]
     let unsupportedResources: [String]
     let replacementsRequired: Bool
+    let replacements: Arcbox_V1_MigrationReplacementSummary
     let stopsSourceContainers: Bool
 
     init(
@@ -30,6 +31,7 @@ struct OnboardingMigrationPreview: Equatable {
         warnings = response.warnings
         unsupportedResources = response.unsupportedResources
         replacementsRequired = response.replacementsRequired
+        replacements = response.plan.replacements
         stopsSourceContainers = !response.plan.blockers.isEmpty
     }
 
@@ -46,8 +48,18 @@ struct OnboardingMigrationPreview: Equatable {
 
     var confirmationMessages: [String] {
         var messages: [String] = []
-        if replacementsRequired {
-            messages.append("Matching ArcBox resources will be replaced.")
+        if !replacements.containers.isEmpty {
+            messages.append("ArcBox containers will be replaced: \(replacements.containers.joined(separator: ", ")).")
+        }
+        if !replacements.volumes.isEmpty {
+            messages.append(
+                "Existing ArcBox volume data will be replaced: \(replacements.volumes.joined(separator: ", ")).")
+        }
+        if !replacements.networks.isEmpty {
+            messages.append("ArcBox networks will be replaced: \(replacements.networks.joined(separator: ", ")).")
+        }
+        if !replacements.imageTags.isEmpty {
+            messages.append("ArcBox image tags will be replaced: \(replacements.imageTags.joined(separator: ", ")).")
         }
         if stopsSourceContainers {
             messages.append("Source containers using migrated volumes will be stopped.")
@@ -55,6 +67,7 @@ struct OnboardingMigrationPreview: Equatable {
         return messages
     }
 
+    // Formal prepare omits the full plan. Warnings include required source stops and container names.
     func matches(_ response: Arcbox_V1_PrepareMigrationResponse) -> Bool {
         response.sourceKind == source.kind.rawValue
             && URL(fileURLWithPath: response.sourceSocketPath).standardizedFileURL.path
@@ -105,18 +118,30 @@ final class OnboardingMigrationModel {
         }
     }
 
-    private(set) var state: State = .idle {
-        didSet {
-            guard oldValue.isExecuting != state.isExecuting else { return }
-            onMigrationActivityChanged(state.isExecuting)
-        }
-    }
+    private(set) var state: State = .idle
 
     @ObservationIgnored
-    private let clientProvider: @MainActor () -> ArcBoxClient?
+    private let detectSource: @MainActor () async throws -> DockerMigrationSource?
 
     @ObservationIgnored
-    private let onMigrationActivityChanged: @MainActor (Bool) -> Void
+    private let prepareMigration:
+        @MainActor (Arcbox_V1_PrepareMigrationRequest) async throws -> Arcbox_V1_PrepareMigrationResponse
+
+    @ObservationIgnored
+    private let runMigrationStream:
+        @MainActor (
+            Arcbox_V1_RunMigrationRequest,
+            @escaping @MainActor @Sendable (Arcbox_V1_RunMigrationEvent) -> Void
+        ) async throws -> Bool
+
+    @ObservationIgnored
+    private var previewTask: Task<Void, Never>?
+
+    @ObservationIgnored
+    private var migrationTask: Task<Void, Never>?
+
+    @ObservationIgnored
+    private var isTerminating = false
 
     private static var prepareCallOptions: CallOptions {
         var options = CallOptions.defaults
@@ -124,50 +149,81 @@ final class OnboardingMigrationModel {
         return options
     }
 
+    convenience init(clientProvider: @escaping @MainActor () -> ArcBoxClient?) {
+        self.init(
+            detectSource: { try await DockerContextManager.detectMigrationSource() },
+            prepareMigration: { request in
+                guard let client = clientProvider() else {
+                    throw RPCError(code: .failedPrecondition, message: "ArcBox runtime is not ready.")
+                }
+                return try await client.migration.prepareMigration(
+                    request,
+                    options: Self.prepareCallOptions
+                )
+            },
+            runMigrationStream: { request, receive in
+                guard let client = clientProvider() else {
+                    throw RPCError(code: .failedPrecondition, message: "ArcBox runtime is not ready.")
+                }
+                return try await client.migration.runMigration(request) { response in
+                    for try await event in response.messages {
+                        try Task.checkCancellation()
+                        await receive(event)
+                        if event.done { return true }
+                    }
+                    return false
+                }
+            }
+        )
+    }
+
     init(
-        clientProvider: @escaping @MainActor () -> ArcBoxClient?,
-        onMigrationActivityChanged: @escaping @MainActor (Bool) -> Void
+        detectSource: @escaping @MainActor () async throws -> DockerMigrationSource?,
+        prepareMigration:
+            @escaping @MainActor (Arcbox_V1_PrepareMigrationRequest) async throws ->
+            Arcbox_V1_PrepareMigrationResponse,
+        runMigrationStream:
+            @escaping @MainActor (
+                Arcbox_V1_RunMigrationRequest,
+                @escaping @MainActor @Sendable (Arcbox_V1_RunMigrationEvent) -> Void
+            ) async throws -> Bool
     ) {
-        self.clientProvider = clientProvider
-        self.onMigrationActivityChanged = onMigrationActivityChanged
+        self.detectSource = detectSource
+        self.prepareMigration = prepareMigration
+        self.runMigrationStream = runMigrationStream
     }
 
     func loadPreview() async {
-        if case .checking = state { return }
+        guard !isTerminating, migrationTask == nil else { return }
+        if let previewTask {
+            await previewTask.value
+            return
+        }
         state = .checking
+        let task = Task {
+            await fetchPreview()
+            previewTask = nil
+        }
+        previewTask = task
+        await task.value
+    }
 
-        let source: DockerMigrationSource
+    private func fetchPreview() async {
         do {
-            guard let detectedSource = try await DockerContextManager.detectMigrationSource()
-            else {
+            guard let source = try await detectSource() else {
                 state = .unavailable
                 return
             }
-            source = detectedSource
-        } catch is CancellationError {
-            return
-        } catch {
-            state = .failed(nil, message: error.localizedDescription)
-            return
-        }
-        guard !Task.isCancelled else { return }
-        guard let client = clientProvider() else {
-            state = .failed(nil, message: "ArcBox runtime is not ready.")
-            return
-        }
+            try Task.checkCancellation()
 
-        var request = Arcbox_V1_PrepareMigrationRequest()
-        request.sourceKind = source.kind.rawValue
-        request.sourceSocketPath = source.socketPath
-        request.allowReplacements = true
-        request.dryRun = true
+            var request = Arcbox_V1_PrepareMigrationRequest()
+            request.sourceKind = source.kind.rawValue
+            request.sourceSocketPath = source.socketPath
+            request.allowReplacements = true
+            request.dryRun = true
 
-        do {
-            let response = try await client.migration.prepareMigration(
-                request,
-                options: Self.prepareCallOptions
-            )
-            guard !Task.isCancelled else { return }
+            let response = try await prepareMigration(request)
+            try Task.checkCancellation()
             guard response.hasPlan else {
                 state = .failed(
                     nil,
@@ -183,29 +239,41 @@ final class OnboardingMigrationModel {
                 state = .review(preview)
             }
         } catch is CancellationError {
-            return
+            state = .idle
         } catch {
             state = .failed(nil, message: ArcBoxClient.userMessage(for: error))
         }
     }
 
     func startMigration() {
-        guard case .review(let preview) = state else { return }
+        guard
+            !isTerminating,
+            migrationTask == nil,
+            case .review(let preview) = state,
+            preview.canRun
+        else { return }
         state = .preparing(preview)
-        Task { await runMigration(preview) }
+        migrationTask = Task {
+            await runMigration(preview)
+            migrationTask = nil
+        }
     }
 
     func retry() {
         Task { await loadPreview() }
     }
 
-    private func runMigration(_ preview: OnboardingMigrationPreview) async {
-        guard preview.canRun else { return }
-        guard let client = clientProvider() else {
-            state = .failed(preview, message: "ArcBox runtime is not ready.")
-            return
-        }
+    func beginTermination() {
+        isTerminating = true
+        previewTask?.cancel()
+    }
 
+    func waitForCompletion() async {
+        await previewTask?.value
+        await migrationTask?.value
+    }
+
+    private func runMigration(_ preview: OnboardingMigrationPreview) async {
         let prepared: Arcbox_V1_PrepareMigrationResponse
         do {
             var prepareRequest = Arcbox_V1_PrepareMigrationRequest()
@@ -213,11 +281,7 @@ final class OnboardingMigrationModel {
             prepareRequest.sourceSocketPath = preview.source.socketPath
             prepareRequest.allowReplacements = true
 
-            prepared = try await client.migration.prepareMigration(
-                prepareRequest,
-                options: Self.prepareCallOptions
-            )
-            guard !Task.isCancelled else { return }
+            prepared = try await prepareMigration(prepareRequest)
             guard prepared.unsupportedResources.isEmpty else {
                 state = .failed(
                     nil,
@@ -241,8 +305,6 @@ final class OnboardingMigrationModel {
                 )
                 return
             }
-        } catch is CancellationError {
-            return
         } catch {
             state = .failed(preview, message: ArcBoxClient.userMessage(for: error))
             return
@@ -263,26 +325,18 @@ final class OnboardingMigrationModel {
             )
         )
 
-        await observeMigration(client: client, request: runRequest, preview: preview)
+        await observeMigration(request: runRequest, preview: preview)
     }
 
     private func observeMigration(
-        client: ArcBoxClient,
         request: Arcbox_V1_RunMigrationRequest,
         preview: OnboardingMigrationPreview
     ) async {
         var retryDelaySeconds: UInt64 = 1
         while !Task.isCancelled {
             do {
-                let reachedTerminalEvent = try await client.migration.runMigration(
-                    request
-                ) { response in
-                    for try await event in response.messages {
-                        try Task.checkCancellation()
-                        await self.receive(event, preview: preview)
-                        if event.done { return true }
-                    }
-                    return false
+                let reachedTerminalEvent = try await runMigrationStream(request) { event in
+                    self.receive(event, preview: preview)
                 }
                 if reachedTerminalEvent { return }
                 retryDelaySeconds = 1
@@ -300,8 +354,6 @@ final class OnboardingMigrationModel {
                     state = .failed(preview, message: ArcBoxClient.userMessage(for: error))
                     return
                 }
-            } catch is CancellationError {
-                return
             } catch {
                 state = .failed(preview, message: ArcBoxClient.userMessage(for: error))
                 return

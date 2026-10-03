@@ -18,9 +18,6 @@ private struct FileTransferRecord: Identifiable {
 }
 
 /// Files tab: path-based upload/download over the ReadFile/WriteFile RPCs.
-///
-/// sandbox.v1 has no directory-listing RPC, so this is a transfer surface,
-/// not a browser; a tree view needs a future ListDir API.
 struct SandboxFilesTab: View {
     let sandbox: SandboxViewModel
 
@@ -36,10 +33,24 @@ struct SandboxFilesTab: View {
         VStack(spacing: 0) {
             toolbar
             Divider()
+            scopeNotice
+            Divider()
             content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+    }
+
+    private var scopeNotice: some View {
+        Label(
+            "Use absolute paths; each file is limited to 256 MiB. Directory browsing isn’t available, and transfer results aren’t saved.",
+            systemImage: "info.circle"
+        )
+        .font(.system(size: 11))
+        .foregroundStyle(AppColors.textMuted)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     private var toolbar: some View {
@@ -92,12 +103,9 @@ struct SandboxFilesTab: View {
                 Image(systemName: "arrow.up.arrow.down.circle")
                     .font(.system(size: 24))
                     .foregroundStyle(AppColors.textMuted)
-                Text("Transfer files to and from the sandbox by absolute path.")
+                Text("Enter an absolute path to upload or download a file.")
                     .font(.system(size: 13))
                     .foregroundStyle(AppColors.textSecondary)
-                Text("Limited to 256 MiB per file. Directory browsing is not available in sandbox.v1.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(AppColors.textMuted)
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

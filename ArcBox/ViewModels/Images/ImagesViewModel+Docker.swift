@@ -64,16 +64,31 @@ extension ImagesViewModel {
         let isRefresh = loadState.beginLoading()
         do {
             let imageList = try await Perf.measure("image.list") {
-                let response = try await docker.api.ImageList(.init())
-                return try response.ok.body.json
+                let response = try await docker.api.SystemDataUsage(
+                    query: .init(_type: [.image])
+                )
+                return try response.ok.body.json.Images ?? []
             }
-            var viewModels = imageList.flatMap { ImageViewModel.fromDocker($0) }
+            let metadataByID = try await Self.inspectImageMetadata(
+                imageIDs: imageList.map(\.Id)
+            ) { id in
+                try await docker.inspectImageSnapshot(id: id)
+            }
+            var viewModels = imageList.flatMap { image in
+                let metadata = metadataByID[image.Id]
+                return ImageViewModel.fromDocker(
+                    image,
+                    os: metadata?.os ?? "",
+                    architecture: metadata?.architecture ?? ""
+                )
+            }
             applyCachedIcons(to: &viewModels)
             images = viewModels
             Log.image.info("Loaded \(self.images.count, privacy: .public) images")
             await fetchIcons(client: iconClient)
             loadState = .loaded
             refreshError = nil
+            lastSuccessfulListLoad = ContinuousClock().now
         } catch {
             if loadState.cancelLoading(for: error, retainingLoadedContent: isRefresh) {
                 return
@@ -85,6 +100,26 @@ extension ImagesViewModel {
                 retainingLoadedContent: isRefresh
             )
         }
+    }
+
+    static func inspectImageMetadata(
+        imageIDs: [String],
+        inspect: (String) async throws -> ImageInspectSnapshot
+    ) async throws -> [String: ImageInspectSnapshot] {
+        var metadataByID: [String: ImageInspectSnapshot] = [:]
+        for id in imageIDs {
+            do {
+                let metadata = try await inspect(id)
+                try Task.checkCancellation()
+                metadataByID[id] = metadata
+            } catch {
+                if Task.isCancelled || error is CancellationError { throw error }
+                Log.image.debug(
+                    "Image metadata inspection failed for \(id, privacy: .private): \(error.localizedDescription, privacy: .private)"
+                )
+            }
+        }
+        return metadataByID
     }
 
     /// Parse an image reference into (fromImage, tag), handling registry ports and digests.
@@ -118,6 +153,7 @@ extension ImagesViewModel {
             return false
         }
         let parsed = parseImageReference(reference)
+        let startedAt = CFAbsoluteTimeGetCurrent()
 
         do {
             let response = try await docker.api.ImageCreate(
@@ -125,6 +161,13 @@ extension ImagesViewModel {
             )
             _ = try response.ok
             Log.image.info("Pulled image \(reference, privacy: .private)")
+            Analytics.capture(
+                .imagePulled,
+                properties: [
+                    "duration_ms": Int((CFAbsoluteTimeGetCurrent() - startedAt) * 1000),
+                    "has_tag": parsed.tag != nil,
+                    "explicit_platform": platform != nil,
+                ])
             await loadImages(docker: docker)
             return true
         } catch {
@@ -162,13 +205,22 @@ extension ImagesViewModel {
 
     func removeImage(_ id: String, dockerId: String, docker: DockerClient?) async {
         lastError = nil
-        guard let docker else { return }
-        if selectedID == id { selectedID = nil }
+        guard let image = images.first(where: { $0.id == id }) else { return }
+        guard image.canDelete else {
+            lastError = "Image is in use and cannot be deleted."
+            return
+        }
+        guard let docker else {
+            lastError = "Docker client unavailable."
+            return
+        }
 
         do {
             let response = try await docker.api.ImageDelete(path: .init(name: dockerId), query: .init(force: true))
-            _ = try response.ok
-            Log.image.info("Removed image \(dockerId, privacy: .private)")
+            if applyImageDeletion(response, id: id) {
+                Log.image.info("Removed image \(dockerId, privacy: .private)")
+                Analytics.capture(.imageRemoved)
+            }
         } catch {
             Log.image.error(
                 "Error removing image \(dockerId, privacy: .private): \(error.localizedDescription, privacy: .private)")
@@ -176,5 +228,32 @@ extension ImagesViewModel {
             lastError = error.localizedDescription
         }
         await loadImages(docker: docker)
+    }
+
+    @discardableResult
+    func applyImageDeletion(_ response: Operations.ImageDelete.Output, id: String) -> Bool {
+        if let message = response.deleteFailureMessage {
+            lastError = message
+            return false
+        }
+        if selectedID == id { selectedID = nil }
+        return true
+    }
+}
+
+extension Operations.ImageDelete.Output {
+    nonisolated var deleteFailureMessage: String? {
+        switch self {
+        case .ok:
+            nil
+        case .notFound(let response):
+            (try? response.body.json.message) ?? "Image not found."
+        case .conflict(let response):
+            (try? response.body.json.message) ?? "Docker cannot remove an image that is in use."
+        case .internalServerError(let response):
+            (try? response.body.json.message) ?? "Docker failed to remove the image."
+        case .undocumented(let statusCode, _):
+            "Unexpected response status \(statusCode)."
+        }
     }
 }

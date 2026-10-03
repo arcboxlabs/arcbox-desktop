@@ -29,12 +29,15 @@ struct ContentView: View {
     let onAccount: () -> Void
 
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.arcboxClient) private var arcboxClient
+    @Environment(\.dockerClient) private var dockerClient
 
     // Shared ViewModels (owned by ApplicationCoordinator, shared with the menu bar)
     @Environment(ContainersViewModel.self) private var containersVM
     @Environment(VolumesViewModel.self) private var volumesVM
     @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(NetworksViewModel.self) private var networksVM
+    @Environment(RunnersViewModel.self) private var runnersVM
 
     // Feature ViewModels -- local to main window
     @State private var activityVM = ActivityViewModel()
@@ -45,17 +48,33 @@ struct ContentView: View {
 
     @ViewBuilder
     var body: some View {
-        if usesFullWidthDetail {
-            NavigationSplitView {
-                sidebar
-            } detail: {
-                detailPanel
-                    .background(AppColors.sidebar)
-                    .toolbarSeparator()
+        Group {
+            if usesFullWidthDetail {
+                NavigationSplitView {
+                    sidebar
+                } detail: {
+                    detailPanel
+                        .background(AppColors.sidebar)
+                        .toolbarSeparator()
+                }
+            } else {
+                threeColumnLayout
             }
-        } else {
-            threeColumnLayout
         }
+        .task(id: appVM.pendingResourceDeepLink) {
+            await refreshVisibleResourceListIfNeeded()
+        }
+        .onChange(of: resourceDeepLinkAvailability, initial: true) { _, availability in
+            guard
+                let availability,
+                let request = appVM.resolveResourceDeepLink(
+                    availableIDs: availability.ids,
+                    isLoaded: availability.isLoaded
+                )
+            else { return }
+            selectResource(request)
+        }
+        .errorToast(message: Bindable(appVM).deepLinkError)
     }
 
     private var threeColumnLayout: some View {
@@ -90,6 +109,9 @@ struct ContentView: View {
                 Section(section.rawValue.capitalized) {
                     ForEach(section.items) { item in
                         Label(item.label, systemImage: item.sfSymbol)
+                            // A zero badge renders nothing, so only the runner
+                            // row shows its in-flight job count.
+                            .badge(item == .runner ? runnersVM.activeJobCount : 0)
                             .tag(item)
                     }
                 }
@@ -108,6 +130,169 @@ struct ContentView: View {
     /// dividers stacked beside the sidebar.
     private var usesFullWidthDetail: Bool {
         appVM.currentNav == .activity
+    }
+
+    private var resourceDeepLinkAvailability: ResourceDeepLinkAvailability? {
+        guard let request = appVM.pendingResourceDeepLink else { return nil }
+        switch request.section {
+        case .activity, .runner:
+            return nil
+        case .containers:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(containersVM.containers.map(\.id)),
+                isLoaded: containersVM.loadState == .loaded
+                    && wasLoadedAfterRequest(
+                        containersVM.lastSuccessfulListLoad,
+                        request: request
+                    )
+            )
+        case .volumes:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(volumesVM.volumes.map(\.id)),
+                isLoaded: volumesVM.loadState == .loaded
+                    && wasLoadedAfterRequest(
+                        volumesVM.lastSuccessfulListLoad,
+                        request: request
+                    )
+            )
+        case .images:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(imagesVM.images.map(\.id)),
+                isLoaded: imagesVM.loadState == .loaded
+                    && wasLoadedAfterRequest(
+                        imagesVM.lastSuccessfulListLoad,
+                        request: request
+                    )
+            )
+        case .networks:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(networksVM.networks.map(\.id)),
+                isLoaded: networksVM.loadState == .loaded
+                    && wasLoadedAfterRequest(
+                        networksVM.lastSuccessfulListLoad,
+                        request: request
+                    )
+            )
+        case .pods:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(k8sState.podsModel.pods.map(\.id)),
+                isLoaded: k8sState.podsModel.streamPhase == .live
+                    && wasLoadedAfterRequest(
+                        k8sState.podsModel.lastStreamUpdate,
+                        request: request
+                    )
+            )
+        case .services:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(k8sState.servicesModel.services.map(\.id)),
+                isLoaded: k8sState.servicesModel.streamPhase == .live
+                    && wasLoadedAfterRequest(
+                        k8sState.servicesModel.lastStreamUpdate,
+                        request: request
+                    )
+            )
+        case .machines:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(machinesVM.machines.map(\.id)),
+                isLoaded: machinesVM.loadState == .loaded
+                    && wasLoadedAfterRequest(
+                        machinesVM.lastSuccessfulListLoad,
+                        request: request
+                    )
+            )
+        case .sandboxes:
+            return ResourceDeepLinkAvailability(
+                request: request,
+                ids: Set(sandboxesVM.sandboxes.map(\.id)),
+                isLoaded: sandboxesVM.loadState == .loaded
+                    && wasLoadedAfterRequest(
+                        sandboxesVM.lastSuccessfulListLoad,
+                        request: request
+                    )
+            )
+        }
+    }
+
+    private func wasLoadedAfterRequest(
+        _ lastSuccessfulLoad: ContinuousClock.Instant?,
+        request: AppViewModel.ResourceDeepLink
+    ) -> Bool {
+        guard let lastSuccessfulLoad else { return false }
+        return lastSuccessfulLoad >= request.requestedAt
+    }
+
+    private func refreshVisibleResourceListIfNeeded() async {
+        guard let request = appVM.pendingResourceDeepLink else { return }
+
+        switch request.section {
+        case .activity, .runner:
+            break
+        case .containers:
+            await containersVM.loadContainersFromDocker(
+                docker: dockerClient,
+                iconClient: arcboxClient
+            )
+        case .volumes:
+            await volumesVM.loadVolumes(docker: dockerClient)
+        case .images:
+            await imagesVM.loadImages(docker: dockerClient, iconClient: arcboxClient)
+        case .networks:
+            await networksVM.loadNetworks(docker: dockerClient)
+        case .pods, .services:
+            k8sState.retryStreams(client: arcboxClient)
+        case .machines:
+            await machinesVM.loadMachines(client: arcboxClient)
+        case .sandboxes:
+            await sandboxesVM.loadSandboxes(client: arcboxClient)
+        }
+    }
+
+    private func selectResource(_ request: AppViewModel.ResourceDeepLink) {
+        switch request.section {
+        case .activity, .runner:
+            break
+        case .containers:
+            containersVM.searchText = ""
+            if let project = containersVM.containers.first(where: { $0.id == request.id })?
+                .composeProject
+            {
+                containersVM.expandedGroups.insert(project)
+            }
+            Task {
+                await containersVM.selectContainer(
+                    request.id,
+                    client: arcboxClient,
+                    docker: dockerClient
+                )
+            }
+        case .volumes:
+            volumesVM.searchText = ""
+            volumesVM.selectVolume(request.id)
+        case .images:
+            imagesVM.searchText = ""
+            imagesVM.selectImage(request.id)
+        case .networks:
+            networksVM.searchText = ""
+            networksVM.selectNetwork(request.id)
+        case .pods:
+            k8sState.podsModel.searchText = ""
+            k8sState.podsModel.selectedID = request.id
+        case .services:
+            k8sState.servicesModel.searchText = ""
+            k8sState.servicesModel.selectedID = request.id
+        case .machines:
+            machinesVM.searchText = ""
+            machinesVM.selectMachine(request.id)
+        case .sandboxes:
+            sandboxesVM.selectSandbox(request.id)
+        }
     }
 
     // MARK: - Content column
@@ -142,6 +327,8 @@ struct ContentView: View {
         case .machines:
             MachinesView()
                 .environment(machinesVM)
+        case .runner:
+            RunnersView()
         case .sandboxes:
             SandboxesListView()
                 .environment(sandboxesVM)
@@ -183,6 +370,9 @@ struct ContentView: View {
         case .machines:
             MachineDetailView()
                 .environment(machinesVM)
+        case .runner:
+            // Job / host detail arrives with RUN-12 / RUN-13.
+            ContentUnavailableView("No Selection", systemImage: "square.dashed")
         case .sandboxes:
             SandboxDetailView()
                 .environment(sandboxesVM)
@@ -191,4 +381,10 @@ struct ContentView: View {
                 .environment(containersVM)
         }
     }
+}
+
+private struct ResourceDeepLinkAvailability: Equatable {
+    let request: AppViewModel.ResourceDeepLink
+    let ids: Set<String>
+    let isLoaded: Bool
 }

@@ -10,6 +10,19 @@ public enum DaemonState: Sendable, Equatable {
     case error(String)
 
     public var isRunning: Bool { self == .running }
+
+    /// The case name alone. `error`'s message varies per user and per failure, so it is
+    /// left out: this is for diagnostics that must stay groupable.
+    public var label: String {
+        switch self {
+        case .stopped: "stopped"
+        case .starting: "starting"
+        case .stopping: "stopping"
+        case .registered: "registered"
+        case .running: "running"
+        case .error: "error"
+        }
+    }
 }
 
 /// Daemon setup phase, mirroring the proto `SetupStatus.Phase`.

@@ -22,6 +22,7 @@ class MachinesViewModel {
     var isSearching: Bool = false
     var loadState: LoadPhase = .waiting
     var refreshError: String?
+    var lastSuccessfulListLoad: ContinuousClock.Instant?
     let listLoadGate = SingleFlightLoadGate()
     var showCreateSheet: Bool = false
 

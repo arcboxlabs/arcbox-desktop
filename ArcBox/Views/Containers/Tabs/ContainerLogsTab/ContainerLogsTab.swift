@@ -1,50 +1,37 @@
 import DockerClient
 import SwiftUI
 
-/// Logs tab showing real container log output with streaming support
+/// Logs tab showing real container log output with streaming support.
+///
+/// The tab itself reads no streaming state: `ContainerLogsToolbar` and
+/// `ContainerLogsContent` each observe only what they render, so a batch of
+/// lines re-evaluates the content alone (`ContainerLogsModel`).
 struct ContainerLogsTab: View {
     let container: ContainerViewModel
 
-    @Environment(\.dockerClient) var docker
+    @Environment(\.dockerClient) private var docker
 
-    @State var logEntries: [LogEntry] = []
-    @State var searchText = ""
-    @State var streamFilter: LogStreamFilter = .all
-    @State var isFollowing = true
-    @State var isLoading = true
-    @State var errorMessage: String?
-    @State var streamTask: Task<Void, Never>?
+    @State private var model: ContainerLogsModel
 
-    let maxLogEntries = 10_000
-
-    var filteredEntries: [LogEntry] {
-        var entries = logEntries
-        switch streamFilter {
-        case .all: break
-        case .stdout: entries = entries.filter { $0.stream == .stdout }
-        case .stderr: entries = entries.filter { $0.stream == .stderr }
-        }
-        if !searchText.isEmpty {
-            entries = entries.filter {
-                $0.message.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        return entries
+    /// `model` is the seam the relayout regression tests drive log batches through.
+    init(container: ContainerViewModel, model: ContainerLogsModel = ContainerLogsModel()) {
+        self.container = container
+        _model = State(initialValue: model)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            toolbarView
+            ContainerLogsToolbar(model: model)
             Divider()
-            logContentView
+            ContainerLogsContent(model: model)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
         .task(id: container.id) {
-            await startStreaming()
+            await model.startStreaming(containerID: container.id, docker: docker)
         }
         .onDisappear {
-            cancelStreaming()
+            model.cancelStreaming()
         }
     }
 }

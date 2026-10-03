@@ -18,6 +18,7 @@ class ContainersViewModel {
     var containers: [ContainerViewModel] = []
     var loadState: LoadPhase = .waiting
     var refreshError: String?
+    var lastSuccessfulListLoad: ContinuousClock.Instant?
     let listLoadGate = SingleFlightLoadGate()
     var selectedID: String?
     var activeTab: ContainerDetailTab = .info

@@ -113,7 +113,12 @@ struct NewContainerSheet: View {
 
                 // Payload section
                 Section("Payload") {
-                    TextField("Command", text: $command)
+                    VStack(alignment: .leading, spacing: 2) {
+                        TextField("Command", text: $command)
+                        Text(ArgumentList.inputHelp)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     TextField("Entrypoint", text: $entrypoint)
                     TextField("Working directory", text: $workdir)
                 }

@@ -16,6 +16,7 @@ class NetworksViewModel {
     var networks: [NetworkViewModel] = []
     var loadState: LoadPhase = .waiting
     var refreshError: String?
+    var lastSuccessfulListLoad: ContinuousClock.Instant?
     private let listLoadGate = SingleFlightLoadGate()
     var selectedID: String?
     var showNewNetworkSheet: Bool = false
@@ -87,10 +88,20 @@ class NetworksViewModel {
         do {
             let response = try await docker.api.NetworkList(.init())
             let networkList = try response.ok.body.json
-            networks = networkList.compactMap(NetworkViewModel.init(fromDocker:))
+            var networks: [NetworkViewModel] = []
+            for network in networkList {
+                guard let id = network.Id else { continue }
+                let response = try await docker.api.NetworkInspect(path: .init(id: id))
+                guard let inspectedNetwork = try response.networkForList else { continue }
+                if let network = NetworkViewModel(fromDocker: inspectedNetwork) {
+                    networks.append(network)
+                }
+            }
+            self.networks = networks
             Log.network.info("Loaded \(self.networks.count, privacy: .public) networks")
             loadState = .loaded
             refreshError = nil
+            lastSuccessfulListLoad = ContinuousClock().now
         } catch {
             if loadState.cancelLoading(for: error, retainingLoadedContent: isRefresh) {
                 return
@@ -109,12 +120,19 @@ class NetworksViewModel {
         guard let network = networks.first(where: { $0.id == id }), !network.isSystem else {
             return
         }
-        guard let docker else { return }
-        if selectedID == network.id { selectedID = nil }
+        guard network.canDelete else {
+            lastError = "Network is in use and cannot be deleted."
+            return
+        }
+        guard let docker else {
+            lastError = "Docker client unavailable."
+            return
+        }
         do {
             let response = try await docker.api.NetworkDelete(path: .init(id: network.id))
-            _ = try response.noContent
-            Log.network.info("Removed network \(network.id, privacy: .private)")
+            if applyNetworkDeletion(response, id: network.id) {
+                Log.network.info("Removed network \(network.id, privacy: .private)")
+            }
         } catch {
             Log.network.error(
                 "Error removing network \(network.id, privacy: .private): \(error.localizedDescription, privacy: .private)"
@@ -123,6 +141,16 @@ class NetworksViewModel {
             lastError = error.localizedDescription
         }
         await loadNetworks(docker: docker)
+    }
+
+    @discardableResult
+    func applyNetworkDeletion(_ response: Operations.NetworkDelete.Output, id: String) -> Bool {
+        if let message = response.deleteFailureMessage {
+            lastError = message
+            return false
+        }
+        if selectedID == id { selectedID = nil }
+        return true
     }
 
     /// Create a bridge network. Returns true on success; the failure message lands in `lastError`.
@@ -191,6 +219,32 @@ class NetworksViewModel {
 
 }
 
+extension Operations.NetworkDelete.Output {
+    nonisolated var deleteFailureMessage: String? {
+        switch self {
+        case .noContent:
+            nil
+        case .forbidden(let response):
+            switch response.body {
+            case .json(let error): error.message
+            case .plainText: "Docker cannot remove this network."
+            }
+        case .notFound(let response):
+            switch response.body {
+            case .json(let error): error.message
+            case .plainText: "Network not found."
+            }
+        case .internalServerError(let response):
+            switch response.body {
+            case .json(let error): error.message
+            case .plainText: "Docker failed to remove the network."
+            }
+        case .undocumented(let statusCode, _):
+            "Unexpected response status \(statusCode)."
+        }
+    }
+}
+
 // MARK: - Docker API → UI Model Conversion
 
 extension NetworkViewModel {
@@ -210,5 +264,20 @@ extension NetworkViewModel {
             attachable: network.Attachable ?? false,
             containerCount: network.Containers?.additionalProperties.count ?? 0
         )
+    }
+}
+
+extension Operations.NetworkInspect.Output {
+    nonisolated var networkForList: Components.Schemas.Network? {
+        get throws {
+            switch self {
+            case .ok(let response):
+                try response.body.json
+            case .notFound:
+                nil
+            case .internalServerError, .undocumented:
+                try ok.body.json
+            }
+        }
     }
 }

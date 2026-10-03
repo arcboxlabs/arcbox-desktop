@@ -56,6 +56,7 @@ final class NetworkDetailViewControllerTests: XCTestCase {
 
         viewModel.networks = [network(containerCount: 1)]
         try await waitUntil { tableView.numberOfRows == 1 }
+        XCTAssertTrue(hasText("1 container", in: rootView))
         XCTAssertTrue(cellText(in: tableView, column: 1, row: 0).contains("Stopped"))
         XCTAssertEqual(attempts, 3)
 

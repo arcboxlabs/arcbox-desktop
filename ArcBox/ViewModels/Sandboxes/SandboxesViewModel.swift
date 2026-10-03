@@ -24,8 +24,10 @@ enum SandboxSortField: String, CaseIterable {
 /// Parameters for creating a sandbox.
 struct SandboxCreateSpec {
     var labels: [String: String] = [:]
-    /// Docker image reference; sent to the daemon as a `docker:` template.
-    var image = ""
+    /// What boots inside the sandbox, in `CreateSandboxRequest.template` form:
+    /// empty for the built-in minimal template, `docker:<ref>` for a local
+    /// image, or `name[:version]` for a catalog template.
+    var template = ""
     var vcpus: UInt32 = 0
     var memoryMiB: UInt64 = 0
     var cmd: [String] = []
@@ -43,6 +45,7 @@ class SandboxesViewModel {
     var sandboxes: [SandboxViewModel] = []
     var loadState: LoadPhase = .waiting
     var refreshError: String?
+    var lastSuccessfulListLoad: ContinuousClock.Instant?
     let listLoadGate = SingleFlightLoadGate()
     @ObservationIgnored let terminalSession = SandboxTerminalSession()
     var selectedID: String?
@@ -73,8 +76,33 @@ class SandboxesViewModel {
     /// change or a failed reload.
     var snapshotsSandboxID: String?
 
-    /// Ports exposed from this app session, keyed by sandbox ID.
+    /// Authoritative host listeners, keyed by sandbox ID.
     var exposedPorts: [String: [SandboxExposedPort]] = [:]
+
+    /// Loading state for mappings belonging to `exposedPortsSandboxID`.
+    var exposedPortsLoadState: LoadPhase = .waiting
+    var exposedPortsRefreshError: String?
+    var exposedPortsLoadToken: UUID?
+
+    /// The sandbox whose mappings are currently visible in the Ports tab.
+    var exposedPortsSandboxID: String?
+
+    /// The template catalog, one entry per version. Fleet-wide, not per
+    /// sandbox: loaded on demand by the create sheet and the Snapshots tab.
+    var templates: [SandboxTemplateViewModel] = []
+    var templatesLoadState: LoadPhase = .waiting
+    var templatesRefreshError: String?
+
+    /// Catalog entries a Create request can actually address.
+    ///
+    /// A bare name resolves to the newest published version and falls back to
+    /// the draft only when nothing is published, so a draft shadowed by a
+    /// published version has no reference that reaches it. Offering one would
+    /// silently create from the published version instead.
+    var addressableTemplates: [SandboxTemplateViewModel] {
+        let published = Set(templates.lazy.filter { !$0.isDraft }.map(\.name))
+        return templates.filter { !$0.isDraft || !published.contains($0.name) }
+    }
 
     var sandboxCount: Int { sandboxes.count }
 
@@ -107,9 +135,14 @@ class SandboxesViewModel {
         snapshotsLoadToken != nil
     }
 
+    var isLoadingExposedPorts: Bool {
+        exposedPortsLoadToken != nil
+    }
+
     func selectSandbox(_ id: String) {
         if selectedID != id {
             snapshotsLoadToken = nil
+            exposedPortsLoadToken = nil
         }
         selectedID = id
     }
@@ -136,6 +169,12 @@ class SandboxesViewModel {
     func removeSandboxLocally(_ id: String) {
         sandboxes.removeAll { $0.id == id }
         exposedPorts[id] = nil
+        if exposedPortsSandboxID == id {
+            exposedPortsSandboxID = nil
+            exposedPortsLoadToken = nil
+            exposedPortsLoadState = .waiting
+            exposedPortsRefreshError = nil
+        }
         if selectedID == id {
             selectedID = nil
             snapshotsLoadToken = nil

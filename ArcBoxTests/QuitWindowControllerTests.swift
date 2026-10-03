@@ -1,5 +1,4 @@
 import AppKit
-import AuthenticationServices
 import XCTest
 
 @testable import ArcBox
@@ -21,23 +20,5 @@ final class QuitWindowControllerTests: XCTestCase {
         XCTAssertNil(window.standardWindowButton(.closeButton))
         XCTAssertNil(window.standardWindowButton(.miniaturizeButton))
         XCTAssertNil(window.standardWindowButton(.zoomButton))
-    }
-}
-
-@MainActor
-final class WebAuthenticationControllerTests: XCTestCase {
-    func testAuthenticationCannotStartAfterTermination() async throws {
-        let controller = WebAuthenticationController()
-        controller.cancelForTermination()
-
-        do {
-            _ = try await controller.authenticate(
-                using: XCTUnwrap(URL(string: "https://example.com")),
-                callbackURLScheme: "arcbox"
-            )
-            XCTFail("Authentication started during app termination")
-        } catch let error as ASWebAuthenticationSessionError {
-            XCTAssertEqual(error.code, .canceledLogin)
-        }
     }
 }

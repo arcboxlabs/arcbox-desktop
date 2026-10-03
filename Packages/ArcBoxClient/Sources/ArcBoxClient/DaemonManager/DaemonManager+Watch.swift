@@ -1,6 +1,5 @@
 import Foundation
 import OSLog
-@preconcurrency import Sentry
 
 extension DaemonManager {
     // MARK: - gRPC Setup Status Stream
@@ -74,16 +73,12 @@ extension DaemonManager {
                 self?.reconnectCount += 1
                 let graceExceeded = failedAttemptsSinceLastMessage > 6
 
-                // Emit Sentry breadcrumb on stream reconnect for crash debugging.
-                SentrySDK.addBreadcrumb(
-                    {
-                        let b = Breadcrumb(
-                            level: graceExceeded ? .error : .warning,
-                            category: "grpc.stream")
-                        b.message =
-                            "reconnect #\(failedAttemptsSinceLastMessage)"
-                        return b
-                    }())
+                // Leave a breadcrumb on stream reconnect for crash debugging.
+                ClientDiagnostics.add(
+                    DiagnosticBreadcrumb(
+                        level: graceExceeded ? .error : .warning,
+                        category: "grpc.stream",
+                        message: "reconnect #\(failedAttemptsSinceLastMessage)"))
 
                 // A daemon that reported a fatal FAILED phase keeps its .error
                 // state and .failed phase across the stream drop — resetting to
@@ -140,11 +135,13 @@ extension DaemonManager {
         case .UNRECOGNIZED: setupPhase = .unknown
         }
 
-        // Emit a Sentry breadcrumb on phase transitions for crash debugging.
+        // Leave a breadcrumb on phase transitions for crash debugging.
         if setupPhase != oldPhase {
-            let crumb = Breadcrumb(level: .info, category: "daemon.phase")
-            crumb.message = "\(oldPhase) → \(setupPhase)"
-            SentrySDK.addBreadcrumb(crumb)
+            ClientDiagnostics.add(
+                DiagnosticBreadcrumb(
+                    level: .info,
+                    category: "daemon.phase",
+                    message: "\(oldPhase) → \(setupPhase)"))
         }
 
         // A FAILED phase means the daemon gave up. Surface its fatal cause —

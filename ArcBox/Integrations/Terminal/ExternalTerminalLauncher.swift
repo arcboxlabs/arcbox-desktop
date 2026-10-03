@@ -3,6 +3,29 @@ import Darwin
 import Foundation
 import os
 
+nonisolated enum ExternalTerminalLaunchError: LocalizedError {
+    case commandFile(String)
+    case appUnavailable(String)
+    case launchFailed(String, String)
+    case automationDenied(String)
+    case automationFailed(String, String)
+
+    var errorDescription: String? {
+        switch self {
+        case .commandFile(let detail):
+            "ArcBox could not prepare the terminal command: \(detail) Check available disk space and try again."
+        case .appUnavailable(let appName):
+            "\(appName) is not available. Choose another terminal in Settings > General."
+        case .launchFailed(let appName, let detail):
+            "ArcBox could not open \(appName): \(detail) Confirm the app can open .command files, or choose another terminal in Settings > General."
+        case .automationDenied(let appName):
+            "Automation access was denied. Open System Settings > Privacy & Security > Automation and allow ArcBox to control \(appName), then try again."
+        case .automationFailed(let appName, let detail):
+            "ArcBox could not control \(appName): \(detail) Check Automation access in System Settings > Privacy & Security, then try again."
+        }
+    }
+}
+
 /// Launches an external terminal app with Docker environment pre-configured.
 enum ExternalTerminalLauncher {
     private static let logger = Log.terminal
@@ -20,15 +43,33 @@ enum ExternalTerminalLauncher {
     ///   - preference: The user's terminal preference stored by `GeneralSettingsView`.
     ///   - containerID: Optional container ID to exec into.
     ///   - shell: Shell to use (e.g. "/bin/sh"). Only used when containerID is provided.
-    static func open(preference: String, containerID: String? = nil, shell: String = "/bin/sh") {
+    /// - Throws: A user-actionable error when the command cannot be prepared or opened.
+    static func open(
+        preference: String,
+        containerID: String? = nil,
+        shell: String = "/bin/sh"
+    ) async throws {
         let command = makeCommand(containerID: containerID, shell: shell)
         let script = makeCommandScript(command: command)
-        guard let scriptURL = writeCommandScript(script) else { return }
+        let scriptURL = try writeCommandScript(script)
 
-        openCommandScript(
-            scriptURL,
-            terminal: ExternalTerminalDiscovery.resolve(preference: preference)
-        )
+        do {
+            try await openCommandScript(
+                scriptURL,
+                terminal: ExternalTerminalDiscovery.resolve(preference: preference)
+            )
+        } catch {
+            removeCommandScript(at: scriptURL)
+            throw error
+        }
+        // Only past the throwing launch — every failure path above propagates,
+        // so a failed attempt never counts as a terminal open.
+        Analytics.capture(
+            .terminalOpened,
+            properties: [
+                "surface": "external",
+                "target": containerID == nil ? "host" : "container",
+            ])
     }
 
     private static func makeCommand(containerID: String?, shell: String) -> String {
@@ -72,68 +113,94 @@ enum ExternalTerminalLauncher {
         ].joined(separator: "\n")
     }
 
-    private static func writeCommandScript(_ source: String) -> URL? {
+    private static func writeCommandScript(_ source: String) throws -> URL {
         let scriptURL = FileManager.default.temporaryDirectory
             .appending(path: "arcbox-terminal-\(UUID().uuidString).command")
 
         do {
             try source.write(to: scriptURL, atomically: true, encoding: .utf8)
-            chmod(scriptURL.path, S_IRUSR | S_IWUSR | S_IXUSR)
+            guard chmod(scriptURL.path, S_IRUSR | S_IWUSR | S_IXUSR) == 0 else {
+                let message = String(cString: strerror(errno))
+                removeCommandScript(at: scriptURL)
+                throw ExternalTerminalLaunchError.commandFile(message)
+            }
             return scriptURL
+        } catch let error as ExternalTerminalLaunchError {
+            throw error
         } catch {
             logger.error("Failed to write external terminal command: \(error.localizedDescription, privacy: .public)")
-            return nil
+            throw ExternalTerminalLaunchError.commandFile(error.localizedDescription)
+        }
+    }
+
+    private static func removeCommandScript(at scriptURL: URL) {
+        do {
+            try FileManager.default.removeItem(at: scriptURL)
+        } catch {
+            logger.error("Failed to remove external terminal command: \(error.localizedDescription, privacy: .public)")
         }
     }
 
     private static func openCommandScript(
         _ scriptURL: URL,
         terminal: ExternalTerminalApp
-    ) {
+    ) async throws {
         guard let appURL = terminal.appURL else {
-            NSWorkspace.shared.open(scriptURL)
-            return
+            throw ExternalTerminalLaunchError.appUnavailable(terminal.displayName)
         }
 
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
-        NSWorkspace.shared.open([scriptURL], withApplicationAt: appURL, configuration: configuration) { _, error in
-            guard let error else { return }
-            Task { @MainActor in
-                logger.error("Failed to open command script: \(error.localizedDescription, privacy: .public)")
-                if let backend = terminal.appleScriptBackend {
-                    openWithAppleScript(backend: backend, command: fallbackCommand(for: scriptURL))
-                } else {
-                    NSWorkspace.shared.open(scriptURL)
-                }
+        do {
+            _ = try await NSWorkspace.shared.open(
+                [scriptURL],
+                withApplicationAt: appURL,
+                configuration: configuration
+            )
+        } catch {
+            logger.error("Failed to open command script: \(error.localizedDescription, privacy: .public)")
+            guard let backend = terminal.appleScriptBackend else {
+                throw ExternalTerminalLaunchError.launchFailed(
+                    terminal.displayName,
+                    error.localizedDescription
+                )
             }
+            try await openWithAppleScript(
+                backend: backend,
+                appName: terminal.displayName,
+                command: fallbackCommand(for: scriptURL)
+            )
         }
     }
 
-    private static func openWithAppleScript(backend: ExternalTerminalApp.AppleScriptBackend, command: String) {
+    private static func openWithAppleScript(
+        backend: ExternalTerminalApp.AppleScriptBackend,
+        appName: String,
+        command: String
+    ) async throws {
         switch backend {
         case .terminal:
-            openTerminalApp(command: command)
+            try await openTerminalApp(appName: appName, command: command)
         case .iTerm:
-            openITerm(command: command)
+            try await openITerm(appName: appName, command: command)
         }
     }
 
     // MARK: - Terminal.app
 
-    private static func openTerminalApp(command: String) {
+    private static func openTerminalApp(appName: String, command: String) async throws {
         let script = """
             tell application "Terminal"
                 activate
                 do script "\(escapeForAppleScript(command))"
             end tell
             """
-        runAppleScript(script)
+        try await runAppleScript(script, appName: appName)
     }
 
     // MARK: - iTerm
 
-    private static func openITerm(command: String) {
+    private static func openITerm(appName: String, command: String) async throws {
         let script = """
             tell application "iTerm"
                 activate
@@ -143,7 +210,7 @@ enum ExternalTerminalLauncher {
                 end tell
             end tell
             """
-        runAppleScript(script)
+        try await runAppleScript(script, appName: appName)
     }
 
     // MARK: - Helpers
@@ -162,19 +229,25 @@ enum ExternalTerminalLauncher {
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    private static func runAppleScript(_ source: String) {
-        let scriptSource = source
-        Task.detached {
-            guard let script = NSAppleScript(source: scriptSource) else {
-                await MainActor.run { logger.error("Failed to create AppleScript") }
-                return
+    private static func runAppleScript(_ source: String, appName: String) async throws {
+        let failure = await Task.detached { () -> (number: Int, message: String)? in
+            guard let script = NSAppleScript(source: source) else {
+                return (0, "ArcBox could not create the Automation script.")
             }
             var error: NSDictionary?
             script.executeAndReturnError(&error)
-            if let error {
-                let errorMessage = (error[NSAppleScript.errorMessage] as? String) ?? "Unknown AppleScript error"
-                await MainActor.run { logger.error("AppleScript error: \(errorMessage, privacy: .public)") }
-            }
+            guard let error else { return nil }
+            return (
+                (error[NSAppleScript.errorNumber] as? NSNumber)?.intValue ?? 0,
+                (error[NSAppleScript.errorMessage] as? String) ?? "Unknown AppleScript error"
+            )
+        }.value
+        guard let failure else { return }
+
+        logger.error("AppleScript error: \(failure.message, privacy: .public)")
+        if failure.number == -1743 {
+            throw ExternalTerminalLaunchError.automationDenied(appName)
         }
+        throw ExternalTerminalLaunchError.automationFailed(appName, failure.message)
     }
 }

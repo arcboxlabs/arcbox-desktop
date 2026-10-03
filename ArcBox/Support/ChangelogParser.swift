@@ -14,6 +14,7 @@ struct ChangelogRelease: Identifiable, Sendable {
     var id: String { version }
     let version: String
     let date: String
+    let highlights: String?
     let sections: [ChangelogSection]
 }
 
@@ -40,32 +41,52 @@ enum ChangelogParser {
     nonisolated static func parse(_ text: String, limit: Int = 5) -> [ChangelogRelease] {
         let versionPattern = /^## \[(.+?)\](?:\(.+?\))?\s+\((\d{4}-\d{2}-\d{2})\)/
         let sectionPattern = /^### (.+)/
+        let userFacingSectionTitles = Set(["Features", "Bug Fixes", "Performance", "Security"])
 
         var releases: [ChangelogRelease] = []
         var currentVersion: String?
         var currentDate: String?
+        var currentHighlights: String?
         var currentSections: [ChangelogSection] = []
         var currentSectionTitle: String?
-        var currentItems: [String] = []
+        var currentSectionLines: [String] = []
 
         func flushSection() {
-            if let title = currentSectionTitle, !currentItems.isEmpty {
-                currentSections.append(ChangelogSection(title: title, items: currentItems))
+            if let title = currentSectionTitle {
+                if title == "Highlights" {
+                    currentHighlights = cleanHighlights(currentSectionLines)
+                } else if userFacingSectionTitles.contains(title) {
+                    let items = currentSectionLines.compactMap { line -> String? in
+                        let trimmed = line.trimmingCharacters(in: .whitespaces)
+                        guard trimmed.hasPrefix("* ") else { return nil }
+                        let item = cleanItem(String(trimmed.dropFirst(2)))
+                        return item.isEmpty ? nil : item
+                    }
+                    if !items.isEmpty {
+                        currentSections.append(ChangelogSection(title: title, items: items))
+                    }
+                }
             }
             currentSectionTitle = nil
-            currentItems = []
+            currentSectionLines = []
         }
 
         func flushRelease() {
             flushSection()
-            if let version = currentVersion, let date = currentDate {
+            if let version = currentVersion, let date = currentDate,
+                currentHighlights != nil || !currentSections.isEmpty
+            {
                 releases.append(
                     ChangelogRelease(
-                        version: version, date: date, sections: currentSections
+                        version: version,
+                        date: date,
+                        highlights: currentHighlights,
+                        sections: currentSections
                     ))
             }
             currentVersion = nil
             currentDate = nil
+            currentHighlights = nil
             currentSections = []
         }
 
@@ -80,8 +101,8 @@ enum ChangelogParser {
             } else if let match = trimmed.firstMatch(of: sectionPattern) {
                 flushSection()
                 currentSectionTitle = String(match.1)
-            } else if trimmed.hasPrefix("* ") {
-                currentItems.append(cleanItem(String(trimmed.dropFirst(2))))
+            } else if currentSectionTitle != nil {
+                currentSectionLines.append(line)
             }
         }
 
@@ -95,10 +116,10 @@ enum ChangelogParser {
 
     // MARK: - Private
 
-    /// Strip markdown link syntax from a changelog item for display.
+    /// Strip developer-facing markdown plumbing from a legacy changelog item.
     /// - Removes commit hash links: ([abc1234](url))
-    /// - Converts issue links: ([#123](url)) → #123
-    /// - Removes bold scope markers: **scope:** → scope:
+    /// - Removes issue/PR links: ([#123](url))
+    /// - Removes conventional-commit scopes: **scope:**
     nonisolated private static func cleanItem(_ text: String) -> String {
         var result = text
         // Remove commit hash links: ([a771d71](https://...))
@@ -107,18 +128,59 @@ enum ChangelogParser {
             with: "",
             options: .regularExpression
         )
-        // Convert issue links to plain text: ([#202](url)) → #202
+        // Remove issue/PR links: ([#202](url))
         result = result.replacingOccurrences(
-            of: #"\(\[(#\d+)\]\([^)]+\)\)"#,
-            with: "$1",
+            of: #"\s*\(\[#\d+\]\([^)]+\)\)"#,
+            with: "",
             options: .regularExpression
         )
-        // Remove bold scope prefix: **settings:** → settings:
+        // Remove a conventional-commit scope prefix: **settings:**
         result = result.replacingOccurrences(
-            of: #"\*\*(.+?):\*\*"#,
-            with: "$1:",
+            of: #"^\*\*[^*]+:\*\*\s*"#,
+            with: "",
             options: .regularExpression
         )
         return result.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Convert soft-wrapped Markdown under `### Highlights` into display prose.
+    nonisolated private static func cleanHighlights(_ lines: [String]) -> String? {
+        var paragraphs: [String] = []
+        var currentLines: [String] = []
+
+        func flushParagraph() {
+            if !currentLines.isEmpty {
+                paragraphs.append(currentLines.joined(separator: " "))
+                currentLines = []
+            }
+        }
+
+        for rawLine in lines {
+            var line = rawLine.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix(">") {
+                line = String(line.dropFirst()).trimmingCharacters(in: .whitespaces)
+            }
+            if line == "[!IMPORTANT]" {
+                continue
+            }
+            guard !line.isEmpty else {
+                flushParagraph()
+                continue
+            }
+
+            var cleaned = line.replacingOccurrences(
+                of: #"\[([^]]+)\]\([^)]+\)"#,
+                with: "$1",
+                options: .regularExpression
+            )
+            for marker in ["**", "__", "`"] {
+                cleaned = cleaned.replacingOccurrences(of: marker, with: "")
+            }
+            currentLines.append(cleaned)
+        }
+        flushParagraph()
+
+        let highlights = paragraphs.joined(separator: "\n\n")
+        return highlights.isEmpty ? nil : highlights
     }
 }

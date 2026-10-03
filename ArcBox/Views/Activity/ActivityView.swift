@@ -26,7 +26,7 @@ struct ActivityView: View {
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
             } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView("Starting ArcBox runtime…")
+                ProgressView(daemonManager.setupMessage)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if arcboxClient == nil {
                 ContentUnavailableView {

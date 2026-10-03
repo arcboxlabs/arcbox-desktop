@@ -53,7 +53,7 @@ extension DaemonManager {
             } catch {
                 ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
                 errorMessage = error.localizedDescription
-                state = .error("Failed to register daemon: \(error.localizedDescription)")
+                state = .error(Self.registrationFailure(error))
             }
         #else
             // In production, skip the destructive unregister+register cycle if the
@@ -67,39 +67,83 @@ extension DaemonManager {
                 return
             }
 
+            // Already registered, but the user switched ArcBox off in Login Items. Only
+            // they can undo that: re-registering does not grant consent, it discards a
+            // good registration and then fails with EPERM — which is how this arrived as
+            // "Failed to register daemon: Operation not permitted" with no mention of the
+            // setting that actually caused it.
+            if status == .requiresApproval {
+                ClientLog.daemon.warning("Daemon is registered but switched off in Login Items")
+                errorMessage = Self.loginItemsApprovalMessage
+                state = .error(Self.loginItemsApprovalMessage)
+                return
+            }
+
             do {
-                // Force re-register to ensure BundleProgram resolves against the current
-                // app bundle path.
-                try? await daemonService.unregister()
+                // Nothing to unregister here: the only statuses left are `notRegistered`
+                // and `notFound`. Apple asks for unregister-before-register when the
+                // executable changed, which is the `.enabled` case handled above.
                 try daemonService.register()
                 ClientLog.daemon.info("Service registered successfully")
                 state = .registered
             } catch {
                 ClientLog.daemon.error("Failed to register: \(error.localizedDescription, privacy: .private)")
                 errorMessage = error.localizedDescription
-                state = .error("Failed to register daemon: \(error.localizedDescription)")
+                state = .error(Self.registrationFailure(error))
             }
         #endif
     }
 
+    /// `SMAppService.register()`'s message alone is as thin as "Operation not permitted",
+    /// which fits a quarantined bundle and a label launchd already owns alike. The domain
+    /// and code tell them apart, and keep them apart in the crash reporter; the one cause
+    /// we can identify outright is named in full, because the user has to undo it by hand.
+    public static func registrationFailure(_ error: any Error) -> String {
+        let error = error as NSError
+        let detail = "\(error.localizedDescription) [\(error.domain) \(error.code)]"
+        guard let conflict = Self.conflictingLaunchAgent else {
+            return "Failed to register daemon: \(detail)"
+        }
+        return """
+            Failed to register daemon: \(detail). launchd already runs \(Self.daemonLabel) from \
+            \(conflict.path), which `abctl _install` installs; the copy inside ArcBox cannot \
+            register while that one is loaded. Run `abctl _uninstall`, or remove that file and \
+            log out and back in, then retry.
+            """
+    }
+
+    /// A plist for our own label sitting where launchd loads it from. Apple's guidance on
+    /// this failure is that registering a service whose plist "is already loaded by
+    /// launchd (for example, it is installed in /Library/Launch{Agents,Daemons})" is what
+    /// the error means, and `abctl _install` without `--no-daemon` installs exactly that.
+    static var conflictingLaunchAgent: URL? {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/LaunchAgents", isDirectory: true)
+            .appendingPathComponent(Self.daemonPlistName)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
     /// Force re-register the daemon with launchd, regardless of current status.
     ///
-    /// This is a **recovery-only** path for when the daemon is registered but
-    /// unreachable — typically after Xcode "Replace" (SIGKILL) prevents the
-    /// normal `disableDaemon()` cleanup from running, leaving a stale
-    /// registration with no live daemon process behind it.
+    /// This is a **recovery-only** path for when the daemon reported terminal
+    /// setup failure or is registered but unreachable — typically after Xcode
+    /// "Replace" (SIGKILL) prevents the normal `disableDaemon()` cleanup from
+    /// running, leaving a stale registration with no live daemon process behind it.
     ///
     /// ⚠️ REGRESSION GUARD — DO NOT call from `enableDaemon()` or any path
     /// reachable by SwiftUI `.task` re-entrancy.  The `enableDaemon()` "skip
     /// if .enabled" guard exists to prevent a **known bug** where redundant
     /// calls each unregister+register the daemon, killing it before it
-    /// finishes initializing.  This method must only be invoked **after** a
-    /// full poll timeout has confirmed the daemon is truly unreachable, not
-    /// merely slow to start.
+    /// finishes initializing. This method must only be invoked after a terminal
+    /// `FAILED` status or a full poll timeout confirms the daemon is unreachable,
+    /// not merely slow to start.
     public func forceReregisterDaemon() async {
         ClientLog.daemon.warning("Force re-registering daemon (recovery path)")
+        stopWatching()
         errorMessage = nil
         state = .starting
+        setupPhase = .unknown
+        setupMessage = ""
 
         do {
             try? await daemonService.unregister()
@@ -113,16 +157,40 @@ extension DaemonManager {
         }
     }
 
-    /// Unregister the daemon from launchd.
+    /// Unregister the daemon from launchd and wait for the process to exit.
+    ///
+    /// launchd sends SIGTERM on unregister and SIGKILL after the plist's `ExitTimeOut`.
+    /// The daemon spends that window draining its API servers and stopping the VM, and
+    /// a kill inside it leaves the guest's disks dirty. `SMAppService.unregister()` does
+    /// not promise to return only once the process is gone, so completion is read from
+    /// the daemon's own liveness signal, the flock on `daemon.lock`.
     public func disableDaemon() async {
         stopWatching()
         errorMessage = nil
         state = .stopping
+        let wasEnabled = daemonService.status == .enabled
 
         do {
             try await daemonService.unregister()
         } catch {
             errorMessage = error.localizedDescription
+            state = .stopped
+            return
+        }
+
+        // Only a registration this app owned is being stopped by launchd now. A daemon
+        // started some other way (`abctl daemon start`, a CLI-installed agent) keeps its
+        // lock and is not ours to wait for.
+        if wasEnabled {
+            let lockFile = Self.daemonLockFile
+            let exited = await DaemonLock.waitUntilReleased(at: lockFile, timeout: Self.shutdownTimeout)
+            if !exited {
+                ClientLog.daemon.warning(
+                    """
+                    Daemon still holds \(lockFile.path, privacy: .public) after \
+                    \(Self.shutdownTimeout, privacy: .public); launchd should have killed it by now
+                    """)
+            }
         }
 
         state = .stopped

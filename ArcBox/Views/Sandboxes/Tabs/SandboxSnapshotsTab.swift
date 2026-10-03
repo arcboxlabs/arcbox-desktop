@@ -12,6 +12,8 @@ struct SandboxSnapshotsTab: View {
     @State private var freshNetwork = false
     @State private var isWorking = false
     @State private var snapshotToDelete: SandboxSnapshotViewModel?
+    @State private var snapshotToPromote: SandboxSnapshotViewModel?
+    @State private var templateName = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,6 +51,32 @@ struct SandboxSnapshotsTab: View {
             }
         } message: {
             Text("This snapshot and its on-disk data will be permanently removed.")
+        }
+        .alert(
+            "Promote to Template",
+            isPresented: Binding(
+                get: { snapshotToPromote != nil },
+                set: { if !$0 { snapshotToPromote = nil } }
+            ),
+            presenting: snapshotToPromote
+        ) { snapshot in
+            TextField("Template name", text: $templateName)
+            Button("Promote") {
+                promote(snapshot)
+                snapshotToPromote = nil
+            }
+            .disabled(templateName.trimmingCharacters(in: .whitespaces).isEmpty)
+            Button("Cancel", role: .cancel) {
+                snapshotToPromote = nil
+            }
+        } message: { _ in
+            Text(
+                """
+                Registers this snapshot as a catalog template. No build runs — the snapshot \
+                becomes the template's warm image, so sandboxes created from it restore \
+                instead of booting. It stays an unpublished draft until you publish a version.
+                """
+            )
         }
     }
 
@@ -182,6 +210,17 @@ struct SandboxSnapshotsTab: View {
             .help("Create a new sandbox from this snapshot")
 
             Button {
+                templateName = snapshot.displayName
+                snapshotToPromote = snapshot
+            } label: {
+                Image(systemName: "shippingbox")
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(isWorking || vm.isLoadingSnapshots || client == nil)
+            .help("Promote to a reusable catalog template")
+
+            Button {
                 snapshotToDelete = snapshot
             } label: {
                 Image(systemName: "trash")
@@ -211,6 +250,19 @@ struct SandboxSnapshotsTab: View {
         isWorking = true
         Task {
             _ = await vm.restoreSnapshot(snapshot.id, freshNetwork: freshNetwork, client: client)
+            isWorking = false
+        }
+    }
+
+    private func promote(_ snapshot: SandboxSnapshotViewModel) {
+        let name = templateName.trimmingCharacters(in: .whitespaces)
+        isWorking = true
+        Task {
+            await vm.promoteSnapshotToTemplate(
+                snapshotID: snapshot.id,
+                name: name,
+                client: client
+            )
             isWorking = false
         }
     }

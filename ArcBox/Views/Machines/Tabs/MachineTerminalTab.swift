@@ -8,6 +8,7 @@ struct MachineTerminalTab: View {
 
     @Environment(\.arcboxClient) private var client
 
+    @AppStorage("terminalTheme") private var terminalTheme = "system"
     @State private var session = MachineTerminalSession()
     @State private var selectedShell = "/bin/sh"
     @State private var terminalToken = UUID()
@@ -98,23 +99,25 @@ struct MachineTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalSessionBridge(session: session)) { terminalView in
-            TerminalAppearance.configure(terminalView)
-
-            guard !hasConnected, let client else { return }
-            let machineID = machine.id
-            let shell = selectedShell
-            // Defer state modifications out of the view update cycle.
-            Task { @MainActor in
-                hasConnected = true
-                session.connect(
-                    machineID: machineID,
-                    command: [shell, "-l"],
-                    client: client,
-                    terminalView: terminalView
-                )
-            }
-        }
+        SwiftTermView(
+            delegate: TerminalSessionBridge(session: session),
+            onTerminalCreated: { terminalView in
+                guard !hasConnected, let client else { return }
+                let machineID = machine.id
+                let shell = selectedShell
+                // Defer state modifications out of the view update cycle.
+                Task { @MainActor in
+                    hasConnected = true
+                    session.connect(
+                        machineID: machineID,
+                        command: [shell, "-l"],
+                        client: client,
+                        terminalView: terminalView
+                    )
+                }
+            },
+            theme: terminalTheme
+        )
     }
 
     private var notRunningView: some View {

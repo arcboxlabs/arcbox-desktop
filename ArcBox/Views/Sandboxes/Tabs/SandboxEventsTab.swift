@@ -16,15 +16,20 @@ struct SandboxEventsTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            scopeNotice
+            Divider()
             if events.isEmpty {
                 VStack(spacing: 10) {
                     Spacer()
                     Image(systemName: "bolt")
                         .font(.system(size: 24))
                         .foregroundStyle(AppColors.textMuted)
-                    Text("No events received for this sandbox yet.")
+                    Text("No events retained for this sandbox.")
                         .font(.system(size: 13))
                         .foregroundStyle(AppColors.textSecondary)
+                    Text("Events sent before ArcBox connected or while it was disconnected aren’t available.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppColors.textMuted)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -41,6 +46,18 @@ struct SandboxEventsTab: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
+    }
+
+    private var scopeNotice: some View {
+        Label(
+            "Events received while ArcBox is connected. The latest \(SandboxEventMonitor.maxRecentEvents) across all sandboxes are kept until quit.",
+            systemImage: "info.circle"
+        )
+        .font(.system(size: 11))
+        .foregroundStyle(AppColors.textMuted)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     private func eventRow(_ event: SandboxEventRecord) -> some View {

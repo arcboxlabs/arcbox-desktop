@@ -17,7 +17,7 @@ struct SandboxesListView: View {
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
             } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView("Starting ArcBox runtime…")
+                ProgressView(daemonManager.setupMessage)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if client == nil {
                 DaemonLoadingView(state: .registered)

@@ -26,6 +26,7 @@ extension VolumesViewModel {
             Log.volume.info("Loaded \(self.volumes.count, privacy: .public) volumes")
             loadState = .loaded
             refreshError = nil
+            lastSuccessfulListLoad = ContinuousClock().now
         } catch {
             if loadState.cancelLoading(for: error, retainingLoadedContent: isRefresh) {
                 return
@@ -177,12 +178,15 @@ extension VolumesViewModel {
 
     func removeVolume(_ name: String, docker: DockerClient?) async {
         lastError = nil
-        guard let docker else { return }
-        if selectedID == name { selectedID = nil }
+        guard let docker else {
+            lastError = "Docker client unavailable."
+            return
+        }
         do {
             let response = try await docker.api.VolumeDelete(path: .init(name: name), query: .init(force: true))
-            _ = try response.noContent
-            Log.volume.info("Removed volume \(name, privacy: .private)")
+            if applyVolumeDeletion(response, name: name) {
+                Log.volume.info("Removed volume \(name, privacy: .private)")
+            }
         } catch {
             Log.volume.error(
                 "Error removing volume \(name, privacy: .private): \(error.localizedDescription, privacy: .private)")
@@ -190,5 +194,41 @@ extension VolumesViewModel {
             lastError = error.localizedDescription
         }
         await loadVolumes(docker: docker)
+    }
+
+    @discardableResult
+    func applyVolumeDeletion(_ response: Operations.VolumeDelete.Output, name: String) -> Bool {
+        if let message = response.deleteFailureMessage {
+            lastError = message
+            return false
+        }
+        if selectedID == name { selectedID = nil }
+        return true
+    }
+}
+
+extension Operations.VolumeDelete.Output {
+    nonisolated var deleteFailureMessage: String? {
+        switch self {
+        case .noContent:
+            nil
+        case .notFound(let response):
+            switch response.body {
+            case .json(let error): error.message
+            case .plainText: "Volume not found."
+            }
+        case .conflict(let response):
+            switch response.body {
+            case .json(let error): error.message
+            case .plainText: "Docker cannot remove a volume that is in use."
+            }
+        case .internalServerError(let response):
+            switch response.body {
+            case .json(let error): error.message
+            case .plainText: "Docker failed to remove the volume."
+            }
+        case .undocumented(let statusCode, _):
+            "Unexpected response status \(statusCode)."
+        }
     }
 }

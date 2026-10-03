@@ -1,3 +1,4 @@
+import DockerClient
 import XCTest
 
 @testable import ArcBox
@@ -122,6 +123,86 @@ final class ImagesViewModelTests: XCTestCase {
         XCTAssertEqual(vm.sortedImages.map(\.repository), ["small", "big"])
     }
 
+    func testMissingZeroPartialAndValidMetadataDoesNotRenderPlaceholders() {
+        let unknown = makeImage(
+            id: "unknown",
+            repository: "unknown",
+            tag: "latest",
+            createdAt: nil,
+            os: "",
+            architecture: ""
+        )
+        XCTAssertEqual(unknown.createdAgo, "Unknown")
+        XCTAssertNil(unknown.platformDisplay)
+        XCTAssertEqual(
+            makeImage(
+                id: "zero",
+                repository: "zero",
+                tag: "latest",
+                createdAt: Date(timeIntervalSince1970: 0)
+            ).createdAgo,
+            "Unknown"
+        )
+
+        XCTAssertEqual(
+            makeImage(
+                id: "os",
+                repository: "os",
+                tag: "latest",
+                os: "linux",
+                architecture: ""
+            ).platformDisplay,
+            "linux"
+        )
+        XCTAssertEqual(
+            makeImage(
+                id: "architecture",
+                repository: "architecture",
+                tag: "latest",
+                os: "",
+                architecture: "arm64"
+            ).platformDisplay,
+            "arm64"
+        )
+        XCTAssertEqual(
+            makeImage(
+                id: "valid",
+                repository: "valid",
+                tag: "latest",
+                os: "linux",
+                architecture: "arm64"
+            ).platformDisplay,
+            "linux/arm64"
+        )
+    }
+
+    func testImageMetadataInspectionKeepsSuccessfulResultsWhenOneInspectFails() async throws {
+        struct InspectFailure: Error {}
+
+        let metadata = try await ImagesViewModel.inspectImageMetadata(
+            imageIDs: ["missing", "present"]
+        ) { id in
+            if id == "missing" { throw InspectFailure() }
+            return ImageInspectSnapshot(labels: [:], os: "linux", architecture: "arm64")
+        }
+
+        XCTAssertNil(metadata["missing"])
+        XCTAssertEqual(metadata["present"]?.os, "linux")
+        XCTAssertEqual(metadata["present"]?.architecture, "arm64")
+    }
+
+    func testImageMetadataInspectionPropagatesCancellation() async {
+        do {
+            _ = try await ImagesViewModel.inspectImageMetadata(imageIDs: ["image"]) { _ in
+                throw CancellationError()
+            }
+            XCTFail("Expected cancellation")
+        } catch is CancellationError {
+        } catch {
+            XCTFail("Expected CancellationError, got \(error)")
+        }
+    }
+
     // MARK: - Search Filtering
 
     func testSearchFiltersByRepository() {
@@ -158,7 +239,10 @@ final class ImagesViewModelTests: XCTestCase {
         id: String,
         repository: String,
         tag: String,
-        sizeBytes: UInt64 = 0
+        sizeBytes: UInt64 = 0,
+        createdAt: Date? = Date(),
+        os: String = "linux",
+        architecture: String = "arm64"
     ) -> ImageViewModel {
         ImageViewModel(
             id: id,
@@ -166,10 +250,10 @@ final class ImagesViewModelTests: XCTestCase {
             repository: repository,
             tag: tag,
             sizeBytes: sizeBytes,
-            createdAt: Date(),
+            createdAt: createdAt,
             inUse: false,
-            os: "linux",
-            architecture: "arm64"
+            os: os,
+            architecture: architecture
         )
     }
 }

@@ -11,6 +11,7 @@ struct SystemSettingsView: View {
     @AppStorage("pauseContainersWhileSleeping") private var pauseContainersWhileSleeping = true
 
     @Environment(\.arcboxClient) private var arcboxClient
+    @Environment(AppViewModel.self) private var appVM
     @Environment(DaemonManager.self) private var daemonManager
     @Environment(SystemVmBackendModel.self) private var backendModel
 
@@ -19,6 +20,7 @@ struct SystemSettingsView: View {
     @State private var selectedBackend: SystemVmBackend = .vz
     @State private var pendingBackend: SystemVmBackend?
     @State private var showBackendConfirm = false
+    @State private var isUpdatingDockerContext = false
 
     // private let memoryRange: ClosedRange<Double> = 1...14
 
@@ -85,14 +87,31 @@ struct SystemSettingsView: View {
                 //     }
                 // }
 
-                Toggle("Switch Docker context automatically", isOn: $switchContextAutomatically)
-                    .onChange(of: switchContextAutomatically) { _, newValue in
-                        if newValue {
-                            DockerContextManager.switchToArcBox()
-                        } else {
-                            DockerContextManager.restorePreviousContext()
+                Toggle(
+                    "Switch Docker context automatically",
+                    isOn: Binding(
+                        get: { switchContextAutomatically },
+                        set: { updateDockerContext(enabled: $0) }
+                    )
+                )
+                .disabled(isUpdatingDockerContext)
+
+                if isUpdatingDockerContext {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+
+                if let dockerContextError = appVM.dockerContextError {
+                    Label(dockerContextError, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    if let retry = appVM.dockerContextRetry {
+                        Button("Try Again") {
+                            updateDockerContext(retry: retry)
                         }
+                        .font(.caption)
                     }
+                }
             }
 
             Section {
@@ -207,6 +226,37 @@ struct SystemSettingsView: View {
     }
 
     // MARK: - System VM Backend
+
+    private func updateDockerContext(enabled: Bool) {
+        updateDockerContext(retry: .preference(enabled: enabled))
+    }
+
+    private func updateDockerContext(retry: AppViewModel.DockerContextRetry) {
+        appVM.dockerContextError = nil
+        appVM.dockerContextRetry = nil
+        isUpdatingDockerContext = true
+        DockerContextManager.update(useArcBox: retry.useArcBox) { result in
+            switch result {
+            case .success:
+                if case let .preference(enabled) = retry {
+                    switchContextAutomatically = enabled
+                }
+                appVM.dockerContextError = nil
+                appVM.dockerContextRetry = nil
+            case let .failure(error):
+                let failure =
+                    switch retry {
+                    case .lifecycle: "The Docker context was not updated: "
+                    case .preference: "The Docker context setting was not changed: "
+                    }
+                appVM.dockerContextError =
+                    failure + "\(error.localizedDescription) "
+                    + "Check that the Docker CLI is installed and ~/.docker/config.json is writable, then try again."
+                appVM.dockerContextRetry = retry
+            }
+            isUpdatingDockerContext = false
+        }
+    }
 
     private static let backendCaption =
         "Intel (amd64) code runs via Rosetta on Virtualization.framework, or via FEX on Hypervisor.framework. Switching restarts the System VM."

@@ -21,7 +21,9 @@ struct ImageDetailView: View {
                                     InfoRow(label: "Tag", value: "\(image.repository):\(image.tag)")
                                     InfoRow(label: "Created", value: image.createdAgo)
                                     InfoRow(label: "Size", value: image.sizeDisplay)
-                                    InfoRow(label: "Platform", value: "\(image.os)/\(image.architecture)")
+                                    if let platform = image.platformDisplay {
+                                        InfoRow(label: "Platform", value: platform)
+                                    }
                                 }
                                 .infoSectionStyle()
                             }

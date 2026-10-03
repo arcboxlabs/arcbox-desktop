@@ -93,9 +93,6 @@ extension ArcBoxClient: KubernetesControlClient {
 @MainActor
 @Observable
 final class KubernetesState {
-    private static let minBackoff = Duration.seconds(2)
-    private static let maxBackoff = Duration.seconds(15)
-
     private(set) var lifecycle: KubernetesLifecycle
 
     let podsModel = PodsViewModel()
@@ -146,6 +143,7 @@ final class KubernetesState {
             } else {
                 endSession()
                 lifecycle = .disabled
+                Analytics.register(["k8s_active": false])
             }
         } catch is CancellationError {
             guard statusGeneration == self.statusGeneration else { return }
@@ -175,6 +173,7 @@ final class KubernetesState {
         let previousLifecycle = lifecycle
         statusGeneration &+= 1
         lifecycle = .starting
+        let startedAt = CFAbsoluteTimeGetCurrent()
 
         do {
             try await client.startKubernetes()
@@ -185,6 +184,10 @@ final class KubernetesState {
                 }
                 if try await client.kubernetesStatus().isReady {
                     setReady(client: client)
+                    Analytics.capture(
+                        .k8sEnabled,
+                        properties: ["duration_ms": Int((CFAbsoluteTimeGetCurrent() - startedAt) * 1000)]
+                    )
                     return
                 }
             }
@@ -224,6 +227,8 @@ final class KubernetesState {
             try await client.stopKubernetes()
             endSession()
             lifecycle = .disabled
+            Analytics.register(["k8s_active": false])
+            Analytics.capture(.k8sDisabled)
         } catch is CancellationError {
             lifecycle = previousLifecycle
         } catch {
@@ -245,6 +250,7 @@ final class KubernetesState {
     private func setReady(client: any KubernetesControlClient) {
         let clientID = ObjectIdentifier(client)
         lifecycle = .ready
+        Analytics.register(["k8s_active": true])
         guard sessionClientID != clientID else { return }
         startSession(client: client)
     }
@@ -304,55 +310,54 @@ final class KubernetesState {
         stream: @escaping @Sendable (K8sClient) -> AsyncThrowingStream<[Model.Resource], any Error>
     ) async {
         guard let model else { return }
-        var failures = 0
+        var retry = WatchRetry()
 
         while !Task.isCancelled, generation == self.generation {
-            var delivered = false
-            var lastError: String?
+            var failure: (any Error)?
             var used: K8sClient?
+            var streamStartedAt: ContinuousClock.Instant?
 
             do {
                 let k8s = try await resolveClient(client, generation: generation)
                 guard generation == self.generation else { return }
                 used = k8s
+                streamStartedAt = .now
 
                 for try await items in stream(k8s) {
                     guard generation == self.generation else { return }
                     model.apply(items)
                     model.streamPhase = .live
-                    delivered = true
                 }
             } catch is CancellationError {
                 return
             } catch {
-                guard generation == self.generation else { return }
-                lastError = ArcBoxClient.userMessage(for: error)
+                failure = error
+            }
+
+            guard !Task.isCancelled, generation == self.generation else { return }
+            let attempt = retry.recordFailure(
+                failure, streamLifetime: streamStartedAt.map { ContinuousClock.now - $0 })
+            if let failure {
                 Log.pods.error(
-                    "Kubernetes \(operation, privacy: .public) failed: \(error.localizedDescription, privacy: .private)"
+                    "Kubernetes \(operation, privacy: .public) failed: \(failure.localizedDescription, privacy: .private)"
                 )
-                ErrorReporting.capture(error, domain: .kubernetes, operation: operation)
+                if attempt.isNewCause {
+                    ErrorReporting.capture(failure, domain: .kubernetes, operation: operation)
+                }
                 if let used {
                     invalidateClient(ifCurrent: used)
                 }
             }
-
-            guard !Task.isCancelled, generation == self.generation else { return }
-            failures = delivered ? 1 : failures + 1
             model.streamPhase = .reconnecting(
-                attempt: failures,
-                lastError: lastError
+                attempt: retry.failures,
+                lastError: failure.map { ArcBoxClient.userMessage(for: $0) }
             )
             do {
-                try await Task.sleep(for: Self.backoff(afterFailures: failures))
+                try await Task.sleep(for: attempt.delay)
             } catch {
                 return
             }
         }
-    }
-
-    private static func backoff(afterFailures failures: Int) -> Duration {
-        let doubled = minBackoff * Double(1 << min(failures - 1, 3))
-        return min(doubled, maxBackoff)
     }
 
     private func invalidateClient(ifCurrent client: K8sClient) {
@@ -374,7 +379,7 @@ final class KubernetesState {
 
         let task = Task<K8sClient, Error> {
             let kubeconfig = try await client.kubernetesKubeconfig()
-            return try K8sClient(config: try KubeConfig(yaml: kubeconfig))
+            return try K8sClient(config: try await KubeConfig.load(yaml: kubeconfig))
         }
         clientResolution = (generation, task)
 

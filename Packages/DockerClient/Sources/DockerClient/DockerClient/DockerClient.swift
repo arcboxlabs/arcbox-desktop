@@ -31,8 +31,13 @@ public struct DockerClient: Sendable {
     /// The generated OpenAPI client — use this to call Docker API operations.
     public let api: Client
 
-    /// The underlying AsyncHTTPClient instance (for lifecycle management).
+    /// Carries every request that answers and ends.
     let httpClient: HTTPClient
+    /// Carries the follows — `/events` and `logs?follow=true` — which hold their connection
+    /// for as long as the view that opened them. Sharing one pool with the requests meant
+    /// every open stream permanently cost the request path a connection out of eight, and a
+    /// batch operation queued behind the rest failed with `getConnectionFromPoolTimeout`.
+    let streamingClient: HTTPClient
     let socketPath: String
     let timeout: TimeAmount
 
@@ -40,18 +45,29 @@ public struct DockerClient: Sendable {
     ///
     /// - Parameter socketPath: Path to the Docker daemon Unix socket.
     public init(socketPath: String = DockerClient.defaultSocketPath) {
-        // Use POSIX sockets (MultiThreadedEventLoopGroup) instead of the default
-        // NIOTransportServices (Network.framework) which has issues with Unix
-        // domain sockets on macOS, causing ENETDOWN errors.
-        let httpClient = HTTPClient(
-            eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup.singleton))
-        let transport = UnixSocketTransport(client: httpClient, socketPath: socketPath)
-        self.httpClient = httpClient
+        self.httpClient = Self.makeHTTPClient(connections: 16)
+        // One `/events` follow, plus one per open logs tab.
+        self.streamingClient = Self.makeHTTPClient(connections: 8)
         self.socketPath = socketPath
         self.timeout = .minutes(1)
         self.api = Client(
             serverURL: Self.defaultServerURL,
-            transport: transport
+            transport: UnixSocketTransport(client: httpClient, socketPath: socketPath)
+        )
+    }
+
+    private static func makeHTTPClient(connections: Int) -> HTTPClient {
+        var configuration = HTTPClient.Configuration()
+        // AsyncHTTPClient's default of 8 is sized for connections to a remote host over the
+        // network. This one is a Unix socket to a daemon on the same machine, where a
+        // connection is cheap and the cost of running out is a visible failure.
+        configuration.connectionPool.concurrentHTTP1ConnectionsPerHostSoftLimit = connections
+        // Use POSIX sockets (MultiThreadedEventLoopGroup) instead of the default
+        // NIOTransportServices (Network.framework) which has issues with Unix
+        // domain sockets on macOS, causing ENETDOWN errors.
+        return HTTPClient(
+            eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup.singleton),
+            configuration: configuration
         )
     }
 }

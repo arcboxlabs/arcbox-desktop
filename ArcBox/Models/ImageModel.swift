@@ -8,7 +8,7 @@ struct ImageViewModel: Identifiable, Hashable {
     let repository: String
     let tag: String
     let sizeBytes: UInt64
-    let createdAt: Date
+    let createdAt: Date?
     let inUse: Bool
     let os: String
     let architecture: String
@@ -33,7 +33,20 @@ struct ImageViewModel: Identifiable, Hashable {
     }
 
     var createdAgo: String {
-        relativeTime(from: createdAt)
+        guard let createdAt, createdAt.timeIntervalSince1970 > 0 else { return "Unknown" }
+        return relativeTime(from: createdAt)
+    }
+
+    var platformDisplay: String? {
+        let components = [os, architecture].compactMap { value in
+            let value = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return value.isEmpty ? nil : value
+        }
+        return components.isEmpty ? nil : components.joined(separator: "/")
+    }
+
+    var canDelete: Bool {
+        !inUse
     }
 
     static let rootfsMountPathLabelKeys = [

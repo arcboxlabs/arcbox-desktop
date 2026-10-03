@@ -213,11 +213,11 @@ final class NetworksListViewController: NSViewController,
         }
 
         let canCopy = contextNetwork != nil
-        let canDelete = contextNetwork.map { !$0.isSystem } ?? false
+        let canDelete = contextNetwork?.canDelete ?? false
         menu.item(withTitle: "Copy Name")?.isEnabled = canCopy
         menu.item(withTitle: "Delete")?.isEnabled = canDelete
-        menu.item(withTitle: "Delete")?.isHidden = !canDelete
-        menu.items.first(where: \.isSeparatorItem)?.isHidden = !canDelete
+        menu.item(withTitle: "Delete")?.isHidden = contextNetwork?.isSystem ?? true
+        menu.items.first(where: \.isSeparatorItem)?.isHidden = contextNetwork?.isSystem ?? true
     }
 
     private func observeAndRender() {
@@ -418,12 +418,17 @@ final class NetworksListViewController: NSViewController,
     }
 
     @objc private func deleteContextNetwork() {
-        guard let contextNetwork, !contextNetwork.isSystem else { return }
+        guard let contextNetwork, contextNetwork.canDelete else { return }
         confirmDelete(contextNetwork)
     }
 
     private func confirmDelete(_ network: NetworkViewModel) {
-        guard !network.isSystem, deleteAlert == nil, let window = view.window else { return }
+        guard
+            network.canDelete,
+            viewModel.networks.first(where: { $0.id == network.id })?.canDelete == true,
+            deleteAlert == nil,
+            let window = view.window
+        else { return }
         let alert = NSAlert()
         alert.messageText = "Delete Network?"
         alert.informativeText =
@@ -540,11 +545,11 @@ private final class NetworkTableCellView: NSTableCellView, ResourceListActionDis
         )
         nameLabel.stringValue = network.name
         driverLabel.stringValue = network.driverDisplay
-        canDelete = !network.isSystem
-        deleteButton.isEnabled = !network.isSystem
-        deleteButton.toolTip = network.isSystem ? nil : "Delete network"
+        canDelete = network.canDelete
+        deleteButton.isEnabled = network.canDelete
+        deleteButton.toolTip = network.canDelete ? "Delete network" : nil
         deleteButton.setAccessibilityLabel("Delete \(network.name)")
-        self.onDelete = network.isSystem ? nil : onDelete
+        self.onDelete = network.canDelete ? onDelete : nil
         updateActionVisibility()
         setAccessibilityElement(true)
         setAccessibilityLabel(

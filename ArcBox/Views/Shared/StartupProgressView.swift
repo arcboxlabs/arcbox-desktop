@@ -20,10 +20,20 @@ struct StartupProgressView: View {
                     ForEach(StartupStep.allCases) { step in
                         stepRow(step)
                     }
+
+                    if orchestrator.isReady, !orchestrator.isRuntimeReady,
+                        orchestrator.runtimeFailureMessage == nil
+                    {
+                        ProgressView(orchestrator.setupMessage)
+                            .controlSize(.small)
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .padding(.top, 4)
+                    }
                 }
                 .padding(.horizontal, 40)
 
-                if case .failed(_, let message) = orchestrator.phase {
+                if let message = retryableErrorMessage {
                     VStack(spacing: 8) {
                         Text(message)
                             .font(.system(size: 12))
@@ -129,5 +139,12 @@ struct StartupProgressView: View {
         case .completed: return AppColors.textSecondary
         case .failed: return AppColors.error
         }
+    }
+
+    private var retryableErrorMessage: String? {
+        if case .failed(_, let message) = orchestrator.phase {
+            return message
+        }
+        return orchestrator.runtimeFailureMessage
     }
 }

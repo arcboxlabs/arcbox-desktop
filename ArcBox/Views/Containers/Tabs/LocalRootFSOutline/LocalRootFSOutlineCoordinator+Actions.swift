@@ -64,8 +64,11 @@ extension LocalRootFSOutlineCoordinator {
 
     @objc func copySelectedPath() {
         guard let node = selectedNode() else { return }
+        let path =
+            parent.displayRootPath.map { node.displayPath(rootPath: $0) }
+            ?? node.entry.url.path
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(node.entry.url.path, forType: .string)
+        NSPasteboard.general.setString(path, forType: .string)
     }
 
 }

@@ -41,6 +41,7 @@ PROTOS=(
     "arcbox/sandbox/v1/process.proto"
     "arcbox/sandbox/v1/filesystem.proto"
     "arcbox/sandbox/v1/snapshot.proto"
+    "arcbox/sandbox/v1/template.proto"
     "kubernetes.proto"
     "stats.proto"
 )

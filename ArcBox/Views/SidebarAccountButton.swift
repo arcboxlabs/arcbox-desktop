@@ -11,7 +11,13 @@ struct SidebarAccountButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if authSession.status == .signingIn {
+                if authSession.status == .restoring {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 24, height: 24)
+                    Text("Restoring…")
+                        .foregroundStyle(.secondary)
+                } else if authSession.status == .signingIn {
                     ProgressView()
                         .controlSize(.small)
                         .frame(width: 24, height: 24)
@@ -50,12 +56,15 @@ struct SidebarAccountButton: View {
     }
 
     private var isDisabled: Bool {
-        authSession.status == .signingIn
+        authSession.status == .restoring
+            || authSession.status == .signingIn
             || (authSession.status != .signedIn && authSession.configuration.isPlaceholder)
     }
 
     private var helpText: String {
         switch authSession.status {
+        case .restoring:
+            "Restoring ArcBox session"
         case .signedIn:
             "Open account settings"
         case .signingIn:
@@ -64,7 +73,7 @@ struct SidebarAccountButton: View {
             "Sign-in failed: \(message)"
         case .signedOut:
             authSession.configuration.isPlaceholder
-                ? "No OIDC provider is configured"
+                ? "No sign-in service is configured"
                 : "Sign in to ArcBox"
         }
     }

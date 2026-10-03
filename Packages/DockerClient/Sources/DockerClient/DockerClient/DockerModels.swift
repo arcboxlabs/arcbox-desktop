@@ -38,6 +38,8 @@ public struct ContainerInspectSnapshot: Sendable {
 @available(macOS 15.0, *)
 public struct ImageInspectSnapshot: Sendable {
     public let labels: [String: String]
+    public let os: String?
+    public let architecture: String?
     public let rootfsMountPath: String?
     /// Raw `GraphDriver.Data.UpperDir` of the image's top overlay2 layer.
     public let overlayUpperDir: String?
@@ -60,11 +62,15 @@ public struct ImageInspectSnapshot: Sendable {
 
     public init(
         labels: [String: String],
+        os: String? = nil,
+        architecture: String? = nil,
         rootfsMountPath: String? = nil,
         overlayUpperDir: String? = nil,
         rootfsLayers: [String] = []
     ) {
         self.labels = labels
+        self.os = os
+        self.architecture = architecture
         self.rootfsMountPath = rootfsMountPath
         self.overlayUpperDir = overlayUpperDir
         self.rootfsLayers = rootfsLayers

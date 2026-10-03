@@ -1,3 +1,8 @@
+# Merging the release PR cuts the tag and opens a *draft* GitHub release
+# (release-please-config.json sets `draft` + `force-tag-creation`). The tag push
+# starts Release DMG, which attaches the signed DMG and publishes that draft.
+# A failed build therefore leaves a draft nobody can download by accident,
+# instead of an empty release at the top of the releases page.
 name: Release Please
 
 on:

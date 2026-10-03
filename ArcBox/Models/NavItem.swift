@@ -9,6 +9,7 @@ enum NavItem: String, CaseIterable, Identifiable {
     case services
     case machines
     case sandboxes
+    case runner
 
     var id: String { rawValue }
 
@@ -23,6 +24,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .services: "Services"
         case .machines: "Machines"
         case .sandboxes: "Sandboxes"
+        case .runner: "This Mac"
         }
     }
 
@@ -37,6 +39,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .services: "gearshape.2"
         case .machines: "desktopcomputer"
         case .sandboxes: "server.rack"
+        case .runner: "hammer"
         }
     }
 
@@ -47,6 +50,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case kubernetes = "KUBERNETES"
         case linux = "LINUX"
         case sandbox = "SANDBOX"
+        case runners = "RUNNERS"
 
         var id: String { rawValue }
 
@@ -57,6 +61,7 @@ enum NavItem: String, CaseIterable, Identifiable {
             case .kubernetes: [.pods, .services]
             case .linux: [.machines]
             case .sandbox: [.sandboxes]
+            case .runners: [.runner]
             }
         }
     }

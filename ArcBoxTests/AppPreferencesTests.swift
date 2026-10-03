@@ -30,6 +30,15 @@ final class AppPreferencesTests: XCTestCase {
             "registered defaults must not overwrite a stored preference"
         )
         XCTAssertTrue(userDefaults.bool(forKey: "pauseContainersWhileSleeping"))
+        // Notification categories are gated by `bool(forKey:)`, which reads an
+        // unregistered key as false — every category must be registered or it
+        // silently ships switched off.
+        for category in AppNotification.Category.allCases {
+            XCTAssertTrue(
+                userDefaults.bool(forKey: category.preferenceKey),
+                "\(category.rawValue) notifications must default to on"
+            )
+        }
 
         userDefaults.removeObject(forKey: "switchDockerContextAutomatically")
         XCTAssertTrue(userDefaults.bool(forKey: "switchDockerContextAutomatically"))

@@ -15,8 +15,18 @@ extension AboutViewController {
         heading.spacing = 6
 
         var views: [NSView] = [heading]
-        for section in release.sections {
-            views.append(releaseSection(section))
+        if let highlights = release.highlights {
+            let summary = label(
+                highlights,
+                font: .systemFont(ofSize: 12),
+                color: .secondaryLabelColor
+            )
+            summary.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            views.append(summary)
+        } else {
+            for section in release.sections {
+                views.append(releaseSection(section))
+            }
         }
         let row = verticalStack(views, spacing: 8)
         row.setAccessibilityElement(true)

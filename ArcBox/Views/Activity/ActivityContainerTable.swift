@@ -24,9 +24,10 @@ struct ActivityContainerTable: View {
     let hasLoaded: Bool
 
     @State private var sortOrder = [
-        KeyPathComparator(\ActivityRow.cpuPercent, order: .reverse)
+        KeyPathComparator(\ActivityRow.displayedCPUPercent, order: .reverse)
     ]
     @State private var selection: ActivityRow.ID?
+    @State private var disclosureState = ActivityRowDisclosureState()
     @State private var columnLayout = TableColumnCustomization<ActivityRow>()
     /// `TableColumnCustomization` is `Codable` but not `RawRepresentable`, so it
     /// rides in `AppStorage` as its own encoding rather than through a
@@ -34,6 +35,9 @@ struct ActivityContainerTable: View {
     @AppStorage("activity.containerColumns") private var storedColumnLayout = Data()
 
     var body: some View {
+        // Once per sample, not once per reader: the rows and the empty state
+        // both want the grouping, and it sorts every row each time it runs.
+        let groups = groups
         Table(
             of: ActivityRow.self,
             selection: $selection,
@@ -49,7 +53,7 @@ struct ActivityContainerTable: View {
             .disabledCustomizationBehavior(.visibility)
             .customizationID("container")
 
-            TableColumn("CPU", value: \.cpuPercent) { row in
+            TableColumn("CPU", value: \.displayedCPUPercent) { row in
                 reading(StatsFormat.percent(row.cpuPercent), isProject: row.isProject)
             }
             .width(min: 56, ideal: 68)
@@ -89,7 +93,10 @@ struct ActivityContainerTable: View {
                 if group.children.isEmpty {
                     TableRow(group.summary)
                 } else {
-                    DisclosureTableRow(group.summary) {
+                    DisclosureTableRow(
+                        group.summary,
+                        isExpanded: disclosureBinding(for: group.id)
+                    ) {
                         ForEach(group.children) { TableRow($0) }
                     }
                 }
@@ -97,7 +104,7 @@ struct ActivityContainerTable: View {
         }
         .tableStyle(.inset)
         .alternatingRowBackgrounds()
-        .overlay { emptyState }
+        .overlay { emptyState(groups: groups) }
         .contextMenu(forSelectionType: ActivityRow.ID.self) { ids in
             menu(for: ids)
         } primaryAction: { ids in
@@ -113,7 +120,7 @@ struct ActivityContainerTable: View {
     /// cannot tell "nothing is running" from "nothing matches" without redoing
     /// the same work.
     @ViewBuilder
-    private var emptyState: some View {
+    private func emptyState(groups: [ActivityRowGroup]) -> some View {
         if !hasLoaded {
             EmptyView()
         } else if containers.isEmpty {
@@ -145,6 +152,19 @@ struct ActivityContainerTable: View {
         guard let id = row.containerID, let container = docker[id] else { return false }
         return container.image.lowercased().contains(query)
             || (container.project?.lowercased().contains(query) ?? false)
+    }
+
+    private func disclosureBinding(for groupID: String) -> Binding<Bool> {
+        let isFiltering = !searchText.isEmpty
+        return Binding {
+            disclosureState.isExpanded(groupID, isFiltering: isFiltering)
+        } set: { expanded in
+            disclosureState.setExpanded(
+                expanded,
+                for: groupID,
+                isFiltering: isFiltering
+            )
+        }
     }
 
     // MARK: - Cells

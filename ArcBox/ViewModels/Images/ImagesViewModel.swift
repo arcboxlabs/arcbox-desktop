@@ -8,6 +8,7 @@ class ImagesViewModel {
     var images: [ImageViewModel] = []
     var loadState: LoadPhase = .waiting
     var refreshError: String?
+    var lastSuccessfulListLoad: ContinuousClock.Instant?
     let listLoadGate = SingleFlightLoadGate()
     var selectedID: String?
     var activeTab: ImageDetailTab = .info
@@ -46,7 +47,7 @@ class ImagesViewModel {
             case .name:
                 comparison = a.repository.localizedCaseInsensitiveCompare(b.repository)
             case .dateCreated:
-                comparison = a.createdAt.compare(b.createdAt)
+                comparison = (a.createdAt ?? .distantPast).compare(b.createdAt ?? .distantPast)
             case .size:
                 comparison =
                     a.sizeBytes == b.sizeBytes

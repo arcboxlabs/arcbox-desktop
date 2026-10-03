@@ -34,4 +34,8 @@ struct NetworkViewModel: Identifiable, Hashable {
     var isSystem: Bool {
         ["bridge", "host", "none"].contains(name)
     }
+
+    var canDelete: Bool {
+        !isSystem && containerCount == 0
+    }
 }

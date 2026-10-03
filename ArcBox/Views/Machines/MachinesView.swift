@@ -14,6 +14,9 @@ struct MachinesView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
+            } else if !daemonManager.setupPhase.isDockerReady {
+                ProgressView(daemonManager.setupMessage)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if client == nil {
                 DaemonLoadingView(state: .registered)
             } else {
@@ -69,6 +72,7 @@ struct MachinesView: View {
                 .disabled(
                     client == nil
                         || !daemonManager.state.isRunning
+                        || !daemonManager.setupPhase.isDockerReady
                         || orchestrator?.isReady == false
                 )
             }
@@ -76,7 +80,8 @@ struct MachinesView: View {
         .sheet(isPresented: Bindable(vm).showCreateSheet) {
             MachineCreateSheet()
         }
-        .task(id: client.map(ObjectIdentifier.init)) {
+        .task(id: daemonManager.setupPhase.isDockerReady && client != nil) {
+            guard daemonManager.setupPhase.isDockerReady, client != nil else { return }
             await vm.loadMachines(client: client)
         }
         // MachineEventMonitor streams MachineService.Events and posts this on
@@ -85,6 +90,7 @@ struct MachinesView: View {
         // its own, a machine reset to stopped after daemon recovery — without
         // polling. loadMachines preserves in-flight transition and detail state.
         .onReceive(NotificationCenter.default.publisher(for: .machineChanged)) { _ in
+            guard daemonManager.setupPhase.isDockerReady, client != nil else { return }
             Task { await vm.loadMachines(client: client) }
         }
         .listErrorToast(
@@ -100,6 +106,9 @@ struct MachinesView: View {
         }
         guard daemonManager.state.isRunning, client != nil else {
             return "Waiting for daemon"
+        }
+        guard daemonManager.setupPhase.isDockerReady else {
+            return "Starting…"
         }
         return switch vm.loadState {
         case .waiting:

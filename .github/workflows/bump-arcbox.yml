@@ -1,0 +1,163 @@
+name: Bump ArcBox
+
+# `arcbox.version` and the generated Swift gRPC client have to move in one
+# commit — `make verify-arcbox-protobuf` gates every PR on them agreeing — and
+# generating that client only works on macOS, because
+# Packages/ArcBoxClient/generate.sh builds its protoc plugins through
+# `xcrun swift build`. So the bump lives here rather than in the arcbox
+# release workflow, which runs on Linux and can only write the pin.
+#
+# arcbox's release-please workflow dispatches this with the tag it just cut;
+# dispatch it by hand to pin any other release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "arcbox release tag to pin, e.g. v0.6.4"
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.version }}
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    name: Bump arcbox to ${{ inputs.version }}
+    runs-on: macos-26
+    steps:
+      # A branch pushed and a PR opened with GITHUB_TOKEN never fire
+      # `pull_request`, so the bump would land with no CI at all. The bot's App
+      # token is what makes the PR check suite — including the protobuf
+      # verification this workflow exists to satisfy — actually run.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      # Decided before the expensive regeneration below, so a redundant or
+      # malformed dispatch costs seconds rather than a macOS runner.
+      - name: Check the bump is needed
+        id: check
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' is not an arcbox release tag (vX.Y.Z)"
+            exit 1
+          fi
+          if [ "$(tr -d '[:space:]' < arcbox.version)" = "$VERSION" ]; then
+            echo "Already pinned to $VERSION, nothing to do."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git ls-remote --exit-code --heads origin "chore/bump-arcbox-${VERSION}" >/dev/null; then
+            echo "::error::chore/bump-arcbox-${VERSION} already exists; delete it to redo the bump"
+            exit 1
+          fi
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Rust toolchain
+        if: steps.check.outputs.needed == 'true'
+        uses: dtolnay/rust-toolchain@stable
+
+      # Same key as pr.yml's, so xtask builds from that cache instead of cold.
+      - name: Restore desktop Rust tooling cache
+        if: steps.check.outputs.needed == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            xtask/target/
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-xtask-${{ hashFiles('xtask/Cargo.lock') }}-${{ hashFiles('xtask/Cargo.toml', 'xtask/src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-xtask-${{ hashFiles('xtask/Cargo.lock') }}-
+            ${{ runner.os }}-${{ runner.arch }}-cargo-xtask-
+
+      # Same key construction as pr.yml's, so a bump reuses the plugin build
+      # master already saved instead of resolving and compiling them cold.
+      - name: Record build environment
+        id: build_environment
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          XCODE_CACHE_KEY=$(xcodebuild -version | awk 'NR == 1 { version = $2 } NR == 2 { build = $3 } END { print version "-" build }')
+          echo "xcode_cache_key=$XCODE_CACHE_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Restore protoc plugin cache
+        if: steps.check.outputs.needed == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .build/protoc-plugins/
+          key: ${{ runner.os }}-${{ runner.arch }}-protoc-plugins-${{ steps.build_environment.outputs.xcode_cache_key }}-${{ hashFiles('Packages/ArcBoxClient/Package.resolved', 'Packages/ArcBoxClient/Package.swift', 'Packages/ArcBoxClient/generate.sh') }}
+
+      - name: Bump the pin and regenerate the client
+        if: steps.check.outputs.needed == 'true'
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          brew install protobuf
+          make bump-arcbox VERSION="$VERSION"
+
+      - name: Open the pull request
+        if: steps.check.outputs.needed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          BRANCH="chore/bump-arcbox-${VERSION}"
+          git config user.name "arcbox-labs[bot]"
+          git config user.email "254083426+arcbox-labs[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          # Naming both paths keeps the commit to what a bump may touch, and
+          # picks up generated files the new protos added or dropped.
+          git add arcbox.version Packages/ArcBoxClient/Sources/ArcBoxClient/Generated
+          git commit -m "chore: bump arcbox version to ${VERSION}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --base master \
+            --head "$BRANCH" \
+            --title "chore: bump arcbox version to ${VERSION}" \
+            --body "Automated update from [arcbox ${VERSION}](https://github.com/arcboxlabs/arcbox/releases/tag/${VERSION})."
+
+      # Nobody watches this workflow: arcbox dispatches it and moves on, and the
+      # run's actor is a bot, so the failure notification goes nowhere. Without
+      # a signal here a broken bump is invisible in exactly the way the
+      # half-bump this replaces was — the desktop just quietly keeps shipping
+      # the old daemon.
+      - name: Report a failed bump
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+          TITLE: "Bumping arcbox to ${{ inputs.version }} failed"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Listing rather than searching: reruns of a flaky bump are minutes
+          # apart and the search index is not consistent on that timescale.
+          if gh issue list --state open --limit 100 --json title \
+            --jq '.[].title' | grep -qxF "$TITLE"; then
+            echo "Already reported."
+            exit 0
+          fi
+          gh issue create --title "$TITLE" --body "$(printf '%s\n' \
+            "The [Bump ArcBox run](${RUN_URL}) for \`${VERSION}\` failed, so no bump PR was opened and this repo still embeds the previous daemon." \
+            "" \
+            "Rerun it from the Actions tab, or bump by hand with \`make bump-arcbox VERSION=${VERSION}\`.")"

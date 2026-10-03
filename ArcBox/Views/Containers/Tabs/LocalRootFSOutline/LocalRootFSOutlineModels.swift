@@ -15,6 +15,18 @@ final class LocalFileNode: NSObject {
         self.entry = entry
         self.parent = parent
     }
+
+    /// The resource path represented by this node, without its host export prefix.
+    func displayPath(rootPath: String) -> String {
+        var components: [String] = []
+        var node: LocalFileNode? = self
+        while let current = node {
+            components.append(current.entry.name)
+            node = current.parent
+        }
+        return (rootPath as NSString).appendingPathComponent(
+            components.reversed().joined(separator: "/"))
+    }
 }
 
 final class ContextOutlineView: NSOutlineView {

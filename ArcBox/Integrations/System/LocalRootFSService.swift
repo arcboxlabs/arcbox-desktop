@@ -4,7 +4,6 @@ nonisolated struct LocalFileEntry: Identifiable, Hashable {
     let url: URL
     let name: String
     let isDirectory: Bool
-    let isPackage: Bool
     let isSymbolicLink: Bool
     let sizeBytes: Int64?
     let modifiedDate: Date?
@@ -13,7 +12,16 @@ nonisolated struct LocalFileEntry: Identifiable, Hashable {
     var loadError: String?
 
     var id: String { url.standardizedFileURL.path }
-    var isExpandable: Bool { isDirectory && !isPackage }
+    var isExpandable: Bool { isDirectory }
+
+    var systemImageName: String {
+        switch kind {
+        case "Directory": "folder"
+        case "Symlink": "link"
+        case "Executable": "terminal"
+        default: "doc"
+        }
+    }
 
     var sizeDisplay: String {
         guard let sizeBytes else { return "" }
@@ -53,12 +61,10 @@ nonisolated struct LocalRootFSService {
 
     private static let resourceKeys: Set<URLResourceKey> = [
         .isDirectoryKey,
-        .isPackageKey,
         .isSymbolicLinkKey,
         .isHiddenKey,
         .fileSizeKey,
         .contentModificationDateKey,
-        .localizedTypeDescriptionKey,
         .fileResourceTypeKey,
         .nameKey,
     ]
@@ -142,20 +148,18 @@ nonisolated struct LocalRootFSService {
                     }
 
                     let isDirectory = values.isDirectory ?? false
-                    let isPackage = values.isPackage ?? false
-                    let kind: String
-                    if isDirectory && !isPackage {
-                        kind = "Folder"
-                    } else {
-                        kind = values.localizedTypeDescription ?? "Document"
-                    }
+                    let isSymbolicLink = values.isSymbolicLink ?? false
+                    let kind = neutralKind(
+                        at: entryURL,
+                        isDirectory: isDirectory,
+                        isSymbolicLink: isSymbolicLink
+                    )
 
                     let entry = LocalFileEntry(
                         url: entryURL,
                         name: values.name ?? entryURL.lastPathComponent,
                         isDirectory: isDirectory,
-                        isPackage: isPackage,
-                        isSymbolicLink: values.isSymbolicLink ?? false,
+                        isSymbolicLink: isSymbolicLink,
                         sizeBytes: isDirectory ? nil : Int64(values.fileSize ?? 0),
                         modifiedDate: values.contentModificationDate,
                         kind: kind,
@@ -180,6 +184,21 @@ nonisolated struct LocalRootFSService {
         }
 
         return entries
+    }
+
+    private static func neutralKind(
+        at url: URL,
+        isDirectory: Bool,
+        isSymbolicLink: Bool
+    ) -> String {
+        if isSymbolicLink { return "Symlink" }
+        if isDirectory { return "Directory" }
+
+        var status = stat()
+        guard lstat(url.path, &status) == 0, status.st_mode & 0o111 != 0 else {
+            return "File"
+        }
+        return "Executable"
     }
 
     static func finderDefaultShowHiddenFiles() -> Bool {

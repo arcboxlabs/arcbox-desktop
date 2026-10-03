@@ -36,7 +36,7 @@ final class MachineEmptyStateView: NSView {
             views: [
                 Self.label("• Ubuntu, Debian, Fedora, and more"),
                 Self.label("• Native ARM64 performance on Apple Silicon"),
-                Self.label("• Seamless file sharing with macOS"),
+                Self.label("• Configurable CPU, memory, and disk"),
             ]
         )
         bulletStack.orientation = .vertical

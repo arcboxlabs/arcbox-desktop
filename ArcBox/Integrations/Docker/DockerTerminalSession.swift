@@ -16,6 +16,34 @@ class DockerTerminalSession {
         static let bufferSize = 8192
     }
 
+    nonisolated private struct DockerCommandResult {
+        let status: Int32
+        let error: String
+    }
+
+    nonisolated private struct ImageContainer: Sendable {
+        let name: String
+        let dockerPath: String
+        let environment: [String: String]
+
+        func run(_ arguments: [String]) throws -> DockerCommandResult {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: dockerPath)
+            process.arguments = arguments
+            process.environment = environment
+            process.standardOutput = FileHandle.nullDevice
+            let errorOutput = Pipe()
+            process.standardError = errorOutput
+            try process.run()
+            process.waitUntilExit()
+            let data = errorOutput.fileHandleForReading.readDataToEndOfFile()
+            return DockerCommandResult(
+                status: process.terminationStatus,
+                error: String(data: data, encoding: .utf8) ?? "unreadable Docker error"
+            )
+        }
+    }
+
     enum State: Equatable {
         case idle
         case connecting
@@ -35,9 +63,12 @@ class DockerTerminalSession {
     @ObservationIgnored private let ptyFDLock = OSAllocatedUnfairLock<Int32>(initialState: -1)
     @ObservationIgnored private var readTask: Task<Void, Never>?
     @ObservationIgnored private weak var terminalView: TerminalView?
+    @ObservationIgnored private var imageContainer: ImageContainer?
     /// Monotonically increasing counter to distinguish sessions.
     /// Stale readTask / terminationHandler callbacks check this before modifying state.
     @ObservationIgnored private var sessionGeneration: Int = 0
+
+    var activeImageContainerName: String? { imageContainer?.name }
 
     /// Store a terminal view reference for later use (called from makeNSView).
     func setTerminalView(_ tv: TerminalView) {
@@ -54,30 +85,39 @@ class DockerTerminalSession {
 
     /// Run a temporary interactive container from an image via `docker run -it --rm`.
     func runImage(imageName: String, shell: String, terminalView: TerminalView) {
-        launchDockerSession(
-            arguments: ["run", "-it", "--rm", "--stop-timeout", "1", imageName, shell],
-            terminalView: terminalView
-        )
+        launchImageSession(imageName: imageName, shell: shell, terminalView: terminalView)
     }
 
     /// Connect to an image using the previously stored TerminalView.
     func connectImage(imageName: String, shell: String) {
         guard let tv = terminalView else { return }
         tv.feed(text: "\u{1b}[2J\u{1b}[H")
+        launchImageSession(imageName: imageName, shell: shell, terminalView: tv)
+    }
+
+    private func launchImageSession(imageName: String, shell: String, terminalView: TerminalView) {
+        let containerName = "arcbox-image-terminal-\(UUID().uuidString.lowercased())"
         launchDockerSession(
-            arguments: ["run", "-it", "--rm", "--stop-timeout", "1", imageName, shell],
-            terminalView: tv
+            arguments: [
+                "run", "-it", "--rm", "--stop-timeout", "1", "--name", containerName,
+                imageName, shell,
+            ],
+            terminalView: terminalView,
+            imageContainerName: containerName
         )
     }
 
     /// Shared implementation: launch a docker CLI process with PTY.
-    private func launchDockerSession(arguments: [String], terminalView: TerminalView) {
+    private func launchDockerSession(
+        arguments: [String],
+        terminalView: TerminalView,
+        imageContainerName: String? = nil
+    ) {
+        sessionGeneration += 1
         // Tear down old process without touching state (avoids intermediate .disconnected flicker)
         teardownProcess()
         self.terminalView = terminalView
 
-        // Bump generation so stale callbacks from the old session are ignored
-        sessionGeneration += 1
         let currentGen = sessionGeneration
 
         state = .connecting
@@ -143,13 +183,15 @@ class DockerTerminalSession {
                 if bytesRead <= 0 { break }
                 let data = Array(UnsafeBufferPointer(start: buffer, count: bytesRead))
                 await MainActor.run { [weak self] in
-                    self?.terminalView?.feed(byteArray: ArraySlice(data))
+                    guard let self, self.sessionGeneration == currentGen else { return }
+                    self.terminalView?.feed(byteArray: data[...])
                 }
             }
 
             await MainActor.run { [weak self] in
                 guard let self, self.sessionGeneration == currentGen else { return }
                 if self.state == .connected {
+                    self.teardownProcess()
                     self.state = .disconnected
                 }
             }
@@ -160,6 +202,7 @@ class DockerTerminalSession {
             Task { @MainActor [weak self] in
                 guard let self, self.sessionGeneration == currentGen else { return }
                 if self.state == .connected {
+                    self.teardownProcess()
                     self.state = .disconnected
                 }
             }
@@ -170,7 +213,19 @@ class DockerTerminalSession {
             // Close replica FD in parent process — the child owns it now
             close(replica)
             process = proc
+            if let imageContainerName {
+                imageContainer = ImageContainer(
+                    name: imageContainerName,
+                    dockerPath: dockerPath,
+                    environment: env
+                )
+            }
             state = .connected
+            // `imageContainerName` is set only by the image paths, so it is
+            // already the surface discriminator — no second parameter to drift.
+            Analytics.capture(
+                .terminalOpened,
+                properties: ["surface": imageContainerName == nil ? "container" : "image"])
         } catch {
             close(replica)
             close(primary)
@@ -201,8 +256,8 @@ class DockerTerminalSession {
 
     /// Disconnect and clean up the session.
     func disconnect() {
+        sessionGeneration += 1
         teardownProcess()
-        terminalView = nil
         if state == .connected || state == .connecting {
             state = .disconnected
         }
@@ -216,7 +271,9 @@ class DockerTerminalSession {
 
         // Capture references before nilling them out
         let dyingProcess = process
+        let dyingImageContainer = imageContainer
         process = nil
+        imageContainer = nil
 
         // ABXD-17: Atomically swap the FD to -1 under the lock so that
         // concurrent `send()` / `resize()` calls see -1 immediately and
@@ -231,13 +288,62 @@ class DockerTerminalSession {
         // Foundation's Process deallocation uses Mach ports that can
         // trigger "Unable to obtain a task name port right" errors
         // and potentially block the main thread.
-        if dyingProcess != nil || oldPtyFD >= 0 {
+        if dyingProcess != nil || dyingImageContainer != nil || oldPtyFD >= 0 {
             DispatchQueue.global(qos: .utility).async {
-                if let proc = dyingProcess {
-                    kill(proc.processIdentifier, SIGKILL)
+                if let container = dyingImageContainer {
+                    do {
+                        let result = try container.run(["stop", "--timeout", "1", container.name])
+                        if result.status != 0, !result.error.contains("No such container") {
+                            Log.terminal.error(
+                                "Failed to stop image terminal container \(container.name, privacy: .private): \(result.error, privacy: .private)"
+                            )
+                        }
+                    } catch {
+                        Log.terminal.error(
+                            "Failed to stop image terminal container \(container.name, privacy: .private): \(error.localizedDescription, privacy: .public)"
+                        )
+                    }
                 }
+
                 if oldPtyFD >= 0 {
                     close(oldPtyFD)
+                }
+                if let proc = dyingProcess {
+                    if proc.isRunning {
+                        kill(proc.processIdentifier, SIGKILL)
+                    }
+                    proc.waitUntilExit()
+                }
+
+                if let container = dyingImageContainer {
+                    // `docker stop` does not AutoRemove a container that was created but never started.
+                    // ponytail: retry for one second so an in-flight create request can publish after launcher exit.
+                    for attempt in 0..<20 {
+                        let result: DockerCommandResult
+                        do {
+                            result = try container.run([
+                                "container", "rm", "--force", "--volumes", container.name,
+                            ])
+                        } catch {
+                            let message = error.localizedDescription
+                            Log.terminal.error(
+                                "Failed to remove image terminal container \(container.name, privacy: .private): \(message, privacy: .public)"
+                            )
+                            break
+                        }
+                        guard result.status != 0 else { break }
+                        let canRetry =
+                            result.error.contains("No such container")
+                            || result.error.contains("already in progress")
+                        guard canRetry else {
+                            Log.terminal.error(
+                                "Failed to remove image terminal container \(container.name, privacy: .private): \(result.error, privacy: .private)"
+                            )
+                            break
+                        }
+                        guard attempt < 19 else { break }
+                        Thread.sleep(forTimeInterval: 0.05)
+                    }
                 }
                 // dyingProcess is released here when the closure exits,
                 // allowing Foundation to deallocate on this background thread.

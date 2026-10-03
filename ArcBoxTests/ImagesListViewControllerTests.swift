@@ -37,52 +37,40 @@ final class ImagesListViewControllerTests: XCTestCase {
         ]
         try await waitUntil { tableView.numberOfRows == 5 }
         XCTAssertFalse(try XCTUnwrap(tableView.enclosingScrollView).isHidden)
+        XCTAssertEqual(sectionTitle(at: 0, in: tableView), "In Use")
+        XCTAssertEqual(sectionTitle(at: 2, in: tableView), "Unused")
         XCTAssertEqual(
             tableView.menu?.items.filter { !$0.isSeparatorItem }.map(\.title),
             ["Copy Name", "Copy ID", "Delete"]
         )
 
-        let nginxRow = try XCTUnwrap(row(named: "nginx:latest", in: tableView))
-        let nginxCell = try XCTUnwrap(
-            tableView.view(atColumn: 0, row: nginxRow, makeIfNecessary: true)
-                as? NSTableCellView
-        )
-        let deleteButton = try XCTUnwrap(deleteButton(in: nginxCell))
-        XCTAssertTrue(deleteButton is ResourceActionButton)
+        let (nginxRow, nginxCell) = try rowAndCell(named: "nginx:latest", in: tableView)
+        let nginxDeleteButton = try XCTUnwrap(deleteButton(in: nginxCell))
+        XCTAssertTrue(nginxDeleteButton is ResourceActionButton)
         nginxCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
         nginxCell.layoutSubtreeIfNeeded()
-        let content = try XCTUnwrap(deleteButton.superview as? NSStackView)
+        let content = try XCTUnwrap(nginxDeleteButton.superview as? NSStackView)
         let labels = content.arrangedSubviews[1]
-        XCTAssertTrue(deleteButton.isHidden)
-        XCTAssertTrue(deleteButton.isEnabled)
+        XCTAssertTrue(nginxDeleteButton.isHidden)
+        XCTAssertFalse(nginxDeleteButton.isEnabled)
         XCTAssertEqual(content.spacing, 12)
         XCTAssertEqual(content.frame.minX, 24, accuracy: 0.5)
         XCTAssertEqual(nginxCell.bounds.maxX - content.frame.maxX, 24, accuracy: 0.5)
         XCTAssertEqual(labels.frame.maxX, content.bounds.maxX, accuracy: 0.5)
 
-        let architectureLabel = try XCTUnwrap(textField(titled: "amd64", in: nginxCell))
-        let architectureBox = try XCTUnwrap(ancestorBox(of: architectureLabel))
-        let architectureLabelFrame = architectureLabel.convert(
-            architectureLabel.bounds,
-            to: architectureBox
-        )
-        XCTAssertEqual(architectureLabelFrame.minX, 6, accuracy: 0.5)
-        XCTAssertEqual(
-            architectureBox.bounds.maxX - architectureLabelFrame.maxX,
-            6,
-            accuracy: 0.5
-        )
-        XCTAssertEqual(architectureLabelFrame.minY, 2, accuracy: 0.5)
-        XCTAssertEqual(
-            architectureBox.bounds.maxY - architectureLabelFrame.maxY,
-            2,
-            accuracy: 0.5
-        )
+        try assertArchitectureBadgeInsets(in: nginxCell)
 
         tableView.selectRowIndexes(IndexSet(integer: nginxRow), byExtendingSelection: false)
         nginxCell.layoutSubtreeIfNeeded()
-        XCTAssertFalse(deleteButton.isHidden)
-        XCTAssertEqual(deleteButton.frame.minX - labels.frame.maxX, 12, accuracy: 0.5)
+        XCTAssertTrue(nginxDeleteButton.isHidden)
+
+        let (postgresRow, postgresCell) = try rowAndCell(named: "postgres:latest", in: tableView)
+        let postgresDeleteButton = try XCTUnwrap(deleteButton(in: postgresCell))
+        postgresCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
+        tableView.selectRowIndexes(IndexSet(integer: postgresRow), byExtendingSelection: false)
+        postgresCell.layoutSubtreeIfNeeded()
+        XCTAssertTrue(postgresDeleteButton.isEnabled)
+        XCTAssertFalse(postgresDeleteButton.isHidden)
         tableView.deselectAll(nil)
         nginxCell.layoutSubtreeIfNeeded()
         XCTAssertEqual(labels.frame.maxX, content.bounds.maxX, accuracy: 0.5)
@@ -171,6 +159,23 @@ final class ImagesListViewControllerTests: XCTestCase {
     }
 
     @MainActor
+    private func sectionTitle(at row: Int, in tableView: NSTableView) -> String? {
+        (tableView.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView)?
+            .textField?.stringValue
+    }
+
+    @MainActor
+    private func rowAndCell(
+        named name: String,
+        in tableView: NSTableView
+    ) throws -> (Int, NSTableCellView) {
+        let row = try XCTUnwrap(row(named: name, in: tableView))
+        let cell = try XCTUnwrap(
+            tableView.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView)
+        return (row, cell)
+    }
+
+    @MainActor
     private func deleteButton(in view: NSView) -> NSButton? {
         if let button = view as? NSButton,
             button.identifier == NSUserInterfaceItemIdentifier("ImageDeleteButton")
@@ -198,6 +203,17 @@ final class ImagesListViewControllerTests: XCTestCase {
             ancestor = current.superview
         }
         return nil
+    }
+
+    @MainActor
+    private func assertArchitectureBadgeInsets(in cell: NSTableCellView) throws {
+        let label = try XCTUnwrap(textField(titled: "amd64", in: cell))
+        let box = try XCTUnwrap(ancestorBox(of: label))
+        let frame = label.convert(label.bounds, to: box)
+        XCTAssertEqual(frame.minX, 6, accuracy: 0.5)
+        XCTAssertEqual(box.bounds.maxX - frame.maxX, 6, accuracy: 0.5)
+        XCTAssertEqual(frame.minY, 2, accuracy: 0.5)
+        XCTAssertEqual(box.bounds.maxY - frame.maxY, 2, accuracy: 0.5)
     }
 
     private func image(

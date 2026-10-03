@@ -216,7 +216,10 @@ final class ImagesListViewController: NSViewController,
                 byExtendingSelection: false
             )
         }
-        menu.items.forEach { $0.isEnabled = contextImage != nil }
+        let canCopy = contextImage != nil
+        menu.item(withTitle: "Copy Name")?.isEnabled = canCopy
+        menu.item(withTitle: "Copy ID")?.isEnabled = canCopy
+        menu.item(withTitle: "Delete")?.isEnabled = contextImage?.canDelete ?? false
     }
 
     private func observeAndRender() {
@@ -437,7 +440,8 @@ final class ImagesListViewController: NSViewController,
 
     private func confirmDelete(_ image: ImageViewModel) {
         guard
-            viewModel.images.contains(where: { $0.id == image.id }),
+            image.canDelete,
+            viewModel.images.first(where: { $0.id == image.id })?.canDelete == true,
             deleteAlert == nil,
             let window = view.window
         else {
@@ -480,6 +484,8 @@ private final class ImageTableCellView: NSTableCellView, ResourceListActionDispl
     private var representedIconURL: URL?
     private var fallbackColor = NSColor.secondaryLabelColor
     private var showsRemoteIcon = false
+    private var canDelete = false
+    private var showsActions = false
     private var onDelete: (@MainActor () -> Void)?
 
     override init(frame frameRect: NSRect) {
@@ -606,9 +612,12 @@ private final class ImageTableCellView: NSTableCellView, ResourceListActionDispl
         nameLabel.stringValue = image.fullName
         architectureBox.isHidden = image.architecture != "amd64"
         detailLabel.stringValue = "\(image.sizeDisplay), \(image.createdAgo)"
-        deleteButton.toolTip = "Delete image"
+        canDelete = image.canDelete
+        deleteButton.isEnabled = image.canDelete
+        deleteButton.toolTip = image.canDelete ? "Delete image" : nil
         deleteButton.setAccessibilityLabel("Delete \(image.fullName)")
-        self.onDelete = onDelete
+        self.onDelete = image.canDelete ? onDelete : nil
+        updateActionVisibility()
 
         fallbackColor = Self.color(for: image.repository)
         showFallbackIcon()
@@ -659,7 +668,12 @@ private final class ImageTableCellView: NSTableCellView, ResourceListActionDispl
     }
 
     func setShowsActions(_ showsActions: Bool) {
-        deleteButton.isHidden = !showsActions
+        self.showsActions = showsActions
+        updateActionVisibility()
+    }
+
+    private func updateActionVisibility() {
+        deleteButton.isHidden = !canDelete || !showsActions
     }
 
     private static func color(for repository: String) -> NSColor {

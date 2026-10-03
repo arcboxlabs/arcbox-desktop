@@ -223,6 +223,11 @@ public final class ArcBoxClient: Sendable {
         .init(wrapping: grpcClient)
     }
 
+    /// Sandbox template catalog operations.
+    public var templates: Arcbox_Sandbox_V1_TemplateService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
     // MARK: - Error Mapping
 
     /// Map a gRPC or transport error to a user-friendly message.

@@ -16,6 +16,7 @@ struct ContainerTerminalTab: View {
     @State private var session = DockerTerminalSession()
     @State private var selectedShell = "/bin/sh"
     @State private var terminalToken = UUID()
+    @State private var externalTerminalErrorMessage: String?
 
     private let availableShells = ["/bin/sh", "/bin/bash", "/bin/zsh"]
 
@@ -37,11 +38,17 @@ struct ContainerTerminalTab: View {
 
                     Button(
                         action: {
-                            ExternalTerminalLauncher.open(
-                                preference: externalTerminal,
-                                containerID: container.id,
-                                shell: selectedShell
-                            )
+                            Task {
+                                do {
+                                    try await ExternalTerminalLauncher.open(
+                                        preference: externalTerminal,
+                                        containerID: container.id,
+                                        shell: selectedShell
+                                    )
+                                } catch {
+                                    externalTerminalErrorMessage = error.localizedDescription
+                                }
+                            }
                         },
                         label: {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -105,6 +112,17 @@ struct ContainerTerminalTab: View {
                 session.disconnect()
             }
         }
+        .alert(
+            "External Terminal Did Not Open",
+            isPresented: Binding(
+                get: { externalTerminalErrorMessage != nil },
+                set: { if !$0 { externalTerminalErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(externalTerminalErrorMessage ?? "The terminal could not be opened.")
+        }
     }
 
     private var terminalContent: some View {
@@ -112,13 +130,16 @@ struct ContainerTerminalTab: View {
             delegate: TerminalSessionBridge(session: session),
             onTerminalCreated: { terminalView in
                 configureTerminalAppearance(terminalView)
-
-                // Connect session
-                session.connect(
-                    containerID: container.id,
-                    shell: selectedShell,
-                    terminalView: terminalView
-                )
+                let containerID = container.id
+                let shell = selectedShell
+                // Defer state modifications out of the view update cycle.
+                Task { @MainActor in
+                    session.connect(
+                        containerID: containerID,
+                        shell: shell,
+                        terminalView: terminalView
+                    )
+                }
             }, theme: terminalTheme)
     }
 

@@ -29,12 +29,14 @@ struct SandboxDetailView: View {
                 case .files:
                     if sandbox.state.isDataPlaneReady {
                         SandboxFilesTab(sandbox: sandbox)
+                            .id(sandbox.id)
                     } else {
                         tabUnavailable("Sandbox must be ready for file transfer")
                     }
                 case .ports:
                     if sandbox.state.isDataPlaneReady {
                         SandboxPortsTab(sandbox: sandbox)
+                            .id(sandbox.id)
                     } else {
                         tabUnavailable("Sandbox must be ready to expose ports")
                     }

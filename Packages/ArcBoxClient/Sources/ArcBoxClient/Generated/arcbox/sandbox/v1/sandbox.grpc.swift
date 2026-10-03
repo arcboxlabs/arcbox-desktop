@@ -177,6 +177,18 @@ public enum Arcbox_Sandbox_V1_SandboxService {
                 method: "ExposePort"
             )
         }
+        /// Namespace for "ListExposedPorts" metadata.
+        public enum ListExposedPorts {
+            /// Request type for "ListExposedPorts".
+            public typealias Input = Arcbox_Sandbox_V1_ListExposedPortsRequest
+            /// Response type for "ListExposedPorts".
+            public typealias Output = Arcbox_Sandbox_V1_ListExposedPortsResponse
+            /// Descriptor for "ListExposedPorts".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.sandbox.v1.SandboxService"),
+                method: "ListExposedPorts"
+            )
+        }
         /// Namespace for "UnexposePort" metadata.
         public enum UnexposePort {
             /// Request type for "UnexposePort".
@@ -202,6 +214,7 @@ public enum Arcbox_Sandbox_V1_SandboxService {
             List.descriptor,
             Events.descriptor,
             ExposePort.descriptor,
+            ListExposedPorts.descriptor,
             UnexposePort.descriptor
         ]
     }
@@ -293,13 +306,15 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > Source IDL Documentation:
         /// >
         /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-        /// > release its runtime resources (VM, network, CoW overlay). The
-        /// > record survives as PAUSED and Resume restores it in place — the
+        /// > release its runtime resources (VM, network) while retaining the
+        /// > checkpoint and the disk overlay — memory AND disk state survive.
+        /// > The record survives as PAUSED and Resume restores it in place — the
         /// > origin VM is gone by construction, which sidesteps the direct-mode
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-        /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > execution — see the state machine below for why RUNNING cannot
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_Sandbox_V1_PauseSandboxRequest` messages.
@@ -323,8 +338,12 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > resume it transparently before proceeding, so clients see a
         /// > latency blip rather than an error. Callers that want the honest
         /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-        /// > request header (not yet honored) and receive SANDBOX_PAUSED
-        /// > (`errors.proto`). Inspect and List never resume.
+        /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+        /// > Inspect and List never resume.
+        /// > 
+        /// > Resuming re-allocates networking: the sandbox comes back with a
+        /// > fresh IP (its DNS name follows), and port exposures dropped at
+        /// > pause time must be re-established with ExposePort.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_Sandbox_V1_ResumeSandboxRequest` messages.
@@ -457,6 +476,26 @@ extension Arcbox_Sandbox_V1_SandboxService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Sandbox_V1_ExposePortResponse>
 
+        /// Handle the "ListExposedPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > List the daemon's current host listeners for one sandbox. Returns
+        /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+        /// > state cannot be verified.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_Sandbox_V1_ListExposedPortsRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_Sandbox_V1_ListExposedPortsResponse` messages.
+        func listExposedPorts(
+            request: GRPCCore.StreamingServerRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>
+
         /// Handle the "UnexposePort" method.
         ///
         /// > Source IDL Documentation:
@@ -549,13 +588,15 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > Source IDL Documentation:
         /// >
         /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-        /// > release its runtime resources (VM, network, CoW overlay). The
-        /// > record survives as PAUSED and Resume restores it in place — the
+        /// > release its runtime resources (VM, network) while retaining the
+        /// > checkpoint and the disk overlay — memory AND disk state survive.
+        /// > The record survives as PAUSED and Resume restores it in place — the
         /// > origin VM is gone by construction, which sidesteps the direct-mode
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-        /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > execution — see the state machine below for why RUNNING cannot
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -579,8 +620,12 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > resume it transparently before proceeding, so clients see a
         /// > latency blip rather than an error. Callers that want the honest
         /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-        /// > request header (not yet honored) and receive SANDBOX_PAUSED
-        /// > (`errors.proto`). Inspect and List never resume.
+        /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+        /// > Inspect and List never resume.
+        /// > 
+        /// > Resuming re-allocates networking: the sandbox comes back with a
+        /// > fresh IP (its DNS name follows), and port exposures dropped at
+        /// > pause time must be re-established with ExposePort.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_ResumeSandboxRequest` message.
@@ -713,6 +758,26 @@ extension Arcbox_Sandbox_V1_SandboxService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_Sandbox_V1_ExposePortResponse>
 
+        /// Handle the "ListExposedPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > List the daemon's current host listeners for one sandbox. Returns
+        /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+        /// > state cannot be verified.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_Sandbox_V1_ListExposedPortsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_Sandbox_V1_ListExposedPortsResponse` message.
+        func listExposedPorts(
+            request: GRPCCore.ServerRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>
+
         /// Handle the "UnexposePort" method.
         ///
         /// > Source IDL Documentation:
@@ -803,13 +868,15 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > Source IDL Documentation:
         /// >
         /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-        /// > release its runtime resources (VM, network, CoW overlay). The
-        /// > record survives as PAUSED and Resume restores it in place — the
+        /// > release its runtime resources (VM, network) while retaining the
+        /// > checkpoint and the disk overlay — memory AND disk state survive.
+        /// > The record survives as PAUSED and Resume restores it in place — the
         /// > origin VM is gone by construction, which sidesteps the direct-mode
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-        /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > execution — see the state machine below for why RUNNING cannot
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -833,8 +900,12 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > resume it transparently before proceeding, so clients see a
         /// > latency blip rather than an error. Callers that want the honest
         /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-        /// > request header (not yet honored) and receive SANDBOX_PAUSED
-        /// > (`errors.proto`). Inspect and List never resume.
+        /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+        /// > Inspect and List never resume.
+        /// > 
+        /// > Resuming re-allocates networking: the sandbox comes back with a
+        /// > fresh IP (its DNS name follows), and port exposures dropped at
+        /// > pause time must be re-established with ExposePort.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_Sandbox_V1_ResumeSandboxRequest` message.
@@ -967,6 +1038,26 @@ extension Arcbox_Sandbox_V1_SandboxService {
             request: Arcbox_Sandbox_V1_ExposePortRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_Sandbox_V1_ExposePortResponse
+
+        /// Handle the "ListExposedPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > List the daemon's current host listeners for one sandbox. Returns
+        /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+        /// > state cannot be verified.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_Sandbox_V1_ListExposedPortsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_Sandbox_V1_ListExposedPortsResponse` to respond with.
+        func listExposedPorts(
+            request: Arcbox_Sandbox_V1_ListExposedPortsRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_Sandbox_V1_ListExposedPortsResponse
 
         /// Handle the "UnexposePort" method.
         ///
@@ -1114,6 +1205,17 @@ extension Arcbox_Sandbox_V1_SandboxService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_Sandbox_V1_SandboxService.Method.ListExposedPorts.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Sandbox_V1_ListExposedPortsRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Sandbox_V1_ListExposedPortsResponse>(),
+            handler: { request, context in
+                try await self.listExposedPorts(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_Sandbox_V1_SandboxService.Method.UnexposePort.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Sandbox_V1_UnexposePortRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<SwiftProtobuf.Google_Protobuf_Empty>(),
@@ -1245,6 +1347,17 @@ extension Arcbox_Sandbox_V1_SandboxService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Sandbox_V1_ExposePortResponse> {
         let response = try await self.exposePort(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func listExposedPorts(
+        request: GRPCCore.StreamingServerRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse> {
+        let response = try await self.listExposedPorts(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1413,6 +1526,19 @@ extension Arcbox_Sandbox_V1_SandboxService.SimpleServiceProtocol {
         )
     }
 
+    public func listExposedPorts(
+        request: GRPCCore.ServerRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse> {
+        return GRPCCore.ServerResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>(
+            message: try await self.listExposedPorts(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
     public func unexposePort(
         request: GRPCCore.ServerRequest<Arcbox_Sandbox_V1_UnexposePortRequest>,
         context: GRPCCore.ServerContext
@@ -1516,13 +1642,15 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > Source IDL Documentation:
         /// >
         /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-        /// > release its runtime resources (VM, network, CoW overlay). The
-        /// > record survives as PAUSED and Resume restores it in place — the
+        /// > release its runtime resources (VM, network) while retaining the
+        /// > checkpoint and the disk overlay — memory AND disk state survive.
+        /// > The record survives as PAUSED and Resume restores it in place — the
         /// > origin VM is gone by construction, which sidesteps the direct-mode
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-        /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > execution — see the state machine below for why RUNNING cannot
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -1551,8 +1679,12 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > resume it transparently before proceeding, so clients see a
         /// > latency blip rather than an error. Callers that want the honest
         /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-        /// > request header (not yet honored) and receive SANDBOX_PAUSED
-        /// > (`errors.proto`). Inspect and List never resume.
+        /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+        /// > Inspect and List never resume.
+        /// > 
+        /// > Resuming re-allocates networking: the sandbox comes back with a
+        /// > fresh IP (its DNS name follows), and port exposures dropped at
+        /// > pause time must be re-established with ExposePort.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_ResumeSandboxRequest` message.
@@ -1720,6 +1852,31 @@ extension Arcbox_Sandbox_V1_SandboxService {
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Sandbox_V1_ExposePortResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
+        /// Call the "ListExposedPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > List the daemon's current host listeners for one sandbox. Returns
+        /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+        /// > state cannot be verified.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_Sandbox_V1_ListExposedPortsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_Sandbox_V1_ListExposedPortsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_Sandbox_V1_ListExposedPortsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func listExposedPorts<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Sandbox_V1_ListExposedPortsResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
         /// Call the "UnexposePort" method.
         ///
         /// > Source IDL Documentation:
@@ -1873,13 +2030,15 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > Source IDL Documentation:
         /// >
         /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-        /// > release its runtime resources (VM, network, CoW overlay). The
-        /// > record survives as PAUSED and Resume restores it in place — the
+        /// > release its runtime resources (VM, network) while retaining the
+        /// > checkpoint and the disk overlay — memory AND disk state survive.
+        /// > The record survives as PAUSED and Resume restores it in place — the
         /// > origin VM is gone by construction, which sidesteps the direct-mode
         /// > relocation constraint documented in `snapshot.proto` (CORE-21).
         /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-        /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-        /// > `storage_bytes` until removed.
+        /// > execution — see the state machine below for why RUNNING cannot
+        /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+        /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -1919,8 +2078,12 @@ extension Arcbox_Sandbox_V1_SandboxService {
         /// > resume it transparently before proceeding, so clients see a
         /// > latency blip rather than an error. Callers that want the honest
         /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-        /// > request header (not yet honored) and receive SANDBOX_PAUSED
-        /// > (`errors.proto`). Inspect and List never resume.
+        /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+        /// > Inspect and List never resume.
+        /// > 
+        /// > Resuming re-allocates networking: the sandbox comes back with a
+        /// > fresh IP (its DNS name follows), and port exposures dropped at
+        /// > pause time must be re-established with ExposePort.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_Sandbox_V1_ResumeSandboxRequest` message.
@@ -2163,6 +2326,42 @@ extension Arcbox_Sandbox_V1_SandboxService {
             )
         }
 
+        /// Call the "ListExposedPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > List the daemon's current host listeners for one sandbox. Returns
+        /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+        /// > state cannot be verified.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_Sandbox_V1_ListExposedPortsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_Sandbox_V1_ListExposedPortsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_Sandbox_V1_ListExposedPortsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func listExposedPorts<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_Sandbox_V1_ListExposedPortsResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_Sandbox_V1_SandboxService.Method.ListExposedPorts.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "UnexposePort" method.
         ///
         /// > Source IDL Documentation:
@@ -2296,13 +2495,15 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-    /// > release its runtime resources (VM, network, CoW overlay). The
-    /// > record survives as PAUSED and Resume restores it in place — the
+    /// > release its runtime resources (VM, network) while retaining the
+    /// > checkpoint and the disk overlay — memory AND disk state survive.
+    /// > The record survives as PAUSED and Resume restores it in place — the
     /// > origin VM is gone by construction, which sidesteps the direct-mode
     /// > relocation constraint documented in `snapshot.proto` (CORE-21).
     /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-    /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-    /// > `storage_bytes` until removed.
+    /// > execution — see the state machine below for why RUNNING cannot
+    /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+    /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_Sandbox_V1_PauseSandboxRequest` message.
@@ -2337,8 +2538,12 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
     /// > resume it transparently before proceeding, so clients see a
     /// > latency blip rather than an error. Callers that want the honest
     /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-    /// > request header (not yet honored) and receive SANDBOX_PAUSED
-    /// > (`errors.proto`). Inspect and List never resume.
+    /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+    /// > Inspect and List never resume.
+    /// > 
+    /// > Resuming re-allocates networking: the sandbox comes back with a
+    /// > fresh IP (its DNS name follows), and port exposures dropped at
+    /// > pause time must be re-established with ExposePort.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_Sandbox_V1_ResumeSandboxRequest` message.
@@ -2546,6 +2751,37 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
         )
     }
 
+    /// Call the "ListExposedPorts" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > List the daemon's current host listeners for one sandbox. Returns
+    /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+    /// > state cannot be verified.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_Sandbox_V1_ListExposedPortsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listExposedPorts<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.listExposedPorts(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_Sandbox_V1_ListExposedPortsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_Sandbox_V1_ListExposedPortsResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "UnexposePort" method.
     ///
     /// > Source IDL Documentation:
@@ -2685,13 +2921,15 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > Pause a sandbox: checkpoint it to disk under the same ID, then
-    /// > release its runtime resources (VM, network, CoW overlay). The
-    /// > record survives as PAUSED and Resume restores it in place — the
+    /// > release its runtime resources (VM, network) while retaining the
+    /// > checkpoint and the disk overlay — memory AND disk state survive.
+    /// > The record survives as PAUSED and Resume restores it in place — the
     /// > origin VM is gone by construction, which sidesteps the direct-mode
     /// > relocation constraint documented in `snapshot.proto` (CORE-21).
     /// > Returns once the sandbox reaches PAUSED; requires READY (no active
-    /// > execution). Trades RAM for disk: a paused sandbox keeps paying
-    /// > `storage_bytes` until removed.
+    /// > execution — see the state machine below for why RUNNING cannot
+    /// > pause). Trades RAM for disk: the checkpoint joins the disk overlay
+    /// > in `storage_bytes`, paid until the sandbox is resumed or removed.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -2730,8 +2968,12 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
     /// > resume it transparently before proceeding, so clients see a
     /// > latency blip rather than an error. Callers that want the honest
     /// > state machine instead set the reserved `x-arcbox-no-auto-resume`
-    /// > request header (not yet honored) and receive SANDBOX_PAUSED
-    /// > (`errors.proto`). Inspect and List never resume.
+    /// > request header and receive SANDBOX_PAUSED (`errors.proto`).
+    /// > Inspect and List never resume.
+    /// > 
+    /// > Resuming re-allocates networking: the sandbox comes back with a
+    /// > fresh IP (its DNS name follows), and port exposures dropped at
+    /// > pause time must be re-established with ExposePort.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -2961,6 +3203,41 @@ extension Arcbox_Sandbox_V1_SandboxService.ClientProtocol {
             metadata: metadata
         )
         return try await self.exposePort(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ListExposedPorts" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > List the daemon's current host listeners for one sandbox. Returns
+    /// > NOT_FOUND when the sandbox does not exist and UNAVAILABLE while its
+    /// > state cannot be verified.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listExposedPorts<Result>(
+        _ message: Arcbox_Sandbox_V1_ListExposedPortsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_Sandbox_V1_ListExposedPortsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_Sandbox_V1_ListExposedPortsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.listExposedPorts(
             request: request,
             options: options,
             onResponse: handleResponse

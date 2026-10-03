@@ -210,15 +210,74 @@ struct SandboxSnapshotViewModel: Identifiable, Hashable {
     }
 }
 
-/// A port mapping exposed via ExposePort during this app session.
+/// A catalog template: a named, versioned base for sandboxes.
 ///
-/// sandbox.v1 has no RPC to query existing mappings, so the Ports tab can only
-/// track exposures made from this app; mappings created elsewhere (CLI/SDK)
-/// are not listed.
+/// `TemplateService.List` returns one entry per *version*, drafts included, so
+/// several entries can share a name. `reference` is what distinguishes them and
+/// what `CreateSandboxRequest.template` takes.
+struct SandboxTemplateViewModel: Identifiable, Hashable {
+    let name: String
+    /// Empty for an unpublished draft.
+    let version: String
+    let digest: String
+    /// Pre-warmed boot-to-ready snapshot; empty means a cold boot.
+    let warmSnapshotID: String
+    let createdAt: Date?
+    let labels: [String: String]
+    let sizeBytes: UInt64
+    let defaultVcpus: UInt32
+    let defaultMemoryMiB: UInt64
+    let defaultCmd: [String]
+    let exposedPorts: [UInt32]
+    let hasReadyProbe: Bool
+
+    /// `name:version`, or the bare name for a draft. Doubles as the value
+    /// `CreateSandboxRequest.template` resolves against the catalog.
+    var reference: String {
+        version.isEmpty ? name : "\(name):\(version)"
+    }
+
+    var id: String { reference }
+
+    var isDraft: Bool { version.isEmpty }
+
+    /// Restores from a memory image instead of booting, so READY is sub-second.
+    var isWarm: Bool { !warmSnapshotID.isEmpty }
+
+    var displayVersion: String {
+        version.isEmpty ? "draft" : version
+    }
+
+    var createdAgo: String {
+        guard let createdAt else { return "—" }
+        return relativeTime(from: createdAt)
+    }
+
+    var formattedSize: String {
+        formattedBytes(Int64(clamping: sizeBytes))
+    }
+
+    init(from template: Arcbox_Sandbox_V1_Template) {
+        self.name = template.name
+        self.version = template.version
+        self.digest = template.digest
+        self.warmSnapshotID = template.warmSnapshotID
+        self.createdAt = template.hasCreatedAt ? template.createdAt.date : nil
+        self.labels = template.labels
+        self.sizeBytes = template.sizeBytes
+        let defaults = template.defaults
+        self.defaultVcpus = defaults.limits.vcpus
+        self.defaultMemoryMiB = defaults.limits.memoryMib
+        self.defaultCmd = defaults.cmd
+        self.exposedPorts = defaults.exposedPorts
+        self.hasReadyProbe = defaults.hasReadyProbe
+    }
+}
+
+/// A host listener currently owned by a sandbox.
 struct SandboxExposedPort: Identifiable, Hashable {
     let sandboxPort: UInt32
     let hostPort: UInt32
-    let guestPort: UInt32
     let networkProtocol: String
 
     var id: String { "\(networkProtocol):\(sandboxPort)" }
@@ -289,10 +348,19 @@ struct SandboxEventRecord: Identifiable, Hashable {
         kind.label
     }
 
+    init(sandboxID: String, kind: SandboxEventKind, timestamp: Date, attributes: [String: String] = [:]) {
+        self.sandboxID = sandboxID
+        self.kind = kind
+        self.timestamp = timestamp
+        self.attributes = attributes
+    }
+
     init(from event: Arcbox_Sandbox_V1_SandboxEvent) {
-        self.sandboxID = event.sandboxID
-        self.kind = SandboxEventKind(apiKind: event.kind)
-        self.timestamp = event.time.date
-        self.attributes = event.attributes
+        self.init(
+            sandboxID: event.sandboxID,
+            kind: SandboxEventKind(apiKind: event.kind),
+            timestamp: event.time.date,
+            attributes: event.attributes
+        )
     }
 }

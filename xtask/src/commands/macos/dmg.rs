@@ -25,7 +25,6 @@ use crate::{MacosDmgArgs, MacosPrepareResourcesArgs, MacosStageResourcesArgs};
 #[cfg(test)]
 mod tests;
 
-const SCHEME_NAME: &str = "ArcBox";
 const PRODUCTION_DAEMON_NAME: &str = "com.arcboxlabs.desktop.daemon";
 const DOCKER_TOOLS: [&str; 4] = [
     "docker",
@@ -138,23 +137,12 @@ fn build_swift_app(
 ) -> Result<PathBuf> {
     println!("--- Building Swift app ---");
     let derived_data = desktop_repo.join(".build").join("DerivedData");
-    let spm_clones = desktop_repo.join(".build").join("SourcePackages");
-
-    let mut cmd = Command::new("xcodebuild");
-    cmd.arg("build")
-        .arg("-project")
-        .arg(desktop_repo.join("ArcBox.xcodeproj"))
-        .args(["-scheme", SCHEME_NAME, "-configuration", "Release"])
-        .arg("-showBuildTimingSummary")
-        .arg("-derivedDataPath")
-        .arg(&derived_data)
-        .arg("-clonedSourcePackagesDirPath")
-        .arg(&spm_clones)
-        .arg("-skipPackagePluginValidation")
-        // A release must ship the dependency versions that were reviewed. Without
-        // this, a stale Package.resolved re-resolves silently and the shipped
-        // binary links something nobody approved.
-        .arg("-onlyUsePackageVersionsFromResolvedFile")
+    let mut cmd = Command::new("make");
+    cmd.current_dir(desktop_repo)
+        .arg("build")
+        .arg("CONFIGURATION=Release")
+        .arg("DERIVED_DATA_PATH=.build/DerivedData")
+        .arg("XCODEBUILD_EXTRA=-showBuildTimingSummary")
         .arg("ARCHS=arm64")
         .arg(format!("ARCBOX_DIR={}", arcbox_dir.display()))
         .arg(format!("CURRENT_PROJECT_VERSION={build_number}"));
@@ -168,8 +156,7 @@ fn build_swift_app(
         .arg(format!("ARCBOX_PROFILE={}", profile.arcbox_profile()));
     }
     if !sign_identity.is_empty() {
-        cmd.arg(format!("CODE_SIGN_IDENTITY={sign_identity}"))
-            .arg("CODE_SIGN_STYLE=Manual");
+        cmd.arg(format!("XCODE_SIGN_IDENTITY={sign_identity}"));
     }
     // Packaging re-embeds host/guest binaries after the Swift build. Skipping
     // the Xcode embed phase avoids a second copy/sign pass (and any residual
@@ -182,9 +169,9 @@ fn build_swift_app(
         println!("  SKIP_RUST_BUILD=1 (packaging will embed binaries)");
     }
 
-    let status = cmd.status().context("running xcodebuild")?;
+    let status = cmd.status().context("running make build")?;
     if !status.success() {
-        bail!("xcodebuild failed");
+        bail!("make build failed");
     }
 
     let products = derived_data.join("Build").join("Products").join("Release");

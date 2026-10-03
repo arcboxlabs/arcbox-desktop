@@ -37,6 +37,8 @@ enum AppPreferences {
             "includeTimeMachine": false,
             "switchDockerContextAutomatically": true,
             "pauseContainersWhileSleeping": true,
+            AppNotification.Category.sandbox.preferenceKey: true,
+            AppNotification.Category.daemonHealth.preferenceKey: true,
         ])
     }
 

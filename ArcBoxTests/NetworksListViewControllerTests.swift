@@ -35,6 +35,18 @@ final class NetworksListViewControllerTests: XCTestCase {
         XCTAssertNil(viewModel.lastError)
     }
 
+    func testNetworkInspectNotFoundIsSkippedButServerErrorsSurface() throws {
+        let missing = Operations.NetworkInspect.Output.notFound(
+            .init(body: .json(.init(message: "network disappeared")))
+        )
+        XCTAssertNil(try missing.networkForList)
+
+        let serverError = Operations.NetworkInspect.Output.internalServerError(
+            .init(body: .json(.init(message: "network driver failed")))
+        )
+        XCTAssertThrowsError(try serverError.networkForList)
+    }
+
     @MainActor
     func testStateSearchSelectionAndSystemNetworkDeletionRules() async throws {
         let viewModel = NetworksViewModel()
@@ -68,12 +80,10 @@ final class NetworksListViewControllerTests: XCTestCase {
         ]
         try await waitUntil { tableView.numberOfRows == 5 }
         XCTAssertFalse(try XCTUnwrap(tableView.enclosingScrollView).isHidden)
+        XCTAssertEqual(sectionTitle(at: 0, in: tableView), "In Use")
+        XCTAssertEqual(sectionTitle(at: 2, in: tableView), "Unused")
 
-        let systemRow = try XCTUnwrap(row(named: "host", in: tableView))
-        let systemCell = try XCTUnwrap(
-            tableView.view(atColumn: 0, row: systemRow, makeIfNecessary: true)
-                as? NSTableCellView
-        )
+        let (systemRow, systemCell) = try rowAndCell(named: "host", in: tableView)
         let systemDeleteButton = try XCTUnwrap(deleteButton(in: systemCell))
         XCTAssertTrue(systemDeleteButton is ResourceActionButton)
         systemCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
@@ -84,11 +94,7 @@ final class NetworksListViewControllerTests: XCTestCase {
         XCTAssertFalse(systemDeleteButton.isEnabled)
         XCTAssertEqual(systemLabels.frame.maxX, systemContent.bounds.maxX, accuracy: 0.5)
 
-        let customRow = try XCTUnwrap(row(named: "frontend", in: tableView))
-        let customCell = try XCTUnwrap(
-            tableView.view(atColumn: 0, row: customRow, makeIfNecessary: true)
-                as? NSTableCellView
-        )
+        let (customRow, customCell) = try rowAndCell(named: "frontend", in: tableView)
         let customDeleteButton = try XCTUnwrap(deleteButton(in: customCell))
         XCTAssertTrue(customDeleteButton is ResourceActionButton)
         customCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
@@ -96,19 +102,22 @@ final class NetworksListViewControllerTests: XCTestCase {
         let customContent = try XCTUnwrap(customDeleteButton.superview as? NSStackView)
         let customLabels = customContent.arrangedSubviews[1]
         XCTAssertTrue(customDeleteButton.isHidden)
-        XCTAssertTrue(customDeleteButton.isEnabled)
+        XCTAssertFalse(customDeleteButton.isEnabled)
         XCTAssertEqual(customContent.spacing, 12)
         XCTAssertEqual(customContent.frame.minX, 24, accuracy: 0.5)
         XCTAssertEqual(customCell.bounds.maxX - customContent.frame.maxX, 24, accuracy: 0.5)
         XCTAssertEqual(customLabels.frame.maxX, customContent.bounds.maxX, accuracy: 0.5)
         tableView.selectRowIndexes(IndexSet(integer: customRow), byExtendingSelection: false)
         customCell.layoutSubtreeIfNeeded()
-        XCTAssertFalse(customDeleteButton.isHidden)
-        XCTAssertEqual(
-            customDeleteButton.frame.minX - customLabels.frame.maxX,
-            12,
-            accuracy: 0.5
-        )
+        XCTAssertTrue(customDeleteButton.isHidden)
+
+        let (unusedRow, unusedCell) = try rowAndCell(named: "backend", in: tableView)
+        let unusedDeleteButton = try XCTUnwrap(deleteButton(in: unusedCell))
+        unusedCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
+        tableView.selectRowIndexes(IndexSet(integer: unusedRow), byExtendingSelection: false)
+        unusedCell.layoutSubtreeIfNeeded()
+        XCTAssertTrue(unusedDeleteButton.isEnabled)
+        XCTAssertFalse(unusedDeleteButton.isHidden)
         XCTAssertEqual(customCell.imageView?.contentTintColor, .secondaryLabelColor)
         tableView.deselectAll(nil)
         customCell.layoutSubtreeIfNeeded()
@@ -197,6 +206,23 @@ final class NetworksListViewControllerTests: XCTestCase {
                 as? NSTableCellView
             return cell?.textField?.stringValue == name
         }
+    }
+
+    @MainActor
+    private func sectionTitle(at row: Int, in tableView: NSTableView) -> String? {
+        (tableView.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView)?
+            .textField?.stringValue
+    }
+
+    @MainActor
+    private func rowAndCell(
+        named name: String,
+        in tableView: NSTableView
+    ) throws -> (Int, NSTableCellView) {
+        let row = try XCTUnwrap(row(named: name, in: tableView))
+        let cell = try XCTUnwrap(
+            tableView.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView)
+        return (row, cell)
     }
 
     @MainActor

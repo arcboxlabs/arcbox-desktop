@@ -83,6 +83,10 @@ make bump-arcbox VERSION=v0.5.6
 This updates [`arcbox.version`](../arcbox.version) and regenerates the gRPC client atomically, restoring
 both if generation fails. CI enforces that they stay in sync with `make verify-arcbox-protobuf`.
 
+You rarely have to run it yourself: every arcbox release dispatches the
+[Bump ArcBox](../.github/workflows/bump-arcbox.yml) workflow, which runs the same target on a macOS
+runner and opens the PR. Dispatch it from the Actions tab to pin any other tag.
+
 ## Project layout
 
 ```

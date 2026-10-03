@@ -46,10 +46,15 @@ jobs:
           # Shallow+unshallow is slower than a single full fetch on this repo.
           fetch-depth: 0
 
+      # The musl target is only needed to build arcbox's guest agents from
+      # source; a version tag downloads them prebuilt. Installing it here
+      # anyway costs seconds and matches pr.yml, rather than making the
+      # toolchain depend on which arcbox ref the build resolved.
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          targets: aarch64-unknown-linux-musl
 
       - name: Restore desktop Rust tooling cache
         id: desktop_rust_cache
@@ -71,6 +76,12 @@ jobs:
           cargo xtask release resolve \
             --arcbox-ref "${{ inputs.arcbox_ref }}" \
             --tag "${{ inputs.tag }}"
+
+      - name: Extract curated release notes
+        run: |
+          cargo xtask release notes \
+            --version "${{ steps.resolve.outputs.version }}" \
+            --output release-notes.md
 
       - name: Checkout arcbox
         id: checkout_arcbox
@@ -140,9 +151,13 @@ jobs:
           echo "Decoded provisioning profile to $RUNNER_TEMP/embedded.provisionprofile"
           security cms -D -i "$RUNNER_TEMP/embedded.provisionprofile" | head -5
 
+      # A version tag must resolve to arcbox binaries that already exist: this
+      # step fails the build rather than falling through to the source build,
+      # which is reachable only for branch and SHA refs. v1.34.5 spent its
+      # first run discovering that the hard way — arcbox v0.6.4 shipped with no
+      # assets, and the fallback died three minutes later on missing protoc.
       - name: Download pre-built arcbox binaries
         id: prebuilt
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -153,17 +168,22 @@ jobs:
           # Branches and SHAs must be built from the checked-out source below.
           if [[ ! "$REF" =~ ^v[0-9] ]]; then
             echo "Ref '$REF' is not a version tag; building arcbox from source"
-            exit 1
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           RELEASE_TAG="$REF"
 
           echo "Downloading arcbox binaries from release $RELEASE_TAG..."
 
           DOWNLOAD_DIR="$(mktemp -d)"
-          gh release download "$RELEASE_TAG" \
+          if ! gh release download "$RELEASE_TAG" \
             --repo arcboxlabs/arcbox \
             --dir "$DOWNLOAD_DIR" \
-            --skip-existing
+            --skip-existing; then
+            echo "::error::arcboxlabs/arcbox $RELEASE_TAG has no downloadable assets." \
+              "Its own release build did not finish — repair that release, then re-run this one."
+            exit 1
+          fi
 
           echo "Downloaded assets:"
           ls -la "$DOWNLOAD_DIR"
@@ -186,7 +206,8 @@ jobs:
           VM_AGENT_BIN=$(find "$DOWNLOAD_DIR" -type f -name "vm-agent" | head -1)
 
           if [ -z "$CLI_BIN" ] || [ -z "$DAEMON_BIN" ] || [ -z "$HELPER_BIN" ]; then
-            echo "Could not find required pre-built host binaries (abctl, arcbox-daemon, arcbox-helper) in release assets"
+            echo "::error::arcboxlabs/arcbox $RELEASE_TAG is missing host binaries" \
+              "(abctl, arcbox-daemon, arcbox-helper) among its release assets."
             exit 1
           fi
 
@@ -253,11 +274,27 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-cargo-arcbox-release-${{ hashFiles('arcbox-core/**/Cargo.lock') }}-
             ${{ runner.os }}-${{ runner.arch }}-cargo-arcbox-release-
 
+      # arcbox's rpc crates run protoc from build.rs, so the source build needs
+      # it — the same `brew install protobuf` arcbox's own release job runs.
+      # Conditional because the prebuilt path never invokes a build script.
+      - name: Install protobuf compiler
+        if: steps.prebuilt.outputs.found != 'true'
+        timeout-minutes: 5
+        run: |
+          brew install protobuf
+          command -v protoc
+
+      # arcbox splits this across two parallel jobs at 15 and 10 minutes, and
+      # the 15 is what timed out on v0.6.4's cold cache. Here the host
+      # binaries, the daemon signature, and the musl guest agents all come out
+      # of one serial step, so it gets both budgets and room to miss the cache.
       - name: Build Rust binaries (release)
         if: steps.prebuilt.outputs.found != 'true'
-        timeout-minutes: 30
+        timeout-minutes: 45
         run: |
-          make build-rust ARCBOX_DIR="${{ github.workspace }}/arcbox-core"
+          make build-rust \
+            ARCBOX_DIR="${{ github.workspace }}/arcbox-core" \
+            REQUIRE_GUEST_AGENTS=1
 
       - name: Save arcbox Rust build cache
         if: steps.prebuilt.outputs.found != 'true' && steps.arcbox_rust_cache.outputs.cache-hit != 'true'
@@ -309,6 +346,7 @@ jobs:
           #include "Version.xcconfig"
           OIDC_ISSUER_URL = https:/$()/auth.arcbox.dev/api/auth
           OIDC_CLIENT_ID = arcbox-desktop
+          FLEET_PLATFORM_BASE_URL = https:/$()/api.arcbox.dev
           XCEOF
 
       - name: Trust SwiftPM plugins
@@ -516,10 +554,11 @@ jobs:
             .build/DerivedData/ModuleCache.noindex/
           key: ${{ steps.xcode_build_cache.outputs.cache-primary-key }}
 
+      # Hash by basename so `shasum -c` works wherever the user downloads to.
       - name: Generate checksum
         run: |
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
-          shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
+          (cd "$(dirname "$DMG_PATH")" && shasum -a 256 "$(basename "$DMG_PATH")" > "$(basename "$DMG_PATH").sha256")
           cat "${DMG_PATH}.sha256"
 
       - name: Cache Sparkle sign_update
@@ -650,6 +689,7 @@ jobs:
           path: |
             ${{ steps.dmg.outputs.dmg_path }}
             ${{ steps.dmg.outputs.dmg_path }}.sha256
+            release-notes.md
           retention-days: 30
 
       # Keychain cleanup is handled automatically by apple-actions/import-codesign-certs
@@ -658,10 +698,22 @@ jobs:
     name: Create Release
     needs: [build-dmg]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    # No GITHUB_TOKEN scopes: this job speaks to the releases API as the app
+    # below, and downloading this run's own artifacts needs no permissions.
+    permissions: {}
 
     steps:
+      # release-please creates the draft release as this app, and GITHUB_TOKEN
+      # cannot modify another integration's draft — v1.34.5's first attempt got
+      # 403 "Resource not accessible by integration" on the update, after
+      # finding the draft just fine. Publishing as the same app avoids that.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
@@ -675,9 +727,15 @@ jobs:
           echo "=== Release assets ==="
           ls -lh release-assets/
 
+      # release-please leaves a draft release behind on the tag (see
+      # release-please-config.json). This job uploads the DMG into that draft
+      # and then flips it to published, so the releases page never shows a
+      # version whose download is missing. `draft: false` is what drives the
+      # flip; the action keeps the release in draft while it uploads assets.
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          token: ${{ steps.app-token.outputs.token }}
           tag_name: ${{ needs.build-dmg.outputs.version || github.ref_name }}
           name: ArcBox ${{ needs.build-dmg.outputs.version || github.ref_name }}
           draft: false
@@ -704,8 +762,7 @@ jobs:
     needs: [build-dmg]
     runs-on: ubuntu-latest
     permissions:
-      # The releases/generate-notes API requires contents: write.
-      contents: write
+      contents: read
 
     steps:
       - name: Download DMG artifact
@@ -725,20 +782,13 @@ jobs:
 
       # Sparkle renders these inline in the update dialog. Linking the GitHub
       # release page instead would load the whole GitHub website in the dialog.
-      - name: Generate release notes HTML
-        id: release_notes
-        continue-on-error: true
+      - name: Render curated release notes HTML
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${{ needs.build-dmg.outputs.version }}"
-          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
-            -f tag_name="$VERSION" --jq '.body // empty' > notes.md
-          # GitHub-flavored HTML, with PR/compare URLs collapsed to short links
           gh api markdown -f mode=gfm -f context="$GITHUB_REPOSITORY" \
-            -F text=@notes.md > notes.html
+            -F text=@artifacts/release-notes.md > notes.html
           [ -s notes.html ]
-          echo "found=true" >> "$GITHUB_OUTPUT"
 
       - name: Generate appcast + latest.json
         id: feeds
@@ -750,14 +800,13 @@ jobs:
           DMG_NAME: ${{ needs.build-dmg.outputs.dmg }}
           DMG_LENGTH: ${{ needs.build-dmg.outputs.dmg_length }}
           ED_SIGNATURE: ${{ needs.build-dmg.outputs.ed_signature }}
-          HAS_NOTES: ${{ steps.release_notes.outputs.found }}
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
 
             const {
-              VERSION, CHANNEL, BUILD_NUMBER, DMG_NAME, DMG_LENGTH, ED_SIGNATURE, HAS_NOTES,
+              VERSION, CHANNEL, BUILD_NUMBER, DMG_NAME, DMG_LENGTH, ED_SIGNATURE,
             } = process.env;
             const displayVersion = VERSION.replace(/^v/, '');
             const dmgUrl = `https://release.arcboxcdn.com/desktop/${VERSION}/${DMG_NAME}`;
@@ -786,9 +835,7 @@ jobs:
               const channelElement = CHANNEL !== 'stable'
                 ? `\n        <sparkle:channel>${CHANNEL}</sparkle:channel>`
                 : '';
-              const notesElement = releaseNotesHtml
-                ? `        <description>${cdata(releaseNotesHtml)}</description>`
-                : `        <sparkle:releaseNotesLink>https://github.com/arcboxlabs/arcbox-desktop/releases/tag/v${displayVersion}</sparkle:releaseNotesLink>`;
+              const notesElement = `        <description>${cdata(releaseNotesHtml)}</description>`;
               return [
                 '      <item>',
                 `        <title>ArcBox ${displayVersion}</title>`,
@@ -841,12 +888,7 @@ jobs:
               return merged.replace('    </channel>', `${item}\n    </channel>`);
             }
 
-            let releaseNotesHtml = null;
-            if (HAS_NOTES === 'true' && fs.existsSync('notes.html')) {
-              const raw = fs.readFileSync('notes.html', 'utf8').trim();
-              if (raw) releaseNotesHtml = raw;
-            }
-
+            const releaseNotesHtml = fs.readFileSync('notes.html', 'utf8').trim();
             const item = buildItem({ releaseNotesHtml });
             const existingAppcast = await fetchOptional(
               `https://release.arcboxcdn.com/desktop/appcast/${CHANNEL}.xml`,
@@ -901,36 +943,19 @@ jobs:
           echo "=== CDN staging ==="
           find cdn-staging/ -type f | sort
 
-      - name: Upload DMG to B2 (size-only)
-        run: |
-          VERSION="${{ steps.channel.outputs.version }}"
-          aws s3 sync \
-            "cdn-staging/desktop/${VERSION}/" \
-            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/${VERSION}/" \
-            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
-            --size-only
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
-
-      - name: Upload appcast and latest.json to B2
-        run: |
-          CHANNEL="${{ steps.channel.outputs.channel }}"
-          aws s3 cp \
-            "cdn-staging/desktop/appcast/${CHANNEL}.xml" \
-            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/appcast/${CHANNEL}.xml" \
-            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
-            --content-type "application/xml"
-          aws s3 cp \
-            "cdn-staging/desktop/latest.json" \
-            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/latest.json" \
-            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
-            --content-type "application/json"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
+      # DMG first, appcast + latest.json last, so Sparkle never sees an item
+      # whose enclosure is not live yet.
+      - name: Publish to R2
+        uses: arcboxlabs/actions/r2-publish@v2
+        with:
+          account-id: ${{ vars.R2_ACCOUNT_ID }}
+          access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          bucket: arcboxcdn-release
+          source-dir: cdn-staging
+          index-files: |
+            desktop/appcast/${{ steps.channel.outputs.channel }}.xml
+            desktop/latest.json
 
       - name: Verify CDN URLs
         id: cdn_verify

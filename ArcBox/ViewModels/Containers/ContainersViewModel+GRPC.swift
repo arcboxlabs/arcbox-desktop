@@ -51,6 +51,7 @@ extension ContainersViewModel {
         do {
             _ = try await client.containers.start(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: true)
+            Analytics.capture(.containerStarted, properties: ["backend": "grpc", "batch": false])
         } catch {
             Log.container.error(
                 "Error starting container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
@@ -70,6 +71,7 @@ extension ContainersViewModel {
         do {
             _ = try await client.containers.stop(request, options: ArcBoxClient.defaultCallOptions)
             setContainerRunningState(id, isRunning: false)
+            Analytics.capture(.containerStopped, properties: ["backend": "grpc", "batch": false])
         } catch {
             Log.container.error(
                 "Error stopping container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")
@@ -92,10 +94,15 @@ extension ContainersViewModel {
         }
         var config = Components.Schemas.ContainerConfig()
         config.Image = options.image
-        let cmdParts = options.command.split(separator: " ").map(String.init)
-        if !cmdParts.isEmpty { config.Cmd = cmdParts }
-        let entrypointParts = options.entrypoint.split(separator: " ").map(String.init)
-        if !entrypointParts.isEmpty { config.Entrypoint = entrypointParts }
+        do {
+            let command = try ArgumentList.parse(options.command)
+            if !command.isEmpty { config.Cmd = command }
+            let entrypoint = try ArgumentList.parse(options.entrypoint)
+            if !entrypoint.isEmpty { config.Entrypoint = entrypoint }
+        } catch {
+            lastError = "Invalid command or entrypoint: \(error.localizedDescription)"
+            return nil
+        }
         if !options.workingDir.isEmpty { config.WorkingDir = options.workingDir }
 
         let policyName: Components.Schemas.RestartPolicy.NamePayload =
@@ -128,6 +135,14 @@ extension ContainersViewModel {
                 case .json(let body):
                     let id = body.Id
                     Log.container.info("Created container \(id, privacy: .private)")
+                    Analytics.capture(
+                        .containerCreated,
+                        properties: [
+                            "backend": "docker",
+                            "restart_policy": options.restartPolicy,
+                            "auto_remove": options.autoRemove,
+                            "privileged": options.privileged,
+                        ])
                     await loadContainersFromDocker(docker: docker)
                     return id
                 }
@@ -164,6 +179,7 @@ extension ContainersViewModel {
         do {
             _ = try await client.containers.remove(request, options: ArcBoxClient.defaultCallOptions)
             removeContainerLocally(id)
+            Analytics.capture(.containerRemoved, properties: ["backend": "grpc", "batch": false])
         } catch {
             Log.container.error(
                 "Error removing container \(id, privacy: .private): \(error.localizedDescription, privacy: .private)")

@@ -54,6 +54,7 @@ extension SandboxesViewModel {
             sandboxes = viewModels
             loadState = .loaded
             refreshError = nil
+            lastSuccessfulListLoad = ContinuousClock().now
         } catch {
             if loadState.cancelLoading(for: error, retainingLoadedContent: isRefresh) {
                 return
@@ -115,9 +116,7 @@ extension SandboxesViewModel {
             request.network.mode = spec.networkMode
         }
         request.ttlSeconds = spec.ttlSeconds
-        if !spec.image.isEmpty {
-            request.template = "docker:\(spec.image)"
-        }
+        request.template = spec.template
 
         for attempt in 0..<3 {
             do {

@@ -6,9 +6,16 @@ import Observation
 @MainActor
 @Observable
 class ServicesViewModel {
-    var services: [ServiceViewModel] = []
+    var services: [ServiceViewModel] = [] {
+        didSet {
+            if let selectedID, !services.contains(where: { $0.id == selectedID }) {
+                self.selectedID = nil
+            }
+        }
+    }
     var selectedID: String?
     var streamPhase: KubernetesStreamPhase = .connecting
+    var lastStreamUpdate: ContinuousClock.Instant?
     var searchText: String = ""
     var isSearching: Bool = false
 
@@ -34,6 +41,7 @@ class ServicesViewModel {
     /// client and the stream.
     func apply(_ items: [K8sService]) {
         services = items.compactMap { Self.mapService($0) }
+        lastStreamUpdate = ContinuousClock().now
     }
 
     /// Clear all service data when K8s is stopped.
@@ -41,6 +49,7 @@ class ServicesViewModel {
         services = []
         selectedID = nil
         streamPhase = .connecting
+        lastStreamUpdate = nil
     }
 
     // MARK: - Mapping

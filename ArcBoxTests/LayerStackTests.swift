@@ -3,6 +3,12 @@ import XCTest
 @testable import ArcBox
 
 final class LayerStackTests: XCTestCase {
+    private enum ResolutionError: LocalizedError {
+        case permissionDenied
+
+        var errorDescription: String? { "permission denied" }
+    }
+
     func testFreshStackDescribesNothing() {
         let stack = LayerStack()
 
@@ -63,6 +69,54 @@ final class LayerStackTests: XCTestCase {
         XCTAssertEqual(
             LayerStack.unresolved(guestPaths: ["/var/lib/docker/definitely-absent-\(UUID())"]),
             .exportUnavailable)
+    }
+
+    func testPathResolutionDistinguishesEmptySuccessFromRequestFailure() async {
+        var loggedFailure = false
+        let empty = await FilesTabPathResolution.resolve(
+            subject: "container",
+            operation: { [] },
+            onFailure: { _ in loggedFailure = true }
+        )
+
+        XCTAssertEqual(empty, .resolved([]))
+        XCTAssertNil(empty.errorMessage)
+        XCTAssertFalse(loggedFailure)
+
+        let failure = await FilesTabPathResolution.resolve(
+            subject: "container",
+            operation: { throw ResolutionError.permissionDenied },
+            onFailure: { _ in loggedFailure = true }
+        )
+
+        XCTAssertEqual(failure.errorMessage, "Couldn’t load container files. permission denied")
+        XCTAssertEqual(FilesTabPathResolution.retryTitle, "Retry")
+        XCTAssertTrue(loggedFailure)
+    }
+
+    func testCancelledPathResolutionDoesNotPublishStaleSuccessOrLogFailure() async {
+        let task = Task {
+            var loggedFailure = false
+            let resolution = await FilesTabPathResolution.resolve(
+                subject: "container",
+                operation: {
+                    do {
+                        try await Task.sleep(for: .seconds(60))
+                    } catch is CancellationError {
+                        return ["/stale"]
+                    }
+                    return []
+                },
+                onFailure: { _ in loggedFailure = true }
+            )
+            return (resolution, loggedFailure)
+        }
+
+        task.cancel()
+        let (resolution, loggedFailure) = await task.value
+
+        XCTAssertEqual(resolution, .cancelled)
+        XCTAssertFalse(loggedFailure)
     }
 
     func testAnUnbrowsableStackDescribesNothing() async {

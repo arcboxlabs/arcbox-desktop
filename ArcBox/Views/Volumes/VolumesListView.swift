@@ -16,7 +16,7 @@ struct VolumesListView: View {
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
             } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView("Starting Docker engine…")
+                ProgressView(daemonManager.setupMessage)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if docker == nil {
                 ContentUnavailableView {

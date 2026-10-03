@@ -11,6 +11,7 @@ struct SandboxTerminalTab: View {
     @Environment(SandboxesViewModel.self) private var vm
     @Environment(\.arcboxClient) private var client
 
+    @AppStorage("terminalTheme") private var terminalTheme = "system"
     @State private var selectedShell = "/bin/sh"
     @State private var terminalToken = UUID()
     @State private var hasConnected = false
@@ -102,25 +103,27 @@ struct SandboxTerminalTab: View {
     }
 
     private var terminalContent: some View {
-        SwiftTermView(delegate: TerminalSessionBridge(session: session)) { terminalView in
-            TerminalAppearance.configure(terminalView)
-
-            guard canStartExecution, !hasConnected, let client else { return }
-            let sandboxID = sandboxID
-            let shell = selectedShell
-            let machineID = vm.activeMachineID
-            // Defer state modifications out of the view update cycle.
-            Task { @MainActor in
-                hasConnected = true
-                session.connect(
-                    sandboxID: sandboxID,
-                    command: [shell],
-                    machineID: machineID,
-                    client: client,
-                    terminalView: terminalView
-                )
-            }
-        }
+        SwiftTermView(
+            delegate: TerminalSessionBridge(session: session),
+            onTerminalCreated: { terminalView in
+                guard canStartExecution, !hasConnected, let client else { return }
+                let sandboxID = sandboxID
+                let shell = selectedShell
+                let machineID = vm.activeMachineID
+                // Defer state modifications out of the view update cycle.
+                Task { @MainActor in
+                    hasConnected = true
+                    session.connect(
+                        sandboxID: sandboxID,
+                        command: [shell],
+                        machineID: machineID,
+                        client: client,
+                        terminalView: terminalView
+                    )
+                }
+            },
+            theme: terminalTheme
+        )
     }
 
     private func errorView(_ message: String) -> some View {

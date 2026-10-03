@@ -47,6 +47,24 @@ final class KubernetesStateTests: XCTestCase {
     }
 
     @MainActor
+    func testStreamSnapshotsTrackFreshnessUntilCleared() throws {
+        let pods = PodsViewModel()
+        let services = ServicesViewModel()
+        let requestedAt = ContinuousClock().now
+
+        pods.apply([])
+        services.apply([])
+
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(pods.lastStreamUpdate), requestedAt)
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(services.lastStreamUpdate), requestedAt)
+
+        pods.clear()
+        services.clear()
+        XCTAssertNil(pods.lastStreamUpdate)
+        XCTAssertNil(services.lastStreamUpdate)
+    }
+
+    @MainActor
     func testUnavailableClientAndStopFailureRemainVisible() async {
         let unavailableState = KubernetesState()
 

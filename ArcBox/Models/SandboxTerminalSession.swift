@@ -628,6 +628,7 @@ class SandboxTerminalSession {
     private func markConnected(generation: Int) {
         guard generation == sessionGeneration else { return }
         state = .connected
+        Analytics.capture(.terminalOpened, properties: ["surface": "sandbox"])
     }
 
     private func feed(_ data: Data.SubSequence, generation: Int) {

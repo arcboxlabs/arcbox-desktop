@@ -208,6 +208,8 @@ struct ReleaseArgs {
 enum ReleaseCommand {
     /// Resolve build version, channel, prerelease flag, and arcbox ref into GITHUB_OUTPUT.
     Resolve(ReleaseResolveArgs),
+    /// Extract curated Highlights for one release from CHANGELOG.md.
+    Notes(ReleaseNotesArgs),
     /// Generate or update a Sparkle 2.x appcast XML feed.
     Appcast(ReleaseAppcastArgs),
     /// Update (or create) the latest.json channel manifest.
@@ -229,6 +231,19 @@ struct ReleaseResolveArgs {
     /// Git ref (e.g. refs/tags/v1.2.0 on a tag push).
     #[arg(long, env = "GITHUB_REF", default_value = "")]
     github_ref: String,
+}
+
+#[derive(Args)]
+struct ReleaseNotesArgs {
+    /// Release version (leading "v" is stripped automatically).
+    #[arg(long)]
+    version: String,
+    /// Changelog containing the release entry.
+    #[arg(long, default_value = "CHANGELOG.md")]
+    changelog: PathBuf,
+    /// Markdown file to write with the curated Highlights prose.
+    #[arg(long)]
+    output: PathBuf,
 }
 
 #[derive(Args)]

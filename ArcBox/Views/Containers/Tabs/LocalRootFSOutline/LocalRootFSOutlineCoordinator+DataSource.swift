@@ -119,8 +119,11 @@ extension LocalRootFSOutlineCoordinator: NSOutlineViewDataSource, NSOutlineViewD
             ])
         }
 
-        cell.imageView?.image = NSWorkspace.shared.icon(forFile: node.entry.url.path)
-        cell.imageView?.contentTintColor = nil
+        cell.imageView?.image = NSImage(
+            systemSymbolName: node.entry.systemImageName,
+            accessibilityDescription: node.entry.kind
+        )
+        cell.imageView?.contentTintColor = .secondaryLabelColor
         cell.textField?.stringValue = node.entry.name
         cell.textField?.font = .systemFont(ofSize: 12)
         return cell

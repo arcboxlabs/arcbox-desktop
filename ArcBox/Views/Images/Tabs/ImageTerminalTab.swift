@@ -76,7 +76,8 @@ struct ImageTerminalTab: View {
         }
         .onChange(of: image.id) { _, newID in
             guard newID != connectedImageID else { return }
-            // Only reconnect if terminal is currently visible
+            session.disconnect()
+            connectedImageID = ""
             guard isActive else { return }
             connectToCurrentImage()
         }

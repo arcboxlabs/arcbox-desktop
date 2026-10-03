@@ -2,6 +2,7 @@ import AppKit
 import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
+import FleetPlatformClient
 import Foundation
 import OSLog
 import Observation
@@ -12,21 +13,40 @@ import SwiftUI
 final class ApplicationCoordinator: NSObject {
     let appVM = AppViewModel()
     let daemonManager = DaemonManager()
-    let authSession = AuthSession()
+    let authSession = AuthSession(tokenStore: ApplicationCoordinator.sessionTokenStore)
     let containersVM = ContainersViewModel()
     let imagesVM = ImagesViewModel()
     let networksVM = NetworksViewModel()
     let volumesVM = VolumesViewModel()
     let systemVmBackendVM = SystemVmBackendModel()
+    // App-scoped so the Fleet Watch survives closing the main window.
+    let runnersVM = RunnersViewModel()
 
     private let eventMonitor = DockerEventMonitor()
     private let sandboxEventMonitor = SandboxEventMonitor()
     private let machineEventMonitor = MachineEventMonitor()
     private let sleepWakeManager = SleepWakeManager()
     private let deepLinkRouter = DeepLinkRouter()
+    private let fleetAgentConnection = FleetAgentConnection()
+    private lazy var notifications = NotificationCoordinator(
+        isUserWatching: { [weak self] in self?.isUserWatching($0) ?? false },
+        openDestination: { [weak self] in self?.deepLinkRouter.handle($0) },
+        isDaemonRunning: { [weak self] in self?.daemonManager.state.isRunning ?? false }
+    )
+    /// The development profile signs in on its own. Sharing the production item would
+    /// let a development build read, and on sign-out clear, the shipped app's session, and
+    /// a build whose signature the item's ACL does not list prompts for the login keychain
+    /// password on every launch.
+    private static var sessionTokenStore: KeychainTokenStore {
+        DaemonManager.isDevelopmentProfile
+            ? KeychainTokenStore(service: "com.arcboxlabs.desktop.dev.oidc")
+            : KeychainTokenStore()
+    }
+
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
     private let updaterSettings: UpdaterSettingsModel
+    private var fleetPlatformClient: FleetPlatformClient?
 
     private(set) var arcboxClient: ArcBoxClient?
     private(set) var dockerClient: DockerClient?
@@ -44,14 +64,23 @@ final class ApplicationCoordinator: NSObject {
     private var menuBarHost: NSHostingController<AnyView>?
     private var startupTask: Task<Void, Never>?
     private var connectionTask: Task<Void, Never>?
+    private lazy var migration = OnboardingMigrationModel(
+        clientProvider: { [weak self] in self?.arcboxClient }
+    )
     private var lastDaemonState: DaemonState?
+    /// The identity currently mirrored into PostHog, so re-identify only runs
+    /// when it actually changes — `loadUserInfo()` enriches it after sign-in.
+    private var identifiedAs: AuthIdentity?
+    /// Whether PostHog currently holds an identity, tracked across launches so
+    /// a reset owed from a previous run is not missed.  Bookkeeping, not a user
+    /// preference, so it stays out of `AppPreferences`.
+    private static let analyticsIdentifiedKey = "analyticsIdentified"
     private var lastShowInMenuBar: Bool
     private var lastUpdateChannel: String
+    private var lastTelemetryEnabled: Bool
     private var isOnboarding: Bool
     private var deepLinksConfigured = false
     private var started = false
-    private var isMigrationExecuting = false
-    private var migrationCompletionWaiter: CheckedContinuation<Void, Never>?
     private(set) var isTerminating = false
 
     override init() {
@@ -64,6 +93,7 @@ final class ApplicationCoordinator: NSObject {
         updaterSettings = UpdaterSettingsModel(updater: updaterController.updater)
         lastShowInMenuBar = UserDefaults.standard.bool(forKey: "showInMenuBar")
         lastUpdateChannel = UserDefaults.standard.string(forKey: "updateChannel") ?? "stable"
+        lastTelemetryEnabled = UserDefaults.standard.bool(forKey: "telemetryEnabled")
         isOnboarding = !hasCompletedOnboarding
         super.init()
     }
@@ -74,10 +104,6 @@ final class ApplicationCoordinator: NSObject {
 
     var canUseMainInterface: Bool {
         !isTerminating && !isOnboarding
-    }
-
-    var canShowMigrationAssistant: Bool {
-        canUseMainInterface && startupOrchestrator?.isReady == true
     }
 
     func start() {
@@ -96,6 +122,8 @@ final class ApplicationCoordinator: NSObject {
             configureDeepLinks()
         }
         observeDaemonState()
+        observeAuthIdentity()
+        configureNotifications()
         _ = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification,
             object: UserDefaults.standard,
@@ -106,8 +134,30 @@ final class ApplicationCoordinator: NSObject {
             }
         }
 
+        fleetAgentConnection.start()
         Task { [weak self] in
-            await self?.authSession.loadUserInfo()
+            guard let self else { return }
+            await authSession.restoreSession()
+            initFleetPlatformClientIfNeeded()
+            runnersVM.start(
+                controlClient: fleetAgentConnection.controlClient,
+                platformClient: fleetPlatformClient,
+                authentication: authSession,
+                agentReadiness: fleetAgentConnection
+            )
+            await authSession.refreshSession()
+        }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await fleetAgentConnection.ensureReady()
+            } catch is CancellationError {
+                Log.fleet.info("Fleet Agent readiness probe cancelled")
+            } catch {
+                Log.fleet.info(
+                    "Fleet Agent is not ready: \(error.localizedDescription, privacy: .private)"
+                )
+            }
         }
 
         if !isOnboarding {
@@ -141,6 +191,7 @@ final class ApplicationCoordinator: NSObject {
         if let tab {
             appVM.settingsTab = tab
         }
+        Analytics.capture(.settingsOpened, properties: ["tab": appVM.settingsTab?.rawValue ?? "none"])
         if settingsWindowController == nil {
             let screen =
                 NSApp.keyWindow?.screen
@@ -167,76 +218,6 @@ final class ApplicationCoordinator: NSObject {
         showAboutWindow()
     }
 
-    func showGettingStarted() {
-        guard canUseMainInterface, let orchestrator = startupOrchestrator else { return }
-
-        if gettingStartedWindowController?.window?.isVisible != true {
-            let host = NSHostingController(
-                rootView: OnboardingView(
-                    orchestrator: orchestrator,
-                    initialStep: .welcome,
-                    isReplay: true,
-                    clientProvider: { [weak self] in self?.arcboxClient },
-                    onMigrationActivityChanged: { [weak self] in
-                        self?.migrationActivityChanged($0)
-                    },
-                    onStart: {},
-                    onComplete: { [weak self] in
-                        self?.gettingStartedWindowController?.window?.performClose(nil)
-                    },
-                    onQuit: {}
-                ))
-            gettingStartedWindowController = OnboardingWindowController(
-                title: "Getting Started with ArcBox",
-                contentViewController: host,
-                allowsClosing: true,
-                onClose: {}
-            )
-        }
-
-        activate()
-        gettingStartedWindowController?.show()
-    }
-
-    func showMigrationAssistant() {
-        guard
-            canUseMainInterface,
-            let orchestrator = startupOrchestrator,
-            orchestrator.isReady
-        else {
-            return
-        }
-
-        if migrationWindowController == nil {
-            let host = NSHostingController(
-                rootView: OnboardingView(
-                    orchestrator: orchestrator,
-                    initialStep: .migration,
-                    isReplay: true,
-                    clientProvider: { [weak self] in self?.arcboxClient },
-                    onMigrationActivityChanged: { [weak self] in
-                        self?.migrationActivityChanged($0)
-                    },
-                    onStart: {},
-                    onComplete: { [weak self] in
-                        self?.closeMigrationAssistant()
-                    },
-                    onQuit: {}
-                ))
-            migrationWindowController = OnboardingWindowController(
-                title: "Migrate to ArcBox",
-                contentViewController: host,
-                allowsClosing: false,
-                onClose: { [weak self] in
-                    self?.closeMigrationAssistant()
-                }
-            )
-        }
-
-        activate()
-        migrationWindowController?.show()
-    }
-
     func checkForUpdates() {
         guard !isTerminating else { return }
         updaterController.updater.checkForUpdates()
@@ -246,8 +227,10 @@ final class ApplicationCoordinator: NSObject {
     func beginTermination() -> Bool {
         guard !isTerminating else { return false }
         isTerminating = true
+        migration.beginTermination()
 
-        WebAuthenticationController.shared.cancelForTermination()
+        notifications.stop()
+        authSession.cancelSignIn()
         statusItemController?.closePopover()
         statusItemController?.setVisible(false)
         let screen = NSApp.keyWindow?.screen ?? NSApp.mainWindow?.screen ?? NSScreen.main
@@ -274,7 +257,21 @@ final class ApplicationCoordinator: NSObject {
     }
 
     func shutdown() async {
-        await waitForMigrationCompletion()
+        await migration.waitForCompletion()
+
+        let enrollmentSettled = await runnersVM.prepareForTermination()
+        if !enrollmentSettled {
+            Log.fleet.warning(
+                "Fleet enrollment did not settle before the application termination deadline"
+            )
+        }
+        let connectionClosedGracefully = await fleetAgentConnection.shutdown()
+        if !connectionClosedGracefully {
+            Log.fleet.warning(
+                "Fleet client transport required forced shutdown during application termination"
+            )
+        }
+
         startupTask?.cancel()
         await startupOrchestrator?.cancelForTermination()
         await startupTask?.value
@@ -283,7 +280,7 @@ final class ApplicationCoordinator: NSObject {
         sandboxEventMonitor.stop()
         machineEventMonitor.stop()
         sleepWakeManager.stop()
-        DockerContextManager.restorePreviousContext()
+        await updateDockerContext(useArcBox: false).value
         arcboxClient?.close()
         connectionTask?.cancel()
         connectionTask = nil
@@ -309,17 +306,29 @@ final class ApplicationCoordinator: NSObject {
         deepLinkRouter.configure(
             .init(
                 appVM: appVM,
-                containersVM: containersVM,
-                volumesVM: volumesVM,
-                imagesVM: imagesVM,
-                networksVM: networksVM,
                 openMainWindow: { [weak self] in self?.showMainWindow() },
-                openSettingsWindow: { [weak self] in self?.showSettings() },
-                oauthCallbackScheme: OIDCClientConfiguration.redirectURI.scheme,
-                onOAuthCallback: { [weak self] url in
-                    Task { await self?.authSession.handleAuthorizationCallback(url) }
-                }
+                openSettingsWindow: { [weak self] in self?.showSettings() }
             ))
+    }
+
+    private func configureNotifications() {
+        sandboxEventMonitor.onEvent = { [weak self] event in
+            self?.notifications.handleSandboxEvent(event)
+        }
+        notifications.start()
+    }
+
+    /// Whether what a notification would announce is already on screen. A
+    /// closed or backgrounded window means the user is not watching, whatever
+    /// the last selected section was.
+    private func isUserWatching(_ destination: DeepLink) -> Bool {
+        guard NSApp.isActive, mainWindowController?.window?.isVisible == true else { return false }
+        switch destination {
+        case .main, .settings:
+            return true
+        case .section(let item, _):
+            return appVM.currentNav == item
+        }
     }
 
     private func startRuntimeIfNeeded(allowingAdministratorPrompt: Bool = false) {
@@ -351,6 +360,8 @@ final class ApplicationCoordinator: NSObject {
         settingsWindowController?.window?.orderOut(nil)
         gettingStartedWindowController?.window?.orderOut(nil)
         gettingStartedWindowController = nil
+        migrationWindowController?.window?.orderOut(nil)
+        migrationWindowController = nil
         statusItemController?.setVisible(false)
 
         if onboardingWindowController == nil {
@@ -358,10 +369,7 @@ final class ApplicationCoordinator: NSObject {
                 rootView: OnboardingView(
                     orchestrator: orchestrator,
                     initialStep: initialStep ?? .welcome,
-                    clientProvider: { [weak self] in self?.arcboxClient },
-                    onMigrationActivityChanged: { [weak self] in
-                        self?.migrationActivityChanged($0)
-                    },
+                    migration: migration,
                     onStart: { [weak self] in
                         self?.startRuntimeIfNeeded(allowingAdministratorPrompt: true)
                     },
@@ -386,7 +394,11 @@ final class ApplicationCoordinator: NSObject {
     }
 
     private func completeOnboarding() {
-        guard !isTerminating, startupOrchestrator?.isReady == true else { return }
+        guard
+            !isTerminating,
+            !migration.state.isExecuting,
+            startupOrchestrator?.isRuntimeReady == true
+        else { return }
 
         AppPreferences.markOnboardingCompleted()
         isOnboarding = false
@@ -396,47 +408,6 @@ final class ApplicationCoordinator: NSObject {
         statusItemController?.setVisible(lastShowInMenuBar)
         showMainWindow()
         configureDeepLinks()
-    }
-
-    private func closeMigrationAssistant() {
-        guard !isMigrationExecuting else {
-            guard
-                let window = migrationWindowController?.window,
-                window.attachedSheet == nil
-            else {
-                return
-            }
-
-            let alert = NSAlert()
-            alert.messageText = "Migration in Progress"
-            alert.informativeText =
-                "Keep ArcBox open until the migration finishes to avoid leaving resources "
-                + "partially migrated."
-            alert.addButton(withTitle: "Continue Migration")
-            alert.beginSheetModal(for: window)
-            return
-        }
-
-        migrationWindowController?.window?.orderOut(nil)
-        migrationWindowController = nil
-    }
-
-    private func migrationActivityChanged(_ isExecuting: Bool) {
-        isMigrationExecuting = isExecuting
-        guard !isExecuting else { return }
-        migrationCompletionWaiter?.resume()
-        migrationCompletionWaiter = nil
-    }
-
-    private func waitForMigrationCompletion() async {
-        guard isMigrationExecuting else { return }
-        await withCheckedContinuation { continuation in
-            if isMigrationExecuting {
-                migrationCompletionWaiter = continuation
-            } else {
-                continuation.resume()
-            }
-        }
     }
 
     private func observeStartupPhase() {
@@ -462,6 +433,58 @@ final class ApplicationCoordinator: NSObject {
         trackDaemonState()
     }
 
+    private func observeAuthIdentity() {
+        syncAnalyticsIdentity()
+        trackAuthIdentity()
+    }
+
+    private func trackAuthIdentity() {
+        withObservationTracking {
+            _ = authSession.status
+            _ = authSession.identity
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.authIdentityDidChange()
+            }
+        }
+    }
+
+    private func authIdentityDidChange() {
+        guard !isTerminating else { return }
+        trackAuthIdentity()
+        syncAnalyticsIdentity()
+    }
+
+    /// Mirrors platform sign-in state into PostHog: identify while signed in,
+    /// reset on sign-out so the next account starts from a fresh anonymous ID.
+    private func syncAnalyticsIdentity() {
+        let identity = authSession.status == .signedIn ? authSession.identity : nil
+
+        guard let identity else {
+            identifiedAs = nil
+            // The in-process cache cannot answer this on a signed-out launch:
+            // the session may have ended while the app was closed (revoked
+            // refresh token, cleared Keychain), leaving PostHog identified from
+            // a previous run.  `analyticsIdentified` outlives the process, so
+            // it is what decides whether a reset is still owed.
+            guard UserDefaults.standard.bool(forKey: Self.analyticsIdentifiedKey) else { return }
+            UserDefaults.standard.set(false, forKey: Self.analyticsIdentifiedKey)
+            Analytics.reset()
+            return
+        }
+
+        guard identity != identifiedAs else { return }
+        identifiedAs = identity
+        // Built with `if let` rather than optional subscripts: assigning a
+        // `String?` into `[String: Any]` boxes the Optional itself.
+        var properties: [String: Any] = [:]
+        if let email = identity.email { properties["email"] = email }
+        if let name = identity.name { properties["name"] = name }
+        if let emailVerified = identity.emailVerified { properties["email_verified"] = emailVerified }
+        UserDefaults.standard.set(true, forKey: Self.analyticsIdentifiedKey)
+        Analytics.identify(identity.subject, properties: properties)
+    }
+
     private func trackDaemonState() {
         withObservationTracking {
             _ = daemonManager.state
@@ -477,7 +500,10 @@ final class ApplicationCoordinator: NSObject {
         trackDaemonState()
         let state = daemonManager.state
         guard state != lastDaemonState else { return }
+        let previousState = lastDaemonState
         lastDaemonState = state
+
+        notifications.handleDaemonState(from: previousState, to: state)
 
         if state.isRunning {
             if dockerClient == nil {
@@ -493,13 +519,40 @@ final class ApplicationCoordinator: NSObject {
                 sandboxEventMonitor.start(client: arcboxClient, machineID: "default")
                 machineEventMonitor.start(client: arcboxClient)
             }
-            DockerContextManager.switchToArcBox()
+            if UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") {
+                updateDockerContext(useArcBox: true)
+            }
         } else {
             eventMonitor.stop()
             sandboxEventMonitor.stop()
             machineEventMonitor.stop()
             sleepWakeManager.stop()
-            DockerContextManager.restorePreviousContext()
+            updateDockerContext(useArcBox: false)
+        }
+    }
+
+    @discardableResult
+    private func updateDockerContext(useArcBox: Bool) -> Task<Void, Never> {
+        DockerContextManager.update(useArcBox: useArcBox) { [self] result in
+            switch result {
+            case .success:
+                if let retry = self.appVM.dockerContextRetry, case .preference = retry {
+                    return
+                }
+                appVM.dockerContextError = nil
+                appVM.dockerContextRetry = nil
+            case let .failure(error):
+                Log.context.error(
+                    "Failed to update Docker context: \(error.localizedDescription, privacy: .public)"
+                )
+                if let retry = self.appVM.dockerContextRetry, case .preference = retry {
+                    return
+                }
+                appVM.dockerContextError =
+                    "The Docker context was not updated: \(error.localizedDescription) "
+                    + "Check that the Docker CLI is installed and ~/.docker/config.json is writable, then try again."
+                appVM.dockerContextRetry = .lifecycle(useArcBox: useArcBox)
+            }
         }
     }
 
@@ -545,6 +598,7 @@ final class ApplicationCoordinator: NSObject {
             .environment(volumesVM)
             .environment(sandboxEventMonitor)
             .environment(authSession)
+            .environment(runnersVM)
             .environment(\.arcboxClient, arcboxClient)
             .environment(\.dockerClient, dockerClient)
             .environment(\.startupOrchestrator, startupOrchestrator)
@@ -563,6 +617,7 @@ final class ApplicationCoordinator: NSObject {
                 .environment(authSession)
                 .environment(systemVmBackendVM)
                 .environment(updaterSettings)
+                .environment(runnersVM.fleet)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)
@@ -592,12 +647,26 @@ final class ApplicationCoordinator: NSObject {
             showSettings(tab: .account)
             return
         }
-        guard authSession.status != .signingIn, !authSession.configuration.isPlaceholder else {
-            return
-        }
+        guard authSession.status != .restoring, authSession.status != .signingIn,
+            !authSession.configuration.isPlaceholder
+        else { return }
         Task {
-            await authSession.signIn(using: WebAuthenticationController.shared.authenticate)
+            await authSession.signIn()
         }
+    }
+
+    /// Create the authenticated Platform REST client without starting network work.
+    private func initFleetPlatformClientIfNeeded() {
+        guard fleetPlatformClient == nil else { return }
+
+        let configuration = FleetPlatformConfiguration.current
+        Log.fleet.info(
+            "Creating FleetPlatformClient for \(configuration.baseURL.absoluteString, privacy: .public)"
+        )
+        fleetPlatformClient = FleetPlatformClient(
+            configuration: configuration,
+            accessTokenProvider: authSession
+        )
     }
 
     private func activate() {
@@ -639,6 +708,124 @@ final class ApplicationCoordinator: NSObject {
         if updateChannel != lastUpdateChannel {
             lastUpdateChannel = updateChannel
             updaterController.updater.resetUpdateCycle()
+            Analytics.register(["update_channel": updateChannel])
         }
+
+        let telemetryEnabled = defaults.bool(forKey: "telemetryEnabled")
+        if telemetryEnabled != lastTelemetryEnabled {
+            lastTelemetryEnabled = telemetryEnabled
+            telemetryPreferenceDidChange(enabled: telemetryEnabled)
+        }
+    }
+
+    /// Applies the Privacy toggle.  Opting back in has to re-run identify:
+    /// the SDK drops `identify` while opted out, so a user who signs in first
+    /// and enables telemetry afterwards would otherwise stay anonymous.
+    private func telemetryPreferenceDidChange(enabled: Bool) {
+        #if DEBUG
+            // Development builds never send telemetry; see `initPostHog`.
+            return
+        #else
+            if enabled {
+                Analytics.optIn()
+                identifiedAs = nil
+                syncAnalyticsIdentity()
+            } else {
+                Analytics.optOut()
+            }
+        #endif
+    }
+}
+
+extension ApplicationCoordinator {
+    var canShowMigrationAssistant: Bool {
+        canUseMainInterface && startupOrchestrator?.isRuntimeReady == true
+    }
+
+    func showGettingStarted() {
+        guard canUseMainInterface, let orchestrator = startupOrchestrator else { return }
+
+        if gettingStartedWindowController?.window?.isVisible != true {
+            let host = NSHostingController(
+                rootView: OnboardingView(
+                    orchestrator: orchestrator,
+                    initialStep: .welcome,
+                    isReplay: true,
+                    migration: migration,
+                    onStart: {},
+                    onComplete: { [weak self] in
+                        self?.gettingStartedWindowController?.window?.performClose(nil)
+                    },
+                    onQuit: {}
+                ))
+            gettingStartedWindowController = OnboardingWindowController(
+                title: "Getting Started with ArcBox",
+                contentViewController: host,
+                allowsClosing: true,
+                onClose: {}
+            )
+        }
+
+        activate()
+        gettingStartedWindowController?.show()
+    }
+
+    func showMigrationAssistant() {
+        guard
+            canUseMainInterface,
+            let orchestrator = startupOrchestrator,
+            orchestrator.isRuntimeReady
+        else {
+            return
+        }
+
+        if migrationWindowController == nil {
+            let host = NSHostingController(
+                rootView: OnboardingView(
+                    orchestrator: orchestrator,
+                    initialStep: .migration,
+                    isReplay: true,
+                    migration: migration,
+                    onStart: {},
+                    onComplete: { [weak self] in
+                        self?.closeMigrationAssistant()
+                    },
+                    onQuit: {}
+                ))
+            migrationWindowController = OnboardingWindowController(
+                title: "Migrate to ArcBox",
+                contentViewController: host,
+                allowsClosing: false,
+                onClose: { [weak self] in
+                    self?.closeMigrationAssistant()
+                }
+            )
+        }
+
+        activate()
+        migrationWindowController?.show()
+    }
+
+    private func closeMigrationAssistant() {
+        guard !migration.state.isExecuting else {
+            guard
+                let window = migrationWindowController?.window,
+                window.attachedSheet == nil
+            else {
+                return
+            }
+
+            let alert = NSAlert()
+            alert.messageText = "Migration in Progress"
+            alert.informativeText =
+                "Keep ArcBox open until the migration finishes to avoid leaving resources "
+                + "partially migrated."
+            alert.addButton(withTitle: "Continue Migration")
+            alert.beginSheetModal(for: window)
+            return
+        }
+
+        migrationWindowController?.window?.orderOut(nil)
+        migrationWindowController = nil
     }
 }

@@ -451,9 +451,6 @@ final class PodsListViewController: NSViewController,
             let rows = snapshot?.rows,
             let row = rows.firstIndex(where: { $0.id == selectedID })
         else {
-            if let selectedID, !viewModel.pods.contains(where: { $0.id == selectedID }) {
-                viewModel.selectedID = nil
-            }
             guard tableView.selectedRow != -1 else { return }
             applyingSelection {
                 tableView.deselectAll(nil)

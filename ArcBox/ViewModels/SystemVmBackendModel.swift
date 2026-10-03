@@ -25,7 +25,7 @@ final class SystemVmBackendModel {
             currentBackend = nil
             return
         }
-        currentBackend = await fetch(client: client)
+        setBackend(await fetch(client: client))
         if currentBackend != nil {
             lastError = nil
         }
@@ -48,7 +48,7 @@ final class SystemVmBackendModel {
         do {
             let info = try await client.system.setSystemVmBackend(
                 request, options: ArcBoxClient.systemVmRestartCallOptions)
-            currentBackend = SystemVmBackend(proto: info.backend)
+            setBackend(SystemVmBackend(proto: info.backend))
         } catch {
             Log.daemon.error(
                 "Failed to switch System VM backend: \(error.localizedDescription, privacy: .private)"
@@ -56,10 +56,18 @@ final class SystemVmBackendModel {
             ErrorReporting.capture(error, domain: .daemon, operation: "setSystemVmBackend")
             // A failed switch leaves the previous backend durable daemon-side;
             // re-read so the UI reflects the actual state.
-            currentBackend = await fetch(client: client)
+            setBackend(await fetch(client: client))
             lastError = ArcBoxClient.userMessage(for: error)
         }
         isSwitching = false
+    }
+
+    /// Publishes the backend and mirrors it into the analytics super
+    /// properties, so every event can be segmented by hypervisor.
+    private func setBackend(_ backend: SystemVmBackend?) {
+        currentBackend = backend
+        guard let backend else { return }
+        Analytics.register(["system_vm_backend": backend.rawValue])
     }
 
     private func fetch(client: ArcBoxClient) async -> SystemVmBackend? {

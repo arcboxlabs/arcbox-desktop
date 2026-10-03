@@ -10,6 +10,7 @@ struct ImageFilesTab: View {
         case dockerUnavailable
         case missingRootPath
         case inspectFailed(String)
+        case resolutionFailed(String)
 
         var errorDescription: String? {
             switch self {
@@ -19,6 +20,8 @@ struct ImageFilesTab: View {
                 return "Image has no resolvable filesystem path."
             case .inspectFailed(let reason):
                 return "Failed to inspect image: \(reason)"
+            case .resolutionFailed(let message):
+                return message
             }
         }
     }
@@ -60,7 +63,7 @@ struct ImageFilesTab: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColors.background)
         .task(id: resolveTaskID) {
-            await resolveRootPath()
+            await resolveRootPath(requestID: resolveTaskID)
         }
     }
 
@@ -70,7 +73,7 @@ struct ImageFilesTab: View {
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textSecondary)
 
-            Text(stack.rootURL?.path ?? resolvedRootFSMountPath ?? "No rootfs mount path")
+            Text("/")
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundStyle(AppColors.textSecondary)
                 .lineLimit(1)
@@ -126,6 +129,7 @@ struct ImageFilesTab: View {
             LocalRootFSOutlineView(
                 rootURL: rootURL,
                 layers: stack.layers,
+                displayRootPath: "/",
                 showHiddenFiles: showHiddenFiles,
                 reloadID: outlineReloadID,
                 selectedPath: $selectedPath,
@@ -160,7 +164,7 @@ struct ImageFilesTab: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
 
-            Button("Refresh") {
+            Button(FilesTabPathResolution.retryTitle) {
                 refresh()
             }
             .buttonStyle(.bordered)
@@ -174,33 +178,43 @@ struct ImageFilesTab: View {
         refreshToken = UUID()
     }
 
-    private func resolveRootPath() async {
+    private func resolveRootPath(requestID: String) async {
+        guard requestID == resolveTaskID, !Task.isCancelled else { return }
         errorMessage = nil
         isLoadingRoot = true
         selectedPath = nil
         stack = LayerStack()
+        defer {
+            if requestID == resolveTaskID, !Task.isCancelled {
+                isLoadingRoot = false
+            }
+        }
 
         do {
             // The layer directories are guest paths; browse them via ~/ArcBox.
             let mountPoints = try await resolveImageLayerPaths()
+            guard requestID == resolveTaskID, !Task.isCancelled else { return }
             resolvedRootFSMountPath = mountPoints.first
 
-            stack = await LayerStack.resolve(guestPaths: mountPoints)
+            let resolvedStack = await LayerStack.resolve(guestPaths: mountPoints)
+            guard requestID == resolveTaskID, !Task.isCancelled else { return }
+            stack = resolvedStack
             guard stack.rootURL != nil else {
                 errorMessage = Self.unresolvedMessage(guestPaths: mountPoints)
-                isLoadingRoot = false
                 return
             }
             // Listings report further exclusions as they happen — a layer can
             // die after this point — and the badge unions them.
+        } catch is CancellationError {
+            return
         } catch let error as ImageFilesTabError {
+            guard requestID == resolveTaskID, !Task.isCancelled else { return }
             resolvedRootFSMountPath = nil
             errorMessage = error.localizedDescription
         } catch {
+            guard requestID == resolveTaskID, !Task.isCancelled else { return }
             errorMessage = GuestDataMount.unavailableMessage(subject: "This image's layers")
         }
-
-        isLoadingRoot = false
     }
 
     private static func unresolvedMessage(guestPaths: [String]) -> String {
@@ -228,14 +242,24 @@ struct ImageFilesTab: View {
             // Containerd image store: inspect carries no layer paths; ask
             // the daemon to resolve the layer chain, then merge the layers
             // into the filesystem the image would present when run.
-            let resolved = await resolveViaDaemon(diffIDs: snapshot.rootfsLayers)
-            if !resolved.isEmpty {
-                return resolved
+            switch await resolveViaDaemon(diffIDs: snapshot.rootfsLayers) {
+            case .resolved(let paths) where !paths.isEmpty:
+                return paths
+            case .resolved:
+                throw ImageFilesTabError.missingRootPath
+            case .failed(let message):
+                throw ImageFilesTabError.resolutionFailed(message)
+            case .cancelled:
+                throw CancellationError()
             }
-            throw ImageFilesTabError.missingRootPath
         } catch let error as ImageFilesTabError {
             throw error
+        } catch let error as CancellationError {
+            throw error
         } catch {
+            try Task.checkCancellation()
+            Log.image.error(
+                "Failed to inspect image: \(error.localizedDescription, privacy: .private)")
             throw ImageFilesTabError.inspectFailed(error.localizedDescription)
         }
     }
@@ -243,21 +267,27 @@ struct ImageFilesTab: View {
     /// Resolves the image's layer directories via the daemon, keyed by the
     /// layer chain ID computed from the inspect diff IDs. The daemon returns
     /// them in overlay precedence order, topmost layer first.
-    private func resolveViaDaemon(diffIDs: [String]) async -> [String] {
-        guard let arcboxClient,
-            let topChainID = ImageLayerChain.topChainID(diffIDs: diffIDs)
-        else { return [] }
+    private func resolveViaDaemon(diffIDs: [String]) async -> FilesTabPathResolution {
+        guard let topChainID = ImageLayerChain.topChainID(diffIDs: diffIDs) else {
+            return .resolved([])
+        }
+        guard let arcboxClient else {
+            return .failed("ArcBox daemon is unavailable.")
+        }
         var request = Arcbox_V1_ResolveImageFsRequest()
         request.topChainID = topChainID
-        do {
-            let response = try await arcboxClient.system.resolveImageFs(
-                request, options: ArcBoxClient.defaultCallOptions)
-            return response.lowerDirs.filter { !$0.isEmpty }
-        } catch {
-            Log.daemon.error(
-                "Failed to resolve image fs: \(error.localizedDescription, privacy: .private)")
-            return []
-        }
+        return await FilesTabPathResolution.resolve(
+            subject: "image",
+            operation: {
+                let response = try await arcboxClient.system.resolveImageFs(
+                    request, options: ArcBoxClient.defaultCallOptions)
+                return response.lowerDirs.filter { !$0.isEmpty }
+            },
+            onFailure: { error in
+                Log.daemon.error(
+                    "Failed to resolve image fs: \(error.localizedDescription, privacy: .private)")
+            }
+        )
     }
 
     private func revealSelectedInFinder() {

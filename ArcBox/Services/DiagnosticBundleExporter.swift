@@ -4,6 +4,20 @@ import Foundation
 import OSLog
 import UniformTypeIdentifiers
 
+nonisolated private enum DiagnosticExportError: LocalizedError {
+    case collection(String)
+    case write(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .collection(let detail):
+            "ArcBox could not collect diagnostics: \(detail) Restart ArcBox and try again."
+        case .write(let detail):
+            "ArcBox could not save the report: \(detail) Choose a writable location and try again."
+        }
+    }
+}
+
 /// Collects and exports a sanitized diagnostic report for troubleshooting.
 ///
 /// The bundle includes system information, daemon status, recent OSLog entries,
@@ -17,13 +31,14 @@ final class DiagnosticBundleExporter {
     ///
     /// Shows an `NSSavePanel` so the user controls where the file goes.
     /// Returns the saved URL on success, or nil if the user cancelled.
+    /// Throws when the report cannot be collected or written.
     @discardableResult
     static func exportInteractively(
         daemonManager: DaemonManager,
         containersVM: ContainersViewModel,
         imagesVM: ImagesViewModel,
         presentingWindow: NSWindow
-    ) async -> URL? {
+    ) async throws -> URL? {
         let panel = NSSavePanel()
         panel.title = "Export Diagnostic Report"
         panel.nameFieldStringValue = "arcbox-diagnostic.txt"
@@ -38,20 +53,26 @@ final class DiagnosticBundleExporter {
             return nil
         }
 
+        let report: String
         do {
-            let report = try await buildReport(
+            report = try await buildReport(
                 daemonManager: daemonManager,
                 containersVM: containersVM,
                 imagesVM: imagesVM
             )
-            let scrubbed = scrubPII(report)
+        } catch {
+            Log.startup.error("Failed to collect diagnostic report: \(error, privacy: .private)")
+            throw DiagnosticExportError.collection(error.localizedDescription)
+        }
+        let scrubbed = scrubPII(report)
+        do {
             try scrubbed.write(to: saveURL, atomically: true, encoding: .utf8)
-            Analytics.capture(.diagnosticExported)
-            return saveURL
         } catch {
             Log.startup.error("Failed to export diagnostic report: \(error, privacy: .private)")
-            return nil
+            throw DiagnosticExportError.write(error.localizedDescription)
         }
+        Analytics.capture(.diagnosticExported)
+        return saveURL
     }
 
     // MARK: - Report Building

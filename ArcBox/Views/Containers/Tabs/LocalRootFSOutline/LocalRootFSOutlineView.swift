@@ -5,6 +5,8 @@ struct LocalRootFSOutlineView: NSViewRepresentable {
     /// Layer stack to merge while browsing. `nil` browses `rootURL` alone —
     /// the plain single-directory case (volumes, machines, sandboxes).
     var layers: LayeredRootFS?
+    /// Semantic root shown and copied for guest files. Host-only browsers leave this nil.
+    var displayRootPath: String?
     let showHiddenFiles: Bool
     let reloadID: String
     @Binding var selectedPath: String?

@@ -47,7 +47,16 @@ make test
   in the changelog.
 - Keep commits atomic and buildable.
 - No `Co-Authored-By` lines.
-- `CHANGELOG.md` and `Version.xcconfig` are generated. Never hand-edit them.
+- `CHANGELOG.md` and `Version.xcconfig` are generated. Do not edit them outside
+  the release-please PR. Before merging that PR, add a `### Highlights` section
+  under the new release with concise user-facing changes and impact. Sparkle
+  shows it in the update dialog, above the release's Features and Bug Fixes.
+  Without it the update dialog falls back to those lists alone, so write it
+  whenever the build deserves better than a list of commit subjects — and the
+  release PR fails outright when there is neither.
+- Merging the release PR cuts the tag and opens a draft GitHub release. The
+  Release DMG workflow attaches the signed DMG and publishes it, so a release
+  that stays a draft means that build failed.
 
 ## Reporting security issues
 
