@@ -4,6 +4,7 @@
 - Build: `make build` — Swift only, no embedded Rust binaries
 - Test all: `make test`
 - **A local package's tests only run because `ArcBoxTests` compiles their sources.** xcodegen refuses a SwiftPM test target in the scheme's test action ("invalid test target"), so a package's `Tests/` directory is listed under `ArcBoxTests.sources` in `project.yml`. Add a new local package's test path there or nothing will ever run it — `swift test` in the package directory is not part of any gate. The bundle links them through its test host; adding the package as a direct dependency instead duplicates the link and fails.
+- **The test host never boots the app.** `AppDelegate` skips Sentry, PostHog and the `ApplicationCoordinator` when XCTest is loaded (`AppDelegate.isTestHost`). A host that booted installed the helper, opened Fleet connections and read the sign-in item from the login keychain; `make test` signs the host ad hoc, whose designated requirement changes every build, so that read prompted for the keychain password on every run and "Always Allow" could never stick. A test that needs the coordinator builds one itself. The development profile also keeps its own sign-in item (`com.arcboxlabs.desktop.dev.oidc`), so a dev build never touches the shipped app's session.
 - Format / lint: `make format`, `make lint`
 - xtask (Rust): `make lint-xtask`, `make test-xtask` — `make lint`/`make test` cover Swift only
 - Regenerate the Xcode project after adding or removing a file: `make generate-xcodeproj`

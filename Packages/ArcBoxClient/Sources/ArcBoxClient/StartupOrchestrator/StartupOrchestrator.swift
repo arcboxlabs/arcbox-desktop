@@ -5,12 +5,22 @@ import Observation
 // MARK: - Internal Errors
 
 /// Errors thrown by step bodies to signal failure.
-private enum StartupError: LocalizedError {
+///
+/// Deliberately not `private`: a file-scoped private type has no nameable parent context,
+/// so the runtime renders it as `ArcBoxClient.(unknown context at $1035…).StartupError`
+/// with a live address in it. That is the bridged `NSError` domain, and it is what the
+/// crash reporter groups by, so every launch filed its startup failures under a brand new
+/// issue — 45 of them for two distinct failures.
+enum StartupError: LocalizedError {
     case stepFailed(String)
+    /// A step the user has to unblock in System Settings. It fails like any other and the
+    /// message says what to do, but there is nothing here to diagnose, so it is not
+    /// reported.
+    case requiresUserAction(String)
 
     var errorDescription: String? {
         switch self {
-        case .stepFailed(let msg): return msg
+        case .stepFailed(let msg), .requiresUserAction(let msg): return msg
         }
     }
 }
@@ -183,7 +193,9 @@ public final class StartupOrchestrator {
         let daemonOK = await runStep(.enableDaemon) {
             await self.daemonManager.enableDaemon()
             if case .error(let msg) = self.daemonManager.state {
-                throw StartupError.stepFailed(msg)
+                throw self.daemonManager.daemonService.status == .requiresApproval
+                    ? StartupError.requiresUserAction(msg)
+                    : StartupError.stepFailed(msg)
             }
         }
 
@@ -249,8 +261,13 @@ public final class StartupOrchestrator {
         try checkCancellation()
         if !daemonManager.state.isRunning {
             let totalSeconds = Int(StartupConstants.daemonPollTimeout.components.seconds) * 2
+            // Where it got stuck is the whole question — "unreachable" on its own says only
+            // that the poll ran out, and files every distinct cause under one heading.
             throw StartupError.stepFailed(
-                "Daemon unreachable after force re-register recovery (\(totalSeconds)s total)")
+                """
+                Daemon unreachable after force re-register recovery (\(totalSeconds)s total, \
+                state \(daemonManager.state.label), setup \(daemonManager.setupPhase))
+                """)
         }
     }
 
@@ -268,6 +285,14 @@ public final class StartupOrchestrator {
 
     /// Human-readable cause of a daemon `FAILED` setup phase, for the retryable
     /// failure UI. `setupMessage` already carries the daemon's `error` detail.
+    /// Outcomes the user chose or must undo themselves — declining the administrator
+    /// prompt, or switching ArcBox off in Login Items. They fail the step and say what to
+    /// do; reporting them only fills the tracker with settings.
+    private static func isUpToTheUser(_ error: any Error) -> Bool {
+        if case StartupError.requiresUserAction = error { return true }
+        return error as? HelperInstallError == .userCanceled
+    }
+
     private var daemonFailureMessage: String {
         let reason = daemonManager.setupMessage
         return reason.isEmpty ? "Daemon reported a fatal setup failure" : reason
@@ -328,7 +353,9 @@ public final class StartupOrchestrator {
             ClientLog.startup.error(
                 "\(step.label, privacy: .public) failed after \(elapsedMs, privacy: .public)ms: \(message, privacy: .private)"
             )
-            ClientDiagnostics.capture(error, tags: ["startup_step": step.label])
+            if !Self.isUpToTheUser(error) {
+                ClientDiagnostics.capture(error, tags: ["startup_step": step.label])
+            }
             stepStatuses[step] = .failed(message)
             phase = .failed(step: step, message: message)
             return false

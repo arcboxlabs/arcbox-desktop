@@ -13,7 +13,7 @@ import SwiftUI
 final class ApplicationCoordinator: NSObject {
     let appVM = AppViewModel()
     let daemonManager = DaemonManager()
-    let authSession = AuthSession()
+    let authSession = AuthSession(tokenStore: ApplicationCoordinator.sessionTokenStore)
     let containersVM = ContainersViewModel()
     let imagesVM = ImagesViewModel()
     let networksVM = NetworksViewModel()
@@ -33,6 +33,16 @@ final class ApplicationCoordinator: NSObject {
         openDestination: { [weak self] in self?.deepLinkRouter.handle($0) },
         isDaemonRunning: { [weak self] in self?.daemonManager.state.isRunning ?? false }
     )
+    /// The development profile signs in on its own. Sharing the production item would
+    /// let a development build read, and on sign-out clear, the shipped app's session, and
+    /// a build whose signature the item's ACL does not list prompts for the login keychain
+    /// password on every launch.
+    private static var sessionTokenStore: KeychainTokenStore {
+        DaemonManager.isDevelopmentProfile
+            ? KeychainTokenStore(service: "com.arcboxlabs.desktop.dev.oidc")
+            : KeychainTokenStore()
+    }
+
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
     private let updaterSettings: UpdaterSettingsModel

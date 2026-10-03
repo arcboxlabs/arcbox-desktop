@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Usage:
 /// ```swift
-/// let config = try KubeConfig(yaml: kubeconfigYAML)
+/// let config = try await KubeConfig.load(yaml: kubeconfigYAML)
 /// let client = try K8sClient(config: config)
 /// let pods = try await client.listPods(namespace: "default")
 /// ```
@@ -17,16 +17,22 @@ public final class K8sClient: Sendable {
     let baseURL: String
     let bearerToken: String?
 
-    /// Creates a new client from a parsed kubeconfig.
+    /// Creates a new client from a parsed kubeconfig whose credentials are ready to use.
+    ///
+    /// - Throws: `KubeConfigError.unresolvedExecPlugin` when `config.authMode` is `.execPlugin`:
+    ///   run `KubeConfig.load(yaml:)` or `resolvingCredentials()` first.
     public init(config: KubeConfig) throws {
+        switch config.authMode {
+        case .certificate:
+            self.bearerToken = nil
+        case .bearerToken(let token):
+            self.bearerToken = token
+        case .execPlugin:
+            throw KubeConfigError.unresolvedExecPlugin
+        }
         self.session = try config.makeURLSession()
         self.streamingSession = try config.makeURLSession(streaming: true)
         self.baseURL = config.server
-        if case .bearerToken(let token) = config.authMode {
-            self.bearerToken = token
-        } else {
-            self.bearerToken = nil
-        }
     }
 
     /// `makeURLSession()` always builds a delegate-backed session, and URLSession keeps a
@@ -106,6 +112,20 @@ public enum K8sError: Error, Sendable {
     case watchExpired
     /// The watch stream carried an `ERROR` event.
     case watchFailed(reason: String)
+}
+
+/// Error reports are grouped, and deduplicated, by bridged domain and code. A plain enum
+/// bridges to its case index, which would file a 401 and a 503 as the same failure.
+extension K8sError: CustomNSError {
+    public var errorCode: Int {
+        switch self {
+        case .invalidURL: 1
+        case .invalidResponse: 2
+        case .watchExpired: 3
+        case .watchFailed: 4
+        case .httpError(let status): status
+        }
+    }
 }
 
 // MARK: - JSON Decoder

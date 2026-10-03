@@ -554,10 +554,11 @@ jobs:
             .build/DerivedData/ModuleCache.noindex/
           key: ${{ steps.xcode_build_cache.outputs.cache-primary-key }}
 
+      # Hash by basename so `shasum -c` works wherever the user downloads to.
       - name: Generate checksum
         run: |
           DMG_PATH="${{ steps.dmg.outputs.dmg_path }}"
-          shasum -a 256 "$DMG_PATH" > "${DMG_PATH}.sha256"
+          (cd "$(dirname "$DMG_PATH")" && shasum -a 256 "$(basename "$DMG_PATH")" > "$(basename "$DMG_PATH").sha256")
           cat "${DMG_PATH}.sha256"
 
       - name: Cache Sparkle sign_update
@@ -942,36 +943,19 @@ jobs:
           echo "=== CDN staging ==="
           find cdn-staging/ -type f | sort
 
-      - name: Upload DMG to B2 (size-only)
-        run: |
-          VERSION="${{ steps.channel.outputs.version }}"
-          aws s3 sync \
-            "cdn-staging/desktop/${VERSION}/" \
-            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/${VERSION}/" \
-            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
-            --size-only
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
-
-      - name: Upload appcast and latest.json to B2
-        run: |
-          CHANNEL="${{ steps.channel.outputs.channel }}"
-          aws s3 cp \
-            "cdn-staging/desktop/appcast/${CHANNEL}.xml" \
-            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/appcast/${CHANNEL}.xml" \
-            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
-            --content-type "application/xml"
-          aws s3 cp \
-            "cdn-staging/desktop/latest.json" \
-            "s3://${{ secrets.RELEASE_B2_BUCKET }}/desktop/latest.json" \
-            --endpoint-url "https://s3.${{ secrets.RELEASE_B2_REGION }}.backblazeb2.com" \
-            --content-type "application/json"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_B2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_B2_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.RELEASE_B2_REGION }}
+      # DMG first, appcast + latest.json last, so Sparkle never sees an item
+      # whose enclosure is not live yet.
+      - name: Publish to R2
+        uses: arcboxlabs/actions/r2-publish@v2
+        with:
+          account-id: ${{ vars.R2_ACCOUNT_ID }}
+          access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          bucket: arcboxcdn-release
+          source-dir: cdn-staging
+          index-files: |
+            desktop/appcast/${{ steps.channel.outputs.channel }}.xml
+            desktop/latest.json
 
       - name: Verify CDN URLs
         id: cdn_verify

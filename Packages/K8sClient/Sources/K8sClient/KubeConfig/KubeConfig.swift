@@ -7,6 +7,9 @@ public struct KubeConfig: Sendable {
     public enum AuthMode: Sendable {
         case certificate
         case bearerToken(String)
+        /// The selected user names an exec credential plugin that has not run yet.
+        /// `resolvingCredentials()` runs it; `K8sClient` refuses a config in this state.
+        case execPlugin
     }
 
     /// API server URL (e.g. "https://127.0.0.1:16443").
@@ -21,12 +24,15 @@ public struct KubeConfig: Sendable {
     public let clientKeyData: Data?
     /// Authentication mode detected from the kubeconfig.
     public let authMode: AuthMode
+    /// The plugin behind `.execPlugin`; `nil` in the other modes.
+    let execPlugin: ExecConfig?
 
-    /// Parse a kubeconfig YAML string into credentials.
+    /// Parse a kubeconfig YAML string into credentials. Nothing runs: a user with an `exec`
+    /// plugin parses to `.execPlugin`, and `resolvingCredentials()` runs the plugin.
     ///
     /// Supports two authentication modes:
     /// - **Certificate auth**: `client-certificate-data` + `client-key-data` (mTLS)
-    /// - **Exec credential plugin**: runs an external command to obtain a bearer token
+    /// - **Exec credential plugin**: an external command that prints a bearer token
     ///
     /// If both are present, certificate auth takes precedence.
     public init(yaml: String) throws {
@@ -57,9 +63,6 @@ public struct KubeConfig: Sendable {
             throw KubeConfigError.missingField("certificate-authority-data")
         }
 
-        self.server = server
-        self.certificateAuthorityData = caData
-
         let user: NamedUser?
         if let context {
             user = document.users.first { $0.name == context.user }
@@ -78,27 +81,75 @@ public struct KubeConfig: Sendable {
             let certData = Data(base64Encoded: certB64),
             let keyData = Data(base64Encoded: keyB64)
         {
-            self.clientCertificateData = certData
-            self.clientKeyData = keyData
-            self.authMode = .certificate
+            self.init(
+                server: server,
+                certificateAuthorityData: caData,
+                clientCertificateData: certData,
+                clientKeyData: keyData,
+                authMode: .certificate,
+                execPlugin: nil
+            )
             return
         }
 
         // Fall back to exec credential plugin
-        let exec = user?.user.exec
-        if let exec {
-            let token = try Self.runExecPlugin(
-                command: exec.command,
-                args: exec.args,
-                env: exec.env
+        if let exec = user?.user.exec {
+            self.init(
+                server: server,
+                certificateAuthorityData: caData,
+                clientCertificateData: nil,
+                clientKeyData: nil,
+                authMode: .execPlugin,
+                execPlugin: exec
             )
-            self.clientCertificateData = nil
-            self.clientKeyData = nil
-            self.authMode = .bearerToken(token)
             return
         }
 
         throw KubeConfigError.missingField("client-certificate-data or exec")
+    }
+
+    private init(
+        server: String,
+        certificateAuthorityData: Data,
+        clientCertificateData: Data?,
+        clientKeyData: Data?,
+        authMode: AuthMode,
+        execPlugin: ExecConfig?
+    ) {
+        self.server = server
+        self.certificateAuthorityData = certificateAuthorityData
+        self.clientCertificateData = clientCertificateData
+        self.clientKeyData = clientKeyData
+        self.authMode = authMode
+        self.execPlugin = execPlugin
+    }
+
+    /// Parses `yaml` and runs its exec credential plugin when the selected user has one.
+    public static func load(yaml: String, execTimeout: Duration = .seconds(15)) async throws -> KubeConfig {
+        try await KubeConfig(yaml: yaml).resolvingCredentials(timeout: execTimeout)
+    }
+
+    /// Runs the exec credential plugin and returns a config carrying the bearer token it
+    /// printed. A config without a plugin comes back unchanged.
+    ///
+    /// The plugin (`aws eks get-token`, `gke-gcloud-auth-plugin`, ...) can take seconds; it is
+    /// awaited off the calling actor and terminated after `timeout`.
+    public func resolvingCredentials(timeout: Duration = .seconds(15)) async throws -> KubeConfig {
+        guard let execPlugin else { return self }
+        let token = try await Self.runExecPlugin(
+            command: execPlugin.command,
+            args: execPlugin.args,
+            env: execPlugin.env,
+            timeout: timeout
+        )
+        return KubeConfig(
+            server: server,
+            certificateAuthorityData: certificateAuthorityData,
+            clientCertificateData: nil,
+            clientKeyData: nil,
+            authMode: .bearerToken(token),
+            execPlugin: nil
+        )
     }
 
     /// Create a URLSession configured with appropriate auth from this kubeconfig.
@@ -111,13 +162,7 @@ public struct KubeConfig: Sendable {
         config.timeoutIntervalForRequest = streaming ? 300 : 15
         config.timeoutIntervalForResource = streaming ? 86400 : 60
 
-        switch authMode {
-        case .certificate:
-            let delegate = try KubeTLSDelegate(config: self)
-            return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-        case .bearerToken:
-            let delegate = try KubeBearerTokenDelegate(caData: certificateAuthorityData)
-            return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-        }
+        let delegate = try KubeTLSDelegate(config: self)
+        return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
     }
 }

@@ -1,16 +1,6 @@
 import DockerClient
 import SwiftUI
 
-nonisolated private enum TimeMachineSettingError: LocalizedError {
-    case commandFailed(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .commandFailed(let detail): detail
-        }
-    }
-}
-
 struct StorageSettingsView: View {
     @Environment(\.dockerClient) private var docker
 
@@ -112,7 +102,7 @@ struct StorageSettingsView: View {
         isUpdatingTimeMachine = true
         Task {
             do {
-                try await Self.setTimeMachineExclusion(include: include, path: path)
+                try await TimeMachineExclusion().update(path, includeInBackups: include)
                 includeTimeMachine = include
             } catch {
                 failedTimeMachineValue = include
@@ -122,35 +112,6 @@ struct StorageSettingsView: View {
             }
             isUpdatingTimeMachine = false
         }
-    }
-
-    nonisolated private static func setTimeMachineExclusion(include: Bool, path: String) async throws {
-        try await Task.detached {
-            let fileManager = FileManager.default
-            if !fileManager.fileExists(atPath: path) {
-                try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true)
-            }
-
-            let process = Process()
-            let errorPipe = Pipe()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/tmutil")
-            process.arguments = include ? ["removeexclusion", path] : ["addexclusion", path]
-            process.standardOutput = FileHandle.nullDevice
-            process.standardError = errorPipe
-            try process.run()
-            process.waitUntilExit()
-            guard process.terminationStatus != 0 else { return }
-
-            let detail = String(
-                data: errorPipe.fileHandleForReading.readDataToEndOfFile(),
-                encoding: .utf8
-            )?.trimmingCharacters(in: .whitespacesAndNewlines)
-            throw TimeMachineSettingError.commandFailed(
-                detail?.isEmpty == false
-                    ? detail ?? ""
-                    : "tmutil exited with status \(process.terminationStatus)."
-            )
-        }.value
     }
 
     // MARK: - Reset Operations

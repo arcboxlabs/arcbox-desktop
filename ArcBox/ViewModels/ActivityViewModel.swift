@@ -77,7 +77,10 @@ final class ActivityViewModel {
         }
     }
 
-    private func ingest(_ sample: Arcbox_V1_MachineStats) {
+    /// Folds one raw sample into `current` and the histories. Internal rather
+    /// than private so a test can drive the exact per-tick path without a
+    /// daemon stream behind it.
+    func ingest(_ sample: Arcbox_V1_MachineStats) {
         defer { previousSample = sample }
         guard let previous = previousSample,
             let computed = ResourceStatsCalculator.compute(previous: previous, current: sample)

@@ -535,6 +535,34 @@ public struct Arcbox_V1_MachineExecRequest: Sendable {
   /// Clears the value of `ttySize`. Subsequent reads from it will return its default value.
   public mutating func clearTtySize() {self._ttySize = nil}
 
+  /// Feed the process the session's stdin messages (ExecSession only):
+  /// without a TTY, stdin is /dev/null unless this is set. A TTY session
+  /// always reads stdin from its terminal.
+  public var attachStdin: Bool = false
+
+  /// Run as a login session of `user` (root when empty), the way sshd does:
+  /// the environment starts empty and gets HOME, USER, LOGNAME, SHELL and
+  /// PATH from the account before `env` is applied, the working directory
+  /// defaults to HOME, and the process is the account's shell — a login
+  /// shell when `cmd` is empty, otherwise `shell -c` over `cmd` joined with
+  /// spaces.
+  public var login: Bool = false
+
+  /// Flow control between the daemon and the guest agent, set by the
+  /// daemon when it forwards the request (a client's value is ignored):
+  /// the agent keeps at most this many bytes of MachineExecOutput frames
+  /// (encoded payloads, the final frame excepted) unreturned, grants its
+  /// own stdin window in its first frame, and each side returns window as
+  /// it consumes (MachineExecWindow frames). 0 streams without flow
+  /// control.
+  public var outputWindow: UInt32 = 0
+
+  /// Container-debug target (see the DebugExecRequest wire message): when
+  /// set, the exec enters this container's PID, network, IPC and UTS
+  /// namespaces instead of running in the machine root. Empty for a normal
+  /// machine exec.
+  public var container: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -609,6 +637,16 @@ public struct Arcbox_V1_MachineExecOutput: Sendable {
 
   /// Is this the final message.
   public var done: Bool = false
+
+  /// Signal that terminated the process, without the SIG prefix ("KILL");
+  /// empty when it exited on its own. Only set on completion, where
+  /// `exit_code` is then -1.
+  public var exitSignal: String = String()
+
+  /// The output has ended: the process closed its stdout and stderr (or
+  /// the TCP peer of a machine connection stopped sending). Carries no
+  /// data; the final frame still follows.
+  public var eof: Bool = false
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1575,7 +1613,7 @@ extension Arcbox_V1_MachineOS: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
 
 extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineExecRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}cmd\0\u{3}working_dir\0\u{1}user\0\u{1}env\0\u{1}tty\0\u{3}tty_size\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}cmd\0\u{3}working_dir\0\u{1}user\0\u{1}env\0\u{1}tty\0\u{3}tty_size\0\u{3}attach_stdin\0\u{1}login\0\u{3}output_window\0\u{1}container\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1590,6 +1628,10 @@ extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
       case 5: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.env) }()
       case 6: try { try decoder.decodeSingularBoolField(value: &self.tty) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._ttySize) }()
+      case 8: try { try decoder.decodeSingularBoolField(value: &self.attachStdin) }()
+      case 9: try { try decoder.decodeSingularBoolField(value: &self.login) }()
+      case 10: try { try decoder.decodeSingularUInt32Field(value: &self.outputWindow) }()
+      case 11: try { try decoder.decodeSingularStringField(value: &self.container) }()
       default: break
       }
     }
@@ -1621,6 +1663,18 @@ extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
     try { if let v = self._ttySize {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     } }()
+    if self.attachStdin != false {
+      try visitor.visitSingularBoolField(value: self.attachStdin, fieldNumber: 8)
+    }
+    if self.login != false {
+      try visitor.visitSingularBoolField(value: self.login, fieldNumber: 9)
+    }
+    if self.outputWindow != 0 {
+      try visitor.visitSingularUInt32Field(value: self.outputWindow, fieldNumber: 10)
+    }
+    if !self.container.isEmpty {
+      try visitor.visitSingularStringField(value: self.container, fieldNumber: 11)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1632,6 +1686,10 @@ extension Arcbox_V1_MachineExecRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
     if lhs.env != rhs.env {return false}
     if lhs.tty != rhs.tty {return false}
     if lhs._ttySize != rhs._ttySize {return false}
+    if lhs.attachStdin != rhs.attachStdin {return false}
+    if lhs.login != rhs.login {return false}
+    if lhs.outputWindow != rhs.outputWindow {return false}
+    if lhs.container != rhs.container {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1718,7 +1776,7 @@ extension Arcbox_V1_MachineExecInput: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Arcbox_V1_MachineExecOutput: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineExecOutput"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}stream\0\u{1}data\0\u{3}exit_code\0\u{1}done\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}stream\0\u{1}data\0\u{3}exit_code\0\u{1}done\0\u{3}exit_signal\0\u{1}eof\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1730,6 +1788,8 @@ extension Arcbox_V1_MachineExecOutput: SwiftProtobuf.Message, SwiftProtobuf._Mes
       case 2: try { try decoder.decodeSingularBytesField(value: &self.data) }()
       case 3: try { try decoder.decodeSingularInt32Field(value: &self.exitCode) }()
       case 4: try { try decoder.decodeSingularBoolField(value: &self.done) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.exitSignal) }()
+      case 6: try { try decoder.decodeSingularBoolField(value: &self.eof) }()
       default: break
       }
     }
@@ -1748,6 +1808,12 @@ extension Arcbox_V1_MachineExecOutput: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if self.done != false {
       try visitor.visitSingularBoolField(value: self.done, fieldNumber: 4)
     }
+    if !self.exitSignal.isEmpty {
+      try visitor.visitSingularStringField(value: self.exitSignal, fieldNumber: 5)
+    }
+    if self.eof != false {
+      try visitor.visitSingularBoolField(value: self.eof, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1756,6 +1822,8 @@ extension Arcbox_V1_MachineExecOutput: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if lhs.data != rhs.data {return false}
     if lhs.exitCode != rhs.exitCode {return false}
     if lhs.done != rhs.done {return false}
+    if lhs.exitSignal != rhs.exitSignal {return false}
+    if lhs.eof != rhs.eof {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

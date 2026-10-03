@@ -1,6 +1,7 @@
 import Foundation
+import ProcessSupport
 
-struct ExecConfig: Decodable {
+struct ExecConfig: Decodable, Sendable {
     let command: String
     let args: [String]
     let env: [ExecEnv]
@@ -19,7 +20,7 @@ struct ExecConfig: Decodable {
     }
 }
 
-struct ExecEnv: Decodable {
+struct ExecEnv: Decodable, Sendable {
     let name: String
     let value: String
 }
@@ -27,19 +28,28 @@ struct ExecEnv: Decodable {
 extension KubeConfig {
     // MARK: - Exec Credential Plugin
 
-    /// Run an exec credential plugin command and return the bearer token.
-    static func runExecPlugin(command: String, args: [String], env: [ExecEnv]) throws -> String {
-        let process = Process()
+    /// The most stdout an exec plugin may write. A credential is a few KiB of JSON.
+    private static let execPluginOutputLimit = 1 << 20
 
-        // Resolve the command path. If it's a bare name, search PATH.
+    /// Runs an exec credential plugin and returns the bearer token it prints.
+    ///
+    /// The wait and the stdout read run off the calling actor: the app resolves a kubeconfig
+    /// from the main actor, and a plugin such as `aws eks get-token` takes seconds. A plugin
+    /// still running after `timeout`, or writing past `execPluginOutputLimit`, is terminated.
+    nonisolated static func runExecPlugin(
+        command: String,
+        args: [String],
+        env: [ExecEnv],
+        timeout: Duration = .seconds(15)
+    ) async throws -> String {
+        let process = Process()
+        // A bare command name is resolved on PATH by env(1).
         if command.contains("/") {
             process.executableURL = URL(fileURLWithPath: command)
+            process.arguments = args
         } else {
             process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
             process.arguments = [command] + args
-        }
-        if command.contains("/") {
-            process.arguments = args
         }
 
         // Inherit current environment and overlay exec env vars
@@ -48,20 +58,20 @@ extension KubeConfig {
             processEnv[variable.name] = variable.value
         }
         process.environment = processEnv
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
 
-        try process.run()
-        // Timeout after 15 seconds to prevent UI hang if plugin stalls.
-        let deadline = Date().addingTimeInterval(15)
-        while process.isRunning && Date() < deadline {
-            Thread.sleep(forTimeInterval: 0.05)
-        }
-        if process.isRunning {
-            process.terminate()
-            throw KubeConfigError.execPluginFailed("exec plugin timed out after 15s")
+        let output: Data
+        do {
+            output = try await runCapturingStandardOutput(
+                process, timeout: timeout, outputLimit: execPluginOutputLimit)
+        } catch is ProcessTimedOut {
+            throw KubeConfigError.execPluginFailed(
+                "exec plugin timed out after \(timeout.components.seconds)s"
+            )
+        } catch let exceeded as ProcessOutputLimitExceeded {
+            throw KubeConfigError.execPluginFailed(
+                "exec plugin wrote more than \(exceeded.limit) bytes"
+            )
         }
 
         guard process.terminationStatus == 0 else {
@@ -70,8 +80,7 @@ extension KubeConfig {
             )
         }
 
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let credential = try JSONDecoder().decode(ExecCredential.self, from: data)
+        let credential = try JSONDecoder().decode(ExecCredential.self, from: output)
 
         guard let token = credential.status?.token, !token.isEmpty else {
             throw KubeConfigError.execPluginFailed("exec plugin returned no token")

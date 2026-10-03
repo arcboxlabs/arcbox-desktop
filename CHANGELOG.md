@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.37.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.37.0...v1.37.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **activity:** stop animating the sparklines on every sample ([ef0578f](https://github.com/arcboxlabs/arcbox-desktop/commit/ef0578f35b1e0ef6710fdf7fbee5e0a445cef683))
+* **containers:** keep the logs tab off the main thread's critical path ([0aa0ea1](https://github.com/arcboxlabs/arcbox-desktop/commit/0aa0ea19fbc59005c269e79255c1da02c29a6786))
+* **containers:** stop the Docker client running out of connections ([2393376](https://github.com/arcboxlabs/arcbox-desktop/commit/23933765ccaf2a64f03aeec5ae23bff08f082297))
+* **k8s:** make the watch streams authenticate against k3s ([33c72dd](https://github.com/arcboxlabs/arcbox-desktop/commit/33c72ddbe7b0f3b1b844af69e341aea9b5b4128f))
+* **k8s:** report a stuck watch once and keep backing off while it fails ([c60257d](https://github.com/arcboxlabs/arcbox-desktop/commit/c60257d0fd790905437ecf14974dd8c5bf86deb1))
+* **startup:** file startup failures under one issue instead of one per launch ([036790e](https://github.com/arcboxlabs/arcbox-desktop/commit/036790e5483917d8b0893dca2ba144442fa90942))
+* **startup:** name the two things that make daemon registration fail ([bebf107](https://github.com/arcboxlabs/arcbox-desktop/commit/bebf10779c554c5b8483c89964d5b164078e2b82))
+* **startup:** say why the daemon failed, not just that it did ([f100307](https://github.com/arcboxlabs/arcbox-desktop/commit/f10030721bf011adb53af458c27f5154f641ec76))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.8.0 ([#403](https://github.com/arcboxlabs/arcbox-desktop/issues/403)) ([62670a3](https://github.com/arcboxlabs/arcbox-desktop/commit/62670a388875fe3a52607180858d04044fdbe111))
+
+## [1.37.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.36.0...v1.37.0) (2026-08-13)
+
+### Highlights
+
+Sandboxes can start from a template now, not just a bare Docker image. The create sheet's Source picker groups the built-in minimal template, your catalog templates and Docker images together, and says which one restores warm and which cold-boots — a template carrying a pre-warmed snapshot reaches READY in under a second instead of booting from scratch. Any snapshot you already have can be promoted into a template from the Snapshots tab; nothing is rebuilt, the checkpoint becomes the template's warm image.
+
+Because a template brings its own defaults, the CPU and memory steppers go down to "Template default" rather than bottoming out at 1 vCPU and 128 MiB. Setting either one replaces the template's defaults for both, and the form tells you so where you set it.
+
+
+### Features
+
+* **sandboxes:** surface the sandbox template catalog (CORE-107) ([#387](https://github.com/arcboxlabs/arcbox-desktop/issues/387)) ([6c1341f](https://github.com/arcboxlabs/arcbox-desktop/commit/6c1341f381ecbd96ee7b197999475eee8be55b02))
+
+
+### Bug Fixes
+
+* **client:** regenerate the template client against v0.6.6 ([#395](https://github.com/arcboxlabs/arcbox-desktop/issues/395)) ([c3c0693](https://github.com/arcboxlabs/arcbox-desktop/commit/c3c069340d4feb050a991bcec458aad056fb006e))
+* **client:** regenerate the template client for the v0.6.6 pin ([#394](https://github.com/arcboxlabs/arcbox-desktop/issues/394)) ([fb67a26](https://github.com/arcboxlabs/arcbox-desktop/commit/fb67a267390f10fd36a00ab345993dfc2bc9e704))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.6.6 ([#391](https://github.com/arcboxlabs/arcbox-desktop/issues/391)) ([1653287](https://github.com/arcboxlabs/arcbox-desktop/commit/16532878a79c828a1d9bf012b672d32bb5a5c619))
+
 ## [1.36.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.35.1...v1.36.0) (2026-08-13)
 
 ### Highlights

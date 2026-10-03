@@ -132,6 +132,18 @@ public enum Arcbox_V1_AgentService {
                 method: "GetKubeconfig"
             )
         }
+        /// Namespace for "ListKubernetesLoadBalancers" metadata.
+        public enum ListKubernetesLoadBalancers {
+            /// Request type for "ListKubernetesLoadBalancers".
+            public typealias Input = Arcbox_V1_KubernetesLoadBalancersRequest
+            /// Response type for "ListKubernetesLoadBalancers".
+            public typealias Output = Arcbox_V1_KubernetesLoadBalancersResponse
+            /// Descriptor for "ListKubernetesLoadBalancers".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "ListKubernetesLoadBalancers"
+            )
+        }
         /// Namespace for "Shutdown" metadata.
         public enum Shutdown {
             /// Request type for "Shutdown".
@@ -203,6 +215,7 @@ public enum Arcbox_V1_AgentService {
             DeleteKubernetes.descriptor,
             GetKubernetesStatus.descriptor,
             GetKubeconfig.descriptor,
+            ListKubernetesLoadBalancers.descriptor,
             Shutdown.descriptor,
             DiskTrim.descriptor,
             WatchReadiness.descriptor,
@@ -398,6 +411,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_KubernetesKubeconfigRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesKubeconfigResponse>
+
+        /// Handle the "ListKubernetesLoadBalancers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists the guest cluster's Services of type LoadBalancer.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_KubernetesLoadBalancersRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_KubernetesLoadBalancersResponse` messages.
+        func listKubernetesLoadBalancers(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse>
 
         /// Handle the "Shutdown" method.
         ///
@@ -666,6 +697,24 @@ extension Arcbox_V1_AgentService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesKubeconfigResponse>
 
+        /// Handle the "ListKubernetesLoadBalancers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists the guest cluster's Services of type LoadBalancer.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_KubernetesLoadBalancersRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_KubernetesLoadBalancersResponse` message.
+        func listKubernetesLoadBalancers(
+            request: GRPCCore.ServerRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse>
+
         /// Handle the "Shutdown" method.
         ///
         /// > Source IDL Documentation:
@@ -931,6 +980,24 @@ extension Arcbox_V1_AgentService {
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_KubernetesKubeconfigResponse
 
+        /// Handle the "ListKubernetesLoadBalancers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists the guest cluster's Services of type LoadBalancer.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_KubernetesLoadBalancersRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_KubernetesLoadBalancersResponse` to respond with.
+        func listKubernetesLoadBalancers(
+            request: Arcbox_V1_KubernetesLoadBalancersRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_KubernetesLoadBalancersResponse
+
         /// Handle the "Shutdown" method.
         ///
         /// > Source IDL Documentation:
@@ -1132,6 +1199,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.ListKubernetesLoadBalancers.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_KubernetesLoadBalancersRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_KubernetesLoadBalancersResponse>(),
+            handler: { request, context in
+                try await self.listKubernetesLoadBalancers(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_V1_AgentService.Method.Shutdown.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ShutdownRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ShutdownResponse>(),
@@ -1285,6 +1363,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesKubeconfigResponse> {
         let response = try await self.getKubeconfig(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func listKubernetesLoadBalancers(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse> {
+        let response = try await self.listKubernetesLoadBalancers(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1460,6 +1549,19 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesKubeconfigResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_KubernetesKubeconfigResponse>(
             message: try await self.getKubeconfig(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func listKubernetesLoadBalancers(
+        request: GRPCCore.ServerRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse>(
+            message: try await self.listKubernetesLoadBalancers(
                 request: request.message,
                 context: context
             ),
@@ -1763,6 +1865,29 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_KubernetesKubeconfigResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesKubeconfigResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ListKubernetesLoadBalancers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists the guest cluster's Services of type LoadBalancer.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_KubernetesLoadBalancersRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_KubernetesLoadBalancersRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_KubernetesLoadBalancersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func listKubernetesLoadBalancers<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_KubernetesLoadBalancersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_KubernetesLoadBalancersResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesLoadBalancersResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "Shutdown" method.
@@ -2209,6 +2334,40 @@ extension Arcbox_V1_AgentService {
             )
         }
 
+        /// Call the "ListKubernetesLoadBalancers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists the guest cluster's Services of type LoadBalancer.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_KubernetesLoadBalancersRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_KubernetesLoadBalancersRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_KubernetesLoadBalancersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func listKubernetesLoadBalancers<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_KubernetesLoadBalancersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_KubernetesLoadBalancersResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesLoadBalancersResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.ListKubernetesLoadBalancers.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "Shutdown" method.
         ///
         /// > Source IDL Documentation:
@@ -2636,6 +2795,35 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_KubernetesKubeconfigRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_KubernetesKubeconfigResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ListKubernetesLoadBalancers" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Lists the guest cluster's Services of type LoadBalancer.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_KubernetesLoadBalancersRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listKubernetesLoadBalancers<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesLoadBalancersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.listKubernetesLoadBalancers(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_KubernetesLoadBalancersRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_KubernetesLoadBalancersResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3077,6 +3265,39 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.getKubeconfig(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ListKubernetesLoadBalancers" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Lists the guest cluster's Services of type LoadBalancer.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listKubernetesLoadBalancers<Result>(
+        _ message: Arcbox_V1_KubernetesLoadBalancersRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesLoadBalancersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_KubernetesLoadBalancersRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.listKubernetesLoadBalancers(
             request: request,
             options: options,
             onResponse: handleResponse

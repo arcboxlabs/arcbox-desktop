@@ -1,4 +1,7 @@
 import AppKit
+import ArcBoxAuth
+import ArcBoxClient
+import SwiftUI
 import XCTest
 
 @testable import ArcBox
@@ -6,6 +9,17 @@ import XCTest
 /// Guards the toolbar geometry of the single three-column main-window split.
 @MainActor
 final class ContentViewColumnLayoutTests: XCTestCase {
+    private static let frameAutosaveName = "ContentViewColumnLayoutTests.main"
+
+    private var windowController: MainWindowController?
+
+    override func tearDown() {
+        windowController?.close()
+        windowController = nil
+        NSWindow.removeFrame(usingName: Self.frameAutosaveName)
+        super.tearDown()
+    }
+
     func testContentToolbarItemsStayOverTheirColumnAtTheNarrowestWidth() throws {
         let window = try mainWindow()
         let splitView = try XCTUnwrap(
@@ -58,21 +72,37 @@ final class ContentViewColumnLayoutTests: XCTestCase {
         }
     }
 
+    /// The main window as `ApplicationCoordinator.installWindows()` builds it, over fresh
+    /// models: the test host does not boot the app (`AppDelegate.isTestHost`), so there is
+    /// no window to find. The environment list mirrors `makeMainRoot()`.
     private func mainWindow() throws -> NSWindow {
-        let deadline = Date().addingTimeInterval(10)
-        var found: NSWindow?
-        while found == nil, Date() < deadline {
-            found = NSApp.windows.first {
-                $0.toolbar != nil && findSplitView(in: $0.contentView) != nil
-            }
-            if found == nil {
-                pumpRunLoop()
-            }
-        }
-
-        let window = try XCTUnwrap(found, "the app's three-column main window never appeared")
+        let root =
+            ContentView {}
+            .environment(AppViewModel())
+            .environment(DaemonManager())
+            .environment(ContainersViewModel())
+            .environment(ImagesViewModel())
+            .environment(NetworksViewModel())
+            .environment(VolumesViewModel())
+            .environment(SandboxEventMonitor())
+            .environment(AuthSession(tokenStore: InMemoryTokenStore()))
+            .environment(RunnersViewModel())
+            .frame(minWidth: 900, minHeight: 600)
+        let host = NSHostingController(rootView: root)
+        host.sceneBridgingOptions = .all
+        let controller = MainWindowController(
+            contentViewController: host,
+            frameAutosaveName: Self.frameAutosaveName
+        )
+        windowController = controller
+        let window = try XCTUnwrap(controller.window)
         window.makeKeyAndOrderFront(nil)
-        pumpRunLoop()
+
+        let deadline = Date().addingTimeInterval(10)
+        while window.toolbar == nil || findSplitView(in: window.contentView) == nil, Date() < deadline {
+            pumpRunLoop()
+        }
+        XCTAssertNotNil(window.toolbar, "the main window never bridged its toolbar")
         return window
     }
 
