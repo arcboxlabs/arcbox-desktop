@@ -48,6 +48,7 @@ struct MachineCreateSheet: View {
                     }
                 )
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close")
                 .disabled(isCreating)
             }
             .padding(.horizontal, 16)

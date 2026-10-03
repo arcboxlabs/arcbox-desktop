@@ -85,16 +85,18 @@ struct SandboxPortsToolbar: View {
             Image(systemName: "arrow.right")
                 .font(.system(size: 10))
                 .foregroundStyle(AppColors.textSecondary)
+                .accessibilityLabel("to")
 
             TextField("Host port", text: $form.hostPortText, prompt: Text("auto"))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 110)
 
-            Picker("", selection: $form.networkProtocol) {
+            Picker("Protocol", selection: $form.networkProtocol) {
                 Text("TCP").tag("tcp")
                 Text("UDP").tag("udp")
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(width: 110)
 
             Spacer()
@@ -233,6 +235,7 @@ struct SandboxPortsContent: View {
                 Image(systemName: "network")
                     .font(.system(size: 24))
                     .foregroundStyle(AppColors.textMuted)
+                    .accessibilityHidden(true)
                 Text("No exposed ports.")
                     .font(.system(size: 13))
                     .foregroundStyle(AppColors.textSecondary)
@@ -277,6 +280,7 @@ struct SandboxPortsContent: View {
             Image(systemName: "arrow.right")
                 .font(.system(size: 10))
                 .foregroundStyle(AppColors.textSecondary)
+                .accessibilityLabel("to")
 
             if mapping.networkProtocol == "tcp", let url = mapping.localURL {
                 Link("localhost:\(mapping.hostPort)", destination: url)
@@ -301,6 +305,7 @@ struct SandboxPortsContent: View {
                     || isWorking
             )
             .help("Remove mapping")
+            .accessibilityLabel("Remove mapping to localhost:\(mapping.hostPort)")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

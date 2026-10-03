@@ -79,7 +79,7 @@ struct GeneralSettingsView: View {
 
             Section("Notifications") {
                 LabeledContent {
-                    Toggle("", isOn: $notifySandboxResults)
+                    Toggle("Sandbox execution results", isOn: $notifySandboxResults)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -90,7 +90,7 @@ struct GeneralSettingsView: View {
                     }
                 }
                 LabeledContent {
-                    Toggle("", isOn: $notifyContainerCrashes)
+                    Toggle("Container crashes", isOn: $notifyContainerCrashes)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -101,7 +101,7 @@ struct GeneralSettingsView: View {
                     }
                 }
                 LabeledContent {
-                    Toggle("", isOn: $notifyDaemonProblems)
+                    Toggle("Daemon problems", isOn: $notifyDaemonProblems)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -119,7 +119,7 @@ struct GeneralSettingsView: View {
 
             Section("Privacy") {
                 LabeledContent {
-                    Toggle("", isOn: $telemetryEnabled)
+                    Toggle("Share usage data", isOn: $telemetryEnabled)
                         .labelsHidden()
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -140,7 +140,7 @@ struct GeneralSettingsView: View {
                     Text("Dark").tag("dark")
                 }
                 LabeledContent {
-                    Picker("", selection: $externalTerminalSelection) {
+                    Picker("External terminal app", selection: $externalTerminalSelection) {
                         ForEach(externalTerminalApps) { app in
                             Text(app.displayName).tag(app.id)
                         }

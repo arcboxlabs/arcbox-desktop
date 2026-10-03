@@ -300,7 +300,7 @@ class DockerTerminalSession {
                         }
                     } catch {
                         Log.terminal.error(
-                            "Failed to stop image terminal container \(container.name, privacy: .private): \(error.localizedDescription, privacy: .public)"
+                            "Failed to stop image terminal container \(container.name, privacy: .private): \(error.localizedDescription, privacy: .private)"
                         )
                     }
                 }
@@ -327,7 +327,7 @@ class DockerTerminalSession {
                         } catch {
                             let message = error.localizedDescription
                             Log.terminal.error(
-                                "Failed to remove image terminal container \(container.name, privacy: .private): \(message, privacy: .public)"
+                                "Failed to remove image terminal container \(container.name, privacy: .private): \(message, privacy: .private)"
                             )
                             break
                         }

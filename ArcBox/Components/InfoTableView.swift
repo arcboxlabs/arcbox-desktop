@@ -11,6 +11,7 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
+                .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: 0) {
                 HStack {
@@ -24,6 +25,7 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
                 .padding(.vertical, 6)
                 .padding(.horizontal, 8)
                 .background(AppColors.surfaceElevated)
+                .accessibilityElement(children: .combine)
 
                 ForEach(items.indices, id: \.self) { index in
                     rowContent(items[index])
@@ -31,6 +33,7 @@ struct InfoTableView<Item: Identifiable, RowContent: View>: View {
                         .padding(.vertical, 6)
                         .padding(.horizontal, 8)
                         .background(index % 2 == 0 ? Color.clear : AppColors.surfaceElevated)
+                        .accessibilityElement(children: .combine)
                 }
             }
             .background(AppColors.surfaceCard)

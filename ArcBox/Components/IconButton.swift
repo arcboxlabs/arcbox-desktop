@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Small icon-only button (26x26)
+/// Small icon-only button (26x26). `label` is what VoiceOver reads; the
+/// symbol alone does not say what the button does or to which resource.
 struct IconButton: View {
     let symbol: String
+    let label: String
     let action: () -> Void
     var color: Color = AppColors.textSecondary
 
@@ -20,6 +22,7 @@ struct IconButton: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
         .onHover { hovering in
             isHovered = hovering
         }

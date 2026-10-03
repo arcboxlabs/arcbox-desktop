@@ -43,6 +43,7 @@ struct ImageTerminalTab: View {
                     )
                     .buttonStyle(.plain)
                     .help("Disconnect")
+                    .accessibilityLabel("Disconnect terminal")
                 } else if session.state == .disconnected || session.state == .idle {
                     Button(action: reconnect) {
                         Image(systemName: "arrow.clockwise")
@@ -51,6 +52,7 @@ struct ImageTerminalTab: View {
                     }
                     .buttonStyle(.plain)
                     .help("Reconnect")
+                    .accessibilityLabel("Reconnect terminal")
                 }
             }
             .padding(.horizontal, 12)
@@ -123,6 +125,7 @@ struct ImageTerminalTab: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 32))
                 .foregroundStyle(AppColors.textMuted)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.system(size: 13))
                 .foregroundStyle(AppColors.textSecondary)

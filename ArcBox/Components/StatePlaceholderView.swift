@@ -42,6 +42,9 @@ final class StatePlaceholderView: NSHostingView<StatePlaceholderContent> {
         setAccessibilityRole(.group)
         setAccessibilityLabel(state.title)
         setAccessibilityHelp(state.message)
+        // Not read by VoiceOver: it lets a UI test wait for the loading state
+        // to end without matching on wording a resource could also carry.
+        setAccessibilityIdentifier(state.accessibilityIdentifier)
     }
 }
 
@@ -125,6 +128,18 @@ extension StatePlaceholderView.State {
             message
         case .loading, .noSelection, .plain:
             nil
+        }
+    }
+
+    /// Stable per-state identifier for UI tests; `AccessibilityAuditTests`
+    /// waits for `placeholder.loading` to disappear.
+    fileprivate var accessibilityIdentifier: String {
+        switch self {
+        case .loading: "placeholder.loading"
+        case .empty: "placeholder.empty"
+        case .error: "placeholder.error"
+        case .noSelection: "placeholder.noSelection"
+        case .plain: "placeholder.plain"
         }
     }
 }

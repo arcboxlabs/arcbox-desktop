@@ -16,6 +16,7 @@ struct ContainerLogsToolbar: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(AppColors.textSecondary)
                     .font(.system(size: 12))
+                    .accessibilityHidden(true)
                 TextField("Search", text: $model.searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
@@ -25,13 +26,12 @@ struct ContainerLogsToolbar: View {
             .background(AppColors.surfaceElevated)
             .clipShape(RoundedRectangle(cornerRadius: 6))
 
-            Picker(selection: $model.streamFilter) {
+            Picker("Stream", selection: $model.streamFilter) {
                 ForEach(LogStreamFilter.allCases) { filter in
                     Text(filter.rawValue).tag(filter)
                 }
-            } label: {
-                EmptyView()
             }
+            .labelsHidden()
             .pickerStyle(.segmented)
             .frame(width: 180)
 
@@ -46,6 +46,7 @@ struct ContainerLogsToolbar: View {
             }
             .buttonStyle(.plain)
             .help(model.isFollowing ? "Pause" : "Follow")
+            .accessibilityLabel(model.isFollowing ? "Pause following" : "Follow new output")
 
             Button {
                 model.copyLogs()
@@ -56,6 +57,7 @@ struct ContainerLogsToolbar: View {
             }
             .buttonStyle(.plain)
             .help("Copy logs")
+            .accessibilityLabel("Copy logs")
 
             Button {
                 model.clearLogs()
@@ -66,6 +68,7 @@ struct ContainerLogsToolbar: View {
             }
             .buttonStyle(.plain)
             .help("Clear logs")
+            .accessibilityLabel("Clear logs")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
