@@ -77,6 +77,24 @@ final class ContainerNotificationRulesTests: XCTestCase {
         XCTAssertNil(rules.crash(for: event("die", after: 1, ["exitCode": "137"])))
     }
 
+    func testExplicitFatalSignalsSuppressTheirDeaths() {
+        for (signal, exitCode) in [(6, 134), (11, 139), (34, 162)] {
+            let id = "killed-with-\(signal)"
+            _ = rules.crash(for: event("kill", id: id, ["signal": String(signal)]))
+
+            XCTAssertNil(rules.crash(for: event("die", id: id, after: 1, ["exitCode": String(exitCode)])))
+        }
+    }
+
+    func testFatalExitsWithoutKillNotify() {
+        for exitCode in [134, 139, 162] {
+            let id = "crashed-with-\(exitCode)"
+            let crash = rules.crash(for: event("die", id: id, ["exitCode": String(exitCode), "name": "api"]))
+
+            XCTAssertEqual(crash, ContainerCrash(containerID: id, name: "api", exitCode: exitCode))
+        }
+    }
+
     /// Intent explains exactly one death. A container stopped, restarted, then
     /// crashing on its own is news.
     func testIntentIsConsumedByOneDeath() {
@@ -95,13 +113,13 @@ final class ContainerNotificationRulesTests: XCTestCase {
         XCTAssertNotNil(rules.crash(for: event("die", after: 2, ["exitCode": "1"])))
     }
 
-    /// `docker kill` sends any signal the caller asks for. SIGHUP addresses a
-    /// container that is expected to keep running, so a death that follows it
-    /// is the container's own doing.
-    func testNonTerminatingSignalIsNotIntent() {
-        _ = rules.crash(for: event("kill", ["signal": "1"]))
+    func testReloadAndControlSignalsDoNotExplainCrashes() {
+        for signal in [1, 10, 12, 18, 19, 28] {
+            let id = "signaled-with-\(signal)"
+            _ = rules.crash(for: event("kill", id: id, ["signal": String(signal)]))
 
-        XCTAssertNotNil(rules.crash(for: event("die", after: 3, ["exitCode": "1", "name": "api"])))
+            XCTAssertNotNil(rules.crash(for: event("die", id: id, after: 3, ["exitCode": "1", "name": "api"])))
+        }
     }
 
     /// The other half: a container that traps SIGTERM and carries on must not
