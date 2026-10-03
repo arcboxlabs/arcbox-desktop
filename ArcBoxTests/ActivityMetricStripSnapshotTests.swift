@@ -9,11 +9,18 @@ import XCTest
 /// sparklines draw can be reviewed by eye. The glass around them is left out:
 /// it does not change with the figures, and `cacheDisplay` renders it as its
 /// raw normal map. Writes `<prefix>.png` (light) and
-/// `<prefix>-dark.png` at 2× into `ARCBOX_ACTIVITY_SNAPSHOT_DIR`, and is
-/// skipped when that is not set: the images are for a reviewer, not a gate.
+/// `<prefix>-dark.png` at 2× into `ARCBOX_ACTIVITY_SNAPSHOT_DIR`, creating it if
+/// needed, and is skipped when that is not set: the images are for a reviewer,
+/// not a gate.
 ///
 /// Render the tree before and after the change with
 /// `ARCBOX_ACTIVITY_SNAPSHOT_PREFIX=before` / `=after` and compare the pairs.
+/// `xcodebuild` hands the test process only the variables prefixed
+/// `TEST_RUNNER_`, so through the Makefile that is
+/// `make test XCODE_ENV="/usr/bin/env -i HOME=$HOME PATH=/usr/bin:/bin
+/// TEST_RUNNER_ARCBOX_ACTIVITY_SNAPSHOT_DIR=/tmp/strip
+/// TEST_RUNNER_ARCBOX_ACTIVITY_SNAPSHOT_PREFIX=before"
+/// XCODEBUILD_EXTRA=-only-testing:ArcBoxTests/ActivityMetricStripSnapshotTests`.
 @MainActor
 final class ActivityMetricStripSnapshotTests: XCTestCase {
     func testRendersStripInBothAppearancesForReview() throws {
@@ -21,6 +28,7 @@ final class ActivityMetricStripSnapshotTests: XCTestCase {
         guard let directory = environment["ARCBOX_ACTIVITY_SNAPSHOT_DIR"] else {
             throw XCTSkip("set ARCBOX_ACTIVITY_SNAPSHOT_DIR to render the strip for review")
         }
+        try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
         let prefix = environment["ARCBOX_ACTIVITY_SNAPSHOT_PREFIX"] ?? "strip"
         let strip = ActivityMetricTiles(
             stats: try XCTUnwrap(Self.stats()),

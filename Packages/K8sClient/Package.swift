@@ -11,9 +11,10 @@ let package = Package(
         .library(name: "K8sClient", targets: ["K8sClient"])
     ],
     dependencies: [
-        .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.2")
+        .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.2"),
+        .package(path: "../ProcessSupport"),
     ],
     targets: [
-        .target(name: "K8sClient", dependencies: ["Yams"])
+        .target(name: "K8sClient", dependencies: ["Yams", "ProcessSupport"])
     ]
 )
