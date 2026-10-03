@@ -35,6 +35,7 @@ struct LayerMergeBadge: View {
             if !isComplete {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 10))
+                    .accessibilityHidden(true)
             }
 
             Text(label)
@@ -42,6 +43,7 @@ struct LayerMergeBadge: View {
         }
         .foregroundStyle(isComplete ? AppColors.textMuted : AppColors.warning)
         .fixedSize()
+        .accessibilityElement(children: .combine)
         .help(
             isComplete
                 ? "Merged view of all \(total) filesystem layers."

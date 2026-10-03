@@ -47,6 +47,8 @@ final class ImagesListViewControllerTests: XCTestCase {
         let (nginxRow, nginxCell) = try rowAndCell(named: "nginx:latest", in: tableView)
         let nginxDeleteButton = try XCTUnwrap(deleteButton(in: nginxCell))
         XCTAssertTrue(nginxDeleteButton is ResourceActionButton)
+        XCTAssertEqual(nginxCell.accessibilityLabel(), "nginx:latest, amd64, 1.0 KB, In Use")
+        XCTAssertEqual(nginxDeleteButton.accessibilityLabel(), "Delete nginx:latest")
         nginxCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
         nginxCell.layoutSubtreeIfNeeded()
         let content = try XCTUnwrap(nginxDeleteButton.superview as? NSStackView)
@@ -65,6 +67,7 @@ final class ImagesListViewControllerTests: XCTestCase {
         XCTAssertTrue(nginxDeleteButton.isHidden)
 
         let (postgresRow, postgresCell) = try rowAndCell(named: "postgres:latest", in: tableView)
+        XCTAssertEqual(postgresCell.accessibilityLabel(), "postgres:latest, 1.0 KB, Unused")
         let postgresDeleteButton = try XCTUnwrap(deleteButton(in: postgresCell))
         postgresCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
         tableView.selectRowIndexes(IndexSet(integer: postgresRow), byExtendingSelection: false)

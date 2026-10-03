@@ -11,6 +11,7 @@ struct ToastView: View {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(AppColors.error)
+                .accessibilityHidden(true)
 
             Text(message)
                 .font(.system(size: 12))
@@ -27,6 +28,7 @@ struct ToastView: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

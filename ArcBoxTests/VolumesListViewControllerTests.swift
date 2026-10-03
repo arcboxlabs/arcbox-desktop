@@ -41,6 +41,15 @@ final class VolumesListViewControllerTests: XCTestCase {
         )
         let deleteButton = try XCTUnwrap(deleteButton(in: dataCell))
         XCTAssertTrue(deleteButton is ResourceActionButton)
+        XCTAssertTrue(dataCell.isAccessibilityElement())
+        XCTAssertEqual(dataCell.accessibilityRole(), .group)
+        XCTAssertEqual(dataCell.accessibilityLabel(), "data, 1.0 KB, In Use")
+        XCTAssertEqual(deleteButton.accessibilityLabel(), "Delete data")
+        let sectionCell = try XCTUnwrap(
+            tableView.view(atColumn: 0, row: 0, makeIfNecessary: true) as? NSTableCellView
+        )
+        XCTAssertTrue(sectionCell.isAccessibilityElement())
+        XCTAssertEqual(sectionCell.accessibilityLabel(), "In Use")
         dataCell.frame = NSRect(x: 0, y: 0, width: 360, height: AppMetrics.rowHeight)
         dataCell.layoutSubtreeIfNeeded()
         let content = try XCTUnwrap(deleteButton.superview as? NSStackView)

@@ -77,6 +77,7 @@ final class LocalRootFSOutlineCoordinator: NSObject {
         outline.floatsGroupRows = false
         outline.focusRingType = .none
         outline.autoresizingMask = [.width, .height]
+        outline.setAccessibilityLabel("Files")
 
         let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
         nameColumn.title = "Name"

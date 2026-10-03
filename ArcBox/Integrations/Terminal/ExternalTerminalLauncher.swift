@@ -128,7 +128,7 @@ enum ExternalTerminalLauncher {
         } catch let error as ExternalTerminalLaunchError {
             throw error
         } catch {
-            logger.error("Failed to write external terminal command: \(error.localizedDescription, privacy: .public)")
+            logger.error("Failed to write external terminal command: \(error.localizedDescription, privacy: .private)")
             throw ExternalTerminalLaunchError.commandFile(error.localizedDescription)
         }
     }
@@ -137,7 +137,7 @@ enum ExternalTerminalLauncher {
         do {
             try FileManager.default.removeItem(at: scriptURL)
         } catch {
-            logger.error("Failed to remove external terminal command: \(error.localizedDescription, privacy: .public)")
+            logger.error("Failed to remove external terminal command: \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -158,7 +158,7 @@ enum ExternalTerminalLauncher {
                 configuration: configuration
             )
         } catch {
-            logger.error("Failed to open command script: \(error.localizedDescription, privacy: .public)")
+            logger.error("Failed to open command script: \(error.localizedDescription, privacy: .private)")
             guard let backend = terminal.appleScriptBackend else {
                 throw ExternalTerminalLaunchError.launchFailed(
                     terminal.displayName,
@@ -244,7 +244,7 @@ enum ExternalTerminalLauncher {
         }.value
         guard let failure else { return }
 
-        logger.error("AppleScript error: \(failure.message, privacy: .public)")
+        logger.error("AppleScript error: \(failure.message, privacy: .private)")
         if failure.number == -1743 {
             throw ExternalTerminalLaunchError.automationDenied(appName)
         }

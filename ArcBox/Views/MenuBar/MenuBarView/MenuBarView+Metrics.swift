@@ -73,6 +73,10 @@ extension MenuBarView {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(percent.map { String(format: "%.0f%%", $0) } ?? "Unavailable")
+        .accessibilityHint("Opens Activity")
     }
 
     // MARK: - Metric Cards
@@ -145,6 +149,10 @@ extension MenuBarView {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(count.map(String.init) ?? "Unavailable")
+        .accessibilityHint("Shows \(title.lowercased())")
     }
 
 }

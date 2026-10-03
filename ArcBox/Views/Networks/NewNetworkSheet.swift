@@ -56,7 +56,7 @@ struct NewNetworkSheet: View {
                         Text("IPv6")
                             .font(.system(size: 14))
                         Spacer()
-                        Toggle("", isOn: $enableIPv6)
+                        Toggle("IPv6", isOn: $enableIPv6)
                             .labelsHidden()
                     }
                     .padding(.horizontal, 16)

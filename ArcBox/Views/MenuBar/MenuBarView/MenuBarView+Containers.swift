@@ -70,6 +70,17 @@ extension MenuBarView {
         }
         .buttonStyle(.plain)
         .disabled(!hasContainers)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Containers")
+        .accessibilityValue(containersHeaderValue)
+        .accessibilityHint("Shows or hides the container list")
+    }
+
+    var containersHeaderValue: String {
+        guard hasContainers else { return "None" }
+        let running =
+            containersVM.loadState == .loaded ? "\(containersVM.runningCount) running" : "Loading"
+        return "\(running), \(containersExpanded ? "expanded" : "collapsed")"
     }
 
     var containerList: some View {
@@ -95,6 +106,7 @@ extension MenuBarView {
                 Circle()
                     .fill(container.state.color)
                     .frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
 
                 Text(container.name)
                     .font(.caption.weight(.medium))
@@ -110,6 +122,9 @@ extension MenuBarView {
             .padding(.vertical, 5)
             .frame(height: containerRowHeight)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(container.name), \(container.state.label)")
+        .accessibilityHint("Shows this container in ArcBox")
     }
 
 }

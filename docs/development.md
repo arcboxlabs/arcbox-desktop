@@ -19,6 +19,7 @@ simply stay off.
 | `make build` | Debug, Swift only, no embedded Rust binaries |
 | `make build-runnable` | complete signed Debug app using the isolated development profile |
 | `make test` | full test suite |
+| `make audit-accessibility` | Xcode's accessibility audit over the signed `ArcBox Dev` app; needs the same setup as `make build-runnable` |
 | `make format` / `make lint` | swift-format and SwiftLint |
 | `make generate-xcodeproj` | run after adding or removing a file |
 | `make lint-xtask` / `make test-xtask` | the Rust packaging crate, gated separately |

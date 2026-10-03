@@ -333,12 +333,15 @@ final class VolumesListViewController: NSViewController,
             tableView.makeView(withIdentifier: Self.sectionCellIdentifier, owner: nil)
             as? NSTableCellView ?? makeSectionCell()
         cell.textField?.stringValue = title
+        cell.setAccessibilityLabel(title)
         return cell
     }
 
     private func makeSectionCell() -> NSTableCellView {
         let cell = NSTableCellView()
         cell.identifier = Self.sectionCellIdentifier
+        cell.setAccessibilityElement(true)
+        cell.setAccessibilityRole(.group)
 
         let label = NSTextField(labelWithString: "")
         label.font = .systemFont(ofSize: 11, weight: .semibold)
@@ -533,6 +536,7 @@ private final class VolumeTableCellView: NSTableCellView, ResourceListActionDisp
         sizeLabel.stringValue = volume.sizeDisplay
         self.onDelete = onDelete
         setAccessibilityElement(true)
+        setAccessibilityRole(.group)
         setAccessibilityLabel(
             "\(volume.name), \(volume.sizeDisplay), \(volume.inUse ? "In Use" : "Unused")"
         )

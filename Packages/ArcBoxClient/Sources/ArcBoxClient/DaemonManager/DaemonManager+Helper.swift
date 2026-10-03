@@ -179,7 +179,7 @@ extension DaemonManager {
             return
         } catch {
             ClientLog.daemon.warning(
-                "Failed to run abctl setup install: \(error, privacy: .public)")
+                "Failed to run abctl setup install: \(error, privacy: .private)")
         }
 
         await installBundledCompletions()
@@ -214,7 +214,7 @@ extension DaemonManager {
                     try fm.createDirectory(at: destDir, withIntermediateDirectories: true)
                 } catch {
                     ClientLog.daemon.warning(
-                        "Failed to create completions dir \(destDir.path): \(error, privacy: .public)"
+                        "Failed to create completions dir \(destDir.path, privacy: .private): \(error, privacy: .private)"
                     )
                     continue
                 }
@@ -229,7 +229,7 @@ extension DaemonManager {
                         try fm.copyItem(at: src, to: dest)
                     } catch {
                         ClientLog.daemon.warning(
-                            "Failed to copy completion \(file): \(error, privacy: .public)")
+                            "Failed to copy completion \(file, privacy: .private): \(error, privacy: .private)")
                     }
                 }
                 ClientLog.daemon.info("Installed bundled \(shell) completions")
