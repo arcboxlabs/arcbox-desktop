@@ -180,6 +180,11 @@ public final class ArcBoxClient: Sendable {
         .init(wrapping: grpcClient)
     }
 
+    /// Docker Desktop and OrbStack migration operations.
+    public var migration: Arcbox_V1_MigrationService.Client<HTTP2ClientTransport.TransportServices> {
+        .init(wrapping: grpcClient)
+    }
+
     /// Virtual machine management operations.
     public var machines: Arcbox_V1_MachineService.Client<HTTP2ClientTransport.TransportServices> {
         .init(wrapping: grpcClient)

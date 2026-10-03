@@ -55,6 +55,7 @@ final class ApplicationCoordinator: NSObject {
     private var mainWindowController: MainWindowController?
     private var onboardingWindowController: OnboardingWindowController?
     private var gettingStartedWindowController: OnboardingWindowController?
+    private var migrationWindowController: OnboardingWindowController?
     private var settingsWindowController: SettingsWindowController?
     private var statusItemController: StatusItemController?
     private var quitWindowController: QuitWindowController?
@@ -63,6 +64,9 @@ final class ApplicationCoordinator: NSObject {
     private var menuBarHost: NSHostingController<AnyView>?
     private var startupTask: Task<Void, Never>?
     private var connectionTask: Task<Void, Never>?
+    private lazy var migration = OnboardingMigrationModel(
+        clientProvider: { [weak self] in self?.arcboxClient }
+    )
     private var lastDaemonState: DaemonState?
     /// The identity currently mirrored into PostHog, so re-identify only runs
     /// when it actually changes — `loadUserInfo()` enriches it after sign-in.
@@ -214,33 +218,6 @@ final class ApplicationCoordinator: NSObject {
         showAboutWindow()
     }
 
-    func showGettingStarted() {
-        guard canUseMainInterface, let orchestrator = startupOrchestrator else { return }
-
-        if gettingStartedWindowController?.window?.isVisible != true {
-            let host = NSHostingController(
-                rootView: OnboardingView(
-                    orchestrator: orchestrator,
-                    initialStep: .welcome,
-                    isReplay: true,
-                    onStart: {},
-                    onComplete: { [weak self] in
-                        self?.gettingStartedWindowController?.window?.performClose(nil)
-                    },
-                    onQuit: {}
-                ))
-            gettingStartedWindowController = OnboardingWindowController(
-                title: "Getting Started with ArcBox",
-                contentViewController: host,
-                allowsClosing: true,
-                onClose: {}
-            )
-        }
-
-        activate()
-        gettingStartedWindowController?.show()
-    }
-
     func checkForUpdates() {
         guard !isTerminating else { return }
         updaterController.updater.checkForUpdates()
@@ -250,6 +227,7 @@ final class ApplicationCoordinator: NSObject {
     func beginTermination() -> Bool {
         guard !isTerminating else { return false }
         isTerminating = true
+        migration.beginTermination()
 
         notifications.stop()
         authSession.cancelSignIn()
@@ -279,6 +257,8 @@ final class ApplicationCoordinator: NSObject {
     }
 
     func shutdown() async {
+        await migration.waitForCompletion()
+
         let enrollmentSettled = await runnersVM.prepareForTermination()
         if !enrollmentSettled {
             Log.fleet.warning(
@@ -305,7 +285,11 @@ final class ApplicationCoordinator: NSObject {
         connectionTask?.cancel()
         connectionTask = nil
         daemonManager.stopWatching()
-        await daemonManager.disableDaemon()
+        if migration.migrationMayBeRunning {
+            Log.daemon.warning("Leaving the runtime running because migration completion could not be confirmed")
+        } else {
+            await daemonManager.disableDaemon()
+        }
     }
 
     private func installWindows() {
@@ -383,6 +367,8 @@ final class ApplicationCoordinator: NSObject {
         settingsWindowController?.window?.orderOut(nil)
         gettingStartedWindowController?.window?.orderOut(nil)
         gettingStartedWindowController = nil
+        migrationWindowController?.window?.orderOut(nil)
+        migrationWindowController = nil
         statusItemController?.setVisible(false)
 
         if onboardingWindowController == nil {
@@ -390,6 +376,7 @@ final class ApplicationCoordinator: NSObject {
                 rootView: OnboardingView(
                     orchestrator: orchestrator,
                     initialStep: initialStep ?? .welcome,
+                    migration: migration,
                     onStart: { [weak self] in
                         self?.startRuntimeIfNeeded(allowingAdministratorPrompt: true)
                     },
@@ -414,7 +401,11 @@ final class ApplicationCoordinator: NSObject {
     }
 
     private func completeOnboarding() {
-        guard !isTerminating, startupOrchestrator?.isRuntimeReady == true else { return }
+        guard
+            !isTerminating,
+            !migration.state.isExecuting,
+            startupOrchestrator?.isRuntimeReady == true
+        else { return }
 
         AppPreferences.markOnboardingCompleted()
         isOnboarding = false
@@ -751,5 +742,98 @@ final class ApplicationCoordinator: NSObject {
                 Analytics.optOut()
             }
         #endif
+    }
+}
+
+extension ApplicationCoordinator {
+    var canShowMigrationAssistant: Bool {
+        canUseMainInterface && startupOrchestrator?.isRuntimeReady == true
+    }
+
+    func showGettingStarted() {
+        guard canUseMainInterface, let orchestrator = startupOrchestrator else { return }
+
+        if gettingStartedWindowController?.window?.isVisible != true {
+            let host = NSHostingController(
+                rootView: OnboardingView(
+                    orchestrator: orchestrator,
+                    initialStep: .welcome,
+                    isReplay: true,
+                    migration: migration,
+                    onStart: {},
+                    onComplete: { [weak self] in
+                        self?.gettingStartedWindowController?.window?.performClose(nil)
+                    },
+                    onQuit: {}
+                ))
+            gettingStartedWindowController = OnboardingWindowController(
+                title: "Getting Started with ArcBox",
+                contentViewController: host,
+                allowsClosing: true,
+                onClose: {}
+            )
+        }
+
+        activate()
+        gettingStartedWindowController?.show()
+    }
+
+    func showMigrationAssistant() {
+        guard
+            canUseMainInterface,
+            let orchestrator = startupOrchestrator,
+            orchestrator.isRuntimeReady
+        else {
+            return
+        }
+
+        if migrationWindowController == nil {
+            let host = NSHostingController(
+                rootView: OnboardingView(
+                    orchestrator: orchestrator,
+                    initialStep: .migration,
+                    isReplay: true,
+                    migration: migration,
+                    onStart: {},
+                    onComplete: { [weak self] in
+                        self?.closeMigrationAssistant()
+                    },
+                    onQuit: {}
+                ))
+            migrationWindowController = OnboardingWindowController(
+                title: "Migrate to ArcBox",
+                contentViewController: host,
+                allowsClosing: false,
+                onClose: { [weak self] in
+                    self?.closeMigrationAssistant()
+                }
+            )
+        }
+
+        activate()
+        migrationWindowController?.show()
+    }
+
+    private func closeMigrationAssistant() {
+        guard !migration.state.isExecuting else {
+            guard
+                let window = migrationWindowController?.window,
+                window.attachedSheet == nil
+            else {
+                return
+            }
+
+            let alert = NSAlert()
+            alert.messageText = "Migration in Progress"
+            alert.informativeText =
+                "Keep ArcBox open until the migration finishes to avoid leaving resources "
+                + "partially migrated."
+            alert.addButton(withTitle: "Continue Migration")
+            alert.beginSheetModal(for: window)
+            return
+        }
+
+        migrationWindowController?.window?.orderOut(nil)
+        migrationWindowController = nil
     }
 }

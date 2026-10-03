@@ -133,6 +133,12 @@ targets:
       Release: Version.xcconfig
     sources:
       - path: ArcBox
+      - path: .
+        name: Configuration
+        includes:
+          - Local.xcconfig
+          - Version.xcconfig
+        buildPhase: none
       - path: CHANGELOG.md
         buildPhase: resources
       - path: arcbox.version

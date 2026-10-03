@@ -1360,11 +1360,25 @@ public struct Arcbox_V1_PrepareMigrationResponse: Sendable {
   /// are blocking: RunMigration refuses to execute a plan that has any.
   public var unsupportedResources: [String] = []
 
+  /// Target resources the prepared plan would replace. Always populated, even
+  /// when empty. For a runnable prepare, this describes the saved plan_id.
+  /// Clients must compare these targets with the user's confirmation before
+  /// RunMigration. An absent summary means the daemon cannot provide this check.
+  public var replacements: Arcbox_V1_MigrationReplacementSummary {
+    get {_replacements ?? Arcbox_V1_MigrationReplacementSummary()}
+    set {_replacements = newValue}
+  }
+  /// Returns true if `replacements` has been explicitly set.
+  public var hasReplacements: Bool {self._replacements != nil}
+  /// Clears the value of `replacements`. Subsequent reads from it will return its default value.
+  public mutating func clearReplacements() {self._replacements = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _plan: Arcbox_V1_MigrationPlan? = nil
+  fileprivate var _replacements: Arcbox_V1_MigrationReplacementSummary? = nil
 }
 
 /// A fully resolved migration plan.
@@ -4248,7 +4262,7 @@ extension Arcbox_V1_PrepareMigrationRequest: SwiftProtobuf.Message, SwiftProtobu
 
 extension Arcbox_V1_PrepareMigrationResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".PrepareMigrationResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}plan_id\0\u{3}source_kind\0\u{3}source_socket_path\0\u{3}image_count\0\u{3}volume_count\0\u{3}network_count\0\u{3}container_count\0\u{3}replacements_required\0\u{1}warnings\0\u{1}plan\0\u{3}unsupported_resources\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}plan_id\0\u{3}source_kind\0\u{3}source_socket_path\0\u{3}image_count\0\u{3}volume_count\0\u{3}network_count\0\u{3}container_count\0\u{3}replacements_required\0\u{1}warnings\0\u{1}plan\0\u{3}unsupported_resources\0\u{1}replacements\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -4267,6 +4281,7 @@ extension Arcbox_V1_PrepareMigrationResponse: SwiftProtobuf.Message, SwiftProtob
       case 9: try { try decoder.decodeRepeatedStringField(value: &self.warnings) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._plan) }()
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.unsupportedResources) }()
+      case 12: try { try decoder.decodeSingularMessageField(value: &self._replacements) }()
       default: break
       }
     }
@@ -4310,6 +4325,9 @@ extension Arcbox_V1_PrepareMigrationResponse: SwiftProtobuf.Message, SwiftProtob
     if !self.unsupportedResources.isEmpty {
       try visitor.visitRepeatedStringField(value: self.unsupportedResources, fieldNumber: 11)
     }
+    try { if let v = self._replacements {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -4325,6 +4343,7 @@ extension Arcbox_V1_PrepareMigrationResponse: SwiftProtobuf.Message, SwiftProtob
     if lhs.warnings != rhs.warnings {return false}
     if lhs._plan != rhs._plan {return false}
     if lhs.unsupportedResources != rhs.unsupportedResources {return false}
+    if lhs._replacements != rhs._replacements {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
