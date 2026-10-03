@@ -30,23 +30,26 @@ struct ContainerNotificationRules {
     /// longer than a kill takes, not longer than a grace period.
     static let intentWindow: TimeInterval = 10
 
-    /// The signals that ask a container to end, as Linux numbers: the daemon
-    /// writes `strconv.Itoa(int(signal))` into the event regardless of the name
-    /// the caller used.
+    /// Docker validates signals and writes their Linux numbers into `kill`.
+    /// Treat HUP and USR as reload or application requests. Signals whose Linux
+    /// default is ignore, stop, or continue also do not express termination intent.
     ///
-    /// `docker kill` delivers whatever it is given, and most of what people
-    /// send that way is addressed to a container expected to keep running —
-    /// SIGHUP to reload configuration, SIGUSR1 for something the application
-    /// defines. Those explain no death.
+    /// Other `kill` events express termination intent, including core-dump and
+    /// real-time signals. A fault inside the container emits `die` without `kill`.
     ///
-    /// An image's own `STOPSIGNAL` is deliberately absent (httpd's is SIGWINCH)
-    /// and does not need to be here: `docker stop` announces `stop` before the
-    /// `die` whichever signal it sent.
-    private static let terminationSignals: Set<Int> = [
-        2,  // SIGINT
-        3,  // SIGQUIT
-        9,  // SIGKILL
-        15,  // SIGTERM
+    /// Docker's separate `stop` event covers an image's custom `STOPSIGNAL`.
+    private static let nonTerminationSignals: Set<Int> = [
+        1,  // SIGHUP
+        10,  // SIGUSR1
+        12,  // SIGUSR2
+        17,  // SIGCHLD
+        18,  // SIGCONT
+        19,  // SIGSTOP
+        20,  // SIGTSTP
+        21,  // SIGTTIN
+        22,  // SIGTTOU
+        23,  // SIGURG
+        28,  // SIGWINCH
     ]
 
     /// Containers whose imminent exit the user asked for, and when they asked.
@@ -99,7 +102,7 @@ struct ContainerNotificationRules {
     /// keeps a stop quiet rather than announcing it as a crash.
     private func asksToTerminate(_ event: DockerClient.DockerEvent) -> Bool {
         guard let signal = event.attributes["signal"].flatMap(Int.init) else { return true }
-        return Self.terminationSignals.contains(signal)
+        return !Self.nonTerminationSignals.contains(signal)
     }
 
     private mutating func death(of id: String, event: DockerClient.DockerEvent) -> ContainerCrash? {

@@ -40,6 +40,8 @@ One three-column window — sources, list, detail — over everything the daemon
   interactive terminal.
 - **Sandboxes** — disposable microVMs from templates, with ports, snapshots, and an event log.
 - **Activity** — live CPU, memory, and network for the system VM and every running container.
+- **Notifications** — container crash alerts distinguish unexpected exits from recent Docker stop or
+  termination requests, including explicit fatal signals. Configure alerts in Settings → General.
 
 Everything is event-driven: the Docker, machine, and sandbox event streams feed debounced updates, so the
 UI reflects work started from `docker`, `abctl`, or `kubectl` without a refresh.
