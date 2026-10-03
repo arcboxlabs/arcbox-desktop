@@ -31,6 +31,8 @@ final class LogPrivacyLintRuleTests: XCTestCase {
             #"Log.fleet.info("Client for \(configuration.baseURL.absoluteString, privacy: .public)")"#,
             #"logger.warning("Failed to copy \(file, privacy: .private): \(error, privacy: .public)")"#,
             #"Log.volume.info("Created volume \(vol.Name, privacy: .public)")"#,
+            #"Log.image.info("Loaded \(self.images.count + userID, privacy: .public)")"#,
+            #"Log.container.info("Status \(container.status.description, privacy: .public)")"#,
         ] {
             XCTAssertTrue(matches(line), "should flag: \(line)")
         }

@@ -81,6 +81,6 @@ custom_rules:
     included:
       - "ArcBox/.*"
       - "Packages/.*/Sources/.*"
-    regex: '\\\((?!(?:[\w.]*\.(?:label|rawValue)\b|[\w.]*[cC]ount\b|[\w.]*[sS]tatus\b|String\(describing: [\w.]*[sS]tatus\)|\w*Version\b|\w*Entitlements\b|[\w.]*Timeout\b|elapsedMs\b|index\b|statusCode\b|operation\b|label\b|type\b|arcboxContextName\b|\w+ \? "[^"]*" : "[^"]*"))[^\\\n]*?, privacy: \.public\)'
+    regex: '\\\((?!(?:[\w.]*\.(?:label|rawValue)\b|[\w.]*[cC]ount\b|[\w.]*[sS]tatus\b|String\(describing: [\w.]*[sS]tatus\)|\w*Version\b|\w*Entitlements\b|[\w.]*Timeout\b|elapsedMs\b|index\b|statusCode\b|operation\b|label\b|type\b|arcboxContextName\b|\w+ \? "[^"]*" : "[^"]*")(?: \?\? "[^"]*")?, privacy: \.public\))[^\\\n]*?, privacy: \.public\)'
     message: "Only closed-set values (enum labels, counts, statuses, versions) may be logged `.public`; identifiers, names, paths, URLs and error text must be `.private` or `.private(mask: .hash)`."
     severity: error
