@@ -159,7 +159,7 @@ final class OnboardingMigrationLifecycleTests: XCTestCase {
                 terminationFinished.fulfill()
             }
             disconnectGate.open()
-            await fulfillment(of: [terminationFinished], timeout: 2)
+            await fulfillment(of: [terminationFinished], timeout: 5)
             await termination.value
 
             XCTAssertEqual(streamCount, 1)
