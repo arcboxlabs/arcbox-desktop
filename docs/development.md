@@ -88,6 +88,8 @@ You rarely have to run it yourself: every arcbox release dispatches the
 [Bump ArcBox](../.github/workflows/bump-arcbox.yml) workflow, which runs the same target on a macOS
 runner and opens the PR. Dispatch it from the Actions tab to pin any other tag.
 
+The gRPC generator applies the checked-in keyword patch to an owned copy of grpc-swift-protobuf 1.3.1 at revision `53e89e3a5d417307f70a721c7b83e564fefb1e1c`. The patch escapes Swift method keywords and preserves RPC wire names. The generator uses the committed resolved versions and leaves SwiftPM's managed checkout unchanged. Review the patch before changing the generator revision.
+
 ## Project layout
 
 ```
