@@ -58,15 +58,11 @@ trap cleanup EXIT
 
 # Try to find local proto directory
 find_local_proto() {
-    local candidates=(
-        "${SCRIPT_DIR}/../../../arcbox/rpc/arcbox-protocol/proto"
-    )
-    for dir in "${candidates[@]}"; do
-        if [ -d "$dir" ]; then
-            echo "$(cd "$dir" && pwd)"
-            return 0
-        fi
-    done
+    local dir="${ARCBOX_DIR:-${SCRIPT_DIR}/../../../arcbox}/rpc/arcbox-protocol/proto"
+    if [ -d "$dir" ]; then
+        echo "$(cd "$dir" && pwd)"
+        return 0
+    fi
     return 1
 }
 

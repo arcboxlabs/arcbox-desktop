@@ -131,3 +131,7 @@ No Combine, no third-party UI frameworks.
 [AGENTS.md](../AGENTS.md) carries the rest: code style, and the SwiftUI startup pitfalls we keep
 re-learning — `.task(id:)` racing `onChange`, `Bool` flags that should be state enums, and why timing bugs
 only show up on the default tab.
+
+## Generating from a local runtime checkout
+
+Generate a client from an explicit local runtime checkout with `make generate-arcbox-protobuf ARCBOX_DIR=/path/to/arcbox`. The command does not change `arcbox.version`. Local generation is for coordinated runtime development; release generation and `make verify-arcbox-protobuf` still use the pinned runtime version. Before release, publish the compatible runtime and run `make bump-arcbox VERSION=vX.Y.Z` to update the pin and generated sources together.
