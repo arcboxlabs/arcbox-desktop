@@ -163,6 +163,7 @@
 		779ABE661F2D26FC7020B033 /* ProcessSupport in Frameworks */ = {isa = PBXBuildFile; productRef = E4AD3A906F0C955F70E04B62 /* ProcessSupport */; };
 		7895A0328F3567814B656CFD /* LocalRootFSOutlineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F0D0444E612EC32D81A7E0C /* LocalRootFSOutlineCoordinator.swift */; };
 		7910184754585B4CF647FA92 /* ContainerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C6B2F85E39321931CEC3ED /* ContainerDetailView.swift */; };
+		797DFD054AB1412B7254F6B1 /* RuntimeStorageHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F617A0EF30E05C6E60D1BD2 /* RuntimeStorageHealthTests.swift */; };
 		79C5F3DA19E7431F8B28B6F0 /* MenuBarView+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC010DD9F0AEC7E4EA778C59 /* MenuBarView+Actions.swift */; };
 		7B785AFCDAE28EF6B5064527 /* SandboxNotificationRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816C59570B7C65B9288056A8 /* SandboxNotificationRulesTests.swift */; };
 		7C881FAC221912F138CD65E7 /* ActivityMetricStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F15E941FF769135D0AA218 /* ActivityMetricStrip.swift */; };
@@ -463,6 +464,7 @@
 		4E7528A43356F3BB6CE3FB96 /* ArcBox.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArcBox.entitlements; sourceTree = "<group>"; };
 		4F0D0444E612EC32D81A7E0C /* LocalRootFSOutlineCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineCoordinator.swift; sourceTree = "<group>"; };
 		4F46BA5653A1B6451B7941D5 /* SettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTab.swift; sourceTree = "<group>"; };
+		4F617A0EF30E05C6E60D1BD2 /* RuntimeStorageHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStorageHealthTests.swift; sourceTree = "<group>"; };
 		50C68609B67AC82FF386CB92 /* SandboxEventMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxEventMonitor.swift; sourceTree = "<group>"; };
 		5144C9321F8A17DA72A862DA /* MachineCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineCreateSheet.swift; sourceTree = "<group>"; };
 		522820EEBA49BC66D525CE20 /* ErrorReportingScrubTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReportingScrubTests.swift; sourceTree = "<group>"; };
@@ -1276,6 +1278,7 @@
 				1E85F8768E0964D377A6278C /* ErrorCancellationTests.swift */,
 				EF45523D23D3F96612423943 /* HelperInstallErrorTests.swift */,
 				B52400B734764C05E50D6FFC /* ResourceStatsTests.swift */,
+				4F617A0EF30E05C6E60D1BD2 /* RuntimeStorageHealthTests.swift */,
 			);
 			name = ArcBoxClientTests;
 			path = Packages/ArcBoxClient/Tests/ArcBoxClientTests;
@@ -2003,6 +2006,7 @@
 				D4ECBBCAC3D4631041F292D5 /* QuitWindowControllerTests.swift in Sources */,
 				1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,
+				797DFD054AB1412B7254F6B1 /* RuntimeStorageHealthTests.swift in Sources */,
 				7B785AFCDAE28EF6B5064527 /* SandboxNotificationRulesTests.swift in Sources */,
 				EC2532F756D371A159AB9A97 /* SandboxPortsViewModelTests.swift in Sources */,
 				B9FBD28A52E575A47BC65BF7 /* SandboxTemplateModelTests.swift in Sources */,

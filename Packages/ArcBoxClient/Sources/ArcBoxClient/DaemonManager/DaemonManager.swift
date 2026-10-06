@@ -40,6 +40,29 @@ public final class DaemonManager {
     /// Whether Docker CLI tools are installed (from daemon status).
     public internal(set) var dockerToolsInstalled: Bool = false
 
+    /// Last storage observation, retained for diagnostics after a disconnect.
+    public internal(set) var storageHealth: RuntimeStorageHealth?
+
+    /// Latest server-owned recovery operation, including its terminal outcome.
+    public internal(set) var storageRecovery: Arcbox_V1_StorageRecoveryProgress?
+
+    /// False after the VM stops or the setup stream disconnects.
+    public internal(set) var storageHealthIsCurrent = false
+
+    /// Storage failures do not change Docker API readiness or remove readable resources.
+    public var storageWriteFailureMessage: String? {
+        if let recovery = storageRecovery, recovery.phase != .complete, recovery.phase != .failed {
+            return
+                "Runtime storage recovery is in progress. Wait for recovery to finish before starting a write operation."
+        }
+        if storageRecovery?.storageProtected == true {
+            return "Runtime storage remains protected. Use Recover Read-Write in Storage & Recovery "
+                + "before starting a write operation."
+        }
+        guard storageHealthIsCurrent, setupPhase.isDockerReady else { return nil }
+        return storageHealth?.writeFailureMessage
+    }
+
     /// Last error message from enable/disable operations.
     public internal(set) var errorMessage: String?
 

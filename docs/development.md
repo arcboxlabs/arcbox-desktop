@@ -135,3 +135,7 @@ only show up on the default tab.
 ## Generating from a local runtime checkout
 
 Generate a client from an explicit local runtime checkout with `make generate-arcbox-protobuf ARCBOX_DIR=/path/to/arcbox`. The command does not change `arcbox.version`. Local generation is for coordinated runtime development; release generation and `make verify-arcbox-protobuf` still use the pinned runtime version. Before release, publish the compatible runtime and run `make bump-arcbox VERSION=vX.Y.Z` to update the pin and generated sources together.
+
+## Developing runtime storage changes
+
+Storage health is independent of daemon connection and Docker API readiness. Missing or unrecognized fields mean unknown health. `MOUNTED_READ_WRITE` describes a mount observation; the state does not certify durable writes. The Desktop retains a stale observation after a disconnect and does not treat an unknown observation as recovery. Notifications reset only after a current healthy observation for the affected volume.
