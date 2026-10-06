@@ -15,6 +15,7 @@ final class NotificationCoordinator {
     private let isDaemonRunning: () -> Bool
 
     private var sandboxRules = SandboxNotificationRules()
+    private var storageRules = StorageNotificationRules()
     private var pendingDaemonAlert: Task<Void, Never>?
     private lazy var containerCrashes = ContainerCrashReporter { [weak self] notification in
         self?.service.post(notification)
@@ -42,6 +43,17 @@ final class NotificationCoordinator {
         pendingDaemonAlert?.cancel()
         pendingDaemonAlert = nil
         containerCrashes.stop()
+    }
+
+    func handleStorageHealth(_ daemon: DaemonManager) {
+        guard
+            let notification = storageRules.notification(
+                for: daemon.storageHealth,
+                isCurrent: daemon.storageHealthIsCurrent,
+                isRuntimeReady: daemon.setupPhase.isDockerReady
+            )
+        else { return }
+        service.post(notification)
     }
 
     func handleSandboxEvent(_ event: SandboxEventRecord) {

@@ -29,6 +29,7 @@ class ContainersViewModel {
     var sortBy: ContainerSortField = .name
     var sortAscending: Bool = true
     var lastError: String?
+    @ObservationIgnored var storageWriteFailure: () -> String? = { nil }
 
     var runningCount: Int {
         containers.filter(\.isRunning).count

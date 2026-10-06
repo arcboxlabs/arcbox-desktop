@@ -18,6 +18,7 @@ class ImagesViewModel {
     var sortBy: ImageSortField = .name
     var sortAscending: Bool = true
     var lastError: String?
+    @ObservationIgnored var storageWriteFailure: () -> String? = { nil }
     var iconsByImage: [String: String] = [:]
 
     var totalSize: String {

@@ -56,6 +56,12 @@ Review the resource counts, warnings, and required replacements before choosing 
 
 Quitting waits for a connected migration to finish. If the migration connection is lost while quitting, ArcBox stops reconnecting and leaves the runtime running because migration may still be copying data. Review both environments before retrying.
 
+## Runtime storage health
+
+Settings → Storage shows the data and metadata volumes separately. A persistent banner identifies read-only protection or unavailable storage while resource lists remain accessible. Export a diagnostic report from Storage before recovery. **Check Storage** stops workloads, preserves the runtime disks, and checks the filesystems; it leaves the runtime stopped and storage writes protected. **Recover Read-Write** also restarts and verifies writes if the checks pass. Only successful recovery releases write protection. Corruption leaves the preserved disks and diagnostics available for further recovery. Reset Docker Data removes Docker resources; it does not repair filesystems.
+
+Storage observations require a compatible runtime. Older runtimes report unknown health. A disconnected runtime retains its last observation for diagnostics and marks the observation as stale. A read-write mount does not prove durable writes succeed.
+
 ## How it fits together
 
 ```

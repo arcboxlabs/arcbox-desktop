@@ -26,6 +26,7 @@ enum ColumnWidth {
 }
 
 struct ContentView: View {
+    var onStorage: () -> Void = {}
     let onAccount: () -> Void
 
     @Environment(AppViewModel.self) private var appVM
@@ -60,6 +61,9 @@ struct ContentView: View {
             } else {
                 threeColumnLayout
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            RuntimeStorageBanner(onDetails: onStorage)
         }
         .task(id: appVM.pendingResourceDeepLink) {
             await refreshVisibleResourceListIfNeeded()

@@ -67,6 +67,10 @@ final class ApplicationCoordinator: NSObject {
     private lazy var migration = OnboardingMigrationModel(
         clientProvider: { [weak self] in self?.arcboxClient }
     )
+    private lazy var storageRecovery = RuntimeStorageRecoveryModel(
+        clientProvider: { [weak self] in self?.arcboxClient },
+        migrationIsRunning: { [weak self] in self?.migration.migrationMayBeRunning ?? false }
+    )
     private var lastDaemonState: DaemonState?
     /// The identity currently mirrored into PostHog, so re-identify only runs
     /// when it actually changes — `loadUserInfo()` enriches it after sign-in.
@@ -122,6 +126,11 @@ final class ApplicationCoordinator: NSObject {
             configureDeepLinks()
         }
         observeDaemonState()
+        storageRecovery.observe(daemonManager)
+        observeStorageHealth()
+        containersVM.storageWriteFailure = { [weak self] in self?.daemonManager.storageWriteFailureMessage }
+        imagesVM.storageWriteFailure = { [weak self] in self?.daemonManager.storageWriteFailureMessage }
+        volumesVM.storageWriteFailure = { [weak self] in self?.daemonManager.storageWriteFailureMessage }
         observeAuthIdentity()
         configureNotifications()
         _ = NotificationCenter.default.addObserver(
@@ -228,6 +237,7 @@ final class ApplicationCoordinator: NSObject {
         guard !isTerminating else { return false }
         isTerminating = true
         migration.beginTermination()
+        storageRecovery.beginTermination()
 
         notifications.stop()
         authSession.cancelSignIn()
@@ -258,6 +268,7 @@ final class ApplicationCoordinator: NSObject {
 
     func shutdown() async {
         await migration.waitForCompletion()
+        await storageRecovery.waitForCompletion()
 
         let enrollmentSettled = await runnersVM.prepareForTermination()
         if !enrollmentSettled {
@@ -285,8 +296,8 @@ final class ApplicationCoordinator: NSObject {
         connectionTask?.cancel()
         connectionTask = nil
         daemonManager.stopWatching()
-        if migration.migrationMayBeRunning {
-            Log.daemon.warning("Leaving the runtime running because migration completion could not be confirmed")
+        if migration.migrationMayBeRunning || storageRecovery.mayBeRunning {
+            Log.daemon.warning("Leaving the runtime running because maintenance completion could not be confirmed")
         } else {
             await daemonManager.disableDaemon()
         }
@@ -595,9 +606,10 @@ final class ApplicationCoordinator: NSObject {
 
     private func makeMainRoot() -> AnyView {
         return AnyView(
-            ContentView { [weak self] in
-                self?.accountButtonPressed()
-            }
+            ContentView(
+                onStorage: { [weak self] in self?.showSettings(tab: .storage) },
+                onAccount: { [weak self] in self?.accountButtonPressed() }
+            )
             .environment(appVM)
             .environment(daemonManager)
             .environment(containersVM)
@@ -618,6 +630,7 @@ final class ApplicationCoordinator: NSObject {
     private func makeSettingsRoot() -> AnyView {
         AnyView(
             SettingsView()
+                .environment(storageRecovery)
                 .environment(appVM)
                 .environment(daemonManager)
                 .environment(containersVM)
@@ -746,8 +759,22 @@ final class ApplicationCoordinator: NSObject {
 }
 
 extension ApplicationCoordinator {
+    private func observeStorageHealth() {
+        withObservationTracking {
+            _ = daemonManager.storageHealth
+            _ = daemonManager.storageHealthIsCurrent
+            _ = daemonManager.setupPhase
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self, !self.isTerminating else { return }
+                self.observeStorageHealth()
+                self.notifications.handleStorageHealth(self.daemonManager)
+            }
+        }
+    }
+
     var canShowMigrationAssistant: Bool {
-        canUseMainInterface && startupOrchestrator?.isRuntimeReady == true
+        canUseMainInterface && !storageRecovery.mayBeRunning && startupOrchestrator?.isRuntimeReady == true
     }
 
     func showGettingStarted() {
@@ -781,6 +808,7 @@ extension ApplicationCoordinator {
     func showMigrationAssistant() {
         guard
             canUseMainInterface,
+            !storageRecovery.mayBeRunning,
             let orchestrator = startupOrchestrator,
             orchestrator.isRuntimeReady
         else {

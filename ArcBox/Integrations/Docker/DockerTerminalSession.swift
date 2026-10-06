@@ -53,6 +53,7 @@ class DockerTerminalSession {
     }
 
     var state: State = .idle
+    @ObservationIgnored var storageWriteFailure: () -> String? = { nil }
 
     @ObservationIgnored private var process: Process?
     /// ABXD-17: File descriptor protected by a lock to prevent close races.
@@ -96,6 +97,10 @@ class DockerTerminalSession {
     }
 
     private func launchImageSession(imageName: String, shell: String, terminalView: TerminalView) {
+        if let reason = storageWriteFailure() {
+            state = .error(reason)
+            return
+        }
         let containerName = "arcbox-image-terminal-\(UUID().uuidString.lowercased())"
         launchDockerSession(
             arguments: [
