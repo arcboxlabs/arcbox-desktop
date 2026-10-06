@@ -204,6 +204,18 @@ public enum Arcbox_V1_AgentService {
                 method: "WatchStats"
             )
         }
+        /// Namespace for "WatchStorageHealth" metadata.
+        public enum WatchStorageHealth {
+            /// Request type for "WatchStorageHealth".
+            public typealias Input = Arcbox_V1_WatchStorageHealthRequest
+            /// Response type for "WatchStorageHealth".
+            public typealias Output = Arcbox_V1_StorageHealth
+            /// Descriptor for "WatchStorageHealth".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "WatchStorageHealth"
+            )
+        }
         /// Descriptors for all methods in the "arcbox.v1.AgentService" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             Ping.descriptor,
@@ -220,7 +232,8 @@ public enum Arcbox_V1_AgentService {
             DiskTrim.descriptor,
             WatchReadiness.descriptor,
             WatchMemoryPressure.descriptor,
-            WatchStats.descriptor
+            WatchStats.descriptor,
+            WatchStorageHealth.descriptor
         ]
     }
 }
@@ -521,6 +534,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchStatsRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats>
+
+        /// Handle the "WatchStorageHealth" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes persistent storage without starting services or writing files.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_WatchStorageHealthRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_StorageHealth` messages.
+        func watchStorageHealth(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchStorageHealthRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageHealth>
     }
 
     /// Service protocol for the "arcbox.v1.AgentService" service.
@@ -806,6 +837,24 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.ServerRequest<Arcbox_V1_WatchStatsRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats>
+
+        /// Handle the "WatchStorageHealth" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes persistent storage without starting services or writing files.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchStorageHealthRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_StorageHealth` messages.
+        func watchStorageHealth(
+            request: GRPCCore.ServerRequest<Arcbox_V1_WatchStorageHealthRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageHealth>
     }
 
     /// Simple service protocol for the "arcbox.v1.AgentService" service.
@@ -1092,6 +1141,25 @@ extension Arcbox_V1_AgentService {
             response: GRPCCore.RPCWriter<Arcbox_V1_MachineStats>,
             context: GRPCCore.ServerContext
         ) async throws
+
+        /// Handle the "WatchStorageHealth" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes persistent storage without starting services or writing files.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_WatchStorageHealthRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_StorageHealth` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchStorageHealth(
+            request: Arcbox_V1_WatchStorageHealthRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_StorageHealth>,
+            context: GRPCCore.ServerContext
+        ) async throws
     }
 }
 
@@ -1264,6 +1332,17 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
                 )
             }
         )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.WatchStorageHealth.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_WatchStorageHealthRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_StorageHealth>(),
+            handler: { request, context in
+                try await self.watchStorageHealth(
+                    request: request,
+                    context: context
+                )
+            }
+        )
     }
 }
 
@@ -1429,6 +1508,17 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineStats> {
         let response = try await self.watchStats(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+
+    public func watchStorageHealth(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_WatchStorageHealthRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageHealth> {
+        let response = try await self.watchStorageHealth(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1637,6 +1727,23 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
             metadata: [:],
             producer: { writer in
                 try await self.watchStats(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    public func watchStorageHealth(
+        request: GRPCCore.ServerRequest<Arcbox_V1_WatchStorageHealthRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageHealth> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_StorageHealth>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchStorageHealth(
                     request: request.message,
                     response: writer,
                     context: context
@@ -2005,6 +2112,29 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineStats>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_MachineStats>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchStorageHealth" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes persistent storage without starting services or writing files.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchStorageHealthRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchStorageHealthRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_StorageHealth` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchStorageHealth<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchStorageHealthRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchStorageHealthRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_StorageHealth>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageHealth>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2533,6 +2663,38 @@ extension Arcbox_V1_AgentService {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "WatchStorageHealth" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes persistent storage without starting services or writing files.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_WatchStorageHealthRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_WatchStorageHealthRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_StorageHealth` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchStorageHealth<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_WatchStorageHealthRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_WatchStorageHealthRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_StorageHealth>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageHealth>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.WatchStorageHealth.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -2965,6 +3127,33 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchStatsRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineStats>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchStorageHealth" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Observes persistent storage without starting services or writing files.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_WatchStorageHealthRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchStorageHealth<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_WatchStorageHealthRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageHealth>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchStorageHealth(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_WatchStorageHealthRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_StorageHealth>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3459,6 +3648,37 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.watchStats(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchStorageHealth" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Observes persistent storage without starting services or writing files.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchStorageHealth<Result>(
+        _ message: Arcbox_V1_WatchStorageHealthRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageHealth>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_WatchStorageHealthRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchStorageHealth(
             request: request,
             options: options,
             onResponse: handleResponse

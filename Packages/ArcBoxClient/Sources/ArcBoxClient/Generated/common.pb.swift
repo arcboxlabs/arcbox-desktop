@@ -147,6 +147,144 @@ public struct Arcbox_V1_ResourceLimits: Sendable {
   public init() {}
 }
 
+/// An observation of the System VM's persistent storage. Absence means the
+/// peer does not report storage health, or the current guest is not observable.
+/// This message does not report daemon liveness or change startup readiness.
+public struct Arcbox_V1_StorageHealth: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var volumes: [Arcbox_V1_StorageVolumeHealth] = []
+
+  /// Guest wall-clock observation time. Zero means the clock is not available.
+  public var observedAtUnixMs: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Mount availability and mode for one persistent System VM volume.
+public struct Arcbox_V1_StorageVolumeHealth: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var role: Arcbox_V1_StorageVolumeHealth.Role = .unspecified
+
+  public var state: Arcbox_V1_StorageVolumeHealth.State = .unspecified
+
+  public var device: String = String()
+
+  public var mountPoint: String = String()
+
+  public var filesystem: String = String()
+
+  /// Observation error or explanation. Never parse this field for state.
+  public var detail: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Role: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+    case data // = 1
+    case metadata // = 2
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .data
+      case 2: self = .metadata
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .data: return 1
+      case .metadata: return 2
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_StorageVolumeHealth.Role] = [
+      .unspecified,
+      .data,
+      .metadata,
+    ]
+
+  }
+
+  public enum State: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+
+    /// Observation failed or the peer sent a state the reader does not know.
+    case unspecified // = 0
+
+    /// The expected filesystem is mounted read-write. This is not a
+    /// successful write/fsync test or a guarantee that future I/O succeeds.
+    case mountedReadWrite // = 1
+
+    /// The expected filesystem is mounted read-only. The mode alone does
+    /// not identify whether the kernel forced it read-only after an error.
+    case readOnly // = 2
+
+    /// A configured volume is missing, unmounted, or mounted incorrectly.
+    case unavailable // = 3
+
+    /// The optional metadata volume is absent from this guest's layout.
+    case notConfigured // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .mountedReadWrite
+      case 2: self = .readOnly
+      case 3: self = .unavailable
+      case 4: self = .notConfigured
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .mountedReadWrite: return 1
+      case .readOnly: return 2
+      case .unavailable: return 3
+      case .notConfigured: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_StorageVolumeHealth.State] = [
+      .unspecified,
+      .mountedReadWrite,
+      .readOnly,
+      .unavailable,
+      .notConfigured,
+    ]
+
+  }
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "arcbox.v1"
@@ -383,4 +521,102 @@ extension Arcbox_V1_ResourceLimits: SwiftProtobuf.Message, SwiftProtobuf._Messag
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Arcbox_V1_StorageHealth: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".StorageHealth"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}volumes\0\u{3}observed_at_unix_ms\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.volumes) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.observedAtUnixMs) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.volumes.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.volumes, fieldNumber: 1)
+    }
+    if self.observedAtUnixMs != 0 {
+      try visitor.visitSingularUInt64Field(value: self.observedAtUnixMs, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_StorageHealth, rhs: Arcbox_V1_StorageHealth) -> Bool {
+    if lhs.volumes != rhs.volumes {return false}
+    if lhs.observedAtUnixMs != rhs.observedAtUnixMs {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_StorageVolumeHealth: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".StorageVolumeHealth"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}role\0\u{1}state\0\u{1}device\0\u{3}mount_point\0\u{1}filesystem\0\u{1}detail\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.role) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.state) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.device) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.mountPoint) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.filesystem) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.detail) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.role != .unspecified {
+      try visitor.visitSingularEnumField(value: self.role, fieldNumber: 1)
+    }
+    if self.state != .unspecified {
+      try visitor.visitSingularEnumField(value: self.state, fieldNumber: 2)
+    }
+    if !self.device.isEmpty {
+      try visitor.visitSingularStringField(value: self.device, fieldNumber: 3)
+    }
+    if !self.mountPoint.isEmpty {
+      try visitor.visitSingularStringField(value: self.mountPoint, fieldNumber: 4)
+    }
+    if !self.filesystem.isEmpty {
+      try visitor.visitSingularStringField(value: self.filesystem, fieldNumber: 5)
+    }
+    if !self.detail.isEmpty {
+      try visitor.visitSingularStringField(value: self.detail, fieldNumber: 6)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_StorageVolumeHealth, rhs: Arcbox_V1_StorageVolumeHealth) -> Bool {
+    if lhs.role != rhs.role {return false}
+    if lhs.state != rhs.state {return false}
+    if lhs.device != rhs.device {return false}
+    if lhs.mountPoint != rhs.mountPoint {return false}
+    if lhs.filesystem != rhs.filesystem {return false}
+    if lhs.detail != rhs.detail {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_StorageVolumeHealth.Role: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ROLE_UNSPECIFIED\0\u{1}DATA\0\u{1}METADATA\0")
+}
+
+extension Arcbox_V1_StorageVolumeHealth.State: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0STATE_UNSPECIFIED\0\u{1}MOUNTED_READ_WRITE\0\u{1}READ_ONLY\0\u{1}UNAVAILABLE\0\u{1}NOT_CONFIGURED\0")
 }
