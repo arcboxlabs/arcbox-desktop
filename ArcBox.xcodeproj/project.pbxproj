@@ -69,6 +69,7 @@
 		31474CB365691C57A5568D14 /* ChangelogParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */; };
 		315909E3D7D52873CD5BD0C1 /* BodyEvaluationCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004B3C3354EDE44B3792796A /* BodyEvaluationCounter.swift */; };
 		31A9DB06B08CC74D635ECB8A /* NetworksListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297FCAB334AF289575D13F72 /* NetworksListView.swift */; };
+		31D53CA9305C656FB5E0A79C /* RuntimeStorageRecoveryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E61C4FDE50F5A6B45F06B5 /* RuntimeStorageRecoveryModel.swift */; };
 		33DEED20119675484C189E77 /* LocalRootFSOutlineCoordinator+DataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F932C1467A5FB5CFBD0444 /* LocalRootFSOutlineCoordinator+DataSource.swift */; };
 		34ECB9725E062C6A0372AA0C /* EnvironmentValues+Clients.swift in Sources */ = {isa = PBXBuildFile; fileRef = 794F192F207790B1A137A816 /* EnvironmentValues+Clients.swift */; };
 		351718A1033DD049AED78108 /* DaemonNotificationRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 535894F6E4F12A71E906ED02 /* DaemonNotificationRulesTests.swift */; };
@@ -133,6 +134,7 @@
 		6720D08CDB730C241017A457 /* LayerStackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F4E99670A28483DBAA6CC8 /* LayerStackTests.swift */; };
 		67808E7A0B5C8FE7A454A117 /* KubernetesWatchRetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 061EDA25B1CD4A83411C65B9 /* KubernetesWatchRetry.swift */; };
 		67924F4E35FF28F7412EEBBA /* NetworkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B7685DAD23E5427C0F9911 /* NetworkDetailView.swift */; };
+		681FAF684785A86444AE4498 /* RuntimeStorageRecoveryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B028B9AC9FBE0FF0360E662F /* RuntimeStorageRecoveryModelTests.swift */; };
 		68D8583BAE183D23FFC10815 /* MenuBarHoverButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789DE20DB0F3E106BFAC6E10 /* MenuBarHoverButton.swift */; };
 		699F9908BD6DBCD8244DCEE5 /* AuthTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2C529811ECBAD82E110BC4 /* AuthTestSupport.swift */; };
 		6BAD9159671DD04FDB7DD553 /* DaemonNotificationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA9D33B25DF9BB204D4B637 /* DaemonNotificationRules.swift */; };
@@ -557,6 +559,7 @@
 		93492ACC2F34E108901582CF /* OnboardingMigrationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingMigrationModel.swift; sourceTree = "<group>"; };
 		93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterSettingsModel.swift; sourceTree = "<group>"; };
 		9467D1D1EA60DDF80414B20B /* ContainerListModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerListModels.swift; sourceTree = "<group>"; };
+		94E61C4FDE50F5A6B45F06B5 /* RuntimeStorageRecoveryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStorageRecoveryModel.swift; sourceTree = "<group>"; };
 		94F3188B1D2EF33614A67CB7 /* SparklineGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineGeometryTests.swift; sourceTree = "<group>"; };
 		95F313C9C7AA84A964728D44 /* AppDelegate+Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Telemetry.swift"; sourceTree = "<group>"; };
 		96C7AE7CC8DF4C7910C4230B /* SandboxPortsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxPortsViewModelTests.swift; sourceTree = "<group>"; };
@@ -590,6 +593,7 @@
 		AE29B2F3FF7CFA3B0325CB97 /* ContainerInfoTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerInfoTab.swift; sourceTree = "<group>"; };
 		AF7C1F10630FCFA65B832FA9 /* NewNetworkSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewNetworkSheet.swift; sourceTree = "<group>"; };
 		B011CA693D5A9EFCCF61AA2D /* NewContainerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewContainerSheet.swift; sourceTree = "<group>"; };
+		B028B9AC9FBE0FF0360E662F /* RuntimeStorageRecoveryModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStorageRecoveryModelTests.swift; sourceTree = "<group>"; };
 		B050286A2450880AC2C95342 /* ActivityContainerTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityContainerTable.swift; sourceTree = "<group>"; };
 		B0841C2969EC1A1BC07489C8 /* SandboxTerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxTerminalSession.swift; sourceTree = "<group>"; };
 		B084B3E5BD66E2DA018764E8 /* QuitWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitWindowControllerTests.swift; sourceTree = "<group>"; };
@@ -1144,6 +1148,7 @@
 				D4ED3EC883A488801DE03195 /* NetworksViewModel.swift */,
 				CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */,
 				474FD439D2B872416A0CC116 /* RunnersViewModel.swift */,
+				94E61C4FDE50F5A6B45F06B5 /* RuntimeStorageRecoveryModel.swift */,
 				4009DCC81EA64B23A77FB0C4 /* ServicesViewModel.swift */,
 				C0BC46E06601AA9D330AF049 /* SystemVmBackendModel.swift */,
 				9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */,
@@ -1456,6 +1461,7 @@
 				A517313E1085B62A40075622 /* OnboardingWindowControllerTests.swift */,
 				B084B3E5BD66E2DA018764E8 /* QuitWindowControllerTests.swift */,
 				E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */,
+				B028B9AC9FBE0FF0360E662F /* RuntimeStorageRecoveryModelTests.swift */,
 				816C59570B7C65B9288056A8 /* SandboxNotificationRulesTests.swift */,
 				96C7AE7CC8DF4C7910C4230B /* SandboxPortsViewModelTests.swift */,
 				D0A680191505746F5F6F5A0B /* SandboxTemplateModelTests.swift */,
@@ -1854,6 +1860,7 @@
 				6FBDCCAB7F2960C0A0330A04 /* RunnersView.swift in Sources */,
 				BA69D54C021A974036846623 /* RunnersViewModel.swift in Sources */,
 				C19B191AF0DE9179608BF40A /* RunnersViewState.swift in Sources */,
+				31D53CA9305C656FB5E0A79C /* RuntimeStorageRecoveryModel.swift in Sources */,
 				74488A22CBA34633776AC5D2 /* SandboxDetailView.swift in Sources */,
 				8C3C03A50C1B7D97829F9DA5 /* SandboxEmptyState.swift in Sources */,
 				442FF72709337D1BCAA0643D /* SandboxEventMonitor.swift in Sources */,
@@ -2007,6 +2014,7 @@
 				1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,
 				797DFD054AB1412B7254F6B1 /* RuntimeStorageHealthTests.swift in Sources */,
+				681FAF684785A86444AE4498 /* RuntimeStorageRecoveryModelTests.swift in Sources */,
 				7B785AFCDAE28EF6B5064527 /* SandboxNotificationRulesTests.swift in Sources */,
 				EC2532F756D371A159AB9A97 /* SandboxPortsViewModelTests.swift in Sources */,
 				B9FBD28A52E575A47BC65BF7 /* SandboxTemplateModelTests.swift in Sources */,
