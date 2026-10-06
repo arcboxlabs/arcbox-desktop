@@ -133,6 +133,7 @@
 		6319B6C6A8717F3AA19AD65B /* NavItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69038D73EF8AC0CC09D4B39C /* NavItem.swift */; };
 		632810E9B138C535A11E7EBF /* DiagnosticBundleExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A04AFE137230F2CE0DD9DBB /* DiagnosticBundleExporter.swift */; };
 		648A2CC2001B3BE05F6B7B4C /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5272B55436BFFB8D2021CA20 /* EmptyStateView.swift */; };
+		649630D664A8266B46BEE8DB /* RuntimeStorageRecoveryIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC774DEDF3F018FC6A69ED8 /* RuntimeStorageRecoveryIntegrationTests.swift */; };
 		6631E8029205E50D8C32209A /* MachinesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8357344FFAC2AB6F56EE95EC /* MachinesListViewController.swift */; };
 		6720D08CDB730C241017A457 /* LayerStackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F4E99670A28483DBAA6CC8 /* LayerStackTests.swift */; };
 		67808E7A0B5C8FE7A454A117 /* KubernetesWatchRetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 061EDA25B1CD4A83411C65B9 /* KubernetesWatchRetry.swift */; };
@@ -584,6 +585,7 @@
 		9BC18756B780D1B7FB6B0F4F /* OnboardingMigrationLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingMigrationLifecycleTests.swift; sourceTree = "<group>"; };
 		9E73318FC9D8EBCB39E5C0AE /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
 		9F60CF8B8E81089BA2E8DC20 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		9FC774DEDF3F018FC6A69ED8 /* RuntimeStorageRecoveryIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStorageRecoveryIntegrationTests.swift; sourceTree = "<group>"; };
 		A10ED4BA65D6B9CC56B6B329 /* ChangelogParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangelogParserTests.swift; sourceTree = "<group>"; };
 		A1FE07EA71512ACEE609B537 /* RunnerHostCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerHostCapability.swift; sourceTree = "<group>"; };
 		A2B6587D59B9EFA18E51A3F3 /* ImagesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagesViewModelTests.swift; sourceTree = "<group>"; };
@@ -1480,6 +1482,7 @@
 				A517313E1085B62A40075622 /* OnboardingWindowControllerTests.swift */,
 				B084B3E5BD66E2DA018764E8 /* QuitWindowControllerTests.swift */,
 				E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */,
+				9FC774DEDF3F018FC6A69ED8 /* RuntimeStorageRecoveryIntegrationTests.swift */,
 				B028B9AC9FBE0FF0360E662F /* RuntimeStorageRecoveryModelTests.swift */,
 				75AC7F06FEE8F4D7C8AEFD64 /* RuntimeStorageSnapshotTests.swift */,
 				816C59570B7C65B9288056A8 /* SandboxNotificationRulesTests.swift */,
@@ -2040,6 +2043,7 @@
 				1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,
 				797DFD054AB1412B7254F6B1 /* RuntimeStorageHealthTests.swift in Sources */,
+				649630D664A8266B46BEE8DB /* RuntimeStorageRecoveryIntegrationTests.swift in Sources */,
 				681FAF684785A86444AE4498 /* RuntimeStorageRecoveryModelTests.swift in Sources */,
 				5DB3D3FEC75C4BCC29F982CC /* RuntimeStorageSnapshotTests.swift in Sources */,
 				7B785AFCDAE28EF6B5064527 /* SandboxNotificationRulesTests.swift in Sources */,
