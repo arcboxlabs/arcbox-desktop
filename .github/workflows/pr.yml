@@ -70,12 +70,12 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .build/protoc-plugins/
-          key: ${{ runner.os }}-${{ runner.arch }}-protoc-plugins-${{ steps.build_environment.outputs.xcode_cache_key }}-${{ hashFiles('Packages/ArcBoxClient/Package.resolved', 'Packages/ArcBoxClient/Package.swift', 'Packages/ArcBoxClient/generate.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-protoc-plugins-${{ steps.build_environment.outputs.xcode_cache_key }}-${{ hashFiles('Packages/ArcBoxClient/Package.resolved', 'Packages/ArcBoxClient/Package.swift', 'Packages/ArcBoxClient/generate.sh', 'Packages/ArcBoxClient/patches/**') }}
 
-      - name: Verify protobuf generated code is up-to-date
+      - name: Verify protobuf and test generator keyword handling
         run: |
           brew install protobuf
-          make verify-arcbox-protobuf
+          make test-protoc-plugins
 
       # `protocol verify` above only compiles xtask; nothing ran its tests.
       - name: Lint and test xtask

@@ -130,18 +130,47 @@ echo "Building protoc plugins..."
 cd "$SCRIPT_DIR"
 "${SWIFT_ENV[@]}" /usr/bin/xcrun swift build \
     --scratch-path "$SCRATCH_DIR" \
+    --force-resolved-versions \
     --product protoc-gen-swift
-"${SWIFT_ENV[@]}" /usr/bin/xcrun swift build \
+
+SWIFT_PLUGIN_DIR="$("${SWIFT_ENV[@]}" /usr/bin/xcrun swift build \
     --scratch-path "$SCRATCH_DIR" \
+    --force-resolved-versions \
+    --show-bin-path)"
+
+# Upstream 1.3.1 emits Swift keywords as bare method names. Patch an owned
+# source copy so SwiftPM's managed checkout stays unchanged.
+GRPC_CHECKOUT="${SCRATCH_DIR}/checkouts/grpc-swift-protobuf"
+GRPC_REVISION="53e89e3a5d417307f70a721c7b83e564fefb1e1c"
+GRPC_SOURCE_DIR="${SCRATCH_DIR}/grpc-source"
+GRPC_BUILD_DIR="${SCRATCH_DIR}/grpc-build"
+actual_revision="$(git -C "$GRPC_CHECKOUT" rev-parse HEAD)"
+if [ "$actual_revision" != "$GRPC_REVISION" ]; then
+    echo "Error: review the gRPC keyword patch before using generator revision ${actual_revision}." >&2
+    exit 1
+fi
+
+rm -rf "$GRPC_SOURCE_DIR"
+mkdir -p "$GRPC_SOURCE_DIR"
+git -C "$GRPC_CHECKOUT" archive "$GRPC_REVISION" | tar -x -C "$GRPC_SOURCE_DIR"
+patch -t -F 0 -p 1 -d "$GRPC_SOURCE_DIR" \
+    -i "${SCRIPT_DIR}/patches/grpc-swift-protobuf-keywords.patch"
+cp "${SCRIPT_DIR}/Package.resolved" "${GRPC_SOURCE_DIR}/Package.resolved"
+
+"${SWIFT_ENV[@]}" /usr/bin/xcrun swift build \
+    --package-path "$GRPC_SOURCE_DIR" \
+    --scratch-path "$GRPC_BUILD_DIR" \
+    --force-resolved-versions \
     --product protoc-gen-grpc-swift
 
-PLUGIN_DIR="$("${SWIFT_ENV[@]}" /usr/bin/xcrun swift build \
-    --scratch-path "$SCRATCH_DIR" \
+GRPC_PLUGIN_DIR="$("${SWIFT_ENV[@]}" /usr/bin/xcrun swift build \
+    --package-path "$GRPC_SOURCE_DIR" \
+    --scratch-path "$GRPC_BUILD_DIR" \
+    --force-resolved-versions \
     --show-bin-path)"
-export PATH="${PLUGIN_DIR}:${PATH}"
 
-echo "Using protoc-gen-swift: $(which protoc-gen-swift)"
-echo "Using protoc-gen-grpc-swift: $(which protoc-gen-grpc-swift)"
+echo "Using protoc-gen-swift: ${SWIFT_PLUGIN_DIR}/protoc-gen-swift"
+echo "Using protoc-gen-grpc-swift: ${GRPC_PLUGIN_DIR}/protoc-gen-grpc-swift"
 
 # Rebuild the generated tree so removed or relocated proto files cannot leave
 # stale Swift sources behind.
@@ -155,6 +184,8 @@ printf '  %s\n' "${PROTOS[@]}"
 # instead of per-proto. Output is identical to the per-file loop.
 protoc \
     --proto_path="$PROTO_DIR" \
+    --plugin="protoc-gen-swift=${SWIFT_PLUGIN_DIR}/protoc-gen-swift" \
+    --plugin="protoc-gen-grpc-swift=${GRPC_PLUGIN_DIR}/protoc-gen-grpc-swift" \
     --swift_out="$OUT_DIR" \
     --swift_opt=Visibility=Public \
     --grpc-swift_out="$OUT_DIR" \

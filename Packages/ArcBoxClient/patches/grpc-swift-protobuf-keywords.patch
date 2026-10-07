@@ -1,0 +1,62 @@
+diff --git a/Sources/GRPCProtobufCodeGen/ProtobufCodeGenParser.swift b/Sources/GRPCProtobufCodeGen/ProtobufCodeGenParser.swift
+index 6f61d76..e4f173b 100644
+--- a/Sources/GRPCProtobufCodeGen/ProtobufCodeGenParser.swift
++++ b/Sources/GRPCProtobufCodeGen/ProtobufCodeGenParser.swift
+@@ -179,2 +179,8 @@ extension GRPCCodeGen.MethodDescriptor {
+   ) {
++    let functionName = CamelCaser.toLowerCamelCase(descriptor.name)
++    let needsEscaping =
++      swiftKeywordsUsedInDeclarations.contains(functionName)
++      || swiftKeywordsUsedInStatements.contains(functionName)
++      || swiftKeywordsUsedInExpressionsAndTypes.contains(functionName)
++
+     let name = MethodName(
+@@ -183,3 +189,3 @@ extension GRPCCodeGen.MethodDescriptor {
+       typeName: descriptor.name,
+-      functionName: CamelCaser.toLowerCamelCase(descriptor.name)
++      functionName: needsEscaping ? "`\(functionName)`" : functionName
+     )
+diff --git a/Tests/GRPCProtobufCodeGenTests/ProtobufCodeGenParserTests.swift b/Tests/GRPCProtobufCodeGenTests/ProtobufCodeGenParserTests.swift
+index 13ee37e..a70fb13 100644
+--- a/Tests/GRPCProtobufCodeGenTests/ProtobufCodeGenParserTests.swift
++++ b/Tests/GRPCProtobufCodeGenTests/ProtobufCodeGenParserTests.swift
+@@ -24,2 +24,39 @@ import Testing
+ struct ProtobufCodeGenParserTests {
++  @Test(
++    "Swift method keywords preserve wire names",
++    arguments: [
++      ("Import", "`import`"),
++      ("Repeat", "`repeat`"),
++      ("Throw", "`throw`"),
++      ("ImportData", "importData"),
++    ]
++  )
++  @available(gRPCSwiftProtobuf 1.0, *)
++  func methodKeywords(wireName: String, functionName: String) throws {
++    var file = Google_Protobuf_FileDescriptorProto()
++    file.name = "keywords.proto"
++    file.package = "test"
++    file.syntax = "proto3"
++    var message = Google_Protobuf_DescriptorProto()
++    message.name = "Message"
++    file.messageType = [message]
++    var method = Google_Protobuf_MethodDescriptorProto()
++    method.name = wireName
++    method.inputType = ".test.Message"
++    method.outputType = ".test.Message"
++    var service = Google_Protobuf_ServiceDescriptorProto()
++    service.name = "Keywords"
++    service.method = [method]
++    file.service = [service]
++    var set = Google_Protobuf_FileDescriptorSet()
++    set.file = [file]
++    let descriptor = try #require(DescriptorSet(proto: set).fileDescriptor(named: file.name))
++    let request = try parseDescriptor(descriptor)
++    let parsedMethod = try #require(request.services.first?.methods.first)
++
++    #expect(parsedMethod.name.identifyingName == wireName)
++    #expect(parsedMethod.name.typeName == wireName)
++    #expect(parsedMethod.name.functionName == functionName)
++  }
++
+   @Suite("Self-contained service (test-service.proto)")
