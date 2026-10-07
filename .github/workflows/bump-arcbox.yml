@@ -103,7 +103,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .build/protoc-plugins/
-          key: ${{ runner.os }}-${{ runner.arch }}-protoc-plugins-${{ steps.build_environment.outputs.xcode_cache_key }}-${{ hashFiles('Packages/ArcBoxClient/Package.resolved', 'Packages/ArcBoxClient/Package.swift', 'Packages/ArcBoxClient/generate.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-protoc-plugins-${{ steps.build_environment.outputs.xcode_cache_key }}-${{ hashFiles('Packages/ArcBoxClient/Package.resolved', 'Packages/ArcBoxClient/Package.swift', 'Packages/ArcBoxClient/generate.sh', 'Packages/ArcBoxClient/patches/**') }}
 
       - name: Bump the pin and regenerate the client
         if: steps.check.outputs.needed == 'true'
