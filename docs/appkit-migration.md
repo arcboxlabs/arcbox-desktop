@@ -26,6 +26,8 @@ AppDelegate
 
 ### 1.1 范围
 
+ArcBox Desktop 聚焦 macOS 本地运行。Platform 登录、Fleet 与 Runner 集成已移出活跃源码，保留在 Git 分支 `archive/platform-before-macos-focus-2026-10-08`；第 2 节起的历史盘点保持原样。
+
 - 包含 `ArcBox/` app target 及其本地 package 的 UI 集成边界。
 - 保留现有 `@Observable` domain model 和 client API；不引入第二套全局状态系统。
 - 不增加第三方 UI 依赖；优先 SwiftUI、AppKit 和已安装的 SwiftTerm／Sparkle。

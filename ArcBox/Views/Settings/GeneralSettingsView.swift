@@ -125,7 +125,7 @@ struct GeneralSettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Share usage data")
                         Text(
-                            "Help improve ArcBox by sharing feature usage statistics. While you are signed in, this is linked to your account."
+                            "Help improve ArcBox by sharing anonymous feature usage statistics."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)

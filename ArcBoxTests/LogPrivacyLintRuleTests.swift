@@ -28,7 +28,7 @@ final class LogPrivacyLintRuleTests: XCTestCase {
             #"Log.image.info("Pulled \(reference, privacy: .public)")"#,
             #"logger.error("Failed: \(error.localizedDescription, privacy: .public)")"#,
             #"ClientLog.daemon.error("Daemon binary not found at \(path, privacy: .public)")"#,
-            #"Log.fleet.info("Client for \(configuration.baseURL.absoluteString, privacy: .public)")"#,
+            #"Log.startup.info("Client for \(configuration.baseURL.absoluteString, privacy: .public)")"#,
             #"logger.warning("Failed to copy \(file, privacy: .private): \(error, privacy: .public)")"#,
             #"Log.volume.info("Created volume \(vol.Name, privacy: .public)")"#,
             #"Log.image.info("Loaded \(self.images.count + userID, privacy: .public)")"#,

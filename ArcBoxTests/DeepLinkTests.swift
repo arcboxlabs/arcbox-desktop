@@ -56,7 +56,7 @@ final class DeepLinkTests: XCTestCase {
 
     @MainActor func testResolvesValidAndReportsMissingIDsForEveryResourceSection() {
         let (router, appVM) = makeRouter()
-        let resourceSections = NavItem.allCases.filter { $0 != .activity && $0 != .runner }
+        let resourceSections = NavItem.allCases.filter { $0 != .activity }
 
         for item in resourceSections {
             let validID = "valid-\(item.rawValue)"
@@ -101,16 +101,11 @@ final class DeepLinkTests: XCTestCase {
     @MainActor func testRejectsSectionsWithoutResourceSelectionVisibly() {
         let (router, appVM) = makeRouter()
 
-        for item in [NavItem.activity, .runner] {
-            router.handle(URL(string: "arcbox://\(item.rawValue)/resource-id")!)
+        router.handle(URL(string: "arcbox://activity/resource-id")!)
 
-            XCTAssertEqual(appVM.currentNav, item)
-            XCTAssertNil(appVM.pendingResourceDeepLink)
-            XCTAssertEqual(
-                appVM.deepLinkError,
-                "\(item.label) links don’t support resource IDs."
-            )
-        }
+        XCTAssertEqual(appVM.currentNav, .activity)
+        XCTAssertNil(appVM.pendingResourceDeepLink)
+        XCTAssertEqual(appVM.deepLinkError, "Activity links don’t support resource IDs.")
     }
 
     @MainActor func testDecodesPercentEncodedID() {
@@ -136,8 +131,17 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertNil(parse("arcbox://bogus"))
     }
 
-    @MainActor func testRejectsUnavailableTemplatesSection() {
-        XCTAssertNil(parse("arcbox://templates"))
+    @MainActor func testUnavailableSectionsDoNotChangeLocalNavigation() {
+        let (router, appVM) = makeRouter()
+        for host in ["templates", "runner"] {
+            for suffix in ["", "/old-job"] {
+                let url = "arcbox://\(host)\(suffix)"
+                XCTAssertNil(parse(url))
+                router.handle(URL(string: url)!)
+                XCTAssertEqual(appVM.currentNav, .containers)
+                XCTAssertNil(appVM.pendingResourceDeepLink)
+            }
+        }
     }
 
     @MainActor private func makeRouter() -> (DeepLinkRouter, AppViewModel) {

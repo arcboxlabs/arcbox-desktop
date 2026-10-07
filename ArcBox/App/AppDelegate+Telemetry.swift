@@ -52,10 +52,7 @@ extension AppDelegate {
     /// API key is read from Info.plist (injected via POSTHOG_API_KEY build setting).
     /// No-ops gracefully when key is empty or placeholder.
     ///
-    /// Telemetry is on by default for every install, signed in or not:
-    /// `capture` does not require person processing, so events from users who
-    /// never sign in are collected as anonymous events. Signing in only adds a
-    /// person profile. Users opt out in Settings > Privacy.
+    /// Telemetry collects anonymous events. Users opt out in Settings > Privacy.
     static func initPostHog() {
         guard let apiKey = Bundle.main.object(forInfoDictionaryKey: "PostHogAPIKey") as? String,
             !apiKey.isEmpty, apiKey != "YOUR_POSTHOG_API_KEY_HERE", apiKey != "$(POSTHOG_API_KEY)"
@@ -65,9 +62,10 @@ extension AppDelegate {
         }
 
         let config = PostHogConfig(apiKey: apiKey, host: "https://us.i.posthog.com")
-        config.captureApplicationLifecycleEvents = true
+        // SDK setup can emit an update event immediately. Migrate the old identity first.
+        config.captureApplicationLifecycleEvents = !UserDefaults.standard.bool(forKey: Analytics.legacyIdentityKey)
         config.captureScreenViews = false  // No-op on macOS, track manually
-        config.personProfiles = .identifiedOnly
+        config.personProfiles = .never
         #if DEBUG
             // Never send telemetry from development builds.
             let optedOut = true
@@ -76,6 +74,10 @@ extension AppDelegate {
         #endif
         config.optOut = optedOut
         PostHogSDK.shared.setup(config)
+        if Analytics.resetLegacyIdentityIfNeeded() {
+            Analytics.optOut()
+            config.captureApplicationLifecycleEvents = true
+        }
         // `setup` lets the SDK's own persisted opt-out flag override
         // `config.optOut`, so restate the app preference — Settings > Privacy
         // is the only source of truth, and it defaults to opted in.

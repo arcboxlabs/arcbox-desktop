@@ -18,9 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     /// Whether this process is the host of a test run rather than the app a user launched.
     ///
     /// XCTest is loaded into the host before `main` runs, so its presence is the signal. A
-    /// host that boots the app installs the helper, opens Fleet connections and reads the
-    /// sign-in item from the login keychain, and `make test` signs the host ad hoc, so that
-    /// read prompted for the keychain password on every build.
+    /// test host must not install the helper, start the runtime, or send telemetry.
     nonisolated static let isTestHost = NSClassFromString("XCTestCase") != nil
 
     func applicationWillFinishLaunching(_ notification: Notification) {

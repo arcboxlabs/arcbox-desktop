@@ -4,7 +4,7 @@
 <dict>
 	<!-- Merged with the Xcode-generated Info.plist (GENERATE_INFOPLIST_FILE);
 	     $(...) are expanded at build time. Only keys that cannot be expressed
-	     as INFOPLIST_KEY_* settings live here — custom keys (OIDC*, telemetry)
+	     as INFOPLIST_KEY_* settings live here — custom telemetry keys
 	     are silently dropped when set via INFOPLIST_KEY_*. -->
 	<key>CFBundleURLTypes</key>
 	<array>
@@ -18,23 +18,7 @@
 				<string>arcbox</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>None</string>
-			<key>CFBundleURLName</key>
-			<string>com.arcboxlabs.desktop.oauth</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.arcboxlabs.desktop</string>
-			</array>
-		</dict>
 	</array>
-	<key>OIDCClientID</key>
-	<string>$(OIDC_CLIENT_ID)</string>
-	<key>OIDCIssuerURL</key>
-	<string>$(OIDC_ISSUER_URL)</string>
-	<key>FleetPlatformBaseURL</key>
-	<string>$(FLEET_PLATFORM_BASE_URL)</string>
 	<key>ArcBoxProfile</key>
 	<string>$(ARCBOX_PROFILE)</string>
 	<key>PostHogAPIKey</key>

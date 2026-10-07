@@ -30,6 +30,8 @@ is nothing else to install.
 
 ## What it does
 
+The runtime runs on your Mac without a Platform account or cloud control plane. Updates, image downloads, and optional anonymous telemetry use the network.
+
 One three-column window — sources, list, detail — over everything the daemon runs:
 
 - **Docker** — containers, images, volumes, networks. Containers group by Compose project, and each one
