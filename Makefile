@@ -273,7 +273,7 @@ generate-xcodeproj:
 ## ── ArcBox Protocol ───────────────────────────────────
 
 generate-arcbox-protobuf:
-	arcbox_dir=$$(cd "$(ARCBOX_DIR)" && pwd) && \
+	arcbox_dir=$$(CDPATH= cd "$(ARCBOX_DIR)" && pwd) && \
 	cd Packages/ArcBoxClient && ARCBOX_DIR="$$arcbox_dir" ./generate.sh --local
 
 bump-arcbox:
