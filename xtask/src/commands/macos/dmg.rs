@@ -18,7 +18,7 @@ use xtask_kit::dmg::{self, CreateDmgOptions};
 use xtask_kit::{github_actions, process, repo};
 
 use super::bundle::{self, BundleOptions, BundleProfile};
-use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER};
+use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER, host_binary_dir};
 use crate::support::fs as xfs;
 use crate::{MacosDmgArgs, MacosPrepareResourcesArgs, MacosStageResourcesArgs};
 
@@ -522,7 +522,7 @@ fn prepare_profile_resources(
     if opts.boot_assets_dir.is_some() && profile != BundleProfile::Development {
         bail!("local boot-assets require the development profile (--dev)");
     }
-    let abctl = arcbox_dir.join("target").join("release").join("abctl");
+    let abctl = host_binary_dir(arcbox_dir).join("abctl");
     if !abctl.is_file() {
         bail!(
             "abctl not found at {}. The Xcode build should have built local arcbox binaries first.",
@@ -609,7 +609,7 @@ fn embed_host_cli_binaries(
     arcbox_dir: &Path,
     sign_identity: &str,
 ) -> Result<()> {
-    let src_dir = arcbox_dir.join("target").join("release");
+    let src_dir = host_binary_dir(arcbox_dir);
     let bin_dir = app_bundle.join("Contents").join("MacOS").join("bin");
     std::fs::create_dir_all(&bin_dir)?;
 
@@ -996,14 +996,11 @@ fn bundle_daemon_step(
             .join("Contents")
             .join("Helpers")
             .join(daemon_name);
-        let target_release = arcbox_dir
-            .join("target")
-            .join("release")
-            .join("arcbox-daemon");
+        let local_daemon = host_binary_dir(arcbox_dir).join("arcbox-daemon");
         if helpers.is_file() {
             helpers
-        } else if target_release.is_file() {
-            target_release
+        } else if local_daemon.is_file() {
+            local_daemon
         } else {
             bail!("cannot locate arcbox-daemon binary");
         }

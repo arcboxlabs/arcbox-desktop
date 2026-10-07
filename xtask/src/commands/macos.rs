@@ -1,3 +1,6 @@
+#[cfg(target_os = "macos")]
+use std::path::{Path, PathBuf};
+
 use anyhow::Result;
 
 use crate::MacosArgs;
@@ -13,6 +16,14 @@ pub mod bundle;
 pub mod dmg;
 #[cfg(target_os = "macos")]
 pub mod embed;
+
+#[cfg(target_os = "macos")]
+fn host_binary_dir(arcbox_dir: &Path) -> PathBuf {
+    std::env::var_os("ARCBOX_HOST_BIN_DIR")
+        .filter(|dir| !dir.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| arcbox_dir.join("target").join("release"))
+}
 
 #[cfg(target_os = "macos")]
 pub fn run(args: MacosArgs) -> Result<()> {
