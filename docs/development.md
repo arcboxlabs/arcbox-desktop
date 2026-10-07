@@ -49,6 +49,8 @@ Use `./script/build_and_run.sh --verify` to skip onboarding for that launch and 
 development LaunchAgent, socket, and bundled `abctl` connection. The launch override does not
 change the stored onboarding preference.
 
+Runnable builds place host binaries in `.build/ArcBoxHost/release`. Resource preparation, embedding, and packaging use `ARCBOX_HOST_BIN_DIR` when set. Resource preparation rejects a missing `abctl` in the configured directory. Without an override, direct `cargo xtask macos` commands use the runtime checkout's `target/release`. Guest binaries remain in the runtime checkout's `target/aarch64-unknown-linux-musl/release`.
+
 To get the same behavior from Xcode's Run button, enable the full-debug settings documented at the
 bottom of `Local.xcconfig.example`. Codex exposes the same script as its project Run action.
 

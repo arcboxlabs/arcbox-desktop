@@ -14,7 +14,7 @@ use regex::Regex;
 use xtask_kit::apple::{self, CodesignOptions};
 
 use super::bundle::{self, BundleOptions, BundleProfile};
-use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER};
+use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER, host_binary_dir};
 use crate::MacosEmbedArgs;
 use crate::support::fs as xfs;
 
@@ -168,13 +168,8 @@ pub fn run(_args: MacosEmbedArgs) -> Result<()> {
     let daemon_name = profile.daemon_label();
     // Host binaries dir + guest (Linux musl) binaries dir of a local checkout.
     let local_dirs = arcbox_repo.as_ref().map(|r| {
-        let host_dir = env("ARCBOX_HOST_BIN_DIR");
         (
-            if host_dir.is_empty() {
-                r.join("target").join("release")
-            } else {
-                PathBuf::from(host_dir)
-            },
+            host_binary_dir(r),
             r.join("target")
                 .join("aarch64-unknown-linux-musl")
                 .join("release"),
