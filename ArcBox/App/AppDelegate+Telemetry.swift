@@ -62,35 +62,50 @@ extension AppDelegate {
         }
 
         let config = PostHogConfig(apiKey: apiKey, host: "https://us.i.posthog.com")
-        // SDK setup can emit an update event immediately. Migrate the old identity first.
-        config.captureApplicationLifecycleEvents = !UserDefaults.standard.bool(forKey: Analytics.legacyIdentityKey)
-        config.captureScreenViews = false  // No-op on macOS, track manually
-        config.personProfiles = .never
         #if DEBUG
             // Never send telemetry from development builds.
             let optedOut = true
         #else
             let optedOut = !UserDefaults.standard.bool(forKey: "telemetryEnabled")
         #endif
+        initPostHog(config: config, defaults: .standard, optedOut: optedOut)
+        Log.startup.info("PostHog initialized (opted \(optedOut ? "out" : "in", privacy: .public))")
+    }
+
+    @discardableResult
+    static func initPostHog(
+        config: PostHogConfig,
+        defaults: UserDefaults,
+        optedOut: Bool,
+        setup: (PostHogConfig) -> PostHogSDK = { config in
+            PostHogSDK.shared.setup(config)
+            return .shared
+        }
+    ) -> PostHogSDK {
+        // SDK setup can emit an update event immediately. Migrate the old identity first.
+        config.captureApplicationLifecycleEvents = !defaults.bool(forKey: Analytics.legacyIdentityKey)
+        config.captureScreenViews = false  // No-op on macOS, track manually
+        config.personProfiles = .never
         config.optOut = optedOut
-        PostHogSDK.shared.setup(config)
-        if Analytics.resetLegacyIdentityIfNeeded() {
-            Analytics.optOut()
+        let sdk = setup(config)
+        if Analytics.resetLegacyIdentityIfNeeded(defaults: defaults, reset: sdk.reset) {
+            // optIn reinstalls lifecycle listeners; changing the config alone does not.
+            sdk.optOut()
             config.captureApplicationLifecycleEvents = true
         }
         // `setup` lets the SDK's own persisted opt-out flag override
         // `config.optOut`, so restate the app preference — Settings > Privacy
         // is the only source of truth, and it defaults to opted in.
         if optedOut {
-            Analytics.optOut()
+            sdk.optOut()
         } else {
-            Analytics.optIn()
+            sdk.optIn()
         }
-        Analytics.register([
+        sdk.register([
             "arcbox_profile": Bundle.main.object(forInfoDictionaryKey: "ArcBoxProfile") as? String ?? "unknown",
-            "update_channel": UserDefaults.standard.string(forKey: "updateChannel") ?? "stable",
+            "update_channel": defaults.string(forKey: "updateChannel") ?? "stable",
         ])
-        Log.startup.info("PostHog initialized (opted \(optedOut ? "out" : "in", privacy: .public))")
+        return sdk
     }
 
     /// Strip home directory paths from Sentry events to avoid leaking usernames.
