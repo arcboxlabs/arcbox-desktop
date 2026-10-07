@@ -1,8 +1,11 @@
+import ArcBoxClient
 import DockerClient
 import SwiftUI
 
 struct StorageSettingsView: View {
     @Environment(\.dockerClient) private var docker
+    @Environment(DaemonManager.self) private var daemon
+    @Environment(RuntimeStorageRecoveryModel.self) private var recovery
 
     @AppStorage("includeTimeMachine") private var includeTimeMachine = false
     /// Tracks whether the Time Machine exclusion has been applied this session, to avoid
@@ -25,6 +28,9 @@ struct StorageSettingsView: View {
 
     var body: some View {
         Form {
+            RuntimeStorageDetails()
+            RuntimeStorageRecoverySection()
+
             Section("Data") {
                 Toggle(
                     "Include data in Time Machine backups",
@@ -62,7 +68,12 @@ struct StorageSettingsView: View {
                 Button("Reset Docker Data") {
                     showResetDockerAlert = true
                 }
-                .disabled(isResetting || docker == nil)
+                .disabled(
+                    isResetting || docker == nil || daemon.storageWriteFailureMessage != nil || recovery.mayBeRunning)
+
+                Text("Reset removes Docker resources. Reset does not repair runtime storage.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 if isResetting {
                     HStack {
@@ -117,6 +128,11 @@ struct StorageSettingsView: View {
     // MARK: - Reset Operations
 
     private func resetDockerData() async {
+        guard !recovery.mayBeRunning else { return }
+        if let reason = daemon.storageWriteFailureMessage {
+            resetResultMessage = reason
+            return
+        }
         guard let docker else { return }
         isResetting = true
         resetResultMessage = nil

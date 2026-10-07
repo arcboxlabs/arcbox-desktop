@@ -148,6 +148,10 @@ extension ImagesViewModel {
     /// Pull an image from a registry. Returns true on success.
     func pullImage(_ reference: String, platform: String?, docker: DockerClient?) async -> Bool {
         lastError = nil
+        if let reason = storageWriteFailure() {
+            lastError = reason
+            return false
+        }
         guard let docker else {
             lastError = "Docker client unavailable."
             return false
@@ -182,6 +186,10 @@ extension ImagesViewModel {
     /// Import an image from a local tar archive (equivalent to `docker load`). Returns true on success.
     func importImage(tarURL: URL, docker: DockerClient?) async -> Bool {
         lastError = nil
+        if let reason = storageWriteFailure() {
+            lastError = reason
+            return false
+        }
         guard let docker else {
             lastError = "Docker client unavailable."
             return false

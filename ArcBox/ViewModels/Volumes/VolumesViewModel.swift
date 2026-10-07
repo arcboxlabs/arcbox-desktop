@@ -18,6 +18,7 @@ class VolumesViewModel {
     var sortBy: VolumeSortField = .name
     var sortAscending: Bool = true
     var lastError: String?
+    @ObservationIgnored var storageWriteFailure: () -> String? = { nil }
 
     var totalSize: String {
         let bytes: UInt64 = volumes.compactMap(\.sizeBytes).reduce(0, +)

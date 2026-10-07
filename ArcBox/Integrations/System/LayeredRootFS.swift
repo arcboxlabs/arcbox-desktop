@@ -6,7 +6,7 @@ import os
 /// Containers and images under the containerd image store are not a single
 /// directory: the daemon resolves them to the same layer list the kernel
 /// would mount — a writable upper layer (containers only) followed by the
-/// image layers, highest first. The read-only `~/ArcBox` export serves each
+/// image layers, highest first. The read-only `~/ArcBox/docker` export serves each
 /// layer directory separately, so composing them here is what turns "the
 /// container's own writes" into "the container's filesystem".
 ///
@@ -129,7 +129,7 @@ nonisolated struct LayeredRootFS {
         let excludedCount: Int
     }
 
-    /// Maps daemon-reported guest layer paths onto the `~/ArcBox` export,
+    /// Maps daemon-reported guest layer paths onto the `~/ArcBox/docker` export,
     /// stopping at the first layer the host cannot browse.
     ///
     /// Truncating rather than dropping matters for the same reason it does
@@ -196,7 +196,7 @@ nonisolated struct LayeredRootFS {
     }
 
     private static func resolve(_ relativePath: String, in layer: URL) -> URL {
-        relativePath.isEmpty ? layer : layer.appendingPathComponent(relativePath)
+        relativePath.isEmpty ? layer : layer.appending(path: relativePath, directoryHint: .inferFromPath)
     }
 
     /// The `S_IFMT` bits at `url`, or `nil` if nothing is there.
