@@ -41,7 +41,7 @@ PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
-.PHONY: build build-runnable check-runnable-prerequisites build-runnable-rust test audit-accessibility resolve format lint lint-xtask test-xtask generate-xcodeproj bump-arcbox verify-arcbox-protobuf build-rust prefetch dmg dmg-signed dmg-release clean help
+.PHONY: build build-runnable check-runnable-prerequisites build-runnable-rust test audit-accessibility resolve format lint lint-xtask test-xtask generate-xcodeproj bump-arcbox verify-arcbox-protobuf test-protoc-plugins build-rust prefetch dmg dmg-signed dmg-release clean help
 
 help:
 	@echo "ArcBox build targets:"
@@ -61,6 +61,8 @@ help:
 	@echo "                         Update arcbox.version and regenerate protobuf client"
 	@echo "  make verify-arcbox-protobuf"
 	@echo "                         Verify generated protobuf client matches arcbox.version"
+	@echo "  make test-protoc-plugins"
+	@echo "                         Verify protobuf and test generator keyword handling"
 	@echo "  make build-rust     Build arcbox binaries (release)"
 	@echo "  make prefetch       Download boot assets + Docker tools"
 	@echo "  make dmg            Package unsigned DMG (local testing)"
@@ -277,6 +279,13 @@ bump-arcbox:
 
 verify-arcbox-protobuf:
 	cargo xtask protocol verify
+
+test-protoc-plugins: verify-arcbox-protobuf
+	$(XCODE_ENV) /usr/bin/xcrun swift test \
+		--package-path .build/protoc-plugins/grpc-source \
+		--scratch-path .build/protoc-plugins/grpc-build \
+		--force-resolved-versions \
+		--filter methodKeywords
 
 ## ── Prerequisites ─────────────────────────────────────
 
