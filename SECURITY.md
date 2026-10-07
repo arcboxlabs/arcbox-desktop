@@ -24,11 +24,7 @@ We acknowledge within **48 hours** and aim to have a fix or mitigation plan with
 
 This repo is the macOS app. The surfaces we care most about here:
 
-- **Deep links** — the app registers `arcbox://` for deep links and
-  `com.arcboxlabs.desktop://` for the OAuth redirect. Anything that lets a crafted
-  URL drive an action the user did not ask for, or intercept an authorization code.
-- **Sign-in and tokens** — the OIDC/PKCE flow in `Packages/ArcBoxAuth` and the
-  tokens it keeps in the keychain.
+- **Deep links** — the app registers `arcbox://` for local navigation. Report any crafted URL that drives an action the user did not request.
 - **The update channel** — appcast fetching and Sparkle's EdDSA signature check.
   Anything that could get unsigned or downgraded code installed.
 - **Bundle integrity** — code signing, notarization, and the identifiers on the

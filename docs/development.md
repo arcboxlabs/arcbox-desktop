@@ -10,9 +10,9 @@ cp Local.xcconfig.example Local.xcconfig   # set DEVELOPMENT_TEAM
 make build
 ```
 
-`DEVELOPMENT_TEAM` is the only value you have to fill in. The Sentry, PostHog, and OIDC placeholders can
-stay as they are — each one is checked for its placeholder at startup, so telemetry and platform sign-in
-simply stay off.
+`DEVELOPMENT_TEAM` is the only value you have to fill in. The Sentry and PostHog placeholders can
+stay as they are — each one is checked for its placeholder at startup, so telemetry
+stays off.
 
 | Command | What it does |
 |---|---|
@@ -108,7 +108,7 @@ Packages/
 ├── ArcBoxClient/          gRPC client, DaemonManager (SMAppService), StartupOrchestrator
 ├── DockerClient/          Docker Engine API over a Unix socket (OpenAPI generated)
 ├── K8sClient/             Kubernetes API with kubeconfig and exec-based auth
-└── ArcBoxAuth/            OAuth/PKCE session and keychain storage
+└── ProcessSupport/        bounded child processes and process-test fixtures
 
 LaunchDaemons/             launchd plist for the daemon
 xtask/                     embedding, signing, and packaging (Rust)

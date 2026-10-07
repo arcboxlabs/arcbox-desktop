@@ -87,7 +87,7 @@ class SandboxesViewModel {
     /// The sandbox whose mappings are currently visible in the Ports tab.
     var exposedPortsSandboxID: String?
 
-    /// The template catalog, one entry per version. Fleet-wide, not per
+    /// The template catalog, one entry per version. Shared by local sandboxes, not per
     /// sandbox: loaded on demand by the create sheet and the Snapshots tab.
     var templates: [SandboxTemplateViewModel] = []
     var templatesLoadState: LoadPhase = .waiting

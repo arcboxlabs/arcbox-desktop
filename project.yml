@@ -15,14 +15,8 @@ configFiles:
   Release: Local.xcconfig
 
 packages:
-  ArcBoxAuth:
-    path: Packages/ArcBoxAuth
   ArcBoxClient:
     path: Packages/ArcBoxClient
-  FleetControlClient:
-    path: Packages/FleetControlClient
-  FleetPlatformClient:
-    path: Packages/FleetPlatformClient
   DockerClient:
     path: Packages/DockerClient
   K8sClient:
@@ -149,10 +143,7 @@ targets:
             destination: wrapper
             subpath: Contents/Library/LaunchAgents
     dependencies:
-      - package: ArcBoxAuth
       - package: ArcBoxClient
-      - package: FleetControlClient
-      - package: FleetPlatformClient
       - package: DockerClient
       - package: K8sClient
       - package: ProcessSupport
@@ -249,9 +240,6 @@ targets:
       # what puts them behind `make test` instead of leaving them to a
       # `swift test` nobody runs.
       - path: Packages/ArcBoxClient/Tests/ArcBoxClientTests
-      - path: Packages/ArcBoxAuth/Tests/ArcBoxAuthTests
-      - path: Packages/FleetControlClient/Tests/FleetControlClientTests
-      - path: Packages/FleetPlatformClient/Tests/FleetPlatformClientTests
       - path: Packages/ProcessSupport/Tests/ProcessSupportTests
     dependencies:
       - target: ArcBox

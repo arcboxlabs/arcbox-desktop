@@ -1,5 +1,4 @@
 import AppKit
-import ArcBoxAuth
 import ArcBoxClient
 import SwiftUI
 import XCTest
@@ -77,7 +76,7 @@ final class ContentViewColumnLayoutTests: XCTestCase {
     /// no window to find. The environment list mirrors `makeMainRoot()`.
     private func mainWindow() throws -> NSWindow {
         let root =
-            ContentView {}
+            ContentView()
             .environment(AppViewModel())
             .environment(DaemonManager())
             .environment(ContainersViewModel())
@@ -85,8 +84,6 @@ final class ContentViewColumnLayoutTests: XCTestCase {
             .environment(NetworksViewModel())
             .environment(VolumesViewModel())
             .environment(SandboxEventMonitor())
-            .environment(AuthSession(tokenStore: InMemoryTokenStore()))
-            .environment(RunnersViewModel())
             .frame(minWidth: 900, minHeight: 600)
         let host = NSHostingController(rootView: root)
         host.sceneBridgingOptions = .all

@@ -70,7 +70,7 @@ final class AccessibilityAuditTests: XCTestCase {
         app.menuBars.menuItems["Settings…"].click()
         let settings = app.windows["Settings"]
         XCTAssertTrue(settings.waitForExistence(timeout: 5), "Settings window did not open")
-        for pane in ["General", "Account", "System", "Fleet", "Storage"] {
+        for pane in ["General", "System", "Storage"] {
             settings.outlines["Settings navigation"].staticTexts[pane].click()
             try audit("Settings › \(pane)")
         }
