@@ -41,7 +41,7 @@ PROVISIONING_PROFILE ?=
 
 ABCTL := $(ARCBOX_DIR)/target/release/abctl
 
-.PHONY: build build-runnable check-runnable-prerequisites build-runnable-rust test audit-accessibility resolve format lint lint-xtask test-xtask generate-xcodeproj bump-arcbox verify-arcbox-protobuf test-protoc-plugins build-rust prefetch dmg dmg-signed dmg-release clean help
+.PHONY: build build-runnable check-runnable-prerequisites build-runnable-rust test audit-accessibility resolve format lint lint-xtask test-xtask generate-xcodeproj generate-arcbox-protobuf bump-arcbox verify-arcbox-protobuf test-protoc-plugins build-rust prefetch dmg dmg-signed dmg-release clean help
 
 help:
 	@echo "ArcBox build targets:"
@@ -57,6 +57,8 @@ help:
 	@echo "  make lint-xtask     Run cargo fmt --check and clippy -D warnings on xtask/"
 	@echo "  make test-xtask     Run the xtask test suite"
 	@echo "  make generate-xcodeproj  Regenerate ArcBox.xcodeproj from project.yml"
+	@echo "  make generate-arcbox-protobuf ARCBOX_DIR=/path/to/arcbox"
+	@echo "                         Generate protobuf client from a local runtime checkout"
 	@echo "  make bump-arcbox VERSION=vX.Y.Z"
 	@echo "                         Update arcbox.version and regenerate protobuf client"
 	@echo "  make verify-arcbox-protobuf"
@@ -269,6 +271,9 @@ generate-xcodeproj:
 	$(TOOL) xcodegen generate
 
 ## ── ArcBox Protocol ───────────────────────────────────
+
+generate-arcbox-protobuf:
+	cd Packages/ArcBoxClient && ARCBOX_DIR="$(ARCBOX_DIR)" ./generate.sh --local
 
 bump-arcbox:
 	@if [ -z "$(VERSION)" ]; then \
