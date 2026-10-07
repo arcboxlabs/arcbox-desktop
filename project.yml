@@ -211,6 +211,10 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: $(ARCBOX_APP_DISPLAY_NAME)
         INFOPLIST_KEY_CFBundleName: $(ARCBOX_PRODUCT_NAME)
         INFOPLIST_KEY_NSAppleEventsUsageDescription: ArcBox uses Automation to open your selected terminal app and run container shell commands.
+        # The daemon is this app's launchd agent, so its Bonjour registration of
+        # *.arcbox.local names (arcbox-daemon/src/mdns) raises the Local Network
+        # alert for ArcBox; this is the text shown in it.
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: ArcBox registers your containers' and machines' .arcbox.local names with Bonjour so they resolve on this Mac.
         INFOPLIST_KEY_NSHumanReadableCopyright: Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)

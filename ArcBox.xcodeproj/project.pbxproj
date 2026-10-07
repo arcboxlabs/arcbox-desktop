@@ -2143,6 +2143,7 @@
 				INFOPLIST_KEY_CFBundleName = "$(ARCBOX_PRODUCT_NAME)";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "ArcBox registers your containers' and machines' .arcbox.local names with Bonjour so they resolve on this Mac.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -2309,6 +2310,7 @@
 				INFOPLIST_KEY_CFBundleName = "$(ARCBOX_PRODUCT_NAME)";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "ArcBox uses Automation to open your selected terminal app and run container shell commands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 ArcBox Labs. Licensed under MIT OR Apache-2.0.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "ArcBox registers your containers' and machines' .arcbox.local names with Bonjour so they resolve on this Mac.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
