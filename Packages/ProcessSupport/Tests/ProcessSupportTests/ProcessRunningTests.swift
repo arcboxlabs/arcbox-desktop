@@ -146,15 +146,15 @@ struct ProcessRunningTests {
     }
 
     @Test func limitTrippedBeforeTheTimeoutIsReportedAsTheLimit() async throws {
-        // The reader trips the limit within milliseconds of `head` starting and terminates the
+        // The reader trips the limit within milliseconds of `yes` starting and terminates the
         // child, which ignores SIGTERM; the timeout then fires inside the 2 s kill grace. The
         // limit is the cause and must be the error, and the child is still reaped before it
         // propagates. The deadline must fall between the limit tripping and the kill, and both
-        // are measured from the launch, so a fixed deadline cannot wait for `head` to appear;
+        // are measured from the launch, so a fixed deadline cannot wait for `yes` to appear;
         // just under the grace gives it the most slack a fixed deadline can — bash may take up
         // to that long to start (Gatekeeper's first-launch cost is already paid by the fixture)
         // — and the `#require` below names the precondition when a host still misses it.
-        let fake = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
+        let fake = try await FakeExecutable.writingContinuouslyIgnoringTermination()
         defer { fake.remove() }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: fake.path)
@@ -163,14 +163,14 @@ struct ProcessRunningTests {
         let startedAt = clock.now
 
         let run = Task { try await runCapturingStandardOutput(process, timeout: timeout, outputLimit: 1 << 20) }
-        try #require(try await fake.waitUntilExecuted(), "`head` must be running before the deadline")
+        try #require(try await fake.waitUntilExecuted(), "`yes` must be running before the deadline")
         let executedAt = clock.now
 
         await #expect(throws: ProcessOutputLimitExceeded.self) { try await run.value }
 
         let elapsed = clock.now - startedAt
         #expect(elapsed > processTerminationGrace, "SIGTERM was ignored, so the kill waits out the grace")
-        // Measured from `head` running, so a slow bash start does not count against it.
+        // Measured from `yes` running, so a slow bash start does not count against it.
         let sinceExecuted = clock.now - executedAt
         #expect(sinceExecuted < processTerminationGrace + .seconds(1), "returned \(sinceExecuted) after the child ran")
         #expect(!process.isRunning)
@@ -183,7 +183,7 @@ struct ProcessRunningTests {
         // The reader trips the limit and terminates the child, which ignores SIGTERM; the caller
         // is cancelled inside the 2 s kill grace. Cancellation is what the caller asked for and
         // must propagate, while the child is still reaped before it does.
-        let fake = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
+        let fake = try await FakeExecutable.writingContinuouslyIgnoringTermination()
         defer { fake.remove() }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: fake.path)
@@ -191,7 +191,7 @@ struct ProcessRunningTests {
         let startedAt = clock.now
 
         let run = Task { try await runCapturingStandardOutput(process, timeout: .seconds(30), outputLimit: 1 << 20) }
-        // Once `head` itself runs, `trap` has taken effect and the limit trips within
+        // Once `yes` itself runs, `trap` has taken effect and the limit trips within
         // milliseconds; a SIGTERM that reached bash while it was still starting would end the
         // child at once and prove nothing.
         try #require(try await fake.waitUntilExecuted())

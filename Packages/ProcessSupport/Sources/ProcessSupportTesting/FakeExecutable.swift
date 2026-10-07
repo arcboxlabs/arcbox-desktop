@@ -61,10 +61,10 @@ public struct FakeExecutable: Sendable {
         try await FakeExecutable("#!/bin/bash\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
     }
 
-    /// Writes 2 MiB and ignores SIGTERM: once the reader stops at its limit the write blocks,
-    /// and only SIGKILL ends the child.
-    public static func writingTwoMebibytesIgnoringTermination() async throws -> FakeExecutable {
-        try await FakeExecutable("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /usr/bin/head -c 2097152 /dev/zero\n")
+    /// Writes continuously and ignores SIGTERM, so only SIGKILL ends the child after the limit.
+    /// A finite writer can exit before the consumer checks output already queued by the reader.
+    public static func writingContinuouslyIgnoringTermination() async throws -> FakeExecutable {
+        try await FakeExecutable("#!/bin/bash\ntrap '' TERM\nexec -a \"$0\" /usr/bin/yes\n")
     }
 
     /// Prints `line` and exits, leaving behind a grandchild that inherited stdout and keeps

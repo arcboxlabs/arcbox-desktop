@@ -58,13 +58,13 @@ struct BinaryVersionTests {
         // The reader trips the limit and terminates the child, which ignores SIGTERM; the caller
         // is cancelled inside the 2 s kill grace. Cancellation must propagate — `installHelper`
         // reads a `nil` as "reinstall" — while the child is still reaped before it does.
-        let fake = try await FakeExecutable.writingTwoMebibytesIgnoringTermination()
+        let fake = try await FakeExecutable.writingContinuouslyIgnoringTermination()
         defer { fake.remove() }
         let clock = ContinuousClock()
         let startedAt = clock.now
 
         let version = Task { try await binaryVersion(fake.path, timeout: .seconds(30)) }
-        // Once `head` itself runs, `trap` has taken effect and the limit trips within
+        // Once `yes` itself runs, `trap` has taken effect and the limit trips within
         // milliseconds; a SIGTERM that reached bash while it was still starting would end the
         // child at once and prove nothing.
         try #require(try await fake.waitUntilExecuted())
