@@ -128,6 +128,10 @@ xtask/                     embedding, signing, and packaging (Rust)
 
 No Combine, no third-party UI frameworks.
 
+## Fleet runner history
+
+The runner list loads 50 jobs from the Fleet REST API. **Load older jobs** follows the returned cursor. A periodic refresh reads through the oldest explicitly loaded or selected job so new jobs do not remove an older selection. Fleet orders prefixed UUIDv7 job IDs newest first and returns jobs strictly older than the cursor. Machine changes and sign-out discard pending history responses. Run `make test` to cover pagination, refresh, and stale responses with the other Desktop tests.
+
 ## Further reading
 
 [AGENTS.md](../AGENTS.md) carries the rest: code style, and the SwiftUI startup pitfalls we keep

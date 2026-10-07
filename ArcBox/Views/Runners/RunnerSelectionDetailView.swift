@@ -21,7 +21,7 @@ struct RunnerSelectionDetailView: View {
                 }
             }
         case nil:
-            DetailPlaceholderView()
+            ContentUnavailableView("No Selection", systemImage: "square.dashed")
         }
     }
 

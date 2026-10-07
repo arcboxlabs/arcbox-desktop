@@ -36,6 +36,7 @@ final class RunnerPlatformStore {
     private(set) var jobs: [FleetRunnerJob] = []
     private(set) var nextCursor: String?
     private(set) var isRefreshing = false
+    private(set) var isLoadingMore = false
     private(set) var selection: RunnerSelection?
 
     @ObservationIgnored
@@ -43,6 +44,9 @@ final class RunnerPlatformStore {
 
     @ObservationIgnored
     private var refreshSequence = 0
+
+    @ObservationIgnored
+    private var historyBoundaryID: String?
 
     func observe(
         client: any RunnerPlatformLoading,
@@ -65,19 +69,27 @@ final class RunnerPlatformStore {
         refreshSequence += 1
         let sequence = refreshSequence
         isRefreshing = true
+        isLoadingMore = false
         if machine == nil || machine?.id != machineID {
             selection = nil
+            workspace = nil
+            machine = nil
+            jobs = []
+            historyBoundaryID = nil
+            nextCursor = nil
             loadState = .loading
         }
 
         do {
-            let snapshot = try await loadSnapshot(client: client, machineID: machineID)
+            let snapshot = try await loadSnapshot(client: client, machineID: machineID, sequence: sequence)
             guard sequence == refreshSequence else { return }
 
             workspaceByMachineID[machineID] = snapshot.workspace
             workspace = snapshot.workspace
             machine = snapshot.machine
             jobs = snapshot.jobs.jobs
+            // Rounded pages may include older rows. Keep the requested boundary stable across polls.
+            historyBoundaryID = historyBoundaryID ?? jobs.last?.id
             nextCursor = snapshot.jobs.nextCursor
             loadState = .loaded
             isRefreshing = false
@@ -91,6 +103,7 @@ final class RunnerPlatformStore {
             workspace = nil
             machine = nil
             jobs = []
+            historyBoundaryID = nil
             nextCursor = nil
             loadState = .machineNotFound
             isRefreshing = false
@@ -102,15 +115,42 @@ final class RunnerPlatformStore {
         }
     }
 
+    func loadMore(client: any RunnerPlatformLoading) async {
+        guard let workspace, let machine, let cursor = nextCursor, !isRefreshing, !isLoadingMore else { return }
+        let sequence = refreshSequence
+        isLoadingMore = true
+        defer {
+            if sequence == refreshSequence { isLoadingMore = false }
+        }
+
+        do {
+            let page = try await client.listJobs(
+                workspaceID: workspace.id, machineID: machine.id, status: nil, cursor: cursor, limit: 50
+            )
+            guard sequence == refreshSequence else { return }
+            jobs.append(contentsOf: page.jobs)
+            historyBoundaryID = jobs.last?.id
+            nextCursor = page.nextCursor
+            loadState = .loaded
+        } catch is CancellationError {
+            return
+        } catch {
+            guard sequence == refreshSequence else { return }
+            loadState = .failed(FleetPlatformClient.userMessage(for: error))
+        }
+    }
+
     func reset() {
         refreshSequence += 1
         workspaceByMachineID.removeAll()
         workspace = nil
         machine = nil
         jobs = []
+        historyBoundaryID = nil
         nextCursor = nil
         loadState = .idle
         isRefreshing = false
+        isLoadingMore = false
         selection = nil
     }
 
@@ -125,6 +165,9 @@ final class RunnerPlatformStore {
 
     func selectJob(id: String) {
         selection = .job(id)
+        if let historyBoundaryID, jobs.contains(where: { $0.id == id }) {
+            self.historyBoundaryID = min(historyBoundaryID, id)
+        }
     }
 
     func reconcileSelection(validJobIDs: Set<String>) {
@@ -136,16 +179,16 @@ final class RunnerPlatformStore {
 
     private func loadSnapshot(
         client: any RunnerPlatformLoading,
-        machineID: String
+        machineID: String,
+        sequence: Int
     ) async throws -> RunnerPlatformSnapshot {
         if let workspace = workspaceByMachineID[machineID] {
             let machine = try await client.getMachine(id: machineID, workspaceID: workspace.id)
-            let jobs = try await client.listJobs(
+            let jobs = try await loadJobs(
+                client: client,
                 workspaceID: workspace.id,
                 machineID: machineID,
-                status: nil,
-                cursor: nil,
-                limit: 50
+                sequence: sequence
             )
             return RunnerPlatformSnapshot(workspace: workspace, machine: machine, jobs: jobs)
         }
@@ -155,17 +198,39 @@ final class RunnerPlatformStore {
             guard let machine = machines.first(where: { $0.id == machineID }) else {
                 continue
             }
-            let jobs = try await client.listJobs(
+            let jobs = try await loadJobs(
+                client: client,
                 workspaceID: workspace.id,
                 machineID: machineID,
-                status: nil,
-                cursor: nil,
-                limit: 50
+                sequence: sequence
             )
             return RunnerPlatformSnapshot(workspace: workspace, machine: machine, jobs: jobs)
         }
 
         throw RunnerPlatformStoreError.machineNotFound
+    }
+
+    private func loadJobs(
+        client: any RunnerPlatformLoading,
+        workspaceID: String,
+        machineID: String,
+        sequence: Int
+    ) async throws -> FleetRunnerJobPage {
+        var page = try await client.listJobs(
+            workspaceID: workspaceID, machineID: machineID, status: nil, cursor: nil, limit: 50
+        )
+        var jobs = page.jobs
+        // Fleet orders prefixed UUIDv7 job IDs newest first. Read the boundary
+        // after each response because selection can change during a request.
+        while let cursor = page.nextCursor, let historyBoundaryID, let last = jobs.last, last.id > historyBoundaryID {
+            guard sequence == refreshSequence else { throw CancellationError() }
+            try Task.checkCancellation()
+            page = try await client.listJobs(
+                workspaceID: workspaceID, machineID: machineID, status: nil, cursor: cursor, limit: 50
+            )
+            jobs.append(contentsOf: page.jobs)
+        }
+        return FleetRunnerJobPage(jobs: jobs, nextCursor: page.nextCursor)
     }
 }
 

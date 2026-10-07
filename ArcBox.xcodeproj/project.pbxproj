@@ -182,6 +182,7 @@
 		7DFC19087BE929DDF207A677 /* UpdaterSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */; };
 		7F091F3F3F75F500937DC7BC /* ImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8BD8A4B6EEE9722D54739D /* ImageModel.swift */; };
 		7F8FB0C66C04AEF7895A85AD /* NetworkDetailViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA3C6B6F10198DFC435A33E /* NetworkDetailViewControllerTests.swift */; };
+		7FF9EA6F1F960835323049D7 /* RunnerJobHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502D77D129374AE66B37A8AB /* RunnerJobHistoryTests.swift */; };
 		801AAF363A7901B7D17F5C55 /* AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA5247E3096D7A9D54A270A /* AccountSettingsView.swift */; };
 		807479D85C38FEE5E53218DD /* LocalRootFSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85321B230A582D1C0AF76B5C /* LocalRootFSService.swift */; };
 		8127661373B4B0D6B1423F67 /* LayeredRootFSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3029D85CCC770F8C1801A392 /* LayeredRootFSTests.swift */; };
@@ -498,6 +499,7 @@
 		4E7528A43356F3BB6CE3FB96 /* ArcBox.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArcBox.entitlements; sourceTree = "<group>"; };
 		4F0D0444E612EC32D81A7E0C /* LocalRootFSOutlineCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineCoordinator.swift; sourceTree = "<group>"; };
 		4F46BA5653A1B6451B7941D5 /* SettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTab.swift; sourceTree = "<group>"; };
+		502D77D129374AE66B37A8AB /* RunnerJobHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerJobHistoryTests.swift; sourceTree = "<group>"; };
 		50C68609B67AC82FF386CB92 /* SandboxEventMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxEventMonitor.swift; sourceTree = "<group>"; };
 		5144C9321F8A17DA72A862DA /* MachineCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineCreateSheet.swift; sourceTree = "<group>"; };
 		522820EEBA49BC66D525CE20 /* ErrorReportingScrubTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReportingScrubTests.swift; sourceTree = "<group>"; };
@@ -1531,6 +1533,7 @@
 				B084B3E5BD66E2DA018764E8 /* QuitWindowControllerTests.swift */,
 				E5758E839E4363E54EEECD99 /* RunnerHostJobSummaryTests.swift */,
 				D1F4663B38FDFB64EBE74EAC /* RunnerJobDetailModelTests.swift */,
+				502D77D129374AE66B37A8AB /* RunnerJobHistoryTests.swift */,
 				62D737D532B4BB4169914591 /* RunnerJobListItemTests.swift */,
 				DA8937BC21E9813E2F8AA7F2 /* RunnerPlatformStoreTests.swift */,
 				E902A97C32D4034C22684BBD /* RunnersViewModelTests.swift */,
@@ -2108,6 +2111,7 @@
 				1CB8AE8C16D0C333B7C0B32F /* ResourceStatsTests.swift in Sources */,
 				7B40CC08EA615C5CB027380A /* RunnerHostJobSummaryTests.swift in Sources */,
 				1E08F7DA3B549BAE7F5ECBFC /* RunnerJobDetailModelTests.swift in Sources */,
+				7FF9EA6F1F960835323049D7 /* RunnerJobHistoryTests.swift in Sources */,
 				FD81DD803F100451034B3384 /* RunnerJobListItemTests.swift in Sources */,
 				A45901889EB62F97532D443E /* RunnerPlatformStoreTests.swift in Sources */,
 				977BE039C964F896AB613634 /* RunnersViewModelTests.swift in Sources */,

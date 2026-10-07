@@ -7,7 +7,6 @@ struct RunnersView: View {
     @Environment(AuthSession.self) private var authSession
     @Environment(RunnersViewModel.self) private var vm
     @Environment(RunnerPlatformStore.self) private var platformStore
-    @Environment(\.fleetPlatformClient) private var platformClient
     @State private var isShowingWorkspaceDialog = false
     @State private var isShowingEnrollmentResetConfirmation = false
 
@@ -94,7 +93,10 @@ struct RunnersView: View {
                         jobs: jobItems,
                         platformLoadState: platformStore.loadState,
                         selectedJobID: platformStore.selectedJobID,
-                        onSelect: platformStore.selectJob
+                        hasMoreJobs: platformStore.nextCursor != nil,
+                        isLoadingHistory: platformStore.isRefreshing || platformStore.isLoadingMore,
+                        onSelect: platformStore.selectJob,
+                        onLoadMore: loadOlderJobs
                     )
                     .onChange(of: jobItems.map(\.id), initial: true) { _, jobIDs in
                         platformStore.reconcileSelection(validJobIDs: Set(jobIDs))
@@ -106,11 +108,11 @@ struct RunnersView: View {
         .navigationTitle("This Mac")
         .navigationSubtitle(vm.subtitle)
         .task(id: platformRefreshContext) {
+            platformStore.reset()
             guard
-                let platformClient,
+                let platformClient = vm.activePlatformClient,
                 let machineID = platformRefreshContext.machineID
             else {
-                platformStore.reset()
                 return
             }
 
@@ -119,12 +121,13 @@ struct RunnersView: View {
     }
 
     private var platformRefreshContext: RunnerPlatformRefreshContext {
+        let clientID = vm.activePlatformClient.map(ObjectIdentifier.init)
         guard case .enrolled(let host, _) = vm.viewState else {
-            return RunnerPlatformRefreshContext(machineID: nil, hasClient: platformClient != nil)
+            return RunnerPlatformRefreshContext(machineID: nil, clientID: clientID)
         }
         return RunnerPlatformRefreshContext(
             machineID: host.machineID,
-            hasClient: platformClient != nil
+            clientID: clientID
         )
     }
 
@@ -291,6 +294,13 @@ struct RunnersView: View {
         }
     }
 
+    private func loadOlderJobs() {
+        guard let platformClient = vm.activePlatformClient else { return }
+        Task {
+            await platformStore.loadMore(client: platformClient)
+        }
+    }
+
     private func enroll(in workspace: FleetWorkspace) {
         Task {
             await vm.enroll(in: workspace)
@@ -327,7 +337,7 @@ struct RunnersView: View {
 
 private struct RunnerPlatformRefreshContext: Equatable {
     let machineID: String?
-    let hasClient: Bool
+    let clientID: ObjectIdentifier?
 }
 
 extension RunnerHostFreshness {

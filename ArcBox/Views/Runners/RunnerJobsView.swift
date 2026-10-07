@@ -4,7 +4,10 @@ struct RunnerJobsView: View {
     let jobs: [RunnerJobListItem]
     let platformLoadState: RunnerPlatformLoadState
     let selectedJobID: String?
+    let hasMoreJobs: Bool
+    let isLoadingHistory: Bool
     let onSelect: (String) -> Void
+    let onLoadMore: () -> Void
 
     var body: some View {
         if jobs.isEmpty {
@@ -18,12 +21,27 @@ struct RunnerJobsView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                 }
-                List(jobs) { job in
-                    RunnerJobRow(
-                        job: job,
-                        isSelected: selectedJobID == job.id,
-                        onSelect: { onSelect(job.id) }
-                    )
+                List {
+                    ForEach(jobs) { job in
+                        RunnerJobRow(
+                            job: job,
+                            isSelected: selectedJobID == job.id,
+                            onSelect: { onSelect(job.id) }
+                        )
+                    }
+                    if hasMoreJobs {
+                        HStack {
+                            Spacer()
+                            if isLoadingHistory {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                            Button("Load older jobs", action: onLoadMore)
+                                .disabled(isLoadingHistory)
+                            Spacer()
+                        }
+                        .listRowSeparator(.hidden)
+                    }
                 }
                 .listStyle(.inset)
             }

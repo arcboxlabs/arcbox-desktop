@@ -34,8 +34,7 @@ final class RunnersViewModel {
     @ObservationIgnored
     private var activeControlClient: FleetControlClient?
 
-    @ObservationIgnored
-    private var activePlatformClient: FleetPlatformClient?
+    private(set) var activePlatformClient: FleetPlatformClient?
 
     @ObservationIgnored
     private var hasStarted = false
