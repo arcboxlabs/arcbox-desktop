@@ -1122,6 +1122,18 @@ public enum Arcbox_V1_SystemService {
                 method: "WatchSetupStatus"
             )
         }
+        /// Namespace for "RecoverStorage" metadata.
+        public enum RecoverStorage {
+            /// Request type for "RecoverStorage".
+            public typealias Input = Arcbox_V1_RecoverStorageRequest
+            /// Response type for "RecoverStorage".
+            public typealias Output = Arcbox_V1_StorageRecoveryProgress
+            /// Descriptor for "RecoverStorage".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "RecoverStorage"
+            )
+        }
         /// Namespace for "GetSystemVmBackend" metadata.
         public enum GetSystemVmBackend {
             /// Request type for "GetSystemVmBackend".
@@ -1215,6 +1227,7 @@ public enum Arcbox_V1_SystemService {
             Prune.descriptor,
             GetSetupStatus.descriptor,
             WatchSetupStatus.descriptor,
+            RecoverStorage.descriptor,
             GetSystemVmBackend.descriptor,
             SetSystemVmBackend.descriptor,
             GetSystemVmResources.descriptor,
@@ -1378,6 +1391,26 @@ extension Arcbox_V1_SystemService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
+
+        /// Handle the "RecoverStorage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Stops the System VM, preserves its paired disks, and checks them offline.
+        /// > The operation continues if the client disconnects. WatchSetupStatus
+        /// > replays progress and the terminal result for the operation ID.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_RecoverStorageRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_StorageRecoveryProgress` messages.
+        func recoverStorage(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_RecoverStorageRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress>
 
         /// Handle the "GetSystemVmBackend" method.
         ///
@@ -1663,6 +1696,26 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus>
 
+        /// Handle the "RecoverStorage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Stops the System VM, preserves its paired disks, and checks them offline.
+        /// > The operation continues if the client disconnects. WatchSetupStatus
+        /// > replays progress and the terminal result for the operation ID.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_RecoverStorageRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_StorageRecoveryProgress` messages.
+        func recoverStorage(
+            request: GRPCCore.ServerRequest<Arcbox_V1_RecoverStorageRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress>
+
         /// Handle the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
@@ -1947,6 +2000,27 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws
 
+        /// Handle the "RecoverStorage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Stops the System VM, preserves its paired disks, and checks them offline.
+        /// > The operation continues if the client disconnects. WatchSetupStatus
+        /// > replays progress and the terminal result for the operation ID.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_RecoverStorageRequest` message.
+        ///   - response: A response stream of `Arcbox_V1_StorageRecoveryProgress` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func recoverStorage(
+            request: Arcbox_V1_RecoverStorageRequest,
+            response: GRPCCore.RPCWriter<Arcbox_V1_StorageRecoveryProgress>,
+            context: GRPCCore.ServerContext
+        ) async throws
+
         /// Handle the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
@@ -2174,6 +2248,17 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.RecoverStorage.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_RecoverStorageRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_StorageRecoveryProgress>(),
+            handler: { request, context in
+                try await self.recoverStorage(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_V1_SystemService.Method.GetSystemVmBackend.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SystemVmBackendInfo>(),
@@ -2327,6 +2412,17 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetupStatus> {
         let response = try await self.watchSetupStatus(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+
+    public func recoverStorage(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_RecoverStorageRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress> {
+        let response = try await self.recoverStorage(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -2504,6 +2600,23 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
             metadata: [:],
             producer: { writer in
                 try await self.watchSetupStatus(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    public func recoverStorage(
+        request: GRPCCore.ServerRequest<Arcbox_V1_RecoverStorageRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress>(
+            metadata: [:],
+            producer: { writer in
+                try await self.recoverStorage(
                     request: request.message,
                     response: writer,
                     context: context
@@ -2779,6 +2892,31 @@ extension Arcbox_V1_SystemService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetupStatus>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_SetupStatus>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "RecoverStorage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Stops the System VM, preserves its paired disks, and checks them offline.
+        /// > The operation continues if the client disconnects. WatchSetupStatus
+        /// > replays progress and the terminal result for the operation ID.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_RecoverStorageRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_RecoverStorageRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_StorageRecoveryProgress` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func recoverStorage<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_RecoverStorageRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_RecoverStorageRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_StorageRecoveryProgress>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageRecoveryProgress>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "GetSystemVmBackend" method.
@@ -3209,6 +3347,40 @@ extension Arcbox_V1_SystemService {
             try await self.client.serverStreaming(
                 request: request,
                 descriptor: Arcbox_V1_SystemService.Method.WatchSetupStatus.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "RecoverStorage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Stops the System VM, preserves its paired disks, and checks them offline.
+        /// > The operation continues if the client disconnects. WatchSetupStatus
+        /// > replays progress and the terminal result for the operation ID.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_RecoverStorageRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_RecoverStorageRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_StorageRecoveryProgress` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func recoverStorage<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_RecoverStorageRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_RecoverStorageRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_StorageRecoveryProgress>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageRecoveryProgress>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.RecoverStorage.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -3677,6 +3849,35 @@ extension Arcbox_V1_SystemService.ClientProtocol {
         )
     }
 
+    /// Call the "RecoverStorage" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Stops the System VM, preserves its paired disks, and checks them offline.
+    /// > The operation continues if the client disconnects. WatchSetupStatus
+    /// > replays progress and the terminal result for the operation ID.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_RecoverStorageRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func recoverStorage<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_RecoverStorageRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageRecoveryProgress>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.recoverStorage(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_RecoverStorageRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_StorageRecoveryProgress>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "GetSystemVmBackend" method.
     ///
     /// > Source IDL Documentation:
@@ -4124,6 +4325,39 @@ extension Arcbox_V1_SystemService.ClientProtocol {
             metadata: metadata
         )
         return try await self.watchSetupStatus(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "RecoverStorage" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Stops the System VM, preserves its paired disks, and checks them offline.
+    /// > The operation continues if the client disconnects. WatchSetupStatus
+    /// > replays progress and the terminal result for the operation ID.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func recoverStorage<Result>(
+        _ message: Arcbox_V1_RecoverStorageRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageRecoveryProgress>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_RecoverStorageRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.recoverStorage(
             request: request,
             options: options,
             onResponse: handleResponse
