@@ -51,7 +51,7 @@ struct ImageFilesTab: View {
 
     private var selectedURL: URL? {
         guard let selectedPath else { return nil }
-        return URL(fileURLWithPath: selectedPath)
+        return URL(filePath: selectedPath, directoryHint: .inferFromPath)
     }
 
     var body: some View {
@@ -164,7 +164,7 @@ struct ImageFilesTab: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
 
-            Text("Image layers are browsed through the read-only ~/ArcBox export.")
+            Text("Image layers are browsed through the read-only ~/ArcBox/docker export.")
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textMuted)
                 .multilineTextAlignment(.center)
@@ -197,7 +197,7 @@ struct ImageFilesTab: View {
         }
 
         do {
-            // The layer directories are guest paths; browse them via ~/ArcBox.
+            // The layer directories are guest paths; browse them via ~/ArcBox/docker.
             let mountPoints = try await resolveImageLayerPaths()
             guard requestID == resolveTaskID, !Task.isCancelled else { return }
             resolvedRootFSMountPath = mountPoints.first

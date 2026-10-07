@@ -93,6 +93,8 @@ final class DiagnosticBundleExporter {
         // 3. Daemon Status
         sections.append(daemonStatusSection(daemonManager))
 
+        sections.append(storageHealthSection(daemonManager))
+
         // 4. Resource Counts
         sections.append(resourceCountsSection(containersVM: containersVM, imagesVM: imagesVM))
 
@@ -152,6 +154,27 @@ final class DiagnosticBundleExporter {
             Last Message Time: \(dm.lastMessageTime?.description ?? "never")
             Error: \(dm.errorMessage ?? "none")
             """
+    }
+
+    static func storageHealthSection(_ dm: DaemonManager) -> String {
+        var lines = ["=== Runtime Storage ===", "Current observation: \(dm.storageHealthIsCurrent)"]
+        if let recovery = dm.storageRecovery {
+            lines.append("Recovery operation: \(recovery.operationID); phase: \(recovery.phase)")
+            lines.append("Storage writes protected: \(recovery.storageProtected)")
+            lines.append("Recovery message: \(recovery.message)")
+            lines.append("Recovery directory: \(recovery.recoveryDirectory)")
+        }
+        guard let health = dm.storageHealth else {
+            return (lines + ["Storage health: unknown (no runtime observation)"]).joined(separator: "\n")
+        }
+        lines.append("Observed at: \(health.observedAt?.formatted(.iso8601) ?? "unknown")")
+        for volume in health.volumes {
+            lines.append("\(volume.role.label): \(volume.state.label)")
+            lines.append("Device: \(volume.device); mount: \(volume.mountPoint); filesystem: \(volume.filesystem)")
+            lines.append("Detail: \(volume.detail)")
+        }
+        lines.append("Read-write mounting does not prove durable writes succeed.")
+        return lines.joined(separator: "\n")
     }
 
     private static func resourceCountsSection(

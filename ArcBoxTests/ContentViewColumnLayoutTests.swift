@@ -1,9 +1,9 @@
 import AppKit
-import ArcBoxClient
 import SwiftUI
 import XCTest
 
 @testable import ArcBox
+@testable import ArcBoxClient
 
 /// Guards the toolbar geometry of the single three-column main-window split.
 @MainActor
@@ -11,6 +11,7 @@ final class ContentViewColumnLayoutTests: XCTestCase {
     private static let frameAutosaveName = "ContentViewColumnLayoutTests.main"
 
     private var windowController: MainWindowController?
+    private let daemonManager = DaemonManager()
 
     override func tearDown() {
         windowController?.close()
@@ -53,6 +54,28 @@ final class ContentViewColumnLayoutTests: XCTestCase {
         )
     }
 
+    func testStorageFailureBannerPreservesWindowSizeAndNavigation() throws {
+        let window = try mainWindow()
+        let originalSize = window.frame.size
+        var status = Arcbox_V1_SetupStatus()
+        status.phase = .ready
+        status.vmRunning = true
+        status.storageHealth.volumes = [
+            .with {
+                $0.role = .data; $0.state = .readOnly
+            }
+        ]
+        daemonManager.applySetupStatusSync(status)
+        pumpRunLoop()
+
+        XCTAssertEqual(window.frame.size, originalSize)
+        XCTAssertEqual(findSplitView(in: window.contentView)?.arrangedSubviews.count, 3)
+        XCTAssertTrue(daemonManager.setupPhase.isDockerReady)
+        daemonManager.stopWatching()
+        pumpRunLoop()
+        XCTAssertEqual(window.frame.size, originalSize)
+    }
+
     private func contentColumnItemFrames(in window: NSWindow) -> [NSRect] {
         guard let items = window.toolbar?.items else { return [] }
         let identifiers = items.map(\.itemIdentifier.rawValue)
@@ -78,7 +101,7 @@ final class ContentViewColumnLayoutTests: XCTestCase {
         let root =
             ContentView()
             .environment(AppViewModel())
-            .environment(DaemonManager())
+            .environment(daemonManager)
             .environment(ContainersViewModel())
             .environment(ImagesViewModel())
             .environment(NetworksViewModel())

@@ -88,6 +88,17 @@ extension ContainersViewModel {
         docker: DockerClient?
     ) async -> String? {
         lastError = nil
+        if let reason = storageWriteFailure() {
+            lastError = reason
+            return nil
+        }
+        return await performCreateContainer(options: options, docker: docker)
+    }
+
+    private func performCreateContainer(
+        options: ContainerCreateOptions,
+        docker: DockerClient?
+    ) async -> String? {
         guard let docker else {
             lastError = "Docker client unavailable."
             return nil
@@ -157,7 +168,7 @@ extension ContainersViewModel {
                 lastError = "A container with that name already exists."
             case .internalServerError(let err):
                 Log.container.error("Server error creating container: \(String(describing: err), privacy: .private)")
-                lastError = "Docker failed to create the container."
+                lastError = (try? err.body.json.message) ?? "Docker failed to create the container."
             case .undocumented(let statusCode, _):
                 Log.container.error("Unexpected status \(statusCode, privacy: .public) creating container")
                 lastError = "Unexpected response status \(statusCode)."

@@ -26,6 +26,8 @@ enum ColumnWidth {
 }
 
 struct ContentView: View {
+    var onStorage: () -> Void = {}
+
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.arcboxClient) private var arcboxClient
     @Environment(\.dockerClient) private var dockerClient
@@ -57,6 +59,9 @@ struct ContentView: View {
             } else {
                 threeColumnLayout
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            RuntimeStorageBanner(onDetails: onStorage)
         }
         .task(id: appVM.pendingResourceDeepLink) {
             await refreshVisibleResourceListIfNeeded()

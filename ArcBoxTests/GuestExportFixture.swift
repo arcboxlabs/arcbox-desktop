@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 
 extension XCTestCase {
-    /// Builds a throwaway stand-in for the `~/ArcBox` export containing the
+    /// Builds a throwaway stand-in for the `~/ArcBox/docker` export containing the
     /// given layer directories.
     ///
     /// Layer resolution maps a guest path onto the export and then stats it, so

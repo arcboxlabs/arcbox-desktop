@@ -3,7 +3,7 @@ import SwiftUI
 /// Says how many layers a Files tab merged, and warns when some of them
 /// could not be read.
 ///
-/// A layer the `~/ArcBox` export cannot serve contributes nothing to the
+/// A layer the `~/ArcBox/docker` export cannot serve contributes nothing to the
 /// merge, so the browser would otherwise present a partial filesystem as if
 /// it were complete — files unique to that layer, and the deletions it
 /// records, simply would not appear.
@@ -47,7 +47,7 @@ struct LayerMergeBadge: View {
         .help(
             isComplete
                 ? "Merged view of all \(total) filesystem layers."
-                : "\(unavailable) of \(total) layers are unavailable through the ~/ArcBox export; "
+                : "\(unavailable) of \(total) layers are unavailable through the ~/ArcBox/docker export; "
                     + "files that only exist in them are missing from this view."
         )
     }

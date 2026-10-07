@@ -77,6 +77,66 @@ public enum Arcbox_V1_MachineService {
                 method: "Remove"
             )
         }
+        /// Namespace for "CloneMachine" metadata.
+        public enum CloneMachine {
+            /// Request type for "CloneMachine".
+            public typealias Input = Arcbox_V1_CloneMachineRequest
+            /// Response type for "CloneMachine".
+            public typealias Output = Arcbox_V1_CloneMachineResponse
+            /// Descriptor for "CloneMachine".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "CloneMachine"
+            )
+        }
+        /// Namespace for "Export" metadata.
+        public enum Export {
+            /// Request type for "Export".
+            public typealias Input = Arcbox_V1_ExportMachineRequest
+            /// Response type for "Export".
+            public typealias Output = Arcbox_V1_ExportMachineResponse
+            /// Descriptor for "Export".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "Export"
+            )
+        }
+        /// Namespace for "Import" metadata.
+        public enum Import {
+            /// Request type for "Import".
+            public typealias Input = Arcbox_V1_ImportMachineRequest
+            /// Response type for "Import".
+            public typealias Output = Arcbox_V1_ImportMachineResponse
+            /// Descriptor for "Import".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "Import"
+            )
+        }
+        /// Namespace for "SetResources" metadata.
+        public enum SetResources {
+            /// Request type for "SetResources".
+            public typealias Input = Arcbox_V1_SetMachineResourcesRequest
+            /// Response type for "SetResources".
+            public typealias Output = Arcbox_V1_SetMachineResourcesResponse
+            /// Descriptor for "SetResources".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "SetResources"
+            )
+        }
+        /// Namespace for "SetDefault" metadata.
+        public enum SetDefault {
+            /// Request type for "SetDefault".
+            public typealias Input = Arcbox_V1_SetDefaultMachineRequest
+            /// Response type for "SetDefault".
+            public typealias Output = Arcbox_V1_Empty
+            /// Descriptor for "SetDefault".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "SetDefault"
+            )
+        }
         /// Namespace for "List" metadata.
         public enum List {
             /// Request type for "List".
@@ -191,6 +251,11 @@ public enum Arcbox_V1_MachineService {
             Start.descriptor,
             Stop.descriptor,
             Remove.descriptor,
+            CloneMachine.descriptor,
+            Export.descriptor,
+            Import.descriptor,
+            SetResources.descriptor,
+            SetDefault.descriptor,
             List.descriptor,
             Inspect.descriptor,
             Ping.descriptor,
@@ -322,6 +387,114 @@ extension Arcbox_V1_MachineService {
         /// - Returns: A streaming response of `Arcbox_V1_Empty` messages.
         func remove(
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_RemoveMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty>
+
+        /// Handle the "CloneMachine" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Clones a stopped distro machine into a new one. The clone shares the
+        /// > source's data disk blocks copy-on-write — instant, and no extra space
+        /// > until the two diverge — under its own name, hostname, DNS record and
+        /// > bridge MAC. A running source is refused: its data disk is a btrfs
+        /// > volume mounted read-write in the guest, so stop it first. (Named
+        /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+        /// > on the generated service handle.)
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_CloneMachineRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_CloneMachineResponse` messages.
+        func cloneMachine(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_CloneMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_CloneMachineResponse>
+
+        /// Handle the "Export" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Writes a stopped distro machine to a self-contained archive: a
+        /// > zstd-compressed tar holding a manifest (the machine's settings and
+        /// > the published image it boots) and its data disk as a sparse entry.
+        /// > The daemon writes the file, so `path` is a path on its host. A
+        /// > running machine is refused, as for Clone.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ExportMachineRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ExportMachineResponse` messages.
+        func export(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ExportMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ExportMachineResponse>
+
+        /// Handle the "Import" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Creates a machine from an archive Export wrote. The image the
+        /// > manifest names must be in the local image registry at the same
+        /// > version; otherwise the error says which image is missing.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ImportMachineRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ImportMachineResponse` messages.
+        func `import`(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ImportMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ImportMachineResponse>
+
+        /// Handle the "SetResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Changes a machine's CPU and memory limits, checked against the host.
+        /// > The new size is recorded at once and applies at the machine's next
+        /// > start; a running machine keeps the size it booted with, and the
+        /// > response says a restart is needed. The System VM is resized through
+        /// > SystemService.SetSystemVmResources instead, which restarts it.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_SetMachineResourcesRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_SetMachineResourcesResponse` messages.
+        func setResources(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetMachineResourcesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetMachineResourcesResponse>
+
+        /// Handle the "SetDefault" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the default machine — the one `abctl machine exec` and
+        /// > `abctl machine ssh` act on when given no name — or clears it with an
+        /// > empty id. The machine must exist. List reports the current one.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_SetDefaultMachineRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_Empty` messages.
+        func setDefault(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetDefaultMachineRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty>
 
@@ -606,6 +779,114 @@ extension Arcbox_V1_MachineService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty>
 
+        /// Handle the "CloneMachine" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Clones a stopped distro machine into a new one. The clone shares the
+        /// > source's data disk blocks copy-on-write — instant, and no extra space
+        /// > until the two diverge — under its own name, hostname, DNS record and
+        /// > bridge MAC. A running source is refused: its data disk is a btrfs
+        /// > volume mounted read-write in the guest, so stop it first. (Named
+        /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+        /// > on the generated service handle.)
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_CloneMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_CloneMachineResponse` message.
+        func cloneMachine(
+            request: GRPCCore.ServerRequest<Arcbox_V1_CloneMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_CloneMachineResponse>
+
+        /// Handle the "Export" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Writes a stopped distro machine to a self-contained archive: a
+        /// > zstd-compressed tar holding a manifest (the machine's settings and
+        /// > the published image it boots) and its data disk as a sparse entry.
+        /// > The daemon writes the file, so `path` is a path on its host. A
+        /// > running machine is refused, as for Clone.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ExportMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ExportMachineResponse` message.
+        func export(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ExportMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ExportMachineResponse>
+
+        /// Handle the "Import" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Creates a machine from an archive Export wrote. The image the
+        /// > manifest names must be in the local image registry at the same
+        /// > version; otherwise the error says which image is missing.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ImportMachineResponse` message.
+        func `import`(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ImportMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ImportMachineResponse>
+
+        /// Handle the "SetResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Changes a machine's CPU and memory limits, checked against the host.
+        /// > The new size is recorded at once and applies at the machine's next
+        /// > start; a running machine keeps the size it booted with, and the
+        /// > response says a restart is needed. The System VM is resized through
+        /// > SystemService.SetSystemVmResources instead, which restarts it.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetMachineResourcesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_SetMachineResourcesResponse` message.
+        func setResources(
+            request: GRPCCore.ServerRequest<Arcbox_V1_SetMachineResourcesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SetMachineResourcesResponse>
+
+        /// Handle the "SetDefault" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the default machine — the one `abctl machine exec` and
+        /// > `abctl machine ssh` act on when given no name — or clears it with an
+        /// > empty id. The machine must exist. List reports the current one.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetDefaultMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_Empty` message.
+        func setDefault(
+            request: GRPCCore.ServerRequest<Arcbox_V1_SetDefaultMachineRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty>
+
         /// Handle the "List" method.
         ///
         /// > Source IDL Documentation:
@@ -885,6 +1166,114 @@ extension Arcbox_V1_MachineService {
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_Empty
 
+        /// Handle the "CloneMachine" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Clones a stopped distro machine into a new one. The clone shares the
+        /// > source's data disk blocks copy-on-write — instant, and no extra space
+        /// > until the two diverge — under its own name, hostname, DNS record and
+        /// > bridge MAC. A running source is refused: its data disk is a btrfs
+        /// > volume mounted read-write in the guest, so stop it first. (Named
+        /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+        /// > on the generated service handle.)
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_CloneMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_CloneMachineResponse` to respond with.
+        func cloneMachine(
+            request: Arcbox_V1_CloneMachineRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_CloneMachineResponse
+
+        /// Handle the "Export" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Writes a stopped distro machine to a self-contained archive: a
+        /// > zstd-compressed tar holding a manifest (the machine's settings and
+        /// > the published image it boots) and its data disk as a sparse entry.
+        /// > The daemon writes the file, so `path` is a path on its host. A
+        /// > running machine is refused, as for Clone.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ExportMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ExportMachineResponse` to respond with.
+        func export(
+            request: Arcbox_V1_ExportMachineRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ExportMachineResponse
+
+        /// Handle the "Import" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Creates a machine from an archive Export wrote. The image the
+        /// > manifest names must be in the local image registry at the same
+        /// > version; otherwise the error says which image is missing.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ImportMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ImportMachineResponse` to respond with.
+        func `import`(
+            request: Arcbox_V1_ImportMachineRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ImportMachineResponse
+
+        /// Handle the "SetResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Changes a machine's CPU and memory limits, checked against the host.
+        /// > The new size is recorded at once and applies at the machine's next
+        /// > start; a running machine keeps the size it booted with, and the
+        /// > response says a restart is needed. The System VM is resized through
+        /// > SystemService.SetSystemVmResources instead, which restarts it.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_SetMachineResourcesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_SetMachineResourcesResponse` to respond with.
+        func setResources(
+            request: Arcbox_V1_SetMachineResourcesRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_SetMachineResourcesResponse
+
+        /// Handle the "SetDefault" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the default machine — the one `abctl machine exec` and
+        /// > `abctl machine ssh` act on when given no name — or clears it with an
+        /// > empty id. The machine must exist. List reports the current one.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_SetDefaultMachineRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_Empty` to respond with.
+        func setDefault(
+            request: Arcbox_V1_SetDefaultMachineRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_Empty
+
         /// Handle the "List" method.
         ///
         /// > Source IDL Documentation:
@@ -1111,6 +1500,61 @@ extension Arcbox_V1_MachineService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.CloneMachine.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_CloneMachineRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_CloneMachineResponse>(),
+            handler: { request, context in
+                try await self.cloneMachine(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.Export.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ExportMachineRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ExportMachineResponse>(),
+            handler: { request, context in
+                try await self.export(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.Import.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ImportMachineRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ImportMachineResponse>(),
+            handler: { request, context in
+                try await self.`import`(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.SetResources.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetMachineResourcesRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetMachineResourcesResponse>(),
+            handler: { request, context in
+                try await self.setResources(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.SetDefault.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetDefaultMachineRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            handler: { request, context in
+                try await self.setDefault(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_V1_MachineService.Method.List.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ListMachinesRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ListMachinesResponse>(),
@@ -1259,6 +1703,61 @@ extension Arcbox_V1_MachineService.ServiceProtocol {
         return GRPCCore.StreamingServerResponse(single: response)
     }
 
+    public func cloneMachine(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_CloneMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_CloneMachineResponse> {
+        let response = try await self.cloneMachine(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func export(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ExportMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ExportMachineResponse> {
+        let response = try await self.export(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func `import`(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ImportMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ImportMachineResponse> {
+        let response = try await self.`import`(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func setResources(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetMachineResourcesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetMachineResourcesResponse> {
+        let response = try await self.setResources(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func setDefault(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetDefaultMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty> {
+        let response = try await self.setDefault(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
     public func list(
         request: GRPCCore.StreamingServerRequest<Arcbox_V1_ListMachinesRequest>,
         context: GRPCCore.ServerContext
@@ -1396,6 +1895,71 @@ extension Arcbox_V1_MachineService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty> {
         return GRPCCore.ServerResponse<Arcbox_V1_Empty>(
             message: try await self.remove(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func cloneMachine(
+        request: GRPCCore.ServerRequest<Arcbox_V1_CloneMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_CloneMachineResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_CloneMachineResponse>(
+            message: try await self.cloneMachine(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func export(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ExportMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ExportMachineResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ExportMachineResponse>(
+            message: try await self.export(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func `import`(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ImportMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ImportMachineResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ImportMachineResponse>(
+            message: try await self.`import`(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func setResources(
+        request: GRPCCore.ServerRequest<Arcbox_V1_SetMachineResourcesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SetMachineResourcesResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_SetMachineResourcesResponse>(
+            message: try await self.setResources(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func setDefault(
+        request: GRPCCore.ServerRequest<Arcbox_V1_SetDefaultMachineRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty> {
+        return GRPCCore.ServerResponse<Arcbox_V1_Empty>(
+            message: try await self.setDefault(
                 request: request.message,
                 context: context
             ),
@@ -1657,6 +2221,139 @@ extension Arcbox_V1_MachineService {
         func remove<Result>(
             request: GRPCCore.ClientRequest<Arcbox_V1_RemoveMachineRequest>,
             serializer: some GRPCCore.MessageSerializer<Arcbox_V1_RemoveMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "CloneMachine" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Clones a stopped distro machine into a new one. The clone shares the
+        /// > source's data disk blocks copy-on-write — instant, and no extra space
+        /// > until the two diverge — under its own name, hostname, DNS record and
+        /// > bridge MAC. A running source is refused: its data disk is a btrfs
+        /// > volume mounted read-write in the guest, so stop it first. (Named
+        /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+        /// > on the generated service handle.)
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_CloneMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_CloneMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_CloneMachineResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func cloneMachine<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_CloneMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_CloneMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_CloneMachineResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_CloneMachineResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Export" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Writes a stopped distro machine to a self-contained archive: a
+        /// > zstd-compressed tar holding a manifest (the machine's settings and
+        /// > the published image it boots) and its data disk as a sparse entry.
+        /// > The daemon writes the file, so `path` is a path on its host. A
+        /// > running machine is refused, as for Clone.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ExportMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ExportMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ExportMachineResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func export<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ExportMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ExportMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ExportMachineResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ExportMachineResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "Import" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Creates a machine from an archive Export wrote. The image the
+        /// > manifest names must be in the local image registry at the same
+        /// > version; otherwise the error says which image is missing.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ImportMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ImportMachineResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func `import`<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ImportMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ImportMachineResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ImportMachineResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Changes a machine's CPU and memory limits, checked against the host.
+        /// > The new size is recorded at once and applies at the machine's next
+        /// > start; a running machine keeps the size it booted with, and the
+        /// > response says a restart is needed. The System VM is resized through
+        /// > SystemService.SetSystemVmResources instead, which restarts it.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetMachineResourcesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetMachineResourcesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SetMachineResourcesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setResources<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetMachineResourcesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetMachineResourcesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetMachineResourcesResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetMachineResourcesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetDefault" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the default machine — the one `abctl machine exec` and
+        /// > `abctl machine ssh` act on when given no name — or clears it with an
+        /// > empty id. The machine must exist. List reports the current one.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetDefaultMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetDefaultMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_Empty` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setDefault<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetDefaultMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetDefaultMachineRequest>,
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result
@@ -2053,6 +2750,194 @@ extension Arcbox_V1_MachineService {
             try await self.client.unary(
                 request: request,
                 descriptor: Arcbox_V1_MachineService.Method.Remove.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "CloneMachine" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Clones a stopped distro machine into a new one. The clone shares the
+        /// > source's data disk blocks copy-on-write — instant, and no extra space
+        /// > until the two diverge — under its own name, hostname, DNS record and
+        /// > bridge MAC. A running source is refused: its data disk is a btrfs
+        /// > volume mounted read-write in the guest, so stop it first. (Named
+        /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+        /// > on the generated service handle.)
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_CloneMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_CloneMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_CloneMachineResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func cloneMachine<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_CloneMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_CloneMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_CloneMachineResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_CloneMachineResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.CloneMachine.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "Export" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Writes a stopped distro machine to a self-contained archive: a
+        /// > zstd-compressed tar holding a manifest (the machine's settings and
+        /// > the published image it boots) and its data disk as a sparse entry.
+        /// > The daemon writes the file, so `path` is a path on its host. A
+        /// > running machine is refused, as for Clone.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ExportMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ExportMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ExportMachineResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func export<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ExportMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ExportMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ExportMachineResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ExportMachineResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.Export.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "Import" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Creates a machine from an archive Export wrote. The image the
+        /// > manifest names must be in the local image registry at the same
+        /// > version; otherwise the error says which image is missing.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ImportMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ImportMachineResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func `import`<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ImportMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ImportMachineResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ImportMachineResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.Import.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetResources" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Changes a machine's CPU and memory limits, checked against the host.
+        /// > The new size is recorded at once and applies at the machine's next
+        /// > start; a running machine keeps the size it booted with, and the
+        /// > response says a restart is needed. The System VM is resized through
+        /// > SystemService.SetSystemVmResources instead, which restarts it.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetMachineResourcesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetMachineResourcesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_SetMachineResourcesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setResources<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetMachineResourcesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetMachineResourcesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetMachineResourcesResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetMachineResourcesResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.SetResources.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetDefault" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Sets the default machine — the one `abctl machine exec` and
+        /// > `abctl machine ssh` act on when given no name — or clears it with an
+        /// > empty id. The machine must exist. List reports the current one.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetDefaultMachineRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetDefaultMachineRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_Empty` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setDefault<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetDefaultMachineRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetDefaultMachineRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.SetDefault.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -2514,6 +3399,169 @@ extension Arcbox_V1_MachineService.ClientProtocol {
         )
     }
 
+    /// Call the "CloneMachine" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Clones a stopped distro machine into a new one. The clone shares the
+    /// > source's data disk blocks copy-on-write — instant, and no extra space
+    /// > until the two diverge — under its own name, hostname, DNS record and
+    /// > bridge MAC. A running source is refused: its data disk is a btrfs
+    /// > volume mounted read-write in the guest, so stop it first. (Named
+    /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+    /// > on the generated service handle.)
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_CloneMachineRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func cloneMachine<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_CloneMachineRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_CloneMachineResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.cloneMachine(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_CloneMachineRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_CloneMachineResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Export" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Writes a stopped distro machine to a self-contained archive: a
+    /// > zstd-compressed tar holding a manifest (the machine's settings and
+    /// > the published image it boots) and its data disk as a sparse entry.
+    /// > The daemon writes the file, so `path` is a path on its host. A
+    /// > running machine is refused, as for Clone.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ExportMachineRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func export<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ExportMachineRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ExportMachineResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.export(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ExportMachineRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ExportMachineResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Import" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Creates a machine from an archive Export wrote. The image the
+    /// > manifest names must be in the local image registry at the same
+    /// > version; otherwise the error says which image is missing.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func `import`<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ImportMachineResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.`import`(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ImportMachineRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ImportMachineResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetResources" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Changes a machine's CPU and memory limits, checked against the host.
+    /// > The new size is recorded at once and applies at the machine's next
+    /// > start; a running machine keeps the size it booted with, and the
+    /// > response says a restart is needed. The System VM is resized through
+    /// > SystemService.SetSystemVmResources instead, which restarts it.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_SetMachineResourcesRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setResources<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_SetMachineResourcesRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetMachineResourcesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setResources(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetMachineResourcesRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetMachineResourcesResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetDefault" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Sets the default machine — the one `abctl machine exec` and
+    /// > `abctl machine ssh` act on when given no name — or clears it with an
+    /// > empty id. The machine must exist. List reports the current one.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_SetDefaultMachineRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setDefault<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_SetDefaultMachineRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setDefault(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetDefaultMachineRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "List" method.
     ///
     /// > Source IDL Documentation:
@@ -2932,6 +3980,189 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             metadata: metadata
         )
         return try await self.remove(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "CloneMachine" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Clones a stopped distro machine into a new one. The clone shares the
+    /// > source's data disk blocks copy-on-write — instant, and no extra space
+    /// > until the two diverge — under its own name, hostname, DNS record and
+    /// > bridge MAC. A running source is refused: its data disk is a btrfs
+    /// > volume mounted read-write in the guest, so stop it first. (Named
+    /// > CloneMachine, not Clone: a `clone` method collides with `Clone::clone`
+    /// > on the generated service handle.)
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func cloneMachine<Result>(
+        _ message: Arcbox_V1_CloneMachineRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_CloneMachineResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_CloneMachineRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.cloneMachine(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Export" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Writes a stopped distro machine to a self-contained archive: a
+    /// > zstd-compressed tar holding a manifest (the machine's settings and
+    /// > the published image it boots) and its data disk as a sparse entry.
+    /// > The daemon writes the file, so `path` is a path on its host. A
+    /// > running machine is refused, as for Clone.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func export<Result>(
+        _ message: Arcbox_V1_ExportMachineRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ExportMachineResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ExportMachineRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.export(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "Import" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Creates a machine from an archive Export wrote. The image the
+    /// > manifest names must be in the local image registry at the same
+    /// > version; otherwise the error says which image is missing.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func `import`<Result>(
+        _ message: Arcbox_V1_ImportMachineRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ImportMachineResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.`import`(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetResources" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Changes a machine's CPU and memory limits, checked against the host.
+    /// > The new size is recorded at once and applies at the machine's next
+    /// > start; a running machine keeps the size it booted with, and the
+    /// > response says a restart is needed. The System VM is resized through
+    /// > SystemService.SetSystemVmResources instead, which restarts it.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setResources<Result>(
+        _ message: Arcbox_V1_SetMachineResourcesRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetMachineResourcesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_SetMachineResourcesRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setResources(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetDefault" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Sets the default machine — the one `abctl machine exec` and
+    /// > `abctl machine ssh` act on when given no name — or clears it with an
+    /// > empty id. The machine must exist. List reports the current one.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setDefault<Result>(
+        _ message: Arcbox_V1_SetDefaultMachineRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_SetDefaultMachineRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setDefault(
             request: request,
             options: options,
             onResponse: handleResponse

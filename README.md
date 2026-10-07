@@ -35,8 +35,8 @@ The runtime runs on your Mac without a Platform account or cloud control plane. 
 One three-column window — sources, list, detail — over everything the daemon runs:
 
 - **Docker** — containers, images, volumes, networks. Containers group by Compose project, and each one
-  opens onto info, streaming logs, an interactive terminal, and a file browser that reads through the
-  overlay layers.
+  opens onto info, streaming logs, an interactive terminal, and a file browser that merges the
+  overlay layers exposed by the read-only `~/ArcBox/docker` export.
 - **Kubernetes** — pods and services from the daemon-managed k3s cluster.
 - **Machines** — full Linux VMs: create from a distro image, drive the lifecycle, and attach an
   interactive terminal.
@@ -57,6 +57,12 @@ Source detection reports Docker CLI failures and stops a CLI that exceeds its in
 Review the resource counts, warnings, and required replacements before choosing **Migrate Now**. ArcBox checks the replacement targets again before starting and requires a new preview if they change. ArcBox copies supported resources without deleting them from the source. Migration can stop source containers that use the copied volumes. Keep ArcBox and the source engine open until migration completes. If both source engines are detected, select the source with `docker context use` and check again.
 
 Quitting waits for a connected migration to finish. If the migration connection is lost while quitting, ArcBox stops reconnecting and leaves the runtime running because migration may still be copying data. Review both environments before retrying.
+
+## Runtime storage health
+
+Settings → Storage shows the data and metadata volumes separately. A persistent banner identifies read-only protection or unavailable storage while resource lists remain accessible. Export a diagnostic report from Storage before recovery. **Check Storage** stops workloads, preserves the runtime disks, and checks the filesystems; it leaves the runtime stopped and storage writes protected. **Recover Read-Write** also restarts and verifies writes if the checks pass. Only successful recovery releases write protection. Corruption leaves the preserved disks and diagnostics available for further recovery. Reset Docker Data removes Docker resources; it does not repair filesystems.
+
+Storage observations require a compatible runtime. Older runtimes report unknown health. A disconnected runtime retains its last observation for diagnostics and marks the observation as stale. A read-write mount does not prove durable writes succeed.
 
 ## How it fits together
 

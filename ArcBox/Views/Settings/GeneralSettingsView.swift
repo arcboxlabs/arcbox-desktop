@@ -1,5 +1,4 @@
 import AppKit
-import ArcBoxClient
 import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
@@ -7,9 +6,6 @@ import UniformTypeIdentifiers
 struct GeneralSettingsView: View {
     private static let chooseExternalTerminalID = "__arcbox_choose_external_terminal__"
 
-    @Environment(DaemonManager.self) private var daemonManager
-    @Environment(ContainersViewModel.self) private var containersVM
-    @Environment(ImagesViewModel.self) private var imagesVM
     @Environment(UpdaterSettingsModel.self) private var updaterSettings
     @Environment(\.scenePhase) private var scenePhase
 
@@ -23,9 +19,7 @@ struct GeneralSettingsView: View {
     @AppStorage(AppNotification.Category.container.preferenceKey) private var notifyContainerCrashes = true
     @AppStorage(AppNotification.Category.daemonHealth.preferenceKey) private var notifyDaemonProblems = true
 
-    @State private var isExportingDiagnostics = false
     @State private var loginItemErrorMessage: String?
-    @State private var diagnosticErrorMessage: String?
     @State private var externalTerminalApps = ExternalTerminalDiscovery.availableTerminals()
     @State private var externalTerminalSelection = ExternalTerminalApp.terminalBundleIdentifier
     @State private var isShowingExternalTerminalImporter = false
@@ -106,7 +100,7 @@ struct GeneralSettingsView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Daemon problems")
-                        Text("When the daemon stops, or stays unreachable for 30 seconds.")
+                        Text("When storage fails, the daemon stops, or the daemon stays unreachable for 30 seconds.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -163,45 +157,7 @@ struct GeneralSettingsView: View {
             }
 
             Section("Troubleshooting") {
-                Button("Export Diagnostic Report...") {
-                    guard let presentingWindow = NSApp.keyWindow ?? NSApp.mainWindow else {
-                        diagnosticErrorMessage =
-                            "ArcBox could not present the save panel. Reopen Settings and try again."
-                        return
-                    }
-                    diagnosticErrorMessage = nil
-                    isExportingDiagnostics = true
-                    Task {
-                        defer { isExportingDiagnostics = false }
-                        do {
-                            _ = try await DiagnosticBundleExporter.exportInteractively(
-                                daemonManager: daemonManager,
-                                containersVM: containersVM,
-                                imagesVM: imagesVM,
-                                presentingWindow: presentingWindow
-                            )
-                        } catch {
-                            diagnosticErrorMessage =
-                                "Diagnostic report was not exported: \(error.localizedDescription)"
-                        }
-                    }
-                }
-                .disabled(isExportingDiagnostics)
-
-                if isExportingDiagnostics {
-                    HStack {
-                        ProgressView().controlSize(.small)
-                        Text("Generating report...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if let diagnosticErrorMessage {
-                    Label(diagnosticErrorMessage, systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
+                DiagnosticExportButton()
             }
         }
         .formStyle(.grouped)

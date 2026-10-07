@@ -1,3 +1,4 @@
+import ArcBoxClient
 import SwiftTerm
 import SwiftUI
 
@@ -9,6 +10,8 @@ import SwiftUI
 struct ImageTerminalTab: View {
     let image: ImageViewModel
     let isActive: Bool
+
+    @Environment(DaemonManager.self) private var daemon
 
     @AppStorage("terminalTheme") private var terminalTheme = "system"
     @State private var session = DockerTerminalSession()
@@ -97,6 +100,7 @@ struct ImageTerminalTab: View {
                 // Store terminal view reference (don't connect here — runs during makeNSView)
                 // Connection is deferred to onChange(of: isActive)
                 session.setTerminalView(terminalView)
+                session.storageWriteFailure = { daemon.storageWriteFailureMessage }
 
                 // If the terminal tab is already active, connect on next run loop
                 let active = isActive

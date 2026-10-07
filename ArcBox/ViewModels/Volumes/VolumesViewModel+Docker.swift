@@ -43,6 +43,10 @@ extension VolumesViewModel {
     /// Create a volume. Returns true on success.
     func createVolume(name: String, docker: DockerClient?) async -> Bool {
         lastError = nil
+        if let reason = storageWriteFailure() {
+            lastError = reason
+            return false
+        }
         guard let docker else {
             lastError = "Docker client unavailable."
             return false
@@ -85,6 +89,10 @@ extension VolumesViewModel {
     /// Creates the volume, then uses a temporary container + PutContainerArchive to extract contents.
     func importVolume(name: String, tarURL: URL, docker: DockerClient?) async -> Bool {
         lastError = nil
+        if let reason = storageWriteFailure() {
+            lastError = reason
+            return false
+        }
         guard let docker else {
             lastError = "Docker client unavailable."
             return false

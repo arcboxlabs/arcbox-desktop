@@ -2117,6 +2117,27 @@ public struct Arcbox_V1_SetupStatus: Sendable {
   /// disconnect when the daemon exits.
   public var error: String = String()
 
+  /// Independent of startup phase and daemon liveness. Missing when the
+  /// guest is stopped, observation disconnected, or the agent is too old.
+  public var storageHealth: Arcbox_V1_StorageHealth {
+    get {_storageHealth ?? Arcbox_V1_StorageHealth()}
+    set {_storageHealth = newValue}
+  }
+  /// Returns true if `storageHealth` has been explicitly set.
+  public var hasStorageHealth: Bool {self._storageHealth != nil}
+  /// Clears the value of `storageHealth`. Subsequent reads from it will return its default value.
+  public mutating func clearStorageHealth() {self._storageHealth = nil}
+
+  /// Current or most recent recovery operation, including terminal results.
+  public var storageRecovery: Arcbox_V1_StorageRecoveryProgress {
+    get {_storageRecovery ?? Arcbox_V1_StorageRecoveryProgress()}
+    set {_storageRecovery = newValue}
+  }
+  /// Returns true if `storageRecovery` has been explicitly set.
+  public var hasStorageRecovery: Bool {self._storageRecovery != nil}
+  /// Clears the value of `storageRecovery`. Subsequent reads from it will return its default value.
+  public mutating func clearStorageRecovery() {self._storageRecovery = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Daemon startup phases.
@@ -2226,6 +2247,146 @@ public struct Arcbox_V1_SetupStatus: Sendable {
       .degraded,
       .downloadingAssets,
       .cleaningUp,
+      .failed,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _storageHealth: Arcbox_V1_StorageHealth? = nil
+  fileprivate var _storageRecovery: Arcbox_V1_StorageRecoveryProgress? = nil
+}
+
+/// Explicitly starts a storage check or recovery. Both actions stop workloads.
+public struct Arcbox_V1_RecoverStorageRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var action: Arcbox_V1_RecoverStorageRequest.Action = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Action: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// Preserve and check the disks. Leave the System VM stopped.
+    case checkOnly // = 1
+
+    /// Restart only after offline checks pass, then verify runtime writes.
+    case recover // = 2
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .checkOnly
+      case 2: self = .recover
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .checkOnly: return 1
+      case .recover: return 2
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_RecoverStorageRequest.Action] = [
+      .unspecified,
+      .checkOnly,
+      .recover,
+    ]
+
+  }
+
+  public init() {}
+}
+
+/// Progress of one daemon-owned recovery operation.
+public struct Arcbox_V1_StorageRecoveryProgress: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var phase: Arcbox_V1_StorageRecoveryProgress.Phase = .unspecified
+
+  public var message: String = String()
+
+  /// Host directory containing preserved disks and diagnostic reports.
+  public var recoveryDirectory: String = String()
+
+  /// Stable across reconnects. A terminal result applies only to this ID.
+  public var operationID: String = String()
+
+  /// Remains true after CHECK_ONLY, failure, or interruption. Only verified recovery clears it.
+  public var storageProtected: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Phase: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+    case stopping // = 1
+    case preserving // = 2
+    case checking // = 3
+    case restarting // = 4
+    case verifying // = 5
+    case complete // = 6
+    case failed // = 7
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .stopping
+      case 2: self = .preserving
+      case 3: self = .checking
+      case 4: self = .restarting
+      case 5: self = .verifying
+      case 6: self = .complete
+      case 7: self = .failed
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .stopping: return 1
+      case .preserving: return 2
+      case .checking: return 3
+      case .restarting: return 4
+      case .verifying: return 5
+      case .complete: return 6
+      case .failed: return 7
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_StorageRecoveryProgress.Phase] = [
+      .unspecified,
+      .stopping,
+      .preserving,
+      .checking,
+      .restarting,
+      .verifying,
+      .complete,
       .failed,
     ]
 
@@ -5511,7 +5672,7 @@ extension Arcbox_V1_TerminalSize: SwiftProtobuf.Message, SwiftProtobuf._MessageI
 
 extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SetupStatus"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0\u{1}error\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0\u{1}error\0\u{3}storage_health\0\u{3}storage_recovery\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -5527,12 +5688,18 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       case 6: try { try decoder.decodeSingularStringField(value: &self.message) }()
       case 7: try { try decoder.decodeSingularBoolField(value: &self.dockerToolsInstalled) }()
       case 8: try { try decoder.decodeSingularStringField(value: &self.error) }()
+      case 9: try { try decoder.decodeSingularMessageField(value: &self._storageHealth) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._storageRecovery) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.phase != .unspecified {
       try visitor.visitSingularEnumField(value: self.phase, fieldNumber: 1)
     }
@@ -5557,6 +5724,12 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     if !self.error.isEmpty {
       try visitor.visitSingularStringField(value: self.error, fieldNumber: 8)
     }
+    try { if let v = self._storageHealth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+    } }()
+    try { if let v = self._storageRecovery {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -5569,6 +5742,8 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     if lhs.message != rhs.message {return false}
     if lhs.dockerToolsInstalled != rhs.dockerToolsInstalled {return false}
     if lhs.error != rhs.error {return false}
+    if lhs._storageHealth != rhs._storageHealth {return false}
+    if lhs._storageRecovery != rhs._storageRecovery {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -5576,4 +5751,92 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
 
 extension Arcbox_V1_SetupStatus.Phase: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0\u{1}CLEANING_UP\0\u{1}FAILED\0")
+}
+
+extension Arcbox_V1_RecoverStorageRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RecoverStorageRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}action\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.action) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.action != .unspecified {
+      try visitor.visitSingularEnumField(value: self.action, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_RecoverStorageRequest, rhs: Arcbox_V1_RecoverStorageRequest) -> Bool {
+    if lhs.action != rhs.action {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_RecoverStorageRequest.Action: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0ACTION_UNSPECIFIED\0\u{1}CHECK_ONLY\0\u{1}RECOVER\0")
+}
+
+extension Arcbox_V1_StorageRecoveryProgress: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".StorageRecoveryProgress"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{1}message\0\u{3}recovery_directory\0\u{3}operation_id\0\u{3}storage_protected\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.phase) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.message) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.recoveryDirectory) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.operationID) }()
+      case 5: try { try decoder.decodeSingularBoolField(value: &self.storageProtected) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.phase != .unspecified {
+      try visitor.visitSingularEnumField(value: self.phase, fieldNumber: 1)
+    }
+    if !self.message.isEmpty {
+      try visitor.visitSingularStringField(value: self.message, fieldNumber: 2)
+    }
+    if !self.recoveryDirectory.isEmpty {
+      try visitor.visitSingularStringField(value: self.recoveryDirectory, fieldNumber: 3)
+    }
+    if !self.operationID.isEmpty {
+      try visitor.visitSingularStringField(value: self.operationID, fieldNumber: 4)
+    }
+    if self.storageProtected != false {
+      try visitor.visitSingularBoolField(value: self.storageProtected, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_StorageRecoveryProgress, rhs: Arcbox_V1_StorageRecoveryProgress) -> Bool {
+    if lhs.phase != rhs.phase {return false}
+    if lhs.message != rhs.message {return false}
+    if lhs.recoveryDirectory != rhs.recoveryDirectory {return false}
+    if lhs.operationID != rhs.operationID {return false}
+    if lhs.storageProtected != rhs.storageProtected {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_StorageRecoveryProgress.Phase: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}STOPPING\0\u{1}PRESERVING\0\u{1}CHECKING\0\u{1}RESTARTING\0\u{1}VERIFYING\0\u{1}COMPLETE\0\u{1}FAILED\0")
 }

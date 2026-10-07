@@ -4,18 +4,40 @@ import XCTest
 
 @MainActor
 final class GuestDataMountTests: XCTestCase {
+    /// Where the daemon mounts the docker export: `docker/` under the host
+    /// mount root `~/ArcBox`.
     private var arcboxRoot: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("ArcBox")
+        FileManager.default.homeDirectoryForCurrentUser.appending(path: "ArcBox/docker", directoryHint: .isDirectory)
+    }
+
+    func testExportIsMountedUnderTheHostMountRoot() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        XCTAssertEqual(GuestDataMount.hostMountRoot, home.appending(path: "ArcBox", directoryHint: .isDirectory))
+        XCTAssertEqual(GuestDataMount.rootURL, arcboxRoot)
+    }
+
+    func testPathMappingDoesNotInferDirectoriesFromTheFilesystem() throws {
+        let exportRoot = FileManager.default.temporaryDirectory.appending(
+            path: UUID().uuidString, directoryHint: .isDirectory)
+        let existingDirectory = exportRoot.appending(path: "volume", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: existingDirectory, withIntermediateDirectories: true)
+        addTeardownBlock { try FileManager.default.removeItem(at: exportRoot) }
+
+        let url = try XCTUnwrap(
+            GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/volume", exportRoot: exportRoot))
+
+        XCTAssertEqual(url.path, existingDirectory.path)
+        XCTAssertFalse(url.hasDirectoryPath, "Path mapping must not query the export to infer directory state.")
     }
 
     func testVolumePathMapsUnderArcBox() {
         let url = GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/volumes/pgdata/_data")
-        XCTAssertEqual(url, arcboxRoot.appendingPathComponent("volumes/pgdata/_data"))
+        XCTAssertEqual(url, arcboxRoot.appending(path: "volumes/pgdata/_data", directoryHint: .inferFromPath))
     }
 
     func testOverlayLayerPathMapsUnderArcBox() {
         let url = GuestDataMount.hostURL(forGuestPath: "/var/lib/docker/overlay2/abc123/diff")
-        XCTAssertEqual(url, arcboxRoot.appendingPathComponent("overlay2/abc123/diff"))
+        XCTAssertEqual(url, arcboxRoot.appending(path: "overlay2/abc123/diff", directoryHint: .inferFromPath))
     }
 
     func testDataRootItselfMapsToArcBoxRoot() {
@@ -35,7 +57,7 @@ final class GuestDataMountTests: XCTestCase {
 
     func testSurroundingWhitespaceIsTrimmed() {
         let url = GuestDataMount.hostURL(forGuestPath: "  /var/lib/docker/volumes/v/_data\n")
-        XCTAssertEqual(url, arcboxRoot.appendingPathComponent("volumes/v/_data"))
+        XCTAssertEqual(url, arcboxRoot.appending(path: "volumes/v/_data", directoryHint: .inferFromPath))
     }
 
     func testTraversalComponentsAreRejected() {
@@ -56,14 +78,15 @@ final class GuestDataMountTests: XCTestCase {
                 "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/269/fs")
         XCTAssertEqual(
             url,
-            arcboxRoot.appendingPathComponent(
-                "containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/269/fs"))
+            arcboxRoot.appending(
+                path: "containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/269/fs",
+                directoryHint: .inferFromPath))
     }
 
     func testContainerdRootItselfMapsToChildExportRoot() {
         XCTAssertEqual(
             GuestDataMount.hostURL(forGuestPath: "/var/lib/containerd"),
-            arcboxRoot.appendingPathComponent("containerd"))
+            arcboxRoot.appending(path: "containerd", directoryHint: .isDirectory))
     }
 
     func testContainerdSiblingPrefixIsRejected() {

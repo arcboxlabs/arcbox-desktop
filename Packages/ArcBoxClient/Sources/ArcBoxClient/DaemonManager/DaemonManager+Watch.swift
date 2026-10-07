@@ -55,6 +55,7 @@ extension DaemonManager {
                 }
 
                 rpcTask.cancel()
+                self?.storageHealthIsCurrent = false
 
                 guard !Task.isCancelled else { return }
 
@@ -104,12 +105,13 @@ extension DaemonManager {
     public func stopWatching() {
         watchTask?.cancel()
         watchTask = nil
+        storageHealthIsCurrent = false
     }
 
     // MARK: - Internal
 
     /// Apply a setup status update. Called from MainActor-isolated stream handlers.
-    private func applySetupStatusSync(_ status: Arcbox_V1_SetupStatus) {
+    func applySetupStatusSync(_ status: Arcbox_V1_SetupStatus) {
         let oldPhase = setupPhase
         lastMessageTime = Date()
 
@@ -119,6 +121,13 @@ extension DaemonManager {
         vmRunning = status.vmRunning
         dockerToolsInstalled = status.dockerToolsInstalled
         setupMessage = status.message
+        if status.hasStorageHealth {
+            storageHealth = RuntimeStorageHealth(status.storageHealth)
+        }
+        storageHealthIsCurrent = status.hasStorageHealth && status.vmRunning
+        if status.hasStorageRecovery {
+            storageRecovery = status.storageRecovery
+        }
 
         switch status.phase {
         case .unspecified: setupPhase = .unknown
