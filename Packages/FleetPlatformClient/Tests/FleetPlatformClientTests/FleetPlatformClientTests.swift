@@ -147,7 +147,8 @@ struct FleetPlatformClientTests {
                 "created_at":"2026-07-24T08:00:00Z",
                 "started_at":"2026-07-24T08:00:05Z"
               }],
-              "next_cursor":"next-page"
+              "next_page_token":"next-page",
+              "total_size":26
             }
             """
         let http = HTTPStub { request in
@@ -162,8 +163,8 @@ struct FleetPlatformClientTests {
                     == [
                         URLQueryItem(name: "machine_id", value: "fltm_abc"),
                         URLQueryItem(name: "status", value: "running"),
-                        URLQueryItem(name: "cursor", value: "older"),
-                        URLQueryItem(name: "limit", value: "25"),
+                        URLQueryItem(name: "page_token", value: "older"),
+                        URLQueryItem(name: "page_size", value: "25"),
                     ]
             )
             #expect(request.value(forHTTPHeaderField: "X-Workspace-Id") == "ws_123")
@@ -187,6 +188,20 @@ struct FleetPlatformClientTests {
         #expect(job.os == .linux)
         #expect(job.arch == .amd64)
         #expect(page.nextCursor == "next-page")
+    }
+
+    @Test func listJobsUsesServerDefaultsAndDecodesFinalPage() async throws {
+        let json = #"{"jobs":[],"next_page_token":null,"total_size":0}"#
+        let http = HTTPStub { request in
+            #expect(request.url?.absoluteString == "https://api.example.com/root/v1/fleet/jobs")
+            return (Data(json.utf8), try response(for: request))
+        }
+        let client = makeClient(http: http)
+
+        let page = try await client.listJobs(workspaceID: "ws_123")
+
+        #expect(page.jobs.isEmpty)
+        #expect(page.nextCursor == nil)
     }
 
     @Test func getJobBuildsWorkspaceScopedRequest() async throws {

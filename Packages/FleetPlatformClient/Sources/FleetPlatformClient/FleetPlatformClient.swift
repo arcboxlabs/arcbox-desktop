@@ -84,10 +84,10 @@ public final class FleetPlatformClient: Sendable {
             queryItems.append(URLQueryItem(name: "status", value: status.rawValue))
         }
         if let cursor {
-            queryItems.append(URLQueryItem(name: "cursor", value: cursor))
+            queryItems.append(URLQueryItem(name: "page_token", value: cursor))
         }
         if let limit {
-            queryItems.append(URLQueryItem(name: "limit", value: String(limit)))
+            queryItems.append(URLQueryItem(name: "page_size", value: String(limit)))
         }
 
         return try await send(

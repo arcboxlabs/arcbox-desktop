@@ -16,6 +16,9 @@ final class RunnerJobHistoryTests: XCTestCase {
         XCTAssertEqual(store.jobs, client.jobs)
         XCTAssertNil(store.nextCursor)
         XCTAssertFalse(store.isLoadingMore)
+
+        await store.loadMore(client: client)
+
         XCTAssertEqual(client.cursors, [nil, PagedRunnerHistoryClient.jobID(2)])
     }
 

@@ -38,7 +38,7 @@ One three-column window — sources, list, detail — over everything the daemon
 - **Kubernetes** — pods and services from the daemon-managed k3s cluster.
 - **Machines** — full Linux VMs: create from a distro image, drive the lifecycle, and attach an
   interactive terminal.
-- **Runners** — inspect this Mac's Fleet host, capacity, pools, and job details. Choose **Load older jobs** to browse history beyond the first 50 jobs.
+- **Runners** — inspect this Mac's Fleet host, capacity, pools, and job details. Choose **Load older jobs** to browse history in pages of 50 until no older jobs remain.
 - **Sandboxes** — disposable microVMs from templates, with ports, snapshots, and an event log.
 - **Activity** — live CPU, memory, and network for the system VM and every running container.
 - **Notifications** — container crash alerts distinguish unexpected exits from recent Docker stop or

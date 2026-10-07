@@ -130,7 +130,7 @@ No Combine, no third-party UI frameworks.
 
 ## Fleet runner history
 
-The runner list loads 50 jobs from the Fleet REST API. **Load older jobs** follows the returned cursor. A periodic refresh reads through the oldest explicitly loaded or selected job so new jobs do not remove an older selection. Fleet orders prefixed UUIDv7 job IDs newest first and returns jobs strictly older than the cursor. Machine changes and sign-out discard pending history responses. Run `make test` to cover pagination, refresh, and stale responses with the other Desktop tests.
+The runner list requests 50 jobs with `page_size` from the Fleet REST API. **Load older jobs** sends the returned `next_page_token` unchanged as `page_token`. A null token ends the history; `total_size` does not determine whether another page exists. A periodic refresh reads through the oldest explicitly loaded or selected job so new jobs do not remove an older selection. Fleet orders prefixed UUIDv7 job IDs newest first and returns jobs strictly older than the cursor. Machine changes and sign-out discard pending history responses. Run `make test` to cover pagination, refresh, and stale responses with the other Desktop tests.
 
 ## Further reading
 

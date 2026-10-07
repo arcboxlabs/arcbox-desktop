@@ -232,4 +232,9 @@ public struct FleetRunnerJobPage: Decodable, Sendable, Equatable {
         self.jobs = jobs
         self.nextCursor = nextCursor
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case jobs
+        case nextCursor = "nextPageToken"
+    }
 }
