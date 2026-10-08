@@ -1,7 +1,96 @@
 use super::{
     BundleProfile, boot_asset_files, boot_cache_ready, embed_boot_assets, local_boot_cache_ready,
-    prepare_strip_copy, should_reuse_local_boot_cache, write_binaries_fragment,
+    prepare_strip_copy, rewrite_launch_agent_plist, should_reuse_local_boot_cache,
+    write_binaries_fragment,
 };
+
+fn launch_agent_fixture(profile: BundleProfile) -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    let launch_agents = dir.path().join("Contents/Library/LaunchAgents");
+    std::fs::create_dir_all(&launch_agents).unwrap();
+    std::fs::write(
+        launch_agents.join(format!("{}.plist", profile.daemon_label())),
+        include_bytes!("../../../../../LaunchDaemons/com.arcboxlabs.desktop.daemon.plist"),
+    )
+    .unwrap();
+    dir
+}
+
+#[test]
+fn development_launch_agent_excludes_global_docker_integration() {
+    let dir = launch_agent_fixture(BundleProfile::Production);
+
+    rewrite_launch_agent_plist(dir.path(), BundleProfile::Development).unwrap();
+
+    let plist = plist::Value::from_file(
+        dir.path()
+            .join("Contents/Library/LaunchAgents/com.arcboxlabs.desktop.dev.daemon.plist"),
+    )
+    .unwrap();
+    assert_eq!(
+        plist.as_dictionary().unwrap()["ProgramArguments"],
+        plist::Value::Array(
+            [
+                "com.arcboxlabs.desktop.dev.daemon",
+                "--profile",
+                "development"
+            ]
+            .map(Into::into)
+            .into()
+        )
+    );
+}
+
+#[test]
+fn production_launch_agent_keeps_global_docker_integration() {
+    let dir = launch_agent_fixture(BundleProfile::Production);
+
+    rewrite_launch_agent_plist(dir.path(), BundleProfile::Production).unwrap();
+
+    let plist = plist::Value::from_file(
+        dir.path()
+            .join("Contents/Library/LaunchAgents/com.arcboxlabs.desktop.daemon.plist"),
+    )
+    .unwrap();
+    assert_eq!(
+        plist.as_dictionary().unwrap()["ProgramArguments"],
+        plist::Value::Array(
+            [
+                "com.arcboxlabs.desktop.daemon",
+                "--profile",
+                "production",
+                "--docker-integration",
+            ]
+            .map(Into::into)
+            .into()
+        )
+    );
+}
+
+#[test]
+fn development_launch_agent_updates_an_existing_profile_plist() {
+    let dir = launch_agent_fixture(BundleProfile::Development);
+
+    rewrite_launch_agent_plist(dir.path(), BundleProfile::Development).unwrap();
+
+    let plist = plist::Value::from_file(
+        dir.path()
+            .join("Contents/Library/LaunchAgents/com.arcboxlabs.desktop.dev.daemon.plist"),
+    )
+    .unwrap();
+    assert_eq!(
+        plist.as_dictionary().unwrap()["ProgramArguments"],
+        plist::Value::Array(
+            [
+                "com.arcboxlabs.desktop.dev.daemon",
+                "--profile",
+                "development"
+            ]
+            .map(Into::into)
+            .into()
+        )
+    );
+}
 
 #[test]
 fn failed_strip_preparation_leaves_no_temporary_file() {
