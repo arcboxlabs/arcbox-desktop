@@ -1113,11 +1113,7 @@ fn rewrite_launch_agent_plist(app_bundle: &Path, profile: BundleProfile) -> Resu
     let daemon_name = profile.daemon_label();
     let profile_plist = launch_agents.join(format!("{daemon_name}.plist"));
 
-    if !production_plist.is_file() {
-        return Ok(());
-    }
-
-    if profile == BundleProfile::Development {
+    if profile == BundleProfile::Development && production_plist.is_file() {
         std::fs::rename(&production_plist, &profile_plist).with_context(|| {
             format!(
                 "renaming {} -> {}",
@@ -1132,6 +1128,9 @@ fn rewrite_launch_agent_plist(app_bundle: &Path, profile: BundleProfile) -> Resu
     } else {
         &production_plist
     };
+    if !plist_path.is_file() {
+        return Ok(());
+    }
 
     let mut value = plist::Value::from_file(plist_path)
         .with_context(|| format!("reading {}", plist_path.display()))?;
@@ -1145,12 +1144,13 @@ fn rewrite_launch_agent_plist(app_bundle: &Path, profile: BundleProfile) -> Resu
     );
     dict.insert(
         "ProgramArguments".into(),
-        plist::Value::Array(vec![
-            daemon_name.into(),
-            "--profile".into(),
-            profile.arcbox_profile().into(),
-            "--docker-integration".into(),
-        ]),
+        plist::Value::Array(
+            profile
+                .daemon_arguments()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        ),
     );
     dict.insert(
         "StandardOutPath".into(),
@@ -1335,12 +1335,7 @@ fn verify_runnable_bundle(app_bundle: &Path, profile: BundleProfile) -> Result<(
                 .context("LaunchAgent ProgramArguments must contain strings")
         })
         .collect::<Result<Vec<_>>>()?;
-    let expected_arguments = [
-        daemon_name,
-        "--profile",
-        profile.arcbox_profile(),
-        "--docker-integration",
-    ];
+    let expected_arguments = profile.daemon_arguments();
     if arguments != expected_arguments {
         bail!("LaunchAgent ProgramArguments must be {expected_arguments:?}, got {arguments:?}");
     }

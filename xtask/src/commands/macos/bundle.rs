@@ -74,6 +74,15 @@ impl BundleProfile {
         }
     }
 
+    /// Launch arguments that keep development from changing the global Docker context.
+    pub(super) fn daemon_arguments(self) -> Vec<&'static str> {
+        let mut arguments = vec![self.daemon_label(), "--profile", self.arcbox_profile()];
+        if self == Self::Production {
+            arguments.push("--docker-integration");
+        }
+        arguments
+    }
+
     pub const fn app_name(self) -> &'static str {
         match self {
             Self::Production => "ArcBox",
