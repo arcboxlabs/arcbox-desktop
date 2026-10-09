@@ -14,7 +14,7 @@ struct RuntimeStorageRecoverySection: View {
                 Button("Check Storage…") { confirm(.checkOnly) }
                 Button("Recover Read-Write…") { confirm(.recover) }
             }
-            .disabled(client == nil || recovery.mayBeRunning)
+            .disabled(client == nil || recovery.mayBeRunning || recovery.isResettingDockerData)
 
             Text(
                 "Both actions stop runtime workloads and preserve the runtime disks before checking filesystems. Check Storage leaves the runtime stopped."
@@ -56,6 +56,7 @@ struct RuntimeStorageRecoverySection: View {
             Button(requestedAction == .checkOnly ? "Stop and Check" : "Stop and Recover") {
                 recovery.start(requestedAction)
             }
+            .disabled(client == nil || recovery.mayBeRunning || recovery.isResettingDockerData)
         } message: {
             Text(confirmationMessage)
         }
