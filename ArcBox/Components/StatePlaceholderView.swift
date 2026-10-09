@@ -131,8 +131,7 @@ extension StatePlaceholderView.State {
         }
     }
 
-    /// Stable per-state identifier for UI tests; `AccessibilityAuditTests`
-    /// waits for `placeholder.loading` to disappear.
+    /// Identifies each placeholder state without relying on its display text.
     fileprivate var accessibilityIdentifier: String {
         switch self {
         case .loading: "placeholder.loading"
