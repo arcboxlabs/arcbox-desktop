@@ -16,7 +16,6 @@ struct StorageSettingsView: View {
     @State private var failedTimeMachineValue: Bool?
     // Reset state
     @State private var showResetDockerAlert = false
-    @State private var isResetting = false
     @State private var resetResultMessage: String?
 
     private static var arcboxDataPath: String {
@@ -69,13 +68,14 @@ struct StorageSettingsView: View {
                     showResetDockerAlert = true
                 }
                 .disabled(
-                    isResetting || docker == nil || daemon.storageWriteFailureMessage != nil || recovery.mayBeRunning)
+                    recovery.isResettingDockerData || docker == nil || daemon.storageWriteFailureMessage != nil
+                        || recovery.mayBeRunning)
 
                 Text("Reset removes Docker resources. Reset does not repair runtime storage.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if isResetting {
+                if recovery.isResettingDockerData {
                     HStack {
                         ProgressView()
                             .controlSize(.small)
@@ -97,8 +97,9 @@ struct StorageSettingsView: View {
         .alert("Reset Docker Data", isPresented: $showResetDockerAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Reset", role: .destructive) {
-                Task { await resetDockerData() }
+                recovery.startDockerDataReset { await resetDockerData() }
             }
+            .disabled(recovery.isResettingDockerData || recovery.mayBeRunning)
         } message: {
             Text("This will remove all containers, images, volumes, and networks. This action cannot be undone.")
         }
@@ -128,13 +129,11 @@ struct StorageSettingsView: View {
     // MARK: - Reset Operations
 
     private func resetDockerData() async {
-        guard !recovery.mayBeRunning else { return }
         if let reason = daemon.storageWriteFailureMessage {
             resetResultMessage = reason
             return
         }
         guard let docker else { return }
-        isResetting = true
         resetResultMessage = nil
 
         do {
@@ -197,7 +196,5 @@ struct StorageSettingsView: View {
         } catch {
             resetResultMessage = "Reset failed: \(error.localizedDescription)"
         }
-
-        isResetting = false
     }
 }

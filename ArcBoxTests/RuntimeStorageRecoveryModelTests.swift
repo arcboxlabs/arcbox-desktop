@@ -60,8 +60,10 @@ final class RuntimeStorageRecoveryModelTests: XCTestCase {
         XCTAssertEqual(calls, 1)
     }
 
-    func testOldTerminalReplayCannotCompleteANewRequest() async {
-        let model = RuntimeStorageRecoveryModel { _, _ in }
+    func testReplayCannotBindRequestWhoseFirstStreamResponseWasLost() async {
+        let model = RuntimeStorageRecoveryModel { _, _ in
+            throw RPCError(code: .unavailable, message: "stream disconnected before the first response")
+        }
         model.reconcile(event(.complete, id: "old"))
         model.start(.recover)
         model.reconcile(event(.complete, id: "old"))
@@ -69,10 +71,191 @@ final class RuntimeStorageRecoveryModelTests: XCTestCase {
         XCTAssertTrue(model.mayBeRunning)
         XCTAssertNil(model.progress)
         model.reconcile(event(.failed, id: "new"))
-        XCTAssertFalse(model.mayBeRunning)
-        XCTAssertEqual(model.progress?.phase, .failed)
         model.reconcile(event(.complete, id: "old"))
-        XCTAssertEqual(model.progress?.operationID, "new")
+        XCTAssertTrue(model.mayBeRunning)
+        XCTAssertNil(model.progress)
+        XCTAssertTrue(model.errorMessage?.contains("completion is unknown") == true)
+    }
+
+    func testFirstTerminalReplayCannotCancelPendingRecoveryOrFinishTermination() async {
+        for phase in [Arcbox_V1_StorageRecoveryProgress.Phase.complete, .failed] {
+            let streamStarted = expectation(description: "Recovery stream started before the first replay")
+            let directProgressReceived = expectation(description: "The direct stream still delivers progress")
+            let waiterStarted = expectation(description: "Termination waiter started")
+            let terminationFinished = expectation(description: "Termination waiter finished")
+            let (events, continuation) = AsyncThrowingStream<Arcbox_V1_StorageRecoveryProgress, Error>.makeStream()
+            var didFinishTermination = false
+            let model = RuntimeStorageRecoveryModel { _, receive in
+                streamStarted.fulfill()
+                for try await progress in events {
+                    receive(progress)
+                    directProgressReceived.fulfill()
+                }
+            }
+            model.start(.recover)
+            await fulfillment(of: [streamStarted], timeout: 5)
+            model.beginTermination()
+            let termination = Task {
+                waiterStarted.fulfill()
+                await model.waitForCompletion()
+                didFinishTermination = true
+                terminationFinished.fulfill()
+            }
+            defer {
+                continuation.finish()
+                termination.cancel()
+            }
+            await fulfillment(of: [waiterStarted], timeout: 5)
+
+            model.reconcile(event(phase, id: "old"))
+            XCTAssertTrue(model.mayBeRunning)
+            XCTAssertNil(model.progress)
+            continuation.yield(event(.checking, id: "current"))
+            await fulfillment(of: [directProgressReceived], timeout: 5)
+            XCTAssertFalse(didFinishTermination)
+            XCTAssertTrue(model.mayBeRunning)
+            XCTAssertEqual(model.progress?.operationID, "current")
+
+            model.reconcile(event(phase, id: "current"))
+            await fulfillment(of: [terminationFinished], timeout: 5)
+            continuation.finish()
+            await termination.value
+            XCTAssertFalse(model.mayBeRunning)
+            XCTAssertEqual(model.progress?.operationID, "current")
+            XCTAssertEqual(model.progress?.phase, phase)
+            XCTAssertNil(model.errorMessage)
+        }
+    }
+
+    func testEarlyTerminalReplayResolvesRecoveryOnlyAfterTheDirectStreamConfirmsItsID() async {
+        for phase in [Arcbox_V1_StorageRecoveryProgress.Phase.complete, .failed] {
+            let streamStarted = expectation(description: "Recovery stream started")
+            let streamCancelled = expectation(description: "The matching terminal replay cancelled the stream")
+            let (events, continuation) = AsyncThrowingStream<Arcbox_V1_StorageRecoveryProgress, Error>.makeStream()
+            continuation.onTermination = { reason in
+                if case .cancelled = reason { streamCancelled.fulfill() }
+            }
+            let model = RuntimeStorageRecoveryModel { _, receive in
+                streamStarted.fulfill()
+                for try await progress in events { receive(progress) }
+            }
+            model.start(.recover)
+            await fulfillment(of: [streamStarted], timeout: 5)
+            model.reconcile(event(phase, id: "current"))
+            XCTAssertTrue(model.mayBeRunning)
+            XCTAssertNil(model.progress)
+
+            continuation.yield(event(.checking, id: "current", directory: "/tmp/preserved-pair"))
+            await fulfillment(of: [streamCancelled], timeout: 5)
+            continuation.finish()
+            await model.waitForCompletion()
+            XCTAssertFalse(model.mayBeRunning)
+            XCTAssertEqual(model.progress?.operationID, "current")
+            XCTAssertEqual(model.progress?.phase, phase)
+            XCTAssertEqual(model.progress?.recoveryDirectory, "/tmp/preserved-pair")
+            XCTAssertNil(model.errorMessage)
+        }
+    }
+
+    func testEarlyNonterminalReplayDoesNotRegressDirectStreamProgress() async {
+        let model = RuntimeStorageRecoveryModel { _, receive in
+            receive(self.event(.verifying))
+        }
+        model.start(.recover)
+        model.reconcile(event(.checking))
+        await model.waitForCompletion()
+        XCTAssertEqual(model.progress?.phase, .verifying)
+        XCTAssertTrue(model.mayBeRunning)
+    }
+
+    func testDockerDataResetBlocksRecoveryAndDuplicateResetUntilItFinishes() async {
+        let resetStarted = expectation(description: "Docker data reset started")
+        let (events, continuation) = AsyncStream<Void>.makeStream()
+        defer { continuation.finish() }
+        var recoveryCalls = 0
+        let model = RuntimeStorageRecoveryModel { _, receive in
+            recoveryCalls += 1
+            receive(self.event(.complete))
+        }
+        model.startDockerDataReset {
+            resetStarted.fulfill()
+            for await _ in events {}
+        }
+        XCTAssertTrue(model.isResettingDockerData)
+        for action in [Arcbox_V1_RecoverStorageRequest.Action.checkOnly, .recover] {
+            model.start(action)
+        }
+        model.startDockerDataReset { XCTFail("A reset must reject a duplicate reset") }
+        await fulfillment(of: [resetStarted], timeout: 5)
+        XCTAssertFalse(model.mayBeRunning)
+        XCTAssertNil(model.progress)
+        XCTAssertEqual(recoveryCalls, 0)
+
+        continuation.finish()
+        await model.waitForCompletion()
+        XCTAssertFalse(model.isResettingDockerData)
+        model.start(.recover)
+        await model.waitForCompletion()
+        XCTAssertEqual(recoveryCalls, 1)
+        XCTAssertEqual(model.progress?.phase, .complete)
+    }
+
+    func testRecoveryBlocksDockerDataResetUntilCompletionIsKnown() async {
+        let model = RuntimeStorageRecoveryModel { _, receive in
+            receive(self.event(.checking))
+        }
+        model.start(.recover)
+        model.startDockerDataReset { XCTFail("A pending recovery must reject reset") }
+        await model.waitForCompletion()
+        model.startDockerDataReset { XCTFail("An interrupted recovery must reject reset") }
+        await model.waitForCompletion()
+        XCTAssertFalse(model.isResettingDockerData)
+        XCTAssertTrue(model.mayBeRunning)
+
+        model.reconcile(event(.complete))
+        var resetCalls = 0
+        model.startDockerDataReset { resetCalls += 1 }
+        await model.waitForCompletion()
+        XCTAssertEqual(resetCalls, 1)
+        XCTAssertFalse(model.isResettingDockerData)
+    }
+
+    func testTerminationWaitsForDockerDataResetAndPreventsAnotherReset() async {
+        let resetStarted = expectation(description: "Docker data reset started")
+        let waiterStarted = expectation(description: "Termination waiter started")
+        let terminationFinished = expectation(description: "Termination waiter finished")
+        let (events, continuation) = AsyncStream<Void>.makeStream()
+        var didFinishTermination = false
+        let model = RuntimeStorageRecoveryModel { _, _ in XCTFail("Termination must prevent recovery") }
+        model.startDockerDataReset {
+            resetStarted.fulfill()
+            for await _ in events {}
+        }
+        await fulfillment(of: [resetStarted], timeout: 5)
+        model.beginTermination()
+        let termination = Task {
+            waiterStarted.fulfill()
+            await model.waitForCompletion()
+            didFinishTermination = true
+            terminationFinished.fulfill()
+        }
+        defer {
+            continuation.finish()
+            termination.cancel()
+        }
+        await fulfillment(of: [waiterStarted], timeout: 5)
+        XCTAssertTrue(model.isResettingDockerData)
+        XCTAssertFalse(didFinishTermination)
+
+        continuation.finish()
+        await fulfillment(of: [terminationFinished], timeout: 5)
+        await termination.value
+        XCTAssertFalse(model.isResettingDockerData)
+        model.startDockerDataReset { XCTFail("Termination must prevent reset") }
+        model.start(.recover)
+        await model.waitForCompletion()
+        XCTAssertFalse(model.isResettingDockerData)
+        XCTAssertFalse(model.mayBeRunning)
     }
 
     func testRestartFailureAndCheckOnlyCompletionAreReplayed() {

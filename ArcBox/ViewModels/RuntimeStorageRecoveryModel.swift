@@ -8,11 +8,14 @@ import Observation
 final class RuntimeStorageRecoveryModel {
     private(set) var progress: Arcbox_V1_StorageRecoveryProgress?
     private(set) var mayBeRunning = false
+    private(set) var isResettingDockerData = false
     private(set) var errorMessage: String?
 
     @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var resetTask: Task<Void, Never>?
     @ObservationIgnored private var isTerminating = false
     @ObservationIgnored private var previousOperationID: String?
+    @ObservationIgnored private var pendingTerminalReplay: Arcbox_V1_StorageRecoveryProgress?
     @ObservationIgnored private let run:
         @MainActor (
             Arcbox_V1_RecoverStorageRequest.Action,
@@ -53,15 +56,22 @@ final class RuntimeStorageRecoveryModel {
     }
 
     func start(_ action: Arcbox_V1_RecoverStorageRequest.Action) {
-        guard !isTerminating, !mayBeRunning, task == nil else { return }
+        guard !isTerminating, !mayBeRunning, !isResettingDockerData, task == nil else { return }
         previousOperationID = progress?.operationID
+        pendingTerminalReplay = nil
         progress = nil
         errorMessage = nil
         mayBeRunning = true
         task = Task {
             defer { task = nil }
             do {
-                try await run(action) { self.receive($0) }
+                try await run(action) { progress in
+                    self.receive(progress)
+                    if let replay = self.pendingTerminalReplay {
+                        self.pendingTerminalReplay = nil
+                        if replay.operationID == progress.operationID { self.reconcile(replay) }
+                    }
+                }
                 if mayBeRunning {
                     errorMessage = Self.interruptedMessage
                 }
@@ -76,6 +86,18 @@ final class RuntimeStorageRecoveryModel {
                     errorMessage = "\(Self.interruptedMessage) \(ArcBoxClient.userMessage(for: error))"
                 }
             }
+        }
+    }
+
+    func startDockerDataReset(_ run: @escaping @MainActor () async -> Void) {
+        guard !isTerminating, !mayBeRunning, !isResettingDockerData else { return }
+        isResettingDockerData = true
+        resetTask = Task {
+            defer {
+                isResettingDockerData = false
+                resetTask = nil
+            }
+            await run()
         }
     }
 
@@ -96,7 +118,13 @@ final class RuntimeStorageRecoveryModel {
     func reconcile(_ observation: Arcbox_V1_StorageRecoveryProgress?) {
         guard let observation else { return }
         if observation.operationID == previousOperationID { return }
-        if mayBeRunning, let progress, observation.operationID != progress.operationID { return }
+        if mayBeRunning, observation.operationID != progress?.operationID {
+            // Without a direct response, replay cannot identify the local request.
+            if progress == nil, observation.phase.isTerminal {
+                pendingTerminalReplay = observation
+            }
+            return
+        }
         receive(observation)
         if progress?.phase.isTerminal == true { task?.cancel() }
     }
@@ -119,6 +147,7 @@ final class RuntimeStorageRecoveryModel {
 
     func waitForCompletion() async {
         await task?.value
+        await resetTask?.value
     }
 
     private static let interruptedMessage =
