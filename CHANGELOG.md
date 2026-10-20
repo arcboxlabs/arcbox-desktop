@@ -2,6 +2,13 @@
 
 ## [1.38.4](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.3...v1.38.4) (2026-10-20)
 
+### Highlights
+
+Bind mounts from macOS temporary folders work again. `docker run -v` and Compose volumes whose source is under `/tmp` or `/var/folders`, including `$TMPDIR` and Compose projects built from it, failed to mount. They now read and write the files on your Mac like any other folder.
+
+`--add-host host.docker.internal:host-gateway` and Compose `extra_hosts: ["host.docker.internal:host-gateway"]` now reach your Mac, as they do on Docker Desktop and OrbStack. Before, they pointed at the Linux VM, so a container could not reach a server listening on your Mac's `127.0.0.1`. This also fixes Cloudflare's local container runtime (`wrangler dev`). Existing containers pick up the new address the next time they start.
+
+
 
 ### Miscellaneous
 
