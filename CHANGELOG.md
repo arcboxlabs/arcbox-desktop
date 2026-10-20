@@ -2,6 +2,14 @@
 
 ## [1.38.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.0...v1.38.1) (2026-10-20)
 
+### Highlights
+
+If your Docker data was copied or restored, for example from a Time Machine backup or a migration, ArcBox kept the runtime stopped and asked you to restore the original disks. Run **Recover Read-Write** in Settings › Storage instead: ArcBox checks both disks offline, re-registers them when they hold the same data, and starts the runtime again. Recovery now also works after an upgrade, which previously left the check VM unable to start.
+
+Docker now allocates /24 networks from the container pool instead of a /16 for each network. Machines with many Compose projects no longer hit "all predefined address pools have been fully subnetted". Networks you already have keep their size.
+
+Networking is faster: container uploads are batched and coalesced, and the TCP stack no longer negotiates options it cannot honor.
+
 
 ### Miscellaneous
 
