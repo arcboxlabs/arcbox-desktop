@@ -2,6 +2,10 @@
 
 ## [1.38.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.2...v1.38.3) (2026-10-20)
 
+### Highlights
+
+**Recover Read-Write** in Settings › Storage now repairs one more kind of damage on its own. If the offline check finds that the only problem with your Docker data is a stale Btrfs free space tree, a cache Btrfs rebuilds from its own metadata, recovery rebuilds it on a copy of the disk, checks the copy again, and only then swaps it in and restarts. Your original disk stays in the recovery folder, and any other finding still stops recovery without touching your data. **Check Storage** reports the finding and changes nothing.
+
 
 ### Miscellaneous
 
