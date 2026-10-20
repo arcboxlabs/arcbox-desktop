@@ -2,6 +2,10 @@
 
 ## [1.38.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.1...v1.38.2) (2026-10-20)
 
+### Highlights
+
+**Recover Read-Write** in Settings › Storage now works for Docker data that was copied or restored from a backup after an upgrade. In 1.38.1 that case stopped at the first step with "docker.img was replaced" before any check ran. Recovery now checks both disks offline, re-registers them, and starts the runtime again.
+
 
 ### Miscellaneous
 
