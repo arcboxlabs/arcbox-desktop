@@ -1472,6 +1472,12 @@ public struct Arcbox_V1_StorageCheckRequest: Sendable {
     case unspecified // = 0
     case offlineCheck // = 1
     case verifyWrites // = 2
+
+    /// Recovery guest only. Rebuilds the Btrfs free space tree on the data
+    /// device after the guest re-verifies that stale free space entries are
+    /// the only finding, then requires a clean read-only check. The host
+    /// attaches a writable copy, never the original image.
+    case repairFreeSpaceTree // = 3
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -1483,6 +1489,7 @@ public struct Arcbox_V1_StorageCheckRequest: Sendable {
       case 0: self = .unspecified
       case 1: self = .offlineCheck
       case 2: self = .verifyWrites
+      case 3: self = .repairFreeSpaceTree
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -1492,6 +1499,7 @@ public struct Arcbox_V1_StorageCheckRequest: Sendable {
       case .unspecified: return 0
       case .offlineCheck: return 1
       case .verifyWrites: return 2
+      case .repairFreeSpaceTree: return 3
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -1501,6 +1509,7 @@ public struct Arcbox_V1_StorageCheckRequest: Sendable {
       .unspecified,
       .offlineCheck,
       .verifyWrites,
+      .repairFreeSpaceTree,
     ]
 
   }
@@ -1519,7 +1528,48 @@ public struct Arcbox_V1_StorageCheckResult: Sendable {
 
   public var detail: String = String()
 
+  public var finding: Arcbox_V1_StorageCheckResult.Finding = .unspecified
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// A classified, repairable failure. Absent means the failure, if any, is
+  /// not repairable by any controlled action.
+  public enum Finding: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// Btrfs check reported only free space tree entries without a
+    /// matching block group.
+    case staleFreeSpaceTree // = 1
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .staleFreeSpaceTree
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .staleFreeSpaceTree: return 1
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_StorageCheckResult.Finding] = [
+      .unspecified,
+      .staleFreeSpaceTree,
+    ]
+
+  }
 
   public init() {}
 }
@@ -3741,12 +3791,12 @@ extension Arcbox_V1_StorageCheckRequest: SwiftProtobuf.Message, SwiftProtobuf._M
 }
 
 extension Arcbox_V1_StorageCheckRequest.Action: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNSPECIFIED\0\u{1}OFFLINE_CHECK\0\u{1}VERIFY_WRITES\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNSPECIFIED\0\u{1}OFFLINE_CHECK\0\u{1}VERIFY_WRITES\0\u{1}REPAIR_FREE_SPACE_TREE\0")
 }
 
 extension Arcbox_V1_StorageCheckResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".StorageCheckResult"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}role\0\u{1}passed\0\u{1}detail\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}role\0\u{1}passed\0\u{1}detail\0\u{1}finding\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3757,6 +3807,7 @@ extension Arcbox_V1_StorageCheckResult: SwiftProtobuf.Message, SwiftProtobuf._Me
       case 1: try { try decoder.decodeSingularEnumField(value: &self.role) }()
       case 2: try { try decoder.decodeSingularBoolField(value: &self.passed) }()
       case 3: try { try decoder.decodeSingularStringField(value: &self.detail) }()
+      case 4: try { try decoder.decodeSingularEnumField(value: &self.finding) }()
       default: break
       }
     }
@@ -3772,6 +3823,9 @@ extension Arcbox_V1_StorageCheckResult: SwiftProtobuf.Message, SwiftProtobuf._Me
     if !self.detail.isEmpty {
       try visitor.visitSingularStringField(value: self.detail, fieldNumber: 3)
     }
+    if self.finding != .unspecified {
+      try visitor.visitSingularEnumField(value: self.finding, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -3779,9 +3833,14 @@ extension Arcbox_V1_StorageCheckResult: SwiftProtobuf.Message, SwiftProtobuf._Me
     if lhs.role != rhs.role {return false}
     if lhs.passed != rhs.passed {return false}
     if lhs.detail != rhs.detail {return false}
+    if lhs.finding != rhs.finding {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Arcbox_V1_StorageCheckResult.Finding: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FINDING_UNSPECIFIED\0\u{1}STALE_FREE_SPACE_TREE\0")
 }
 
 extension Arcbox_V1_StorageCheckResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
