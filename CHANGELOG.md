@@ -2,6 +2,10 @@
 
 ## [1.38.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.4...v1.38.5) (2026-10-22)
 
+### Highlights
+
+Docker Engine moves to 29.9.2, with containerd 2.4.2. The update fixes three ways a malicious registry or crafted image could crash containerd or fill your disk during a pull, and rejects TLS certificate chains issued by the compromised eMudhra intermediates. The bundled `docker` CLI, Buildx 0.38.1, Compose 5.6.1 and the macOS Keychain credential helper move to their latest releases with it.
+
 
 ### Miscellaneous
 
