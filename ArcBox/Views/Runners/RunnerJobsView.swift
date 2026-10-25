@@ -1,8 +1,8 @@
-import FleetControlClient
+import RunnerAgentClient
 import SwiftUI
 
 struct RunnerJobsView: View {
-    let jobs: [FleetInFlightJob]
+    let jobs: [RunnerInFlightJob]
 
     var body: some View {
         if jobs.isEmpty {

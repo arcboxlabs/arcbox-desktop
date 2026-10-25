@@ -1,8 +1,8 @@
 import ArcBoxAuth
-import FleetPlatformClient
+import PlatformClient
 import SwiftUI
 
-/// This Mac as a Fleet runner host, backed by the local Agent watch stream.
+/// This Mac as a runner host, backed by the local Agent watch stream.
 struct RunnersView: View {
     @Environment(AuthSession.self) private var authSession
     @Environment(RunnersViewModel.self) private var vm
@@ -13,14 +13,14 @@ struct RunnersView: View {
         Group {
             switch vm.viewState {
             case .connecting:
-                ProgressView("Connecting to Fleet Agent…")
+                ProgressView("Connecting to Runner Agent…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .unavailable(let message):
-                EmptyStateView(icon: "exclamationmark.triangle", title: "Fleet Agent unavailable") {
+                EmptyStateView(icon: "exclamationmark.triangle", title: "Runner Agent unavailable") {
                     VStack(spacing: 6) {
                         Text(message)
                         Text(
-                            "Start or repair the Fleet Agent through its service manager. ArcBox will reconnect automatically."
+                            "Start or repair the Runner Agent through its service manager. ArcBox will reconnect automatically."
                         )
                     }
                     .font(.caption)
@@ -43,10 +43,10 @@ struct RunnersView: View {
                     enrollmentBlockedView(message: message, recovery: recovery)
                 }
             case .failed(let message):
-                EmptyStateView(icon: "exclamationmark.octagon", title: "Fleet integration unavailable") {
+                EmptyStateView(icon: "exclamationmark.octagon", title: "Runners unavailable") {
                     VStack(spacing: 6) {
                         Text(message)
-                        Text("Check the ArcBox configuration and Fleet Agent compatibility.")
+                        Text("Check the ArcBox configuration and Runner Agent compatibility.")
                     }
                     .font(.caption)
                     .foregroundStyle(AppColors.textSecondary)
@@ -81,7 +81,7 @@ struct RunnersView: View {
                             .padding(.horizontal, 12)
                             .padding(.bottom, 6)
                     }
-                    RunnerImagePreparationStatusView(fleet: vm.fleet)
+                    RunnerImagePreparationStatusView(agent: vm.agent)
                     RunnerJobsView(jobs: host.inFlightJobs)
                 }
             }
@@ -92,7 +92,7 @@ struct RunnersView: View {
     }
 
     private var signedOutView: some View {
-        EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: "Connect this Mac to Fleet") {
+        EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: "Connect this Mac to Runners") {
             VStack(spacing: 12) {
                 Text("Sign in to choose an ArcBox workspace.")
                     .font(.caption)
@@ -183,7 +183,7 @@ struct RunnersView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("ArcBox will issue a short-lived enrollment token and enroll the local Fleet Agent.")
+            Text("ArcBox will issue a short-lived enrollment token and enroll the local Runner Agent.")
         }
     }
 
@@ -200,7 +200,7 @@ struct RunnersView: View {
                     Text(message)
                     if recovery == .waitForAgent {
                         Text(
-                            "ArcBox will keep observing the local Fleet Agent. A new enrollment will not start until the Agent reports a conclusive state."
+                            "ArcBox will keep observing the local Runner Agent. A new enrollment will not start until the Agent reports a conclusive state."
                         )
                     } else {
                         Text("Unenroll the local Agent before starting another enrollment attempt.")
@@ -214,7 +214,7 @@ struct RunnersView: View {
                 if recovery == .waitForAgent {
                     ProgressView()
                         .controlSize(.small)
-                        .accessibilityLabel("Waiting for Fleet Agent enrollment state")
+                        .accessibilityLabel("Waiting for Runner Agent enrollment state")
                 } else {
                     Button("Unenroll and Start Over…", role: .destructive) {
                         isShowingEnrollmentResetConfirmation = true
@@ -231,7 +231,7 @@ struct RunnersView: View {
                         Button("Cancel", role: .cancel) {}
                     } message: {
                         Text(
-                            "This removes the local Fleet Agent's enrollment credentials and allows a new "
+                            "This removes the local Runner Agent's enrollment credentials and allows a new "
                                 + "enrollment attempt. It does not stop or uninstall the Agent."
                         )
                     }
@@ -254,7 +254,7 @@ struct RunnersView: View {
         }
     }
 
-    private func enroll(in workspace: FleetWorkspace) {
+    private func enroll(in workspace: PlatformWorkspace) {
         Task {
             await vm.enroll(in: workspace)
         }
@@ -280,10 +280,10 @@ struct RunnersView: View {
 
     private func hostStatusMessage(freshness: RunnerHostFreshness) -> String? {
         guard case .reconnecting(let message) = freshness else { return nil }
-        return "Live Fleet Agent updates are paused. \(message) ArcBox is reconnecting."
+        return "Live Runner Agent updates are paused. \(message) ArcBox is reconnecting."
     }
 
-    private func workspaceButtonTitle(_ workspace: FleetWorkspace) -> String {
+    private func workspaceButtonTitle(_ workspace: PlatformWorkspace) -> String {
         "\(workspace.name) · \(workspace.plan)"
     }
 }

@@ -1,7 +1,7 @@
-import FleetControlClient
+import RunnerAgentClient
 import SwiftUI
 
-/// Persistent host header showing live Fleet Agent status, capabilities, telemetry, and controls.
+/// Persistent host header showing live Runner Agent status, capabilities, telemetry, and controls.
 struct RunnerHostStatusBar: View {
     let host: RunnerHostViewModel
     let isPerformingAction: Bool
@@ -54,7 +54,7 @@ struct RunnerHostStatusBar: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(host.machineID ?? "Machine ID pending")
+                Text(host.hostID ?? "Host ID pending")
                     .font(.caption.monospaced())
                     .foregroundStyle(AppColors.textSecondary)
                     .lineLimit(1)
@@ -112,7 +112,7 @@ struct RunnerHostStatusBar: View {
 
     private var unenrollMessage: String {
         let credentialMessage =
-            "This removes the Fleet credential from the local Agent. It does not stop or uninstall the Agent."
+            "This removes the runner credential from the local Agent. It does not stop or uninstall the Agent."
         guard host.activeJobCount > 0 else { return credentialMessage }
         let jobLabel = host.activeJobCount == 1 ? "job" : "jobs"
         return "The Agent reports \(host.activeJobCount) active \(jobLabel). \(credentialMessage)"
@@ -123,7 +123,7 @@ struct RunnerHostStatusBar: View {
     }
 }
 
-extension FleetBackend {
+extension RunnerBackend {
     fileprivate var label: String {
         switch self {
         case .hostRunner: "Host"

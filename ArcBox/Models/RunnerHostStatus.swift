@@ -1,7 +1,7 @@
-import FleetControlClient
+import RunnerAgentClient
 import SwiftUI
 
-/// User-facing state derived from the local Fleet Agent watch snapshot.
+/// User-facing state derived from the local Runner Agent watch snapshot.
 enum RunnerHostStatus: Equatable {
     case attaching
     case online
@@ -11,7 +11,7 @@ enum RunnerHostStatus: Equatable {
     case credentialRejected
     case unknown
 
-    init(snapshot: FleetAgentSnapshot) {
+    init(snapshot: RunnerAgentSnapshot) {
         switch snapshot.enrollment {
         case .attaching:
             self = .attaching
@@ -55,9 +55,9 @@ enum RunnerHostStatus: Equatable {
     var recoveryMessage: String? {
         switch self {
         case .credentialRejected:
-            "The Fleet gateway rejected this Agent credential. Unenroll this Mac from Actions before enrolling again."
+            "The runner gateway rejected this Agent credential. Unenroll this Mac from Actions before enrolling again."
         case .detached:
-            "This Mac is detached from Fleet. Unenroll this Mac from Actions before enrolling again."
+            "This Mac is detached from Runners. Unenroll this Mac from Actions before enrolling again."
         case .attaching, .online, .draining, .updating, .unknown:
             nil
         }

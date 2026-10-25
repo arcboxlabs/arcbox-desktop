@@ -34,8 +34,8 @@ struct SettingsView: View {
             AccountSettingsView()
         case .system:
             SystemSettingsView()
-        case .fleet:
-            FleetSettingsView()
+        case .runners:
+            RunnerSettingsView()
         case .storage:
             StorageSettingsView()
         case nil:

@@ -2,10 +2,10 @@ import AppKit
 import ArcBoxAuth
 import ArcBoxClient
 import DockerClient
-import FleetPlatformClient
 import Foundation
 import OSLog
 import Observation
+import PlatformClient
 import Sparkle
 import SwiftUI
 
@@ -19,7 +19,7 @@ final class ApplicationCoordinator: NSObject {
     let networksVM = NetworksViewModel()
     let volumesVM = VolumesViewModel()
     let systemVmBackendVM = SystemVmBackendModel()
-    // App-scoped so the Fleet Watch survives closing the main window.
+    // App-scoped so the Runner Agent watch survives closing the main window.
     let runnersVM = RunnersViewModel()
 
     private let eventMonitor = DockerEventMonitor()
@@ -27,7 +27,7 @@ final class ApplicationCoordinator: NSObject {
     private let machineEventMonitor = MachineEventMonitor()
     private let sleepWakeManager = SleepWakeManager()
     private let deepLinkRouter = DeepLinkRouter()
-    private let fleetAgentConnection = FleetAgentConnection()
+    private let runnerAgentConnection = RunnerAgentConnection()
     private lazy var notifications = NotificationCoordinator(
         isUserWatching: { [weak self] in self?.isUserWatching($0) ?? false },
         openDestination: { [weak self] in self?.deepLinkRouter.handle($0) },
@@ -46,7 +46,7 @@ final class ApplicationCoordinator: NSObject {
     private let updaterDelegate = UpdaterDelegate()
     private let updaterController: SPUStandardUpdaterController
     private let updaterSettings: UpdaterSettingsModel
-    private var fleetPlatformClient: FleetPlatformClient?
+    private var platformClient: PlatformClient?
 
     private(set) var arcboxClient: ArcBoxClient?
     private(set) var dockerClient: DockerClient?
@@ -143,28 +143,28 @@ final class ApplicationCoordinator: NSObject {
             }
         }
 
-        fleetAgentConnection.start()
+        runnerAgentConnection.start()
         Task { [weak self] in
             guard let self else { return }
             await authSession.restoreSession()
-            initFleetPlatformClientIfNeeded()
+            initPlatformClientIfNeeded()
             runnersVM.start(
-                controlClient: fleetAgentConnection.controlClient,
-                platformClient: fleetPlatformClient,
+                controlClient: runnerAgentConnection.controlClient,
+                platformClient: platformClient,
                 authentication: authSession,
-                agentReadiness: fleetAgentConnection
+                agentReadiness: runnerAgentConnection
             )
             await authSession.refreshSession()
         }
         Task { [weak self] in
             guard let self else { return }
             do {
-                _ = try await fleetAgentConnection.ensureReady()
+                _ = try await runnerAgentConnection.ensureReady()
             } catch is CancellationError {
-                Log.fleet.info("Fleet Agent readiness probe cancelled")
+                Log.runners.info("Runner Agent readiness probe cancelled")
             } catch {
-                Log.fleet.info(
-                    "Fleet Agent is not ready: \(error.localizedDescription, privacy: .private)"
+                Log.runners.info(
+                    "Runner Agent is not ready: \(error.localizedDescription, privacy: .private)"
                 )
             }
         }
@@ -272,14 +272,14 @@ final class ApplicationCoordinator: NSObject {
 
         let enrollmentSettled = await runnersVM.prepareForTermination()
         if !enrollmentSettled {
-            Log.fleet.warning(
-                "Fleet enrollment did not settle before the application termination deadline"
+            Log.runners.warning(
+                "Runner enrollment did not settle before the application termination deadline"
             )
         }
-        let connectionClosedGracefully = await fleetAgentConnection.shutdown()
+        let connectionClosedGracefully = await runnerAgentConnection.shutdown()
         if !connectionClosedGracefully {
-            Log.fleet.warning(
-                "Fleet client transport required forced shutdown during application termination"
+            Log.runners.warning(
+                "Runner Agent client transport required forced shutdown during application termination"
             )
         }
 
@@ -638,7 +638,7 @@ final class ApplicationCoordinator: NSObject {
                 .environment(authSession)
                 .environment(systemVmBackendVM)
                 .environment(updaterSettings)
-                .environment(runnersVM.fleet)
+                .environment(runnersVM.agent)
                 .environment(\.arcboxClient, arcboxClient)
                 .environment(\.dockerClient, dockerClient)
                 .environment(\.accessTokenProvider, authSession)
@@ -677,14 +677,14 @@ final class ApplicationCoordinator: NSObject {
     }
 
     /// Create the authenticated Platform REST client without starting network work.
-    private func initFleetPlatformClientIfNeeded() {
-        guard fleetPlatformClient == nil else { return }
+    private func initPlatformClientIfNeeded() {
+        guard platformClient == nil else { return }
 
-        let configuration = FleetPlatformConfiguration.current
-        Log.fleet.info(
-            "Creating FleetPlatformClient for \(configuration.baseURL.absoluteString, privacy: .private)"
+        let configuration = PlatformConfiguration.current
+        Log.runners.info(
+            "Creating PlatformClient for \(configuration.baseURL.absoluteString, privacy: .private)"
         )
-        fleetPlatformClient = FleetPlatformClient(
+        platformClient = PlatformClient(
             configuration: configuration,
             accessTokenProvider: authSession
         )

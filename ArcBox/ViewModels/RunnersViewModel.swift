@@ -1,54 +1,54 @@
 import ArcBoxAuth
-import FleetControlClient
-import FleetPlatformClient
 import Foundation
 import Observation
+import PlatformClient
+import RunnerAgentClient
 
 @MainActor
-protocol FleetWorkspaceListing: Sendable {
-    func listWorkspaces() async throws -> [FleetWorkspace]
+protocol RunnerWorkspaceListing: Sendable {
+    func listWorkspaces() async throws -> [PlatformWorkspace]
 }
 
-extension FleetPlatformClient: FleetWorkspaceListing {}
+extension PlatformClient: RunnerWorkspaceListing {}
 
 @MainActor
 @Observable
 final class RunnersViewModel {
     struct EnrollmentContext: Equatable {
-        let state: FleetEnrollmentCoordinator.State
+        let state: RunnerEnrollmentCoordinator.State
         let isSignedIn: Bool
         let canBeginEnrollment: Bool
     }
 
-    let fleet: FleetViewModel
-    private(set) var workspaces: [FleetWorkspace] = []
+    let agent: RunnerAgentViewModel
+    private(set) var workspaces: [PlatformWorkspace] = []
     private(set) var platformError: String?
     private(set) var isLoadingWorkspaces = false
 
     @ObservationIgnored
-    private var platformClient: (any FleetWorkspaceListing)?
+    private var platformClient: (any RunnerWorkspaceListing)?
 
     @ObservationIgnored
-    private var enrollmentCoordinator: FleetEnrollmentCoordinator?
+    private var enrollmentCoordinator: RunnerEnrollmentCoordinator?
 
     @ObservationIgnored
-    private var activeControlClient: FleetControlClient?
+    private var activeControlClient: RunnerAgentClient?
 
     @ObservationIgnored
-    private var activePlatformClient: FleetPlatformClient?
+    private var activePlatformClient: PlatformClient?
 
     @ObservationIgnored
     private var hasStarted = false
 
-    init(fleet: FleetViewModel = FleetViewModel()) {
-        self.fleet = fleet
+    init(agent: RunnerAgentViewModel = RunnerAgentViewModel()) {
+        self.agent = agent
     }
 
     var viewState: RunnersViewState {
         Self.resolveViewState(
-            snapshot: fleet.snapshot,
-            agentInfo: fleet.agentInfo,
-            loadState: fleet.loadState,
+            snapshot: agent.snapshot,
+            agentInfo: agent.agentInfo,
+            loadState: agent.loadState,
             enrollmentContext: enrollmentContext
         )
     }
@@ -63,15 +63,15 @@ final class RunnersViewModel {
     }
 
     var activeJobCount: Int {
-        fleet.snapshot?.inFlightJobs.count ?? 0
+        agent.snapshot?.inFlightJobs.count ?? 0
     }
 
     var errorMessage: String? {
-        platformError ?? fleet.lastError ?? enrollmentCoordinator?.errorMessage
+        platformError ?? agent.lastError ?? enrollmentCoordinator?.errorMessage
     }
 
     var isBusy: Bool {
-        isLoadingWorkspaces || fleet.isPerformingAction || enrollmentCoordinator?.isBusy == true
+        isLoadingWorkspaces || agent.isPerformingAction || enrollmentCoordinator?.isBusy == true
     }
 
     var canConnect: Bool {
@@ -91,10 +91,10 @@ final class RunnersViewModel {
             case .waitForAgent: return "Confirming enrollment"
             case .unenroll: return "Enrollment needs attention"
             }
-        case .failed: return "Fleet integration unavailable"
+        case .failed: return "Runners unavailable"
         case .enrolled(let host, let freshness):
             if case .reconnecting = freshness {
-                return "Reconnecting to Fleet Agent"
+                return "Reconnecting to Runner Agent"
             }
             return host.activeJobCount == 1
                 ? "\(host.status.label) · 1 active job"
@@ -103,16 +103,16 @@ final class RunnersViewModel {
     }
 
     func start(
-        controlClient: FleetControlClient?,
-        platformClient: FleetPlatformClient?,
-        authentication: (any FleetAuthenticationChecking)? = nil,
-        agentReadiness: (any FleetAgentReadying)? = nil
+        controlClient: RunnerAgentClient?,
+        platformClient: PlatformClient?,
+        authentication: (any RunnerAuthenticationChecking)? = nil,
+        agentReadiness: (any RunnerAgentReadying)? = nil
     ) {
         self.platformClient = platformClient
 
         if enrollmentCoordinator == nil || activePlatformClient !== platformClient {
             if let authentication, let agentReadiness {
-                enrollmentCoordinator = FleetEnrollmentCoordinator(
+                enrollmentCoordinator = RunnerEnrollmentCoordinator(
                     authentication: authentication,
                     agentReadiness: agentReadiness,
                     tokenIssuer: platformClient
@@ -132,7 +132,7 @@ final class RunnersViewModel {
         activeControlClient = controlClient
         activePlatformClient = platformClient
         let coordinator = enrollmentCoordinator
-        fleet.start(
+        agent.start(
             client: controlClient,
             onSnapshot: { [weak coordinator] snapshot in
                 coordinator?.reconcile(snapshot)
@@ -142,7 +142,7 @@ final class RunnersViewModel {
 
     func stop() {
         enrollmentCoordinator?.cancel()
-        fleet.stop()
+        agent.stop()
         hasStarted = false
         activeControlClient = nil
         activePlatformClient = nil
@@ -153,7 +153,7 @@ final class RunnersViewModel {
             await enrollmentCoordinator?.settleForTermination(
                 gracePeriod: gracePeriod
             ) ?? true
-        fleet.stop()
+        agent.stop()
         return settled
     }
 
@@ -162,13 +162,13 @@ final class RunnersViewModel {
 
         platformError = nil
         guard let enrollmentCoordinator else {
-            platformError = "Fleet enrollment is unavailable."
+            platformError = "Runner enrollment is unavailable."
             return false
         }
         guard enrollmentCoordinator.canBeginEnrollment else { return false }
         guard enrollmentCoordinator.requireSignedIn() else { return false }
         guard let platformClient else {
-            platformError = "Fleet Platform client is unavailable."
+            platformError = "Platform client is unavailable."
             return false
         }
 
@@ -179,7 +179,7 @@ final class RunnersViewModel {
         do {
             workspaces = try await platformClient.listWorkspaces()
         } catch {
-            platformError = FleetPlatformClient.userMessage(for: error)
+            platformError = PlatformClient.userMessage(for: error)
             return false
         }
 
@@ -191,10 +191,10 @@ final class RunnersViewModel {
     }
 
     @discardableResult
-    func enroll(in workspace: FleetWorkspace) async -> Bool {
+    func enroll(in workspace: PlatformWorkspace) async -> Bool {
         platformError = nil
         guard let enrollmentCoordinator else {
-            platformError = "Fleet enrollment is unavailable."
+            platformError = "Runner enrollment is unavailable."
             return false
         }
 
@@ -210,7 +210,7 @@ final class RunnersViewModel {
     func enroll(withToken token: String) async -> Bool {
         platformError = nil
         guard let enrollmentCoordinator else {
-            platformError = "Fleet enrollment is unavailable."
+            platformError = "Runner enrollment is unavailable."
             return false
         }
 
@@ -222,19 +222,19 @@ final class RunnersViewModel {
         guard !isBusy else { return false }
 
         if draining {
-            return await fleet.drain()
+            return await agent.drain()
         } else {
-            return await fleet.resume()
+            return await agent.resume()
         }
     }
 
     @discardableResult
     func unenroll() async -> Bool {
         guard !isBusy else { return false }
-        let succeeded = await fleet.unenroll()
+        let succeeded = await agent.unenroll()
         if succeeded {
             enrollmentCoordinator?.confirmUnenrolled()
-            if let snapshot = fleet.snapshot {
+            if let snapshot = agent.snapshot {
                 enrollmentCoordinator?.reconcile(snapshot)
             }
         }
@@ -242,19 +242,19 @@ final class RunnersViewModel {
     }
 
     static func resolveViewState(
-        snapshot: FleetAgentSnapshot?,
-        agentInfo: FleetAgentInfo?,
-        loadState: FleetLoadState,
+        snapshot: RunnerAgentSnapshot?,
+        agentInfo: RunnerAgentInfo?,
+        loadState: RunnerAgentLoadState,
         enrollmentContext: EnrollmentContext?
     ) -> RunnersViewState {
         if let snapshot {
             switch snapshot.enrollment {
             case .attaching, .attached, .updating:
-                if normalizedMachineID(snapshot.machineID) == nil {
+                if normalizedHostID(snapshot.hostID) == nil {
                     if let override = connectivityOverride(loadState: loadState) {
                         return override
                     }
-                    return .failed("Fleet Agent reported an invalid machine identity.")
+                    return .failed("Runner Agent reported an invalid host identity.")
                 }
                 return .enrolled(
                     RunnerHostViewModel(snapshot: snapshot, agentInfo: agentInfo),
@@ -264,11 +264,11 @@ final class RunnersViewModel {
                 if let override = connectivityOverride(loadState: loadState) {
                     return override
                 }
-                guard let machineID = normalizedMachineID(snapshot.machineID) else {
-                    return .failed("Fleet Agent reported an invalid machine identity.")
+                guard let hostID = normalizedHostID(snapshot.hostID) else {
+                    return .failed("Runner Agent reported an invalid host identity.")
                 }
                 return .enrollmentFailed(
-                    FleetEnrollmentCoordinator.Failure.credentialRejected(machineID: machineID)
+                    RunnerEnrollmentCoordinator.Failure.credentialRejected(hostID: hostID)
                         .localizedDescription,
                     recovery: .unenroll
                 )
@@ -276,11 +276,11 @@ final class RunnersViewModel {
                 if let override = connectivityOverride(loadState: loadState) {
                     return override
                 }
-                guard let machineID = normalizedMachineID(snapshot.machineID) else {
-                    return .failed("Fleet Agent reported an invalid machine identity.")
+                guard let hostID = normalizedHostID(snapshot.hostID) else {
+                    return .failed("Runner Agent reported an invalid host identity.")
                 }
                 return .enrollmentFailed(
-                    FleetEnrollmentCoordinator.Failure.detached(machineID: machineID)
+                    RunnerEnrollmentCoordinator.Failure.detached(hostID: hostID)
                         .localizedDescription,
                     recovery: .unenroll
                 )
@@ -288,19 +288,19 @@ final class RunnersViewModel {
                 if let override = connectivityOverride(loadState: loadState) {
                     return override
                 }
-                guard normalizedMachineID(snapshot.machineID) == nil else {
-                    return .failed("Fleet Agent reported an invalid unenrolled state.")
+                guard normalizedHostID(snapshot.hostID) == nil else {
+                    return .failed("Runner Agent reported an invalid unenrolled state.")
                 }
                 return resolveUnenrolledState(
                     enrollmentContext: enrollmentContext
                 )
             case .unspecified:
                 return connectivityOverride(loadState: loadState)
-                    ?? .failed("Fleet Agent did not report a valid enrollment state.")
+                    ?? .failed("Runner Agent did not report a valid enrollment state.")
             case .unrecognized:
                 return connectivityOverride(loadState: loadState)
                     ?? .failed(
-                        "Fleet Agent reported an enrollment state this ArcBox version does not support."
+                        "Runner Agent reported an enrollment state this ArcBox version does not support."
                     )
             }
         }
@@ -317,7 +317,7 @@ final class RunnersViewModel {
         enrollmentContext: EnrollmentContext?
     ) -> RunnersViewState {
         guard let enrollmentContext else {
-            return .failed("Fleet enrollment is unavailable for this build.")
+            return .failed("Runner enrollment is unavailable for this build.")
         }
 
         switch enrollmentContext.state {
@@ -345,7 +345,7 @@ final class RunnersViewModel {
             guard enrollmentContext.isSignedIn else { return .signedOut }
             guard enrollmentContext.canBeginEnrollment else {
                 return .enrollmentFailed(
-                    "ArcBox is waiting for the Fleet Agent to report a conclusive enrollment state.",
+                    "ArcBox is waiting for the Runner Agent to report a conclusive enrollment state.",
                     recovery: .waitForAgent
                 )
             }
@@ -354,7 +354,7 @@ final class RunnersViewModel {
     }
 
     /// Surfaces connectivity when a retained snapshot cannot be trusted while the watch is stale.
-    private static func connectivityOverride(loadState: FleetLoadState) -> RunnersViewState? {
+    private static func connectivityOverride(loadState: RunnerAgentLoadState) -> RunnersViewState? {
         switch loadState {
         case .idle, .connecting:
             return .connecting
@@ -365,19 +365,19 @@ final class RunnersViewModel {
         }
     }
 
-    private static func hostFreshness(loadState: FleetLoadState) -> RunnerHostFreshness {
+    private static func hostFreshness(loadState: RunnerAgentLoadState) -> RunnerHostFreshness {
         switch loadState {
         case .ready:
             return .live
         case .idle, .connecting:
-            return .reconnecting("Connecting to Fleet Agent.")
+            return .reconnecting("Connecting to Runner Agent.")
         case .unavailable(let message), .failed(let message):
             return .reconnecting(message)
         }
     }
 
     private static func enrollmentRecovery(
-        for failure: FleetEnrollmentCoordinator.Failure,
+        for failure: RunnerEnrollmentCoordinator.Failure,
         canBeginEnrollment: Bool
     ) -> RunnerEnrollmentRecovery {
         guard !canBeginEnrollment else { return .retry }
@@ -386,15 +386,15 @@ final class RunnersViewModel {
         case .enrollmentOutcomeUnknown:
             return .waitForAgent
         case .credentialRejected, .detached, .stateStreamEnded, .stateStreamFailed,
-            .attachmentTimedOut, .cancelled(machineID: .some):
+            .attachmentTimedOut, .cancelled(hostID: .some):
             return .unenroll
         case .workspaceRequired, .enrollmentTokenRequired, .agentPreparationFailed,
-            .enrollmentTokenRequestFailed, .cancelled(machineID: nil):
+            .enrollmentTokenRequestFailed, .cancelled(hostID: nil):
             return .waitForAgent
         }
     }
 
-    private static func normalizedMachineID(_ value: String?) -> String? {
+    private static func normalizedHostID(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
             !value.isEmpty
         else { return nil }

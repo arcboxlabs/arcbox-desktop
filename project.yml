@@ -19,16 +19,16 @@ packages:
     path: Packages/ArcBoxAuth
   ArcBoxClient:
     path: Packages/ArcBoxClient
-  FleetControlClient:
-    path: Packages/FleetControlClient
-  FleetPlatformClient:
-    path: Packages/FleetPlatformClient
   DockerClient:
     path: Packages/DockerClient
   K8sClient:
     path: Packages/K8sClient
+  PlatformClient:
+    path: Packages/PlatformClient
   ProcessSupport:
     path: Packages/ProcessSupport
+  RunnerAgentClient:
+    path: Packages/RunnerAgentClient
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
     from: 1.0.0
@@ -151,11 +151,11 @@ targets:
     dependencies:
       - package: ArcBoxAuth
       - package: ArcBoxClient
-      - package: FleetControlClient
-      - package: FleetPlatformClient
       - package: DockerClient
       - package: K8sClient
+      - package: PlatformClient
       - package: ProcessSupport
+      - package: RunnerAgentClient
       - package: SwiftTerm
       - package: Sparkle
       - package: sentry-cocoa
@@ -250,9 +250,9 @@ targets:
       # `swift test` nobody runs.
       - path: Packages/ArcBoxClient/Tests/ArcBoxClientTests
       - path: Packages/ArcBoxAuth/Tests/ArcBoxAuthTests
-      - path: Packages/FleetControlClient/Tests/FleetControlClientTests
-      - path: Packages/FleetPlatformClient/Tests/FleetPlatformClientTests
+      - path: Packages/PlatformClient/Tests/PlatformClientTests
       - path: Packages/ProcessSupport/Tests/ProcessSupportTests
+      - path: Packages/RunnerAgentClient/Tests/RunnerAgentClientTests
     dependencies:
       - target: ArcBox
       - package: K8sClient

@@ -74,7 +74,7 @@ final class AccessibilityAuditTests: XCTestCase {
         app.menuBars.menuItems["Settings…"].click()
         let navigation = app.outlines["Settings navigation"]
         XCTAssertTrue(navigation.waitForExistence(timeout: 5), "Settings navigation did not appear")
-        for pane in ["General", "Account", "System", "Fleet", "Storage"] {
+        for pane in ["General", "Account", "System", "Runners", "Storage"] {
             navigation.staticTexts[pane].click()
             try audit("Settings › \(pane)")
         }

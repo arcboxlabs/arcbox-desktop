@@ -1,8 +1,8 @@
-import FleetControlClient
+import RunnerAgentClient
 import SwiftUI
 
 struct RunnerJobRow: View {
-    let job: FleetInFlightJob
+    let job: RunnerInFlightJob
 
     var body: some View {
         HStack(spacing: 10) {

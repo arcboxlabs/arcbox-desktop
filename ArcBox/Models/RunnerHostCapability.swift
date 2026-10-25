@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 
-/// Local hardware facts available before this Mac enrolls in a Fleet.
+/// Local hardware facts available before this Mac enrolls as a runner host.
 enum RunnerHostCapability {
     static let chipName: String = {
         var size = 0

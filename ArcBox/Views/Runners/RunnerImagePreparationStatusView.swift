@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Shared Fleet image preparation state rendered in the runner workflow.
+/// Shared runner image preparation state rendered in the runner workflow.
 struct RunnerImagePreparationStatusView: View {
-    let fleet: FleetViewModel
+    let agent: RunnerAgentViewModel
 
     var body: some View {
-        let readiness = fleet.runnerImageReadiness
+        let readiness = agent.runnerImageReadiness
 
         if readiness != .hidden {
             HStack(alignment: .center, spacing: 10) {
@@ -35,9 +35,9 @@ struct RunnerImagePreparationStatusView: View {
                     case .restartRequired:
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Fleet Agent restart required")
+                                Text("Runner Agent restart required")
                                 Text(
-                                    "The service manager must restart Fleet Agent before the VM backend becomes available. ArcBox will keep watching."
+                                    "The service manager must restart the Runner Agent before the VM backend becomes available. ArcBox will keep watching."
                                 )
                                 .font(.caption)
                                 .foregroundStyle(AppColors.textSecondary)
@@ -79,18 +79,18 @@ struct RunnerImagePreparationStatusView: View {
                     Button(
                         "Prepare Image",
                         systemImage: "arrow.down.circle",
-                        action: fleet.beginMacOSRunnerImagePreparation
+                        action: agent.beginMacOSRunnerImagePreparation
                     )
                     .controlSize(.small)
-                    .disabled(!fleet.canBeginMacOSRunnerImagePreparation)
+                    .disabled(!agent.canBeginMacOSRunnerImagePreparation)
                 case .failed:
                     Button(
                         "Retry",
                         systemImage: "arrow.clockwise",
-                        action: fleet.beginMacOSRunnerImagePreparation
+                        action: agent.beginMacOSRunnerImagePreparation
                     )
                     .controlSize(.small)
-                    .disabled(!fleet.canBeginMacOSRunnerImagePreparation)
+                    .disabled(!agent.canBeginMacOSRunnerImagePreparation)
                 case .hidden, .preparing, .restartRequired, .completed:
                     EmptyView()
                 }

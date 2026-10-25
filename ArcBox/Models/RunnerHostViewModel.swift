@@ -1,18 +1,18 @@
-import FleetControlClient
+import RunnerAgentClient
 
-/// Presentation model for this Mac, derived entirely from Fleet Agent state.
+/// Presentation model for this Mac, derived entirely from Runner Agent state.
 struct RunnerHostViewModel: Identifiable, Equatable {
-    let machineID: String?
+    let hostID: String?
     let status: RunnerHostStatus
-    let capabilities: [FleetCapability]
-    let inFlightJobs: [FleetInFlightJob]
-    let telemetry: FleetHostTelemetry?
+    let capabilities: [RunnerCapability]
+    let inFlightJobs: [RunnerInFlightJob]
+    let telemetry: RunnerHostTelemetry?
     let agentVersion: String?
     let chip: String
     let isDraining: Bool
 
-    init(snapshot: FleetAgentSnapshot, agentInfo: FleetAgentInfo?) {
-        machineID = snapshot.machineID
+    init(snapshot: RunnerAgentSnapshot, agentInfo: RunnerAgentInfo?) {
+        hostID = snapshot.hostID
         status = RunnerHostStatus(snapshot: snapshot)
         capabilities = snapshot.capabilities
         inFlightJobs = snapshot.inFlightJobs
@@ -23,7 +23,7 @@ struct RunnerHostViewModel: Identifiable, Equatable {
     }
 
     var id: String {
-        machineID ?? "local-fleet-agent"
+        hostID ?? "local-runner-agent"
     }
 
     var activeJobCount: Int {

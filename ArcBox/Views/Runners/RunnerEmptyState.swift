@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown when this Mac is not enrolled in any fleet yet.
+/// Shown when this Mac is not enrolled as a runner host yet.
 struct RunnerEmptyState: View {
     let isWorking: Bool
     let canConnect: Bool
@@ -13,13 +13,13 @@ struct RunnerEmptyState: View {
     var body: some View {
         EmptyStateView(icon: "hammer", title: "Turn this Mac into a CI runner") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Run GitHub Actions jobs for your organization on this machine:")
+                Text("Run GitHub Actions jobs for your organization on this Mac:")
                     .font(.caption)
                     .foregroundStyle(AppColors.textSecondary)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\u{2022} \(chip)")
-                    Text("\u{2022} Runtime capabilities are detected by the Fleet Agent")
+                    Text("\u{2022} Runtime capabilities are detected by the Runner Agent")
                     Text("\u{2022} Jobs and settings stay under local agent control")
                 }
                 .font(.caption)

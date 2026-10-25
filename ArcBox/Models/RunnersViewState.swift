@@ -1,4 +1,4 @@
-/// Explicit UI state for the Fleet Agent connection and enrollment lifecycle.
+/// Explicit UI state for the Runner Agent connection and enrollment lifecycle.
 enum RunnersViewState: Equatable {
     case connecting
     case unavailable(String)
@@ -33,7 +33,7 @@ enum RunnerEnrollmentProgress: Equatable {
     var title: String {
         switch self {
         case .checkingAgent:
-            "Checking Fleet Agent"
+            "Checking Runner Agent"
         case .requestingToken:
             "Requesting enrollment token"
         case .enrollingAgent:
@@ -41,7 +41,7 @@ enum RunnerEnrollmentProgress: Equatable {
         case .reconciling:
             "Confirming enrollment"
         case .attaching:
-            "Connecting to Fleet"
+            "Connecting to Runners"
         case .synchronizing:
             "Finishing setup"
         }
@@ -50,15 +50,15 @@ enum RunnerEnrollmentProgress: Equatable {
     var message: String {
         switch self {
         case .checkingAgent:
-            "Waiting for the local Fleet Agent endpoint."
+            "Waiting for the local Runner Agent endpoint."
         case .requestingToken:
             "ArcBox is requesting a short-lived token for the selected workspace."
         case .enrollingAgent:
-            "ArcBox is handing the short-lived token to the local Fleet Agent."
+            "ArcBox is handing the short-lived token to the local Runner Agent."
         case .reconciling:
-            "Waiting for the Fleet Agent to report the enrollment result."
+            "Waiting for the Runner Agent to report the enrollment result."
         case .attaching:
-            "The Fleet Agent is attaching this Mac to the workspace."
+            "The Runner Agent is attaching this Mac to the workspace."
         case .synchronizing:
             "Enrollment succeeded. Waiting for the live Agent state."
         }
