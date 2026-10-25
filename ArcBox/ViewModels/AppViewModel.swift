@@ -23,7 +23,8 @@ class AppViewModel {
     }
 
     var currentNav: NavItem? = .containers
-    /// Selected Settings tab, shared by the coordinator and Settings window.
+    /// Selected Settings tab, lifted here so other windows can deep-link
+    /// (e.g. the sidebar account chip opening Settings > Account).
     var settingsTab: SettingsTab? = .general
     var pendingResourceDeepLink: ResourceDeepLink?
     var deepLinkError: String?
