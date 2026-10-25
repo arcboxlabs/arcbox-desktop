@@ -73,7 +73,7 @@ public final class DaemonManager {
     public internal(set) var lastMessageTime: Date?
 
     /// Whether this bundle runs the development profile (`~/.arcbox-dev`, the `arcbox-dev`
-    /// Docker context, and its own daemon label).
+    /// Docker context, its own daemon label and sign-in item).
     nonisolated public static var isDevelopmentProfile: Bool {
         (Bundle.main.object(forInfoDictionaryKey: "ArcBoxProfile") as? String)?
             .caseInsensitiveCompare("development") == .orderedSame

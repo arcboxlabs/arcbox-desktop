@@ -52,7 +52,10 @@ extension AppDelegate {
     /// API key is read from Info.plist (injected via POSTHOG_API_KEY build setting).
     /// No-ops gracefully when key is empty or placeholder.
     ///
-    /// Telemetry collects anonymous events. Users opt out in Settings > Privacy.
+    /// Telemetry is on by default for every install, signed in or not:
+    /// `capture` does not require person processing, so events from users who
+    /// never sign in are collected as anonymous events. Signing in only adds a
+    /// person profile. Users opt out in Settings > Privacy.
     static func initPostHog() {
         guard let apiKey = Bundle.main.object(forInfoDictionaryKey: "PostHogAPIKey") as? String,
             !apiKey.isEmpty, apiKey != "YOUR_POSTHOG_API_KEY_HERE", apiKey != "$(POSTHOG_API_KEY)"
@@ -62,50 +65,30 @@ extension AppDelegate {
         }
 
         let config = PostHogConfig(apiKey: apiKey, host: "https://us.i.posthog.com")
+        config.captureApplicationLifecycleEvents = true
+        config.captureScreenViews = false  // No-op on macOS, track manually
+        config.personProfiles = .identifiedOnly
         #if DEBUG
             // Never send telemetry from development builds.
             let optedOut = true
         #else
             let optedOut = !UserDefaults.standard.bool(forKey: "telemetryEnabled")
         #endif
-        initPostHog(config: config, defaults: .standard, optedOut: optedOut)
-        Log.startup.info("PostHog initialized (opted \(optedOut ? "out" : "in", privacy: .public))")
-    }
-
-    @discardableResult
-    static func initPostHog(
-        config: PostHogConfig,
-        defaults: UserDefaults,
-        optedOut: Bool,
-        setup: (PostHogConfig) -> PostHogSDK = { config in
-            PostHogSDK.shared.setup(config)
-            return .shared
-        }
-    ) -> PostHogSDK {
-        // SDK setup can emit an update event immediately. Migrate the old identity first.
-        config.captureApplicationLifecycleEvents = !defaults.bool(forKey: Analytics.legacyIdentityKey)
-        config.captureScreenViews = false  // No-op on macOS, track manually
-        config.personProfiles = .never
         config.optOut = optedOut
-        let sdk = setup(config)
-        if Analytics.resetLegacyIdentityIfNeeded(defaults: defaults, reset: sdk.reset) {
-            // optIn reinstalls lifecycle listeners; changing the config alone does not.
-            sdk.optOut()
-            config.captureApplicationLifecycleEvents = true
-        }
+        PostHogSDK.shared.setup(config)
         // `setup` lets the SDK's own persisted opt-out flag override
         // `config.optOut`, so restate the app preference — Settings > Privacy
         // is the only source of truth, and it defaults to opted in.
         if optedOut {
-            sdk.optOut()
+            Analytics.optOut()
         } else {
-            sdk.optIn()
+            Analytics.optIn()
         }
-        sdk.register([
+        Analytics.register([
             "arcbox_profile": Bundle.main.object(forInfoDictionaryKey: "ArcBoxProfile") as? String ?? "unknown",
-            "update_channel": defaults.string(forKey: "updateChannel") ?? "stable",
+            "update_channel": UserDefaults.standard.string(forKey: "updateChannel") ?? "stable",
         ])
-        return sdk
+        Log.startup.info("PostHog initialized (opted \(optedOut ? "out" : "in", privacy: .public))")
     }
 
     /// Strip home directory paths from Sentry events to avoid leaking usernames.

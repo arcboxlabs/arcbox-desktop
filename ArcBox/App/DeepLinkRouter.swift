@@ -60,7 +60,7 @@ final class DeepLinkRouter {
                 target.appVM.clearResourceDeepLink()
                 break
             }
-            if item == .activity {
+            if item == .activity || item == .runner {
                 target.appVM.clearResourceDeepLink()
                 target.appVM.deepLinkError = "\(item.label) links don’t support resource IDs."
             } else {

@@ -1,0 +1,4 @@
+repository=https://github.com/ArcBoxLabs/arcbox
+commit=18fb66c97d87ff539581ab81311d662dddb8244a
+path=runner/arcbox-runner-control-proto/proto/arcbox/runner/control/v1/control.proto
+sha256=939c290e9b0f0a52f7f1de960b7e0fb0849246d15290b9f356518357baedfbf0

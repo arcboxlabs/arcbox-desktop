@@ -30,8 +30,12 @@ struct SettingsView: View {
         switch appVM.settingsTab {
         case .general:
             GeneralSettingsView()
+        case .account:
+            AccountSettingsView()
         case .system:
             SystemSettingsView()
+        case .runners:
+            RunnerSettingsView()
         case .storage:
             StorageSettingsView()
         case nil:

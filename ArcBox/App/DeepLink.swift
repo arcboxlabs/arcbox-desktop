@@ -7,7 +7,7 @@ import Foundation
 /// - `arcbox://settings` — open the Settings window
 /// - `arcbox://<section>[/<id>]` — navigate to a sidebar section, where
 ///   `<section>` is a `NavItem` raw value and the optional `<id>` selects the
-///   resource with that exact ID. Activity does not accept an ID.
+///   resource with that exact ID. Activity and This Mac do not accept an ID.
 enum DeepLink: Equatable {
     static let scheme = "arcbox"
 

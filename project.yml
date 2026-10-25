@@ -15,14 +15,20 @@ configFiles:
   Release: Local.xcconfig
 
 packages:
+  ArcBoxAuth:
+    path: Packages/ArcBoxAuth
   ArcBoxClient:
     path: Packages/ArcBoxClient
   DockerClient:
     path: Packages/DockerClient
   K8sClient:
     path: Packages/K8sClient
+  PlatformClient:
+    path: Packages/PlatformClient
   ProcessSupport:
     path: Packages/ProcessSupport
+  RunnerAgentClient:
+    path: Packages/RunnerAgentClient
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
     from: 1.0.0
@@ -143,10 +149,13 @@ targets:
             destination: wrapper
             subpath: Contents/Library/LaunchAgents
     dependencies:
+      - package: ArcBoxAuth
       - package: ArcBoxClient
       - package: DockerClient
       - package: K8sClient
+      - package: PlatformClient
       - package: ProcessSupport
+      - package: RunnerAgentClient
       - package: SwiftTerm
       - package: Sparkle
       - package: sentry-cocoa
@@ -240,7 +249,10 @@ targets:
       # what puts them behind `make test` instead of leaving them to a
       # `swift test` nobody runs.
       - path: Packages/ArcBoxClient/Tests/ArcBoxClientTests
+      - path: Packages/ArcBoxAuth/Tests/ArcBoxAuthTests
+      - path: Packages/PlatformClient/Tests/PlatformClientTests
       - path: Packages/ProcessSupport/Tests/ProcessSupportTests
+      - path: Packages/RunnerAgentClient/Tests/RunnerAgentClientTests
     dependencies:
       - target: ArcBox
       - package: K8sClient
