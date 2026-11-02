@@ -18,6 +18,7 @@ use xtask_kit::dmg::{self, CreateDmgOptions};
 use xtask_kit::{github_actions, process, repo};
 
 use super::bundle::{self, BundleOptions, BundleProfile};
+use super::notices;
 use super::{ABCTL_CODE_SIGN_IDENTIFIER, HELPER_CODE_SIGN_IDENTIFIER, host_binary_dir};
 use crate::support::fs as xfs;
 use crate::{MacosDmgArgs, MacosPrepareResourcesArgs, MacosStageResourcesArgs};
@@ -1469,6 +1470,7 @@ pub fn run(args: MacosDmgArgs) -> Result<()> {
         prepare_profile_resources(&desktop_repo, &arcbox_dir, profile, &resource_options)?;
     }
     embed_boot_assets(&app_bundle, &arcbox_dir, profile)?;
+    notices::embed(&app_bundle, &desktop_repo, &arcbox_dir)?;
     embed_host_cli_binaries(&app_bundle, &arcbox_dir, &sign_identity)?;
     embed_guest_binaries(&app_bundle, &arcbox_dir)?;
     embed_docker_tools(&app_bundle, &sign_identity, profile)?;

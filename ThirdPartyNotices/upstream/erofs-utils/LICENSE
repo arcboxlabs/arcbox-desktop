@@ -1,0 +1,54 @@
+erofs-utils 1.9.2 is mostly distributed under the MIT License; most files in lib/
+and include/ are dual-licensed GPL-2.0-or-later OR MIT. lib/hashmap.c,
+include/erofs/hashmap.h and include/erofs/flex-array.h (copied from Git) are
+GPL-2.0-only, and they are compiled into mkfs.erofs, so the mkfs.erofs binary
+ArcBox ships is distributed under the GNU General Public License, version 2
+(licenses/GPL-2.0.txt). lib/xxhash.c (BSD-2-Clause OR GPL-2.0-only) is used
+under BSD-2-Clause; lib/sha256.c is under the Unlicense.
+
+Copyright notices collected from the source file headers:
+
+  Copyright (C) 2012-2016, Yann Collet.
+  Copyright (C) 2017-2018 HUAWEI, Inc.
+  Copyright (C) 2018 HUAWEI, Inc.
+  Copyright (C) 2018-2019 HUAWEI, Inc.
+  Copyright (C) 2019 HUAWEI, Inc.
+  Copyright (C) 2019 Li Guifu <blucerlee@gmail.com>
+  Copyright (C) 2019-2025 Gao Xiang <xiang@kernel.org>
+  Copyright (C) 2020 Gao Xiang <hsiangkao@aol.com>
+  Copyright (C) 2021 Gao Xiang <xiang@kernel.org>
+  Copyright (C) 2021, Alibaba Cloud
+  Copyright (C) 2021-2022 HUAWEI, Inc.
+  Copyright (C) 2022 Alibaba Cloud
+  Copyright (C) 2022, Coolpad Group Limited.
+  Copyright (C) 2023 Norbert Lange <nolange79@gmail.com>
+  Copyright (C) 2023, Alibaba Cloud
+  Copyright (C) 2023, Gao Xiang <xiang@kernel.org>
+  Copyright (C) 2024 Alibaba Cloud
+  Copyright (C) 2025 Alibaba Cloud
+  Copyright (C) 2025 HUAWEI, Inc.
+  Copyright (C) 2025 Tencent, Inc.
+  Copyright (C) 2025, Alibaba Cloud
+  Copyright (C) 2026 Alibaba Cloud
+  Copyright (C) 2026 Tencent, Inc.
+
+MIT License
+
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
