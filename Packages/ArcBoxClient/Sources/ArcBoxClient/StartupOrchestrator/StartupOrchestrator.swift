@@ -78,6 +78,7 @@ public final class StartupOrchestrator {
     // Dependencies
     private let daemonManager: DaemonManager
     private let onClientsNeeded: @MainActor () throws -> ArcBoxClient
+    private let hostSupportsVirtualization: @MainActor () -> Bool
 
     private static let signposter = OSSignposter(
         subsystem: "com.arcboxlabs.desktop", category: "startup")
@@ -89,10 +90,12 @@ public final class StartupOrchestrator {
 
     public init(
         daemonManager: DaemonManager,
-        onClientsNeeded: @escaping @MainActor () throws -> ArcBoxClient
+        onClientsNeeded: @escaping @MainActor () throws -> ArcBoxClient,
+        hostSupportsVirtualization: @escaping @MainActor () -> Bool = { HostVirtualization.isAvailable }
     ) {
         self.daemonManager = daemonManager
         self.onClientsNeeded = onClientsNeeded
+        self.hostSupportsVirtualization = hostSupportsVirtualization
 
         var statuses: [StartupStep: StepStatus] = [:]
         for step in StartupStep.allCases {
@@ -142,6 +145,15 @@ public final class StartupOrchestrator {
 
         for step in StartupStep.allCases {
             stepStatuses[step] = .pending
+        }
+
+        // Without hardware virtualization the daemon can never boot its VM: launchd
+        // restarts it in a crash loop, and the helper install asks for an administrator
+        // password for nothing. It is a property of the Mac, so it is not reported.
+        guard hostSupportsVirtualization() else {
+            ClientLog.startup.error("Hardware virtualization is unavailable; not starting the daemon")
+            phase = .virtualizationUnavailable
+            return
         }
 
         // Step 1: Install / upgrade the privileged helper (macOS prompts for admin).

@@ -11,10 +11,20 @@ struct StartupProgressView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Spacer()
+            // Onboarding hosts this in a 190 pt frame, where a spacer's default
+            // minimum length is what pushed the fatal message down to one line.
+            Spacer(minLength: 0)
 
             if case .fatalError(let message) = orchestrator.phase {
-                fatalErrorView(message: message)
+                fatalErrorView(title: "Daemon Cannot Start", message: message)
+            } else if orchestrator.phase == .virtualizationUnavailable {
+                fatalErrorView(
+                    title: "Virtualization Unavailable",
+                    message: """
+                        ArcBox needs hardware virtualization, which this Mac doesn't provide. \
+                        It can't run inside a macOS virtual machine.
+                        """
+                )
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(StartupStep.allCases) { step in
@@ -55,20 +65,20 @@ struct StartupProgressView: View {
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
-    private func fatalErrorView(message: String) -> some View {
+    private func fatalErrorView(title: LocalizedStringKey, message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 36))
                 .foregroundStyle(AppColors.error)
                 .accessibilityHidden(true)
 
-            Text("Daemon Cannot Start")
+            Text(title)
                 .font(.system(size: 14, weight: .semibold))
 
             Text(message)
