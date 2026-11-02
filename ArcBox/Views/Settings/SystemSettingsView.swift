@@ -118,7 +118,9 @@ struct SystemSettingsView: View {
                 LabeledContent {
                     Picker("Virtual machine backend", selection: $selectedBackend) {
                         ForEach(SystemVmBackend.allCases) { backend in
+                            // `.disabled` leaves the menu item enabled; this disables it.
                             Text(backend.label).tag(backend)
+                                .selectionDisabled(!isSelectable(backend))
                         }
                     }
                     .labelsHidden()
@@ -132,6 +134,11 @@ struct SystemSettingsView: View {
                         Text(Self.backendCaption)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        if let availability = backendAvailabilityNote {
+                            Text(availability)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -258,8 +265,32 @@ struct SystemSettingsView: View {
         }
     }
 
-    private static let backendCaption =
-        "Intel (amd64) code runs via Rosetta on Virtualization.framework, or via FEX on Hypervisor.framework. Switching restarts the System VM."
+    private static let backendCaption = """
+        Intel (amd64) code runs via Rosetta on Virtualization.framework, or via FEX on the other backends. \
+        Software emulation (slower) needs no hardware virtualization. Switching restarts the System VM.
+        """
+
+    /// The daemon rejects a backend this Mac or this version cannot run, so the picker
+    /// does not offer it.
+    private func isSelectable(_ backend: SystemVmBackend) -> Bool {
+        if backend.requiresHardwareVirtualization {
+            return daemonManager.hardwareVirtualizationAvailable != false
+        }
+        return EmbeddedRuntime.supportsSoftwareEmulation
+    }
+
+    /// Why an option is missing.
+    private var backendAvailabilityNote: String? {
+        if daemonManager.hardwareVirtualizationAvailable == false {
+            return EmbeddedRuntime.supportsSoftwareEmulation
+                ? "This Mac doesn't provide hardware virtualization, so only software emulation can run."
+                : "This Mac doesn't provide hardware virtualization, and this version of ArcBox has no software emulation."
+        }
+        if !EmbeddedRuntime.supportsSoftwareEmulation {
+            return "Software emulation isn't available in this version of ArcBox."
+        }
+        return nil
+    }
 
     private func syncBackendSelection() {
         if let current = backendModel.currentBackend {

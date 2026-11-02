@@ -4,6 +4,9 @@ public enum SystemVmBackend: String, CaseIterable, Identifiable, Sendable {
     case vz
     /// Hypervisor.framework — ArcBox's custom VMM. Runs amd64 via FEX.
     case hv
+    /// QEMU TCG — software emulation for Macs without hardware virtualization, such as
+    /// macOS virtual machines. Much slower. Runs amd64 via FEX.
+    case qemu
 
     public var id: String { rawValue }
 
@@ -12,7 +15,13 @@ public enum SystemVmBackend: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .vz: "Virtualization.framework"
         case .hv: "Hypervisor.framework"
+        case .qemu: "Software emulation (slower)"
         }
+    }
+
+    /// Whether the backend needs a Mac with hardware virtualization.
+    public var requiresHardwareVirtualization: Bool {
+        self != .qemu
     }
 
     /// Creates a backend from its wire value; `nil` for unspecified or unknown values.
@@ -20,8 +29,8 @@ public enum SystemVmBackend: String, CaseIterable, Identifiable, Sendable {
         switch proto {
         case .vz: self = .vz
         case .hv: self = .hv
-        // The app does not offer the QEMU backend yet.
-        case .qemu, .unspecified, .UNRECOGNIZED: return nil
+        case .qemu: self = .qemu
+        case .unspecified, .UNRECOGNIZED: return nil
         }
     }
 
@@ -30,6 +39,7 @@ public enum SystemVmBackend: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .vz: .vz
         case .hv: .hv
+        case .qemu: .qemu
         }
     }
 }
