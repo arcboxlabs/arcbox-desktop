@@ -140,9 +140,24 @@ extension AboutViewController {
             color: .tertiaryLabelColor,
             alignment: .center
         )
-        let stack = verticalStack([copyright], spacing: 6)
+        let notices = NSButton(
+            title: "Third-Party Notices",
+            target: self,
+            action: #selector(showThirdPartyNotices(_:))
+        )
+        notices.bezelStyle = .inline
+        notices.isBordered = false
+        notices.font = .systemFont(ofSize: 11)
+        notices.contentTintColor = .linkColor
+        notices.toolTip = "Licenses and source code of the open-source software in ArcBox"
+        notices.setAccessibilityHelp(notices.toolTip)
+        let stack = verticalStack([copyright, notices], spacing: 6)
         stack.alignment = .centerX
         return stack
+    }
+
+    @objc func showThirdPartyNotices(_ sender: NSButton) {
+        showThirdPartyNoticesWindow()
     }
 
     private func infoRow(label title: String, value: String) -> NSView {

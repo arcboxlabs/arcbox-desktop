@@ -16,6 +16,8 @@ pub mod bundle;
 pub mod dmg;
 #[cfg(target_os = "macos")]
 pub mod embed;
+#[cfg(target_os = "macos")]
+mod notices;
 
 #[cfg(target_os = "macos")]
 fn host_binary_dir(arcbox_dir: &Path) -> PathBuf {

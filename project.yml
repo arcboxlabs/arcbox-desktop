@@ -137,6 +137,11 @@ targets:
         buildPhase: resources
       - path: arcbox.version
         buildPhase: resources
+      # Copied as a folder: the app reads ThirdPartyNotices/components.json
+      # and the license files it references, at their relative paths.
+      - path: ThirdPartyNotices
+        type: folder
+        buildPhase: resources
       - path: LaunchDaemons/com.arcboxlabs.desktop.daemon.plist
         buildPhase:
           copyFiles:

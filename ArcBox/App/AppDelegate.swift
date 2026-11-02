@@ -89,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         coordinator?.checkForUpdates()
     }
 
+    @objc private func showThirdPartyNotices(_ sender: Any?) {
+        coordinator?.showThirdPartyNotices()
+    }
+
     @objc private func showGettingStarted(_ sender: Any?) {
         coordinator?.showGettingStarted()
     }
@@ -251,6 +255,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 "Migrate from Docker Desktop or OrbStack…",
                 action: #selector(showMigrationAssistant(_:))
             ))
+        menu.addItem(.separator())
+        menu.addItem(item("Third-Party Notices", action: #selector(showThirdPartyNotices(_:))))
         return menu
     }
 

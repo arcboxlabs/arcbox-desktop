@@ -176,6 +176,12 @@ final class ApplicationCoordinator: NSObject {
         showAboutWindow()
     }
 
+    func showThirdPartyNotices() {
+        guard !isTerminating else { return }
+        activate()
+        showThirdPartyNoticesWindow()
+    }
+
     func checkForUpdates() {
         guard !isTerminating else { return }
         updaterController.updater.checkForUpdates()
