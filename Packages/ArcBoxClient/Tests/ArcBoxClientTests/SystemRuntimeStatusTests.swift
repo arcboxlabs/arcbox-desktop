@@ -32,8 +32,50 @@ final class SystemRuntimeStatusTests: XCTestCase {
         XCTAssertFalse(daemon.isDockerReady, "System READY without host READY")
     }
 
-    /// Only a Mac that lacks hardware virtualization is beyond a retry, and a daemon that
-    /// does not report the field never claims the Mac lacks virtualization.
+    /// Download progress lives exactly as long as DOWNLOADING. A size the server has not
+    /// reported arrives as 0, and STARTING after the install carries no download.
+    func testDownloadProgressLastsAsLongAsTheDownload() {
+        let daemon = DaemonManager()
+        var status = Arcbox_V1_SetupStatus()
+        status.phase = .ready
+        status.systemRuntime = .with {
+            $0.state = .downloading
+            $0.reason = "Downloading QEMU 0.1.0"
+            $0.download = .with {
+                $0.component = .qemu
+                $0.stage = .transferring
+                $0.downloadedBytes = 8_056
+                $0.totalBytes = 5_930_315
+            }
+        }
+        daemon.applySetupStatusSync(status)
+        XCTAssertEqual(
+            daemon.runtimeDownload,
+            RuntimeDownloadProgress(stage: .transferring, downloadedBytes: 8_056, totalBytes: 5_930_315))
+        XCTAssertFalse(daemon.isDockerReady)
+        XCTAssertNil(daemon.systemRuntimeIssue, "a download is progress, not an issue")
+        XCTAssertEqual(daemon.runtimeProgressMessage, "Downloading QEMU 0.1.0")
+
+        // Bytes kept from an interrupted attempt, before the server reported the size.
+        status.systemRuntime.download.stage = .waitingToRetry
+        status.systemRuntime.download.downloadedBytes = 1_048_576
+        status.systemRuntime.download.totalBytes = 0
+        daemon.applySetupStatusSync(status)
+        XCTAssertEqual(
+            daemon.runtimeDownload,
+            RuntimeDownloadProgress(stage: .waitingToRetry, downloadedBytes: 1_048_576, totalBytes: nil))
+
+        status.systemRuntime = .with {
+            $0.state = .starting
+            $0.reason = "Preparing the System VM"
+        }
+        daemon.applySetupStatusSync(status)
+        XCTAssertNil(daemon.runtimeDownload, "the install finished, but its progress stayed")
+    }
+
+    /// Only a Mac that lacks hardware virtualization with no emulated backend is beyond a
+    /// retry. A failure under emulation is the emulator's and can be retried, and a daemon
+    /// that does not report the field never claims the Mac lacks virtualization.
     func testOnlyAFailureWithoutAnyBackendBlamesTheMac() {
         let reason = "System VM cannot start: this Mac does not provide hardware virtualization"
         func issue(hardwareVirtualization: Bool?, backend: Arcbox_V1_SystemVmBackend) -> SystemRuntimeIssue? {
@@ -53,6 +95,7 @@ final class SystemRuntimeStatusTests: XCTestCase {
         }
 
         XCTAssertEqual(issue(hardwareVirtualization: false, backend: .unspecified), .hardwareVirtualizationUnavailable)
+        XCTAssertEqual(issue(hardwareVirtualization: false, backend: .qemu), .failed(reason: reason))
         XCTAssertEqual(issue(hardwareVirtualization: nil, backend: .unspecified), .failed(reason: reason))
         XCTAssertEqual(issue(hardwareVirtualization: true, backend: .vz), .failed(reason: reason))
     }

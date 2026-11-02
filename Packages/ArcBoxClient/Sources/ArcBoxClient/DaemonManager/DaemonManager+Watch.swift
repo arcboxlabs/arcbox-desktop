@@ -135,6 +135,11 @@ extension DaemonManager {
         systemRuntimeReason = status.systemRuntime.reason
         hardwareVirtualizationAvailable =
             status.hasHardwareVirtualizationAvailable ? status.hardwareVirtualizationAvailable : nil
+        effectiveBackend = SystemVmBackend(proto: status.effectiveBackend)
+        // Leaving DOWNLOADING ends the download, and its progress goes with it.
+        runtimeDownload =
+            systemRuntime == .downloading && status.systemRuntime.hasDownload
+            ? RuntimeDownloadProgress(status.systemRuntime.download) : nil
 
         switch status.phase {
         case .unspecified: setupPhase = .unknown

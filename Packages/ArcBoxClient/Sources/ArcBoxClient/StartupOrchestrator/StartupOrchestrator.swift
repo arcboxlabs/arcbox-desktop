@@ -35,11 +35,13 @@ enum StartupError: LocalizedError {
 @Observable
 @MainActor
 public final class StartupOrchestrator {
+    // Both are set from outside only by tests that render a phase.
+
     /// Overall startup phase.
-    public private(set) var phase: StartupPhase = .idle
+    public internal(set) var phase: StartupPhase = .idle
 
     /// Per-step status for UI display.
-    public private(set) var stepStatuses: [StartupStep: StepStatus]
+    public internal(set) var stepStatuses: [StartupStep: StepStatus]
 
     /// Normalized progress [0, 1] based on completed/total steps.
     public var progress: Double {

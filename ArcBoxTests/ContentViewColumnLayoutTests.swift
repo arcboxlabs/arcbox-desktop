@@ -54,12 +54,14 @@ final class ContentViewColumnLayoutTests: XCTestCase {
         )
     }
 
-    func testStorageFailureBannerPreservesWindowSizeAndNavigation() throws {
+    func testRuntimeBannersPreserveWindowSizeAndNavigation() throws {
         let window = try mainWindow()
         let originalSize = window.frame.size
         var status = Arcbox_V1_SetupStatus()
         status.phase = .ready
         status.vmRunning = true
+        status.hardwareVirtualizationAvailable = false
+        status.effectiveBackend = .qemu
         status.storageHealth.volumes = [
             .with {
                 $0.role = .data; $0.state = .readOnly

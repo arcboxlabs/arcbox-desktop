@@ -77,15 +77,51 @@ struct StartupRetryButton: View {
     }
 }
 
-/// What the runtime is doing while Docker starts: the daemon's current step.
+/// What the runtime is doing while Docker starts: the daemon's current step, a download
+/// it waits for, and a note that software emulation makes all of it slower.
 struct RuntimeProgressDetail: View {
     let daemon: DaemonManager
 
     var body: some View {
-        ProgressView(daemon.runtimeProgressMessage)
-            .controlSize(.small)
-            .font(.system(size: 11))
-            .foregroundStyle(AppColors.textSecondary)
-            .multilineTextAlignment(.center)
+        VStack(spacing: 8) {
+            if let download = daemon.runtimeDownload, download.stage == .transferring {
+                // A determinate bar replaces the spinner; onboarding's 190 pt frame has
+                // no room for both. Verifying, installing and waiting to retry keep the
+                // spinner: the daemon's reason says which.
+                Text(daemon.runtimeProgressMessage)
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.textSecondary)
+                downloadProgress(download)
+            } else {
+                ProgressView(daemon.runtimeProgressMessage)
+                    .controlSize(.small)
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+
+            if daemon.isSoftwareEmulated {
+                Label("Software emulation: startup takes a few minutes.", systemImage: "cpu")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColors.warning)
+            }
+        }
+        .multilineTextAlignment(.center)
+    }
+
+    @ViewBuilder
+    private func downloadProgress(_ download: RuntimeDownloadProgress) -> some View {
+        let received = formattedBytes(download.downloadedBytes)
+        VStack(spacing: 4) {
+            if let total = download.totalBytes, total > 0 {
+                ProgressView(value: Double(min(download.downloadedBytes, total)), total: Double(total))
+                    .frame(width: 220)
+                Text("\(received) of \(formattedBytes(total))")
+            } else {
+                Text(received)
+            }
+        }
+        .font(.system(size: 11))
+        .foregroundStyle(AppColors.textMuted)
+        .monospacedDigit()
     }
 }

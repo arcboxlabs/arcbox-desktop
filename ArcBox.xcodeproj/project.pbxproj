@@ -263,6 +263,7 @@
 		C9DE020C046663275EC9767F /* ContainerLogsFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4146DF71A57F8A1ED79D8947 /* ContainerLogsFilterTests.swift */; };
 		CA1E5B5C6F01C55FC45ACD08 /* LoadPhaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427404757AD7EE566CCB96DE /* LoadPhaseTests.swift */; };
 		CA35C83C2741D945EF23C5E3 /* VolumeViewModel+Docker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867A6CA0B4DD07BE74610FCB /* VolumeViewModel+Docker.swift */; };
+		CB52B8757EC1A366B80419AD /* SystemRuntimeSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9244C63B9B9878B0DEA5EEAB /* SystemRuntimeSnapshotTests.swift */; };
 		CBFC92B00A32E9A54D0B1274 /* RuntimeStorageDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE022209B8EE8590998F04 /* RuntimeStorageDetails.swift */; };
 		CC2502232C562D3167B2F3D2 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 9C709A3E8E1972F5BB841623 /* PostHog */; };
 		CCAF8E87C516B0ACE300BDCD /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A76C0B459745654F31B3B2 /* PodsListView.swift */; };
@@ -290,6 +291,7 @@
 		DDF9F74BA0638A51322686DE /* PodsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF5B0B3EC77FB12D8B4EA6A /* PodsViewModel.swift */; };
 		E0C997A42E6F8D8B4D9C26FF /* ImagesListViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35969670AC4F826B4A3BB567 /* ImagesListViewControllerTests.swift */; };
 		E12C55C4C275DCBAB9DA8150 /* VolumeFilesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDFA2EDA7A3AC8448696F91 /* VolumeFilesTab.swift */; };
+		E1F5EDAF136096EFE45BB1C8 /* SoftwareEmulationBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDB5EBA55C2E758439CE6BD2 /* SoftwareEmulationBanner.swift */; };
 		E3D54052EC2DC4A127D8B822 /* ProcessSupportTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 6A9B792E10E1FEDE53AC72F1 /* ProcessSupportTesting */; };
 		E7931822EE59221AEC359CDF /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9FDA2F6F3036772AC0B23C /* SettingsWindowController.swift */; };
 		E7E796A682B8956706429D45 /* ContainerListCells.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CF09CC08AE563196CE3BED /* ContainerListCells.swift */; };
@@ -534,6 +536,7 @@
 		91F830C5D7EEFBF144197C5B /* AppDelegateTestHostTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegateTestHostTests.swift; sourceTree = "<group>"; };
 		920C9CA81449FA23CEC17EF6 /* SandboxFilesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxFilesTab.swift; sourceTree = "<group>"; };
 		9234FC5BCCDDCBF441A94880 /* UpdaterDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterDelegate.swift; sourceTree = "<group>"; };
+		9244C63B9B9878B0DEA5EEAB /* SystemRuntimeSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemRuntimeSnapshotTests.swift; sourceTree = "<group>"; };
 		93492ACC2F34E108901582CF /* OnboardingMigrationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingMigrationModel.swift; sourceTree = "<group>"; };
 		93968609F8E058EAC838DD18 /* UpdaterSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterSettingsModel.swift; sourceTree = "<group>"; };
 		9467D1D1EA60DDF80414B20B /* ContainerListModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerListModels.swift; sourceTree = "<group>"; };
@@ -645,6 +648,7 @@
 		EBD1F83B573C40DFA09E5633 /* StatePlaceholderTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatePlaceholderTestSupport.swift; sourceTree = "<group>"; };
 		EC6744BCBFA0A05831AFED0E /* MenuBarView+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Layout.swift"; sourceTree = "<group>"; };
 		ECF57E2C2B0281B8CEA6132C /* MenuBarView+Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuBarView+Metrics.swift"; sourceTree = "<group>"; };
+		EDB5EBA55C2E758439CE6BD2 /* SoftwareEmulationBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoftwareEmulationBanner.swift; sourceTree = "<group>"; };
 		EDE0E04FE403500007EAF74B /* ContainerLogsFollowingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerLogsFollowingTests.swift; sourceTree = "<group>"; };
 		EE6C627A5BC34C783DAEAC31 /* LocalRootFSOutlineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRootFSOutlineModels.swift; sourceTree = "<group>"; };
 		EEDD0BC8797B1E992161C753 /* ContainersListViewBodyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainersListViewBodyTests.swift; sourceTree = "<group>"; };
@@ -772,6 +776,7 @@
 				2E8FB9C9E3349126EF773522 /* DaemonLoadingView.swift */,
 				25314BB32BC38185AD62BB99 /* DiagnosticExportButton.swift */,
 				AEE7C272F6DF0E930ED90F38 /* RuntimeStorageBanner.swift */,
+				EDB5EBA55C2E758439CE6BD2 /* SoftwareEmulationBanner.swift */,
 				32115BE04C97CECA9C05A273 /* StartupProgressView.swift */,
 				1E402C17AB52A3655B5E1EF8 /* SystemRuntimeStatusView.swift */,
 			);
@@ -1380,6 +1385,7 @@
 				94F3188B1D2EF33614A67CB7 /* SparklineGeometryTests.swift */,
 				EBD1F83B573C40DFA09E5633 /* StatePlaceholderTestSupport.swift */,
 				4C1EB79113598B39E5BF71D1 /* StorageHealthTests.swift */,
+				9244C63B9B9878B0DEA5EEAB /* SystemRuntimeSnapshotTests.swift */,
 				55E41034938E015D259CAB42 /* ThirdPartyNoticesTests.swift */,
 				C8664C19EC6943EB12D86153 /* TimeMachineExclusionTests.swift */,
 				B4BAE047B96D10B4716BA1A2 /* VolumesListViewControllerTests.swift */,
@@ -1784,6 +1790,7 @@
 				E7931822EE59221AEC359CDF /* SettingsWindowController.swift in Sources */,
 				6DC794E9A1D889DF4F3D6B91 /* SheetErrorMessage.swift in Sources */,
 				D69B9880564FF221556379CF /* SleepWakeManager.swift in Sources */,
+				E1F5EDAF136096EFE45BB1C8 /* SoftwareEmulationBanner.swift in Sources */,
 				9E79E2BBA05690D9ECAED2CD /* SortMenuButton.swift in Sources */,
 				55AB33B6859FE22D5FE1DF88 /* SparklineGeometry.swift in Sources */,
 				A03ACBF5074B007C8CD7B101 /* StartupProgressView.swift in Sources */,
@@ -1914,6 +1921,7 @@
 				7412564CF709DF2E69CD191F /* SparklineGeometryTests.swift in Sources */,
 				927458F82097ECF1A07412FD /* StatePlaceholderTestSupport.swift in Sources */,
 				F1382DB0EEB1EDEFE481B80D /* StorageHealthTests.swift in Sources */,
+				CB52B8757EC1A366B80419AD /* SystemRuntimeSnapshotTests.swift in Sources */,
 				FA79023DF3A3F16AAD9E5551 /* SystemRuntimeStatusTests.swift in Sources */,
 				1D698B590F9DD0598577292B /* ThirdPartyNoticesTests.swift in Sources */,
 				71D522DDDE7E2E04D3026E94 /* TimeMachineExclusionTests.swift in Sources */,

@@ -91,3 +91,39 @@ public enum SystemRuntimeIssue: Sendable, Equatable {
     case failed(reason: String)
     case disabled(reason: String)
 }
+
+/// A runtime component the daemon installs before the System VM can boot, such as the
+/// QEMU build software emulation needs. One at a time; the System runtime's reason names
+/// the component and version.
+public struct RuntimeDownloadProgress: Sendable, Equatable {
+    public enum Stage: Sendable, Equatable {
+        case transferring
+        case verifying
+        case installing
+        /// A transfer failed; the daemon retries on its own, and its reason says when.
+        case waitingToRetry
+    }
+
+    public var stage: Stage
+    /// Bytes on disk, a resumed partial download included. Not monotonic: a resume that
+    /// fails verification starts again from zero.
+    public var downloadedBytes: Int64
+    /// `nil` while the size is unknown, which the daemon reports as 0.
+    public var totalBytes: Int64?
+}
+
+extension RuntimeDownloadProgress {
+    /// `nil` for a stage this client does not know; the progress detail then shows the
+    /// daemon's reason alone. The component is not kept: the reason names it.
+    init?(_ download: Arcbox_V1_ComponentDownload) {
+        switch download.stage {
+        case .transferring: stage = .transferring
+        case .verifying: stage = .verifying
+        case .installing: stage = .installing
+        case .waitingToRetry: stage = .waitingToRetry
+        case .unspecified, .UNRECOGNIZED: return nil
+        }
+        downloadedBytes = Int64(clamping: download.downloadedBytes)
+        totalBytes = download.totalBytes == 0 ? nil : Int64(clamping: download.totalBytes)
+    }
+}

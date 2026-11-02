@@ -61,7 +61,10 @@ struct ContentView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            RuntimeStorageBanner(onDetails: onStorage)
+            VStack(spacing: 0) {
+                SoftwareEmulationBanner()
+                RuntimeStorageBanner(onDetails: onStorage)
+            }
         }
         .task(id: appVM.pendingResourceDeepLink) {
             await refreshVisibleResourceListIfNeeded()

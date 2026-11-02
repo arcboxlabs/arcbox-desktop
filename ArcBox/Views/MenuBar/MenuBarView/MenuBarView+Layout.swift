@@ -1,3 +1,4 @@
+import ArcBoxClient
 import SwiftUI
 
 extension MenuBarView {
@@ -40,6 +41,12 @@ extension MenuBarView {
                 .font(.headline)
 
             Spacer(minLength: 0)
+
+            if daemonManager.isSoftwareEmulated {
+                statusPill(title: "Emulated", color: AppColors.warning)
+                    .help("The Linux VM runs under software emulation, which is much slower.")
+                    .accessibilityLabel("Software emulation, slower than hardware virtualization")
+            }
 
             statusPill(title: daemonStateDisplay, color: daemonStateColor)
                 .accessibilityLabel("Daemon \(daemonStateDisplay)")
