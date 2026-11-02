@@ -57,6 +57,27 @@ final class SystemRuntimeStatusTests: XCTestCase {
         XCTAssertEqual(issue(hardwareVirtualization: true, backend: .vz), .failed(reason: reason))
     }
 
+    /// The bundled daemon's version decides whether a Mac without hardware virtualization
+    /// may start it, so the comparison has to be numeric and fail closed.
+    func testSoftwareEmulationNeedsABundledDaemonAtOrAboveTheMinimum() throws {
+        let minimum = try XCTUnwrap(EmbeddedRuntime.Version("v0.11.0"))
+        func supports(_ bundled: String?) -> Bool {
+            EmbeddedRuntime.supportsSoftwareEmulation(bundledVersion: bundled, minimum: minimum)
+        }
+
+        XCTAssertTrue(supports("v0.11.0"))
+        XCTAssertTrue(supports("v0.12.3"))
+        XCTAssertTrue(supports("v1.0.0"))
+        XCTAssertFalse(supports("v0.10.12"))
+        XCTAssertFalse(supports("v0.9.0"), "compared as strings")
+        XCTAssertFalse(supports("v0.11"))
+        XCTAssertFalse(supports("master"))
+        XCTAssertFalse(supports(nil))
+        XCTAssertFalse(
+            EmbeddedRuntime.supportsSoftwareEmulation(bundledVersion: "v9.9.9", minimum: nil),
+            "no release supports emulation until a minimum is set")
+    }
+
     /// Retrying a failed System startup restarts the daemon, which stops every Machine and
     /// macOS guest it hosts, so that retry always asks first and names the Linux Machines
     /// it can list.
