@@ -116,7 +116,11 @@ private struct ThirdPartyNoticeDetail: View {
             }
         }
         .task(id: component.id) {
-            licenseText = await ThirdPartyNotices.licenseText(of: component, in: directory)
+            let text = await ThirdPartyNotices.licenseText(of: component, in: directory)
+            // The read ignores cancellation; a superseded read must not
+            // overwrite the text of the component selected after it.
+            guard !Task.isCancelled else { return }
+            licenseText = text
         }
     }
 
