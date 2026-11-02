@@ -88,6 +88,7 @@ public final class StartupOrchestrator {
     public let daemonManager: DaemonManager
     private let onClientsNeeded: @MainActor () throws -> ArcBoxClient
     private let hostSupportsVirtualization: @MainActor () -> Bool
+    private let runtimeSupportsSoftwareEmulation: Bool
 
     private static let signposter = OSSignposter(
         subsystem: "com.arcboxlabs.desktop", category: "startup")
@@ -100,11 +101,13 @@ public final class StartupOrchestrator {
     public init(
         daemonManager: DaemonManager,
         onClientsNeeded: @escaping @MainActor () throws -> ArcBoxClient,
-        hostSupportsVirtualization: @escaping @MainActor () -> Bool = { HostVirtualization.isAvailable }
+        hostSupportsVirtualization: @escaping @MainActor () -> Bool = { HostVirtualization.isAvailable },
+        runtimeSupportsSoftwareEmulation: Bool = EmbeddedRuntime.supportsSoftwareEmulation
     ) {
         self.daemonManager = daemonManager
         self.onClientsNeeded = onClientsNeeded
         self.hostSupportsVirtualization = hostSupportsVirtualization
+        self.runtimeSupportsSoftwareEmulation = runtimeSupportsSoftwareEmulation
 
         var statuses: [StartupStep: StepStatus] = [:]
         for step in StartupStep.allCases {
@@ -166,13 +169,17 @@ public final class StartupOrchestrator {
             stepStatuses[step] = .pending
         }
 
-        // Without hardware virtualization the daemon can never boot its VM: launchd
-        // restarts it in a crash loop, and the helper install asks for an administrator
-        // password for nothing. It is a property of the Mac, so it is not reported.
-        guard hostSupportsVirtualization() else {
-            ClientLog.startup.error("Hardware virtualization is unavailable; not starting the daemon")
-            phase = .virtualizationUnavailable
-            return
+        // Without hardware virtualization only a daemon with software emulation can boot
+        // the System VM. Any other daemon never gets Docker up (older ones crash-loop under
+        // launchd), and the helper install would ask for an administrator password for
+        // nothing. It is a property of the Mac, so it is not reported.
+        if !hostSupportsVirtualization() {
+            guard runtimeSupportsSoftwareEmulation else {
+                ClientLog.startup.error("Hardware virtualization is unavailable; not starting the daemon")
+                phase = .virtualizationUnavailable
+                return
+            }
+            ClientLog.startup.info("Hardware virtualization is unavailable; the daemon will use software emulation")
         }
 
         // Step 1: Install / upgrade the privileged helper (macOS prompts for admin).
