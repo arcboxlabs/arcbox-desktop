@@ -392,7 +392,8 @@ enum RuntimeAvailability: Equatable {
 ```
 
 所有 Docker controller 只在
-`daemonManager.setupPhase.isDockerReady && dockerClient != nil` 时调用 API。
+`daemonManager.isDockerReady && dockerClient != nil` 时调用 API（host READY/DEGRADED 且
+`system_runtime` READY；旧 daemon 只看 phase）。
 `dockerSocketLinked` 只代表 CLI symlink，不参与 Docker API readiness。
 
 启动 orchestration、client 创建、event monitor、sleep/wake 和 context 管理从 SwiftUI window
@@ -560,7 +561,7 @@ Task 归属：
 ### P0：不能原样翻译
 
 1. 注册所有 `UserDefaults` 默认值，修复两个默认 `true` 设置的首启漂移。
-2. 将所有 Docker API gate 统一为 `setupPhase.isDockerReady && dockerClient != nil`。
+2. 将所有 Docker API gate 统一为 `daemonManager.isDockerReady && dockerClient != nil`。
 3. 为 Images、Sandboxes、Snapshots 增加显式 load phase；Volumes、Networks 与 Network inspect
    已完成。
 4. 将 Kubernetes 布尔组合改为 lifecycle enum，并让 client identity 驱动 task 重启。已完成。

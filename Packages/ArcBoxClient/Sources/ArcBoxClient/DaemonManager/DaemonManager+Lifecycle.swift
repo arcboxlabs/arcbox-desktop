@@ -135,8 +135,8 @@ extension DaemonManager {
     /// if .enabled" guard exists to prevent a **known bug** where redundant
     /// calls each unregister+register the daemon, killing it before it
     /// finishes initializing. This method must only be invoked after a terminal
-    /// `FAILED` status or a full poll timeout confirms the daemon is unreachable,
-    /// not merely slow to start.
+    /// `FAILED` status, the user's retry of a failed System runtime, or a full poll
+    /// timeout confirms the daemon is unreachable, not merely slow to start.
     public func forceReregisterDaemon() async {
         ClientLog.daemon.warning("Force re-registering daemon (recovery path)")
         stopWatching()

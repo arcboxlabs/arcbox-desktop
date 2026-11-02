@@ -15,9 +15,8 @@ struct PodsListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView(daemonManager.setupMessage)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !daemonManager.isDockerReady {
+                SystemRuntimeStatusView()
             } else if arcboxClient == nil {
                 DaemonLoadingView(state: .registered)
             } else {
@@ -68,7 +67,7 @@ struct PodsListView: View {
                         arcboxClient == nil
                             || !daemonManager.state.isRunning
                             || orchestrator?.isReady == false
-                            || !daemonManager.setupPhase.isDockerReady
+                            || !daemonManager.isDockerReady
                             || !k8s.lifecycle.canToggle
                     )
                     .help(k8s.lifecycle.toggleIsOn ? "Stop Kubernetes" : "Start Kubernetes")
@@ -93,15 +92,15 @@ struct PodsListView: View {
                         arcboxClient == nil
                             || !daemonManager.state.isRunning
                             || orchestrator?.isReady == false
-                            || !daemonManager.setupPhase.isDockerReady
+                            || !daemonManager.isDockerReady
                             || !k8s.lifecycle.canToggle
                     )
                     .help(k8s.lifecycle.toggleIsOn ? "Stop Kubernetes" : "Start Kubernetes")
                 }
             }
         }
-        .task(id: daemonManager.setupPhase.isDockerReady && arcboxClient != nil) {
-            guard daemonManager.setupPhase.isDockerReady, arcboxClient != nil else { return }
+        .task(id: daemonManager.isDockerReady && arcboxClient != nil) {
+            guard daemonManager.isDockerReady, arcboxClient != nil else { return }
             await k8s.checkStatus(client: arcboxClient)
         }
     }
@@ -111,7 +110,7 @@ struct PodsListView: View {
             return "Unavailable"
         }
         if orchestrator?.isReady == false || !daemonManager.state.isRunning
-            || !daemonManager.setupPhase.isDockerReady
+            || !daemonManager.isDockerReady
         {
             return "Starting…"
         }

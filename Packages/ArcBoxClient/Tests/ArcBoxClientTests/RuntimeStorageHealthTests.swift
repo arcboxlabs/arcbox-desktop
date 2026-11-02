@@ -9,7 +9,7 @@ final class RuntimeStorageHealthTests: XCTestCase {
         daemon.applySetupStatusSync(status(data: .readOnly))
 
         XCTAssertEqual(daemon.state, .running)
-        XCTAssertTrue(daemon.setupPhase.isDockerReady)
+        XCTAssertTrue(daemon.isDockerReady)
         XCTAssertTrue(daemon.storageHealthIsCurrent)
         XCTAssertTrue(daemon.storageWriteFailureMessage?.contains("Data: read-only") == true)
     }
@@ -104,7 +104,7 @@ final class RuntimeStorageHealthTests: XCTestCase {
         checked.storageRecovery.storageProtected = true
         let daemon = DaemonManager()
         daemon.applySetupStatusSync(checked)
-        XCTAssertTrue(daemon.setupPhase.isDockerReady)
+        XCTAssertTrue(daemon.isDockerReady)
         XCTAssertFalse(daemon.storageHealthIsCurrent)
         XCTAssertTrue(daemon.storageWriteFailureMessage?.contains("remains protected") == true)
 

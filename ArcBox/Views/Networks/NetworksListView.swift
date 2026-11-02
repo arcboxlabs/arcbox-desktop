@@ -15,9 +15,8 @@ struct NetworksListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView(daemonManager.setupMessage)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !daemonManager.isDockerReady {
+                SystemRuntimeStatusView()
             } else if docker == nil {
                 ContentUnavailableView {
                     Label("Docker Client Unavailable", systemImage: "shippingbox")
@@ -66,16 +65,16 @@ struct NetworksListView: View {
             refreshError: Bindable(vm).refreshError,
             resourceName: "networks"
         )
-        .task(id: daemonManager.setupPhase.isDockerReady && docker != nil) {
-            guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+        .task(id: daemonManager.isDockerReady && docker != nil) {
+            guard daemonManager.isDockerReady, docker != nil else { return }
             await vm.loadNetworks(docker: docker)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
-            guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+            guard daemonManager.isDockerReady, docker != nil else { return }
             Task { await vm.loadNetworks(docker: docker) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
-            guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+            guard daemonManager.isDockerReady, docker != nil else { return }
             Task { await vm.loadNetworks(docker: docker) }
         }
     }
@@ -83,7 +82,7 @@ struct NetworksListView: View {
     private var dockerActionsAvailable: Bool {
         (orchestrator?.isReady ?? true)
             && daemonManager.state.isRunning
-            && daemonManager.setupPhase.isDockerReady
+            && daemonManager.isDockerReady
             && docker != nil
     }
 
@@ -94,7 +93,7 @@ struct NetworksListView: View {
         guard daemonManager.state.isRunning else {
             return "Unavailable"
         }
-        guard daemonManager.setupPhase.isDockerReady else {
+        guard daemonManager.isDockerReady else {
             return "Starting…"
         }
         guard docker != nil else {

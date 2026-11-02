@@ -38,7 +38,7 @@ final class RuntimeStorageRecoveryIntegrationTests: XCTestCase {
             XCTAssertNotNil(daemon.storageWriteFailureMessage)
         } else {
             try await waitUntil("The disposable runtime must be ready before check-only.") {
-                daemon.setupPhase.isDockerReady && daemon.vmRunning
+                daemon.isDockerReady && daemon.vmRunning
             }
         }
 

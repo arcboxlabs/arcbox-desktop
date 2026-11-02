@@ -52,7 +52,7 @@ A bare `Bool` like `hasCompletedInitialLoad` cannot distinguish "never started" 
 **Rule**: use an enum (`waiting → loading → loaded | failed`) for any multi-phase async operation visible in the UI.
 
 ### `dockerSocketLinked` vs Docker API readiness
-`daemonManager.dockerSocketLinked` tracks the CLI convenience symlink (`/var/run/docker.sock`), NOT the Docker API socket (`~/.arcbox/run/docker.sock`). Use `setupPhase.isDockerReady` (`.ready` or `.degraded`) to gate Docker API calls.
+`daemonManager.dockerSocketLinked` tracks the CLI convenience symlink (`/var/run/docker.sock`), NOT the Docker API socket (`~/.arcbox/run/docker.sock`). Gate Docker API calls on `daemonManager.isDockerReady`: host `.ready` or `.degraded` *and* `system_runtime` READY, because the daemon boots the System VM only after host READY. A daemon that predates `system_runtime` is judged by its phase alone. Gate what needs only the host, such as Machines, on `setupPhase.isHostReady`.
 
 ### Default tab vs lazy tabs
 The default tab's view renders during startup. Other tabs render lazily when the user switches to them. This means timing bugs in `.task(id:)` only manifest on the default tab — other tabs work by accident because dependencies are already available when they appear. Always test startup behavior on the default tab specifically.

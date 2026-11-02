@@ -40,6 +40,51 @@ public final class DaemonManager {
     /// Whether Docker CLI tools are installed (from daemon status).
     public internal(set) var dockerToolsInstalled: Bool = false
 
+    /// System VM and Docker readiness (from daemon status).
+    public internal(set) var systemRuntime: SystemRuntimeState = .notReported
+
+    /// The daemon's failure cause or current startup detail for ``systemRuntime``.
+    public internal(set) var systemRuntimeReason: String = ""
+
+    /// Whether this Mac provides hardware virtualization, as the daemon probed it;
+    /// `nil` from a daemon that predates the field.
+    public internal(set) var hardwareVirtualizationAvailable: Bool?
+
+    /// Whether the Docker API answers: host startup has finished and so has the System
+    /// runtime. A daemon boots the System VM only after host `READY`, so the host phase
+    /// alone says nothing about Docker. A daemon that predates `system_runtime` reached
+    /// `READY` only with Docker up, so its phase still decides.
+    ///
+    /// Use this, not `dockerSocketLinked`, to gate Docker API calls: that flag tracks the
+    /// CLI convenience symlink at `/var/run/docker.sock`.
+    public var isDockerReady: Bool {
+        guard setupPhase.isHostReady else { return false }
+        return systemRuntime == .ready || systemRuntime == .notReported
+    }
+
+    /// Why Docker is not starting, once the host is ready; `nil` while it is starting or
+    /// running.
+    public var systemRuntimeIssue: SystemRuntimeIssue? {
+        guard setupPhase.isHostReady else { return nil }
+        switch systemRuntime {
+        case .failed:
+            return hardwareVirtualizationAvailable == false
+                ? .hardwareVirtualizationUnavailable
+                : .failed(reason: systemRuntimeReason)
+        case .disabled:
+            return .disabled(reason: systemRuntimeReason)
+        case .notReported, .unknown, .downloading, .starting, .vmStarting, .vmReady, .ready:
+            return nil
+        }
+    }
+
+    /// What startup is doing while Docker is not ready: the host message until host
+    /// startup finishes, then the System runtime's detail.
+    public var runtimeProgressMessage: String {
+        guard setupPhase.isHostReady, systemRuntime != .notReported else { return setupMessage }
+        return systemRuntimeReason.isEmpty ? "Starting the Docker runtime…" : systemRuntimeReason
+    }
+
     /// Last storage observation, retained for diagnostics after a disconnect.
     public internal(set) var storageHealth: RuntimeStorageHealth?
 
@@ -59,7 +104,7 @@ public final class DaemonManager {
             return "Runtime storage remains protected. Use Recover Read-Write in Storage & Recovery "
                 + "before starting a write operation."
         }
-        guard storageHealthIsCurrent, setupPhase.isDockerReady else { return nil }
+        guard storageHealthIsCurrent, isDockerReady else { return nil }
         return storageHealth?.writeFailureMessage
     }
 

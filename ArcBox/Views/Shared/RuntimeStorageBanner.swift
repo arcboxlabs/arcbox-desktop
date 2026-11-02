@@ -15,7 +15,7 @@ struct RuntimeStorageBanner: View {
                     ? "Storage checks completed. Use Recover Read-Write to verify writes and resume workloads."
                     : "Recovery did not complete. Review the diagnostics before trying again.")
         } else if let health = daemon.storageHealth, !health.affectedVolumes.isEmpty,
-            daemon.setupPhase.isDockerReady || !daemon.storageHealthIsCurrent
+            daemon.isDockerReady || !daemon.storageHealthIsCurrent
         {
             banner(
                 title: "Runtime storage needs attention",

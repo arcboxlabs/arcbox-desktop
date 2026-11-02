@@ -618,7 +618,7 @@ extension ApplicationCoordinator {
         withObservationTracking {
             _ = daemonManager.storageHealth
             _ = daemonManager.storageHealthIsCurrent
-            _ = daemonManager.setupPhase
+            _ = daemonManager.isDockerReady
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self, !self.isTerminating else { return }
