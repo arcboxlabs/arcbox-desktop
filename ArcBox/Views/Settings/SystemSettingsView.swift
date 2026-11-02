@@ -279,8 +279,11 @@ struct SystemSettingsView: View {
         return EmbeddedRuntime.supportsSoftwareEmulation
     }
 
-    /// Why an option is missing.
+    /// Why an option is missing, or why the backend in use differs from the one chosen.
     private var backendAvailabilityNote: String? {
+        if daemonManager.isSoftwareEmulated, backendModel.currentBackend != .qemu {
+            return "This Mac doesn't provide hardware virtualization, so ArcBox is using software emulation."
+        }
         if daemonManager.hardwareVirtualizationAvailable == false {
             return EmbeddedRuntime.supportsSoftwareEmulation
                 ? "This Mac doesn't provide hardware virtualization, so only software emulation can run."

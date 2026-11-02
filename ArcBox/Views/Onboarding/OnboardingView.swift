@@ -271,9 +271,14 @@ struct OnboardingView: View {
                 VStack(spacing: 6) {
                     Text("Setting up ArcBox")
                         .font(.system(size: 24, weight: .semibold))
-                    Text("This usually takes less than a minute.")
-                        .font(.system(size: 14))
-                        .foregroundStyle(AppColors.textSecondary)
+                    // The progress box below says how much longer emulation takes.
+                    Text(
+                        orchestrator.daemonManager.isSoftwareEmulated
+                            ? "ArcBox runs its Linux VM with software emulation on this Mac."
+                            : "This usually takes less than a minute."
+                    )
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppColors.textSecondary)
                 }
 
                 StartupProgressView(

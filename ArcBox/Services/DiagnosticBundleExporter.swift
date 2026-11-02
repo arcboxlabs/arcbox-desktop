@@ -139,11 +139,18 @@ final class DiagnosticBundleExporter {
     }
 
     private static func daemonStatusSection(_ dm: DaemonManager) -> String {
+        let hardwareVirtualization = dm.hardwareVirtualizationAvailable.map { $0 ? "available" : "unavailable" }
+        let emulation = EmbeddedRuntime.supportsSoftwareEmulation ? "supported" : "not supported"
         return """
             === Daemon Status ===
             State: \(dm.state)
             Setup Phase: \(dm.setupPhase)
             Setup Message: \(dm.setupMessage)
+            System Runtime: \(dm.systemRuntime)
+            System Runtime Reason: \(dm.systemRuntimeReason.isEmpty ? "none" : dm.systemRuntimeReason)
+            Hardware Virtualization: \(hardwareVirtualization ?? "not reported")
+            Effective Backend: \(dm.effectiveBackend?.rawValue ?? "unspecified")
+            Bundled Runtime: \(EmbeddedRuntime.bundledVersion ?? "unknown") (software emulation \(emulation))
             DNS Resolver Installed: \(dm.dnsResolverInstalled)
             Docker Socket Linked: \(dm.dockerSocketLinked)
             Route Installed: \(dm.routeInstalled)

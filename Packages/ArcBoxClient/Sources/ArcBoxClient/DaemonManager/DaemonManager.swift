@@ -50,6 +50,14 @@ public final class DaemonManager {
     /// `nil` from a daemon that predates the field.
     public internal(set) var hardwareVirtualizationAvailable: Bool?
 
+    /// The backend the System VM runs on or boots with next; `nil` while the daemon has
+    /// not resolved one, or no backend can run on this Mac.
+    public internal(set) var effectiveBackend: SystemVmBackend?
+
+    /// The download the System VM waits for while ``systemRuntime`` is `.downloading`;
+    /// `nil` in every other state.
+    public internal(set) var runtimeDownload: RuntimeDownloadProgress?
+
     /// Whether the Docker API answers: host startup has finished and so has the System
     /// runtime. A daemon boots the System VM only after host `READY`, so the host phase
     /// alone says nothing about Docker. A daemon that predates `system_runtime` reached
@@ -62,13 +70,18 @@ public final class DaemonManager {
         return systemRuntime == .ready || systemRuntime == .notReported
     }
 
+    /// Whether the System VM runs under QEMU software emulation, which is much slower
+    /// than Virtualization.framework or Hypervisor.framework.
+    public var isSoftwareEmulated: Bool { effectiveBackend == .qemu }
+
     /// Why Docker is not starting, once the host is ready; `nil` while it is starting or
     /// running.
     public var systemRuntimeIssue: SystemRuntimeIssue? {
         guard setupPhase.isHostReady else { return nil }
         switch systemRuntime {
         case .failed:
-            return hardwareVirtualizationAvailable == false
+            // With emulation as the backend, a failure is the emulator's and retryable.
+            return hardwareVirtualizationAvailable == false && !isSoftwareEmulated
                 ? .hardwareVirtualizationUnavailable
                 : .failed(reason: systemRuntimeReason)
         case .disabled:
