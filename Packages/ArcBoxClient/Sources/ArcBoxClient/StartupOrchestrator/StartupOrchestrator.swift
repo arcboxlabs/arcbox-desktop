@@ -58,15 +58,20 @@ public final class StartupOrchestrator {
     public var isReady: Bool { phase == .completed }
 
     /// Whether the daemon has also finished preparing the shared runtime.
-    public var isRuntimeReady: Bool { isReady && daemonManager.setupPhase.isDockerReady }
+    public var isRuntimeReady: Bool { isReady && daemonManager.isDockerReady }
 
     /// Current daemon-provided setup detail for progress UI.
-    public var setupMessage: String { daemonManager.setupMessage }
+    public var setupMessage: String { daemonManager.runtimeProgressMessage }
 
-    /// Fatal runtime setup error reported after the gRPC connection succeeds.
+    /// Retryable runtime failure reported after the gRPC connection succeeds: the daemon
+    /// gave up, or it is up but its System runtime failed.
     public var runtimeFailureMessage: String? {
-        guard isReady, case .error(let message) = daemonManager.state else { return nil }
-        return message
+        guard isReady else { return nil }
+        if case .error(let message) = daemonManager.state { return message }
+        if case .failed(let reason) = daemonManager.systemRuntimeIssue {
+            return reason.isEmpty ? "The Docker runtime failed to start." : reason
+        }
+        return nil
     }
 
     /// Whether a retry is possible.
@@ -76,7 +81,9 @@ public final class StartupOrchestrator {
     }
 
     // Dependencies
-    private let daemonManager: DaemonManager
+    /// The daemon this startup drives; views read runtime detail (emulation, downloads,
+    /// the System runtime issue) from it.
+    public let daemonManager: DaemonManager
     private let onClientsNeeded: @MainActor () throws -> ArcBoxClient
     private let hostSupportsVirtualization: @MainActor () -> Bool
 
@@ -115,6 +122,11 @@ public final class StartupOrchestrator {
     ///   explicitly chosen to continue to the macOS administrator prompt.
     @available(macOS 15.0, *)
     public func start(allowingAdministratorPrompt: Bool = false) async {
+        await run(allowingAdministratorPrompt: allowingAdministratorPrompt, restartingFailedDaemon: false)
+    }
+
+    @available(macOS 15.0, *)
+    private func run(allowingAdministratorPrompt: Bool, restartingFailedDaemon: Bool) async {
         guard !isTerminating else { return }
         if let startupTask {
             await startupTask.value
@@ -122,6 +134,11 @@ public final class StartupOrchestrator {
         }
 
         let task = Task {
+            // The restart runs in the startup task, so a second Retry waits for it instead
+            // of stopping the daemon again, and quitting waits for the daemon to be back.
+            if restartingFailedDaemon, !isCancellationRequested, retryRestartsDaemon {
+                await daemonManager.forceReregisterDaemon()
+            }
             await runStartup(allowingAdministratorPrompt: allowingAdministratorPrompt)
             startupTask = nil
         }
@@ -289,10 +306,46 @@ public final class StartupOrchestrator {
     ///   itself an explicit administrator-approval action.
     @available(macOS 15.0, *)
     public func retry(allowingAdministratorPrompt: Bool = false) async {
-        if daemonManager.setupPhase == .failed {
-            await daemonManager.forceReregisterDaemon()
+        await run(allowingAdministratorPrompt: allowingAdministratorPrompt, restartingFailedDaemon: true)
+    }
+
+    /// Whether `retry()` restarts the daemon: it gave up, or its System startup failed,
+    /// which waits for a storage recovery before it tries again. Ask `retryWarning()` first.
+    private var retryRestartsDaemon: Bool {
+        daemonManager.setupPhase == .failed || systemStartupFailed
+    }
+
+    /// Read through the host phase: a restart resets the phase but leaves the last
+    /// `systemRuntime` in place until the new daemon reports.
+    private var systemStartupFailed: Bool {
+        daemonManager.setupPhase.isHostReady && daemonManager.systemRuntime == .failed
+    }
+
+    /// The confirmation `retry()` needs because it restarts the daemon; `nil` when it does
+    /// not.
+    ///
+    /// Retrying a failed System startup restarts a daemon that still hosts Machines and
+    /// macOS guests, and the daemon stops all of them when it exits. No sandbox runs then:
+    /// they live on the System VM. A daemon in `FAILED` is exiting anyway.
+    public func retryWarning() async -> String? {
+        guard systemStartupFailed else { return nil }
+        // An unknown list is not an empty one: the restart stops them all the same.
+        let listed = try? await onClientsNeeded().machines.list(
+            .with { $0.all = true }, options: ArcBoxClient.defaultCallOptions)
+        return Self.restartWarning(listing: listed?.machines ?? [])
+    }
+
+    /// Names the Linux Machines a daemon restart stops: every one that runs or boots,
+    /// except `default`, the System VM the retry is for. States are the daemon's wire
+    /// strings. macOS guests stop too, but this client cannot list them.
+    static func restartWarning(listing machines: [Arcbox_V1_MachineSummary]) -> String {
+        let names = machines.filter { $0.id != "default" && ["running", "starting"].contains($0.state) }.map(\.name)
+        guard !names.isEmpty else {
+            return "Retrying restarts the ArcBox daemon, which stops any running machines and macOS virtual machines."
         }
-        await start(allowingAdministratorPrompt: allowingAdministratorPrompt)
+        let running = names.count == 1 ? "the running machine" : "the running machines"
+        return "Retrying restarts the ArcBox daemon, which stops \(running) \(names.formatted(.list(type: .and))), "
+            + "as well as any running macOS virtual machines."
     }
 
     /// Human-readable cause of a daemon `FAILED` setup phase, for the retryable

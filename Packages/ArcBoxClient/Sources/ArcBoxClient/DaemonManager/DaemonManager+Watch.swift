@@ -113,6 +113,7 @@ extension DaemonManager {
     /// Apply a setup status update. Called from MainActor-isolated stream handlers.
     func applySetupStatusSync(_ status: Arcbox_V1_SetupStatus) {
         let oldPhase = setupPhase
+        let oldSystemRuntime = systemRuntime
         lastMessageTime = Date()
 
         dnsResolverInstalled = status.dnsResolverInstalled
@@ -128,6 +129,12 @@ extension DaemonManager {
         if status.hasStorageRecovery {
             storageRecovery = status.storageRecovery
         }
+        // Assigned in the same call as the phase so a view never sees host READY with a
+        // stale System state (see AGENTS.md on `.task(id:)` races).
+        systemRuntime = status.hasSystemRuntime ? SystemRuntimeState(status.systemRuntime.state) : .notReported
+        systemRuntimeReason = status.systemRuntime.reason
+        hardwareVirtualizationAvailable =
+            status.hasHardwareVirtualizationAvailable ? status.hardwareVirtualizationAvailable : nil
 
         switch status.phase {
         case .unspecified: setupPhase = .unknown
@@ -151,6 +158,13 @@ extension DaemonManager {
                     level: .info,
                     category: "daemon.phase",
                     message: "\(oldPhase) → \(setupPhase)"))
+        }
+        if systemRuntime != oldSystemRuntime {
+            ClientDiagnostics.add(
+                DiagnosticBreadcrumb(
+                    level: systemRuntime == .failed ? .warning : .info,
+                    category: "daemon.system_runtime",
+                    message: "\(oldSystemRuntime) → \(systemRuntime)"))
         }
 
         // A FAILED phase means the daemon gave up. Surface its fatal cause —

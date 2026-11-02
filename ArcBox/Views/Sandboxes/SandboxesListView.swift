@@ -16,9 +16,8 @@ struct SandboxesListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView(daemonManager.setupMessage)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !daemonManager.isDockerReady {
+                SystemRuntimeStatusView()
             } else if client == nil {
                 DaemonLoadingView(state: .registered)
             } else {
@@ -42,12 +41,12 @@ struct SandboxesListView: View {
                 .disabled(!sandboxActionsAvailable)
             }
         }
-        .task(id: daemonManager.setupPhase.isDockerReady && client != nil) {
-            guard daemonManager.setupPhase.isDockerReady, client != nil else { return }
+        .task(id: daemonManager.isDockerReady && client != nil) {
+            guard daemonManager.isDockerReady, client != nil else { return }
             await vm.loadSandboxes(client: client)
         }
         .onReceive(NotificationCenter.default.publisher(for: .sandboxChanged)) { _ in
-            guard daemonManager.setupPhase.isDockerReady, client != nil else { return }
+            guard daemonManager.isDockerReady, client != nil else { return }
             Task {
                 await vm.loadSandboxes(client: client)
                 if let id = vm.selectedID, vm.sandboxes.contains(where: { $0.id == id }) {
@@ -94,7 +93,7 @@ struct SandboxesListView: View {
     private var sandboxActionsAvailable: Bool {
         (orchestrator?.isReady ?? true)
             && daemonManager.state.isRunning
-            && daemonManager.setupPhase.isDockerReady
+            && daemonManager.isDockerReady
             && client != nil
     }
 
@@ -150,7 +149,7 @@ struct SandboxesListView: View {
         guard daemonManager.state.isRunning else {
             return "Unavailable"
         }
-        guard daemonManager.setupPhase.isDockerReady else {
+        guard daemonManager.isDockerReady else {
             return "Starting…"
         }
         guard client != nil else {

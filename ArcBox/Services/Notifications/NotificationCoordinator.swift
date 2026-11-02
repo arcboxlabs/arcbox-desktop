@@ -50,7 +50,7 @@ final class NotificationCoordinator {
             let notification = storageRules.notification(
                 for: daemon.storageHealth,
                 isCurrent: daemon.storageHealthIsCurrent,
-                isRuntimeReady: daemon.setupPhase.isDockerReady
+                isRuntimeReady: daemon.isDockerReady
             )
         else { return }
         service.post(notification)

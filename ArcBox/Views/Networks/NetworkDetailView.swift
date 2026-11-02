@@ -27,7 +27,7 @@ struct NetworkDetailView: View {
     }
 
     private var dockerRuntimeAvailable: Bool {
-        daemonManager.setupPhase.isDockerReady && docker != nil
+        daemonManager.isDockerReady && docker != nil
     }
 
     private var runningContainerIDs: Set<String>? {
@@ -36,7 +36,7 @@ struct NetworkDetailView: View {
     }
 
     private func makeContainerLoader() -> NetworkDetailViewController.LoadContainers? {
-        guard daemonManager.setupPhase.isDockerReady, let docker else { return nil }
+        guard daemonManager.isDockerReady, let docker else { return nil }
         return { networkID in
             let response = try await docker.api.NetworkInspect(path: .init(id: networkID))
             let network = try response.ok.body.json

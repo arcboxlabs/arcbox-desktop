@@ -17,14 +17,8 @@ struct StartupProgressView: View {
 
             if case .fatalError(let message) = orchestrator.phase {
                 fatalErrorView(title: "Daemon Cannot Start", message: message)
-            } else if orchestrator.phase == .virtualizationUnavailable {
-                fatalErrorView(
-                    title: "Virtualization Unavailable",
-                    message: """
-                        ArcBox needs hardware virtualization, which this Mac doesn't provide. \
-                        It can't run inside a macOS virtual machine.
-                        """
-                )
+            } else if orchestrator.phase == .virtualizationUnavailable || lacksHardwareVirtualization {
+                fatalErrorView(title: "Virtualization Unavailable", message: Self.virtualizationUnavailableMessage)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(StartupStep.allCases) { step in
@@ -34,29 +28,38 @@ struct StartupProgressView: View {
                     if orchestrator.isReady, !orchestrator.isRuntimeReady,
                         orchestrator.runtimeFailureMessage == nil
                     {
-                        ProgressView(orchestrator.setupMessage)
-                            .controlSize(.small)
+                        // With autostart off nothing is starting, so a spinner would wait
+                        // forever.
+                        if case .disabled(let reason) = orchestrator.daemonManager.systemRuntimeIssue {
+                            Label(
+                                reason.isEmpty ? SystemRuntimeStatusView.disabledMessage : reason,
+                                systemImage: "pause.circle"
+                            )
                             .font(.system(size: 11))
                             .foregroundStyle(AppColors.textSecondary)
                             .padding(.top, 4)
+                        } else {
+                            RuntimeProgressDetail(daemon: orchestrator.daemonManager)
+                                .padding(.top, 4)
+                        }
                     }
                 }
                 .padding(.horizontal, 40)
 
                 if let message = retryableErrorMessage {
                     VStack(spacing: 8) {
+                        // System runtime causes run long; unpadded, they overran
+                        // onboarding's 420 pt frame instead of wrapping.
                         Text(message)
                             .font(.system(size: 12))
                             .foregroundStyle(AppColors.error)
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
 
-                        Button("Retry") {
-                            Task {
-                                await orchestrator.retry(
-                                    allowingAdministratorPrompt: allowingAdministratorPrompt
-                                )
-                            }
-                        }
+                        StartupRetryButton(
+                            orchestrator: orchestrator,
+                            allowingAdministratorPrompt: allowingAdministratorPrompt
+                        )
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                         .disabled(!orchestrator.canRetry)
@@ -163,6 +166,18 @@ struct StartupProgressView: View {
         case .completed: return AppColors.textSecondary
         case .failed: return AppColors.error
         }
+    }
+
+    static let virtualizationUnavailableMessage = """
+        ArcBox needs hardware virtualization, which this Mac doesn't provide. \
+        It can't run inside a macOS virtual machine.
+        """
+
+    /// The daemon came up but reports that this Mac cannot run its System VM. Startup
+    /// normally stops before registering it (``StartupPhase/virtualizationUnavailable``);
+    /// this covers a daemon that disagrees with the app's own check.
+    private var lacksHardwareVirtualization: Bool {
+        orchestrator.isReady && orchestrator.daemonManager.systemRuntimeIssue == .hardwareVirtualizationUnavailable
     }
 
     private var retryableErrorMessage: String? {

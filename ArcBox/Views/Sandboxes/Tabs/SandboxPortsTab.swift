@@ -371,7 +371,7 @@ extension SandboxesViewModel {
 extension DaemonManager {
     /// The daemon is up and its Docker API answers, which port exposure needs.
     fileprivate var canExposePorts: Bool {
-        state.isRunning && setupPhase.isDockerReady
+        state.isRunning && isDockerReady
     }
 }
 

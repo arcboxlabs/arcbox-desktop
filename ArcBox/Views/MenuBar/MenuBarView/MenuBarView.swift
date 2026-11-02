@@ -22,8 +22,8 @@ struct MenuBarView: View {
         mainPanel
             .padding(6)
             .animation(.easeInOut(duration: 0.2), value: containersExpanded)
-            .task(id: docker != nil && daemonManager.setupPhase.isDockerReady) {
-                guard docker != nil, daemonManager.setupPhase.isDockerReady else { return }
+            .task(id: docker != nil && daemonManager.isDockerReady) {
+                guard docker != nil, daemonManager.isDockerReady else { return }
                 await loadAll()
             }
             // Keyed on the client identity as well as daemon state: the
@@ -35,23 +35,23 @@ struct MenuBarView: View {
                 await activityVM.run(client: client)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task { await containersVM.loadContainersFromDocker(docker: docker, iconClient: client) }
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerImageChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task { await imagesVM.loadImages(docker: docker, iconClient: client) }
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerNetworkChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task { await networksVM.loadNetworks(docker: docker) }
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerVolumeChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task { await volumesVM.loadVolumes(docker: docker) }
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerDataChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task { await loadAll() }
             }
             .onAppear {

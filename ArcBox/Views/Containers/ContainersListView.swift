@@ -46,12 +46,12 @@ struct ContainersListView: View {
                     .disabled(!dockerActionsAvailable)
                 }
             }
-            .task(id: daemonManager.setupPhase.isDockerReady && docker != nil) {
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+            .task(id: daemonManager.isDockerReady && docker != nil) {
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 await vm.loadContainersFromDocker(docker: docker, iconClient: client)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task { await vm.loadContainersFromDocker(docker: docker, iconClient: client) }
             }
             .sheet(isPresented: Bindable(vm).showNewContainerSheet) {
@@ -71,9 +71,8 @@ struct ContainersListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView(daemonManager.setupMessage)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !daemonManager.isDockerReady {
+                SystemRuntimeStatusView()
             } else if docker == nil {
                 ContentUnavailableView {
                     Label("Docker Client Unavailable", systemImage: "shippingbox")
@@ -170,7 +169,7 @@ struct ContainersListView: View {
     private var dockerActionsAvailable: Bool {
         (orchestrator?.isReady ?? true)
             && daemonManager.state.isRunning
-            && daemonManager.setupPhase.isDockerReady
+            && daemonManager.isDockerReady
             && docker != nil
     }
 }
@@ -194,7 +193,7 @@ private struct ContainersListSubtitle: ViewModifier {
         guard daemonManager.state.isRunning else {
             return "Unavailable"
         }
-        guard daemonManager.setupPhase.isDockerReady else {
+        guard daemonManager.isDockerReady else {
             return "Starting…"
         }
         guard dockerAvailable else {

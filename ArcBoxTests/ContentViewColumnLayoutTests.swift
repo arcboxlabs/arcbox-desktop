@@ -70,7 +70,7 @@ final class ContentViewColumnLayoutTests: XCTestCase {
 
         XCTAssertEqual(window.frame.size, originalSize)
         XCTAssertEqual(findSplitView(in: window.contentView)?.arrangedSubviews.count, 3)
-        XCTAssertTrue(daemonManager.setupPhase.isDockerReady)
+        XCTAssertTrue(daemonManager.isDockerReady)
         daemonManager.stopWatching()
         pumpRunLoop()
         XCTAssertEqual(window.frame.size, originalSize)

@@ -15,9 +15,8 @@ struct ServicesListView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView(daemonManager.setupMessage)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !daemonManager.isDockerReady {
+                SystemRuntimeStatusView()
             } else if arcboxClient == nil {
                 DaemonLoadingView(state: .registered)
             } else {
@@ -48,8 +47,8 @@ struct ServicesListView: View {
                 vm.searchText = ""
             }
         }
-        .task(id: daemonManager.setupPhase.isDockerReady && arcboxClient != nil) {
-            guard daemonManager.setupPhase.isDockerReady, arcboxClient != nil else { return }
+        .task(id: daemonManager.isDockerReady && arcboxClient != nil) {
+            guard daemonManager.isDockerReady, arcboxClient != nil else { return }
             await k8s.checkStatus(client: arcboxClient)
         }
     }
@@ -59,7 +58,7 @@ struct ServicesListView: View {
             return "Unavailable"
         }
         if orchestrator?.isReady == false || !daemonManager.state.isRunning
-            || !daemonManager.setupPhase.isDockerReady
+            || !daemonManager.isDockerReady
         {
             return "Starting…"
         }

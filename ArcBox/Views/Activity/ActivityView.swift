@@ -25,9 +25,8 @@ struct ActivityView: View {
                 StartupProgressView(orchestrator: orchestrator)
             } else if !daemonManager.state.isRunning {
                 DaemonLoadingView(state: daemonManager.state)
-            } else if !daemonManager.setupPhase.isDockerReady {
-                ProgressView(daemonManager.setupMessage)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !daemonManager.isDockerReady {
+                SystemRuntimeStatusView()
             } else if arcboxClient == nil {
                 ContentUnavailableView {
                     Label("Activity Unavailable", systemImage: "waveform.path.ecg")
@@ -85,12 +84,12 @@ struct ActivityView: View {
             // Gated on `isDockerReady` rather than `dockerSocketLinked`, and
             // keyed on both readiness and client presence, because the client
             // can arrive after the daemon is already up.
-            .task(id: daemonManager.setupPhase.isDockerReady && docker != nil) {
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+            .task(id: daemonManager.isDockerReady && docker != nil) {
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 await containersVM.loadContainersFromDocker(docker: docker, iconClient: arcboxClient)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dockerContainerChanged)) { _ in
-                guard daemonManager.setupPhase.isDockerReady, docker != nil else { return }
+                guard daemonManager.isDockerReady, docker != nil else { return }
                 Task {
                     await containersVM.loadContainersFromDocker(
                         docker: docker, iconClient: arcboxClient)
