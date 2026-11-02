@@ -39,6 +39,28 @@ final class DaemonRegistrationFailureTests: XCTestCase {
         XCTAssertTrue(message.contains("abctl _uninstall"), message)
     }
 
+    /// A Mac without hardware virtualization (a macOS VM) cannot boot the runtime, and a
+    /// registered daemon there only crash-loops under launchd. Startup has to stop before
+    /// the helper install and the registration, not fail somewhere inside them.
+    func testAMacWithoutVirtualizationNeverRegistersTheDaemon() async {
+        let daemon = DaemonManager()
+        let initialState = daemon.state
+        let orchestrator = StartupOrchestrator(
+            daemonManager: daemon,
+            onClientsNeeded: {
+                XCTFail("startup connected to a daemon it must not start")
+                throw CancellationError()
+            },
+            hostSupportsVirtualization: { false }
+        )
+
+        await orchestrator.start()
+
+        XCTAssertEqual(orchestrator.phase, .virtualizationUnavailable)
+        XCTAssertEqual(orchestrator.stepStatuses[.installHelper], .pending)
+        XCTAssertEqual(daemon.state, initialState)
+    }
+
     func testNothingIsBlamedWhenNoAgentIsInstalled() throws {
         let planted = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/LaunchAgents", isDirectory: true)

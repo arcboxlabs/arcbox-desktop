@@ -68,4 +68,7 @@ public enum StartupPhase: Sendable, Equatable {
     case failed(step: StartupStep, message: String)
     /// Non-recoverable error (e.g. missing entitlements). User must quit.
     case fatalError(message: String)
+    /// This Mac has no hardware virtualization (see `HostVirtualization`), so startup
+    /// stops before installing the helper or registering the daemon.
+    case virtualizationUnavailable
 }

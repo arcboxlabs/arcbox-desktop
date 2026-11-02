@@ -557,6 +557,15 @@ final class ApplicationCoordinator: NSObject {
                     "step": step.label,
                 ]
             )
+        } else if orchestrator.phase == .virtualizationUnavailable {
+            // Counts the Macs a software-emulated runtime would serve.
+            Analytics.capture(
+                .startupFailed,
+                properties: [
+                    "duration_ms": duration,
+                    "step": "virtualization",
+                ]
+            )
         }
     }
 
