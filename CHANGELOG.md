@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.39.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.2...v1.39.3) (2026-11-03)
+
+
+### Bug Fixes
+
+* **app:** keep the status banners off the sidebar ([01216bd](https://github.com/arcboxlabs/arcbox-desktop/commit/01216bdeb05459cb769a88bc25dc7aac035ab624))
+* **helper:** install the helper for the user running ArcBox ([cde6f2e](https://github.com/arcboxlabs/arcbox-desktop/commit/cde6f2eb8caefd9cac8b5b873a808fe1b6d43f81))
+
 ## [1.39.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.1...v1.39.2) (2026-11-03)
 
 ### Highlights
