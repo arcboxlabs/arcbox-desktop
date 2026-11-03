@@ -396,6 +396,7 @@ final class ApplicationCoordinator: NSObject {
         withObservationTracking {
             _ = daemonManager.state
             _ = daemonManager.isDockerReady
+            _ = daemonManager.effectiveBackend
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.daemonStateDidChange()
@@ -407,8 +408,11 @@ final class ApplicationCoordinator: NSObject {
         guard !isTerminating else { return }
         trackDaemonState()
         // After the state handling below, which creates the Docker client. One observer
-        // for both, so readiness never arrives before the client does.
-        defer { eventMonitor.follow(daemonManager, docker: dockerClient) }
+        // covers state, readiness and backend, so readiness never arrives before the client.
+        defer {
+            eventMonitor.follow(daemonManager, docker: dockerClient)
+            sandboxEventMonitor.follow(daemonManager, client: arcboxClient, machineID: "default")
+        }
         let state = daemonManager.state
         guard state != lastDaemonState else { return }
         let previousState = lastDaemonState
@@ -426,14 +430,12 @@ final class ApplicationCoordinator: NSObject {
                 sleepWakeManager.start()
             }
             if let arcboxClient {
-                sandboxEventMonitor.start(client: arcboxClient, machineID: "default")
                 machineEventMonitor.start(client: arcboxClient)
             }
             if UserDefaults.standard.bool(forKey: "switchDockerContextAutomatically") {
                 updateDockerContext(useArcBox: true)
             }
         } else {
-            sandboxEventMonitor.stop()
             machineEventMonitor.stop()
             sleepWakeManager.stop()
             notifications.runtimeStopped()

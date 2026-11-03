@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		003BA6684B8CA6626591F668 /* SandboxEventMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73541C08019A53E2254667ED /* SandboxEventMonitorTests.swift */; };
 		0188EE6B84CB38AA29EBEC57 /* ContainersViewModel+GRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70BE1C3890C5F6A96C6BCBD /* ContainersViewModel+GRPC.swift */; };
 		022845A31427DCCF6E093CC4 /* ThirdPartyNoticesWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A9C20A0CCA336E6293C08D /* ThirdPartyNoticesWindow.swift */; };
 		03AB091DAB7FD7F059C90480 /* ImagesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FD9C27ABD090B7DBA435AA /* ImagesListViewController.swift */; };
@@ -492,6 +493,7 @@
 		6DFE1C88F20E40C1A36A384C /* CreateOperationErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateOperationErrorTests.swift; sourceTree = "<group>"; };
 		7058C8975F3F2684714E24E2 /* SleepWakeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWakeManager.swift; sourceTree = "<group>"; };
 		71884CDCA128955E2B60A744 /* ActivityMetricStripSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityMetricStripSnapshotTests.swift; sourceTree = "<group>"; };
+		73541C08019A53E2254667ED /* SandboxEventMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxEventMonitorTests.swift; sourceTree = "<group>"; };
 		7374C3209C972DE43E00DB60 /* ContainerCrashDigest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerCrashDigest.swift; sourceTree = "<group>"; };
 		738233A82C7BAA825F73EE2F /* GuestExportFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestExportFixture.swift; sourceTree = "<group>"; };
 		747AB46D7603C23FB9112444 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -1378,6 +1380,7 @@
 				9FC774DEDF3F018FC6A69ED8 /* RuntimeStorageRecoveryIntegrationTests.swift */,
 				B028B9AC9FBE0FF0360E662F /* RuntimeStorageRecoveryModelTests.swift */,
 				75AC7F06FEE8F4D7C8AEFD64 /* RuntimeStorageSnapshotTests.swift */,
+				73541C08019A53E2254667ED /* SandboxEventMonitorTests.swift */,
 				816C59570B7C65B9288056A8 /* SandboxNotificationRulesTests.swift */,
 				96C7AE7CC8DF4C7910C4230B /* SandboxPortsViewModelTests.swift */,
 				D0A680191505746F5F6F5A0B /* SandboxTemplateModelTests.swift */,
@@ -1914,6 +1917,7 @@
 				649630D664A8266B46BEE8DB /* RuntimeStorageRecoveryIntegrationTests.swift in Sources */,
 				681FAF684785A86444AE4498 /* RuntimeStorageRecoveryModelTests.swift in Sources */,
 				5DB3D3FEC75C4BCC29F982CC /* RuntimeStorageSnapshotTests.swift in Sources */,
+				003BA6684B8CA6626591F668 /* SandboxEventMonitorTests.swift in Sources */,
 				7B785AFCDAE28EF6B5064527 /* SandboxNotificationRulesTests.swift in Sources */,
 				EC2532F756D371A159AB9A97 /* SandboxPortsViewModelTests.swift in Sources */,
 				B9FBD28A52E575A47BC65BF7 /* SandboxTemplateModelTests.swift in Sources */,
