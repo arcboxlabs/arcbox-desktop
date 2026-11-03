@@ -425,6 +425,42 @@ public struct Arcbox_V1_SetMachineResourcesResponse: Sendable {
   public init() {}
 }
 
+/// Request to save machine web backend selection.
+public struct Arcbox_V1_SetMachineWebPortsRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var id: String = String()
+
+  /// Omission preserves the saved HTTP selection.
+  public var httpPort: Arcbox_V1_WebPortPolicy {
+    get {_httpPort ?? Arcbox_V1_WebPortPolicy()}
+    set {_httpPort = newValue}
+  }
+  /// Returns true if `httpPort` has been explicitly set.
+  public var hasHTTPPort: Bool {self._httpPort != nil}
+  /// Clears the value of `httpPort`. Subsequent reads from it will return its default value.
+  public mutating func clearHTTPPort() {self._httpPort = nil}
+
+  /// Omission preserves the saved HTTPS selection.
+  public var httpsPort: Arcbox_V1_WebPortPolicy {
+    get {_httpsPort ?? Arcbox_V1_WebPortPolicy()}
+    set {_httpsPort = newValue}
+  }
+  /// Returns true if `httpsPort` has been explicitly set.
+  public var hasHTTPSPort: Bool {self._httpsPort != nil}
+  /// Clears the value of `httpsPort`. Subsequent reads from it will return its default value.
+  public mutating func clearHTTPSPort() {self._httpsPort = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _httpPort: Arcbox_V1_WebPortPolicy? = nil
+  fileprivate var _httpsPort: Arcbox_V1_WebPortPolicy? = nil
+}
+
 /// Request to set or clear the default machine.
 public struct Arcbox_V1_SetDefaultMachineRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -584,6 +620,16 @@ public struct Arcbox_V1_MachineInfo: @unchecked Sendable {
     set {_uniqueStorage()._mounts = newValue}
   }
 
+  /// Saved backend selection, independent of installed routes.
+  public var webPorts: Arcbox_V1_MachineWebPorts {
+    get {_storage._webPorts ?? Arcbox_V1_MachineWebPorts()}
+    set {_uniqueStorage()._webPorts = newValue}
+  }
+  /// Returns true if `webPorts` has been explicitly set.
+  public var hasWebPorts: Bool {_storage._webPorts != nil}
+  /// Clears the value of `webPorts`. Subsequent reads from it will return its default value.
+  public mutating func clearWebPorts() {_uniqueStorage()._webPorts = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -633,12 +679,12 @@ public struct Arcbox_V1_MachineNetwork: Sendable {
   public var bridgeMacAddress: String = String()
 
   /// IPv4 address of the bridge NIC: the address the Mac reaches directly
-  /// and the one `<machine>.arcbox.local` resolves to. Empty until the
+  /// and the one `<machine>.machine.<local domain>` resolves to. Empty until the
   /// machine has reported it.
   public var bridgeIpAddress: String = String()
 
   /// The name the host's DNS answers for this machine while it runs
-  /// (`<machine>.<local domain>`). Empty when the machine has no bridge
+  /// (`<machine>.machine.<local domain>`). Empty when the machine has no bridge
   /// address to register.
   public var dnsName: String = String()
 
@@ -1709,6 +1755,50 @@ extension Arcbox_V1_SetMachineResourcesResponse: SwiftProtobuf.Message, SwiftPro
   }
 }
 
+extension Arcbox_V1_SetMachineWebPortsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetMachineWebPortsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{3}http_port\0\u{3}https_port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._httpPort) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._httpsPort) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    try { if let v = self._httpPort {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._httpsPort {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetMachineWebPortsRequest, rhs: Arcbox_V1_SetMachineWebPortsRequest) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs._httpPort != rhs._httpPort {return false}
+    if lhs._httpsPort != rhs._httpsPort {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Arcbox_V1_SetDefaultMachineRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SetDefaultMachineRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0")
@@ -1846,7 +1936,7 @@ extension Arcbox_V1_InspectMachineRequest: SwiftProtobuf.Message, SwiftProtobuf.
 
 extension Arcbox_V1_MachineInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MachineInfo"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}state\0\u{1}hardware\0\u{1}network\0\u{1}storage\0\u{1}os\0\u{1}created\0\u{3}started_at\0\u{1}mounts\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}state\0\u{1}hardware\0\u{1}network\0\u{1}storage\0\u{1}os\0\u{1}created\0\u{3}started_at\0\u{1}mounts\0\u{3}web_ports\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1859,6 +1949,7 @@ extension Arcbox_V1_MachineInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     var _created: Arcbox_V1_Timestamp? = nil
     var _startedAt: Arcbox_V1_Timestamp? = nil
     var _mounts: [Arcbox_V1_DirectoryMount] = []
+    var _webPorts: Arcbox_V1_MachineWebPorts? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1879,6 +1970,7 @@ extension Arcbox_V1_MachineInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       _created = source._created
       _startedAt = source._startedAt
       _mounts = source._mounts
+      _webPorts = source._webPorts
     }
   }
 
@@ -1907,6 +1999,7 @@ extension Arcbox_V1_MachineInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
         case 8: try { try decoder.decodeSingularMessageField(value: &_storage._created) }()
         case 9: try { try decoder.decodeSingularMessageField(value: &_storage._startedAt) }()
         case 10: try { try decoder.decodeRepeatedMessageField(value: &_storage._mounts) }()
+        case 11: try { try decoder.decodeSingularMessageField(value: &_storage._webPorts) }()
         default: break
         }
       }
@@ -1949,6 +2042,9 @@ extension Arcbox_V1_MachineInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       if !_storage._mounts.isEmpty {
         try visitor.visitRepeatedMessageField(value: _storage._mounts, fieldNumber: 10)
       }
+      try { if let v = _storage._webPorts {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1968,6 +2064,7 @@ extension Arcbox_V1_MachineInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
         if _storage._created != rhs_storage._created {return false}
         if _storage._startedAt != rhs_storage._startedAt {return false}
         if _storage._mounts != rhs_storage._mounts {return false}
+        if _storage._webPorts != rhs_storage._webPorts {return false}
         return true
       }
       if !storagesAreEqual {return false}

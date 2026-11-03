@@ -20,7 +20,8 @@ public enum SystemVmBackend: String, CaseIterable, Identifiable, Sendable {
         switch proto {
         case .vz: self = .vz
         case .hv: self = .hv
-        case .unspecified, .UNRECOGNIZED: return nil
+        // The app does not offer the QEMU backend yet.
+        case .qemu, .unspecified, .UNRECOGNIZED: return nil
         }
     }
 

@@ -108,6 +108,490 @@ public struct Arcbox_V1_AgentPingResponse: Sendable {
   public init() {}
 }
 
+public struct Arcbox_V1_ListGuestWebServicesRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Empty lists exact aliases. A concrete name resolves its current installed route.
+  public var hostname: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_ListGuestWebServicesResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var services: [Arcbox_V1_GuestWebService] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// A ready guest endpoint, selected by its resource kind.
+public struct Arcbox_V1_GuestWebService: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var route: Arcbox_V1_GuestWebService.OneOf_Route? = nil
+
+  public var container: Arcbox_V1_ContainerWebService {
+    get {
+      if case .container(let v)? = route {return v}
+      return Arcbox_V1_ContainerWebService()
+    }
+    set {route = .container(newValue)}
+  }
+
+  public var index: Arcbox_V1_IndexWebService {
+    get {
+      if case .index(let v)? = route {return v}
+      return Arcbox_V1_IndexWebService()
+    }
+    set {route = .index(newValue)}
+  }
+
+  public var machine: Arcbox_V1_MachineWebService {
+    get {
+      if case .machine(let v)? = route {return v}
+      return Arcbox_V1_MachineWebService()
+    }
+    set {route = .machine(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Route: Equatable, Sendable {
+    case container(Arcbox_V1_ContainerWebService)
+    case index(Arcbox_V1_IndexWebService)
+    case machine(Arcbox_V1_MachineWebService)
+
+  }
+
+  public init() {}
+}
+
+/// An installed endpoint owned by the responding distro machine.
+public struct Arcbox_V1_MachineWebService: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The host's machine name, before hostname normalization.
+  public var machineName: String = String()
+
+  /// The one exact canonical machine DNS name assigned by the host.
+  public var hostname: String = String()
+
+  public var ipv4Address: String = String()
+
+  /// Zero means no managed HTTP route.
+  public var httpPort: UInt32 = 0
+
+  public var httpsBackend: Arcbox_V1_MachineWebService.OneOf_HTTPSBackend? = nil
+
+  /// Preserve the application's TLS handshake and certificate.
+  public var nativeHTTPSPort: UInt32 {
+    get {
+      if case .nativeHTTPSPort(let v)? = httpsBackend {return v}
+      return 0
+    }
+    set {httpsBackend = .nativeHTTPSPort(newValue)}
+  }
+
+  /// Terminate TLS in the guest, then relay HTTP to this port.
+  public var terminatedHTTPPort: UInt32 {
+    get {
+      if case .terminatedHTTPPort(let v)? = httpsBackend {return v}
+      return 0
+    }
+    set {httpsBackend = .terminatedHTTPPort(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_HTTPSBackend: Equatable, Sendable {
+    /// Preserve the application's TLS handshake and certificate.
+    case nativeHTTPSPort(UInt32)
+    /// Terminate TLS in the guest, then relay HTTP to this port.
+    case terminatedHTTPPort(UInt32)
+
+  }
+
+  public init() {}
+}
+
+/// The builtin index owns the configured apex at the guest bridge gateway.
+public struct Arcbox_V1_IndexWebService: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var hostname: String = String()
+
+  public var ipv4Address: String = String()
+
+  /// HTTP is always available while this endpoint is present.
+  public var managedHTTPS: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// The guest releases waiting handshakes after three seconds without renewal.
+public struct Arcbox_V1_ReconcileHttpsAccessRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// A new identifier clears the previous access. Reuse it for polls and cancellation.
+  public var observationID: String = String()
+
+  /// Exact Mac source addresses. Other clients never wait or produce an access.
+  public var hostAddresses: [String] = []
+
+  /// False releases every waiting handshake without changing certificate validation.
+  public var enabled: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_ReconcileHttpsAccessResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Empty until a managed ClientHello passes the guest's DNS ownership check.
+  public var hostname: String = String()
+
+  public var destinationIp: String = String()
+
+  /// Zero means no access. Concurrent accesses retain the first event's sequence.
+  public var sequence: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Host-only replacement of this guest's ArcBox client trust anchor.
+/// The host sends the active Keychain certificate. CA unavailability sends no request.
+public struct Arcbox_V1_ReconcileGuestTrustRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// An unset desired state is invalid. Removal requires an explicit guest opt-out.
+  public var desired: Arcbox_V1_ReconcileGuestTrustRequest.OneOf_Desired? = nil
+
+  public var certificatePem: Data {
+    get {
+      if case .certificatePem(let v)? = desired {return v}
+      return Data()
+    }
+    set {desired = .certificatePem(newValue)}
+  }
+
+  public var remove: Arcbox_V1_Empty {
+    get {
+      if case .remove(let v)? = desired {return v}
+      return Arcbox_V1_Empty()
+    }
+    set {desired = .remove(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// An unset desired state is invalid. Removal requires an explicit guest opt-out.
+  public enum OneOf_Desired: Equatable, Sendable {
+    case certificatePem(Data)
+    case remove(Arcbox_V1_Empty)
+
+  }
+
+  public init() {}
+}
+
+/// Acknowledges completed installation or removal, never a queued operation.
+public struct Arcbox_V1_ReconcileGuestTrustResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var applied: Arcbox_V1_ReconcileGuestTrustResponse.OneOf_Applied? = nil
+
+  /// SHA-256 of installed DER, in uppercase colon-separated hex.
+  public var installedSha256: String {
+    get {
+      if case .installedSha256(let v)? = applied {return v}
+      return String()
+    }
+    set {applied = .installedSha256(newValue)}
+  }
+
+  public var removed: Arcbox_V1_Empty {
+    get {
+      if case .removed(let v)? = applied {return v}
+      return Arcbox_V1_Empty()
+    }
+    set {applied = .removed(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Applied: Equatable, Sendable {
+    /// SHA-256 of installed DER, in uppercase colon-separated hex.
+    case installedSha256(String)
+    case removed(Arcbox_V1_Empty)
+
+  }
+
+  public init() {}
+}
+
+/// Owns this connection until EOF; only the host may open one on the System VM.
+public struct Arcbox_V1_OpenInstanceAuthorityRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_OpenInstanceAuthorityResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Replaces every instance root after the exclusive connection has opened.
+public struct Arcbox_V1_ReplaceInstanceAuthorityRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Source authority lifetime; strictly increases within one connection.
+  public var authorityRevision: UInt64 = 0
+
+  public var roots: [Arcbox_V1_InstanceAuthorityRoot] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_InstanceAuthorityRoot: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var root: String = String()
+
+  public var target: Arcbox_V1_InstanceAuthorityRoot.Target = .unspecified
+
+  /// OTHER requires a nonzero host loopback u16 port; every other target uses zero.
+  public var dnsPort: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Target: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+    case current // = 1
+    case other // = 2
+    case unavailable // = 3
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .current
+      case 2: self = .other
+      case 3: self = .unavailable
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .current: return 1
+      case .other: return 2
+      case .unavailable: return 3
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_InstanceAuthorityRoot.Target] = [
+      .unspecified,
+      .current,
+      .other,
+      .unavailable,
+    ]
+
+  }
+
+  public init() {}
+}
+
+/// Confirms the complete snapshot was installed before the response was sent.
+public struct Arcbox_V1_InstanceAuthorityAck: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var authorityRevision: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Fixes identity for one host-owned distro-machine configuration connection.
+public struct Arcbox_V1_OpenMachineWebRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Raw machine name before hostname normalization.
+  public var machineName: String = String()
+
+  /// Exact canonical DNS name assigned by the host.
+  public var hostname: String = String()
+
+  public var ipv4Address: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_OpenMachineWebResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Replaces the complete policy and public root. Revisions are positive and strictly increase.
+public struct Arcbox_V1_ReplaceMachineWebRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var sourceRevision: UInt64 = 0
+
+  public var ports: Arcbox_V1_MachineWebPorts {
+    get {_ports ?? Arcbox_V1_MachineWebPorts()}
+    set {_ports = newValue}
+  }
+  /// Returns true if `ports` has been explicitly set.
+  public var hasPorts: Bool {self._ports != nil}
+  /// Clears the value of `ports`. Subsequent reads from it will return its default value.
+  public mutating func clearPorts() {self._ports = nil}
+
+  /// Absence disables managed certificate issuance without changing guest client trust.
+  public var caCertificatePem: Data {
+    get {_caCertificatePem ?? Data()}
+    set {_caCertificatePem = newValue}
+  }
+  /// Returns true if `caCertificatePem` has been explicitly set.
+  public var hasCaCertificatePem: Bool {self._caCertificatePem != nil}
+  /// Clears the value of `caCertificatePem`. Subsequent reads from it will return its default value.
+  public mutating func clearCaCertificatePem() {self._caCertificatePem = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _ports: Arcbox_V1_MachineWebPorts? = nil
+  fileprivate var _caCertificatePem: Data? = nil
+}
+
+/// Confirms validated session configuration, not installed routing.
+public struct Arcbox_V1_MachineWebAck: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var sourceRevision: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// An installed route selected through protocol discovery or an explicit port label.
+public struct Arcbox_V1_ContainerWebService: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var containerID: String = String()
+
+  public var hostnames: [String] = []
+
+  public var ipv4Address: String = String()
+
+  /// Zero means no managed HTTP route.
+  public var httpPort: UInt32 = 0
+
+  public var httpsBackend: Arcbox_V1_ContainerWebService.OneOf_HTTPSBackend? = nil
+
+  /// Preserve the application's TLS handshake and certificate.
+  public var nativeHTTPSPort: UInt32 {
+    get {
+      if case .nativeHTTPSPort(let v)? = httpsBackend {return v}
+      return 0
+    }
+    set {httpsBackend = .nativeHTTPSPort(newValue)}
+  }
+
+  /// Terminate TLS in the guest, then relay HTTP to this port.
+  public var terminatedHTTPPort: UInt32 {
+    get {
+      if case .terminatedHTTPPort(let v)? = httpsBackend {return v}
+      return 0
+    }
+    set {httpsBackend = .terminatedHTTPPort(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_HTTPSBackend: Equatable, Sendable {
+    /// Preserve the application's TLS handshake and certificate.
+    case nativeHTTPSPort(UInt32)
+    /// Terminate TLS in the guest, then relay HTTP to this port.
+    case terminatedHTTPPort(UInt32)
+
+  }
+
+  public init() {}
+}
+
 /// System information from the guest.
 public struct Arcbox_V1_SystemInfo: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -164,9 +648,8 @@ public struct Arcbox_V1_SystemInfo: Sendable {
 
   /// IPv4 address of the guest's bridge NIC (the vmnet interface the Mac
   /// reaches directly), or empty when the guest has none or it has no
-  /// address yet. The host registers `<machine>.arcbox.local` at this
-  /// address; `ip_addresses` keeps listing every interface, so an older
-  /// host that ignores this field sees exactly what it saw before.
+  /// address yet. The host registers `<machine>.machine.<local domain>`
+  /// at this address; `ip_addresses` lists every interface.
   public var bridgeIpAddress: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -1666,6 +2149,828 @@ extension Arcbox_V1_AgentPingResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if lhs.message != rhs.message {return false}
     if lhs.version != rhs.version {return false}
     if lhs.protocolVersion != rhs.protocolVersion {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ListGuestWebServicesRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListGuestWebServicesRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hostname\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ListGuestWebServicesRequest, rhs: Arcbox_V1_ListGuestWebServicesRequest) -> Bool {
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ListGuestWebServicesResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListGuestWebServicesResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}services\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.services) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.services.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.services, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ListGuestWebServicesResponse, rhs: Arcbox_V1_ListGuestWebServicesResponse) -> Bool {
+    if lhs.services != rhs.services {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_GuestWebService: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GuestWebService"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}container\0\u{1}index\0\u{1}machine\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Arcbox_V1_ContainerWebService?
+        var hadOneofValue = false
+        if let current = self.route {
+          hadOneofValue = true
+          if case .container(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.route = .container(v)
+        }
+      }()
+      case 2: try {
+        var v: Arcbox_V1_IndexWebService?
+        var hadOneofValue = false
+        if let current = self.route {
+          hadOneofValue = true
+          if case .index(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.route = .index(v)
+        }
+      }()
+      case 3: try {
+        var v: Arcbox_V1_MachineWebService?
+        var hadOneofValue = false
+        if let current = self.route {
+          hadOneofValue = true
+          if case .machine(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.route = .machine(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.route {
+    case .container?: try {
+      guard case .container(let v)? = self.route else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .index?: try {
+      guard case .index(let v)? = self.route else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .machine?: try {
+      guard case .machine(let v)? = self.route else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_GuestWebService, rhs: Arcbox_V1_GuestWebService) -> Bool {
+    if lhs.route != rhs.route {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineWebService: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineWebService"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}machine_name\0\u{1}hostname\0\u{3}ipv4_address\0\u{3}http_port\0\u{3}native_https_port\0\u{3}terminated_http_port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.machineName) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.ipv4Address) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.httpPort) }()
+      case 5: try {
+        var v: UInt32?
+        try decoder.decodeSingularUInt32Field(value: &v)
+        if let v = v {
+          if self.httpsBackend != nil {try decoder.handleConflictingOneOf()}
+          self.httpsBackend = .nativeHTTPSPort(v)
+        }
+      }()
+      case 6: try {
+        var v: UInt32?
+        try decoder.decodeSingularUInt32Field(value: &v)
+        if let v = v {
+          if self.httpsBackend != nil {try decoder.handleConflictingOneOf()}
+          self.httpsBackend = .terminatedHTTPPort(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.machineName.isEmpty {
+      try visitor.visitSingularStringField(value: self.machineName, fieldNumber: 1)
+    }
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 2)
+    }
+    if !self.ipv4Address.isEmpty {
+      try visitor.visitSingularStringField(value: self.ipv4Address, fieldNumber: 3)
+    }
+    if self.httpPort != 0 {
+      try visitor.visitSingularUInt32Field(value: self.httpPort, fieldNumber: 4)
+    }
+    switch self.httpsBackend {
+    case .nativeHTTPSPort?: try {
+      guard case .nativeHTTPSPort(let v)? = self.httpsBackend else { preconditionFailure() }
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 5)
+    }()
+    case .terminatedHTTPPort?: try {
+      guard case .terminatedHTTPPort(let v)? = self.httpsBackend else { preconditionFailure() }
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 6)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineWebService, rhs: Arcbox_V1_MachineWebService) -> Bool {
+    if lhs.machineName != rhs.machineName {return false}
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.ipv4Address != rhs.ipv4Address {return false}
+    if lhs.httpPort != rhs.httpPort {return false}
+    if lhs.httpsBackend != rhs.httpsBackend {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_IndexWebService: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".IndexWebService"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hostname\0\u{3}ipv4_address\0\u{3}managed_https\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.ipv4Address) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.managedHTTPS) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 1)
+    }
+    if !self.ipv4Address.isEmpty {
+      try visitor.visitSingularStringField(value: self.ipv4Address, fieldNumber: 2)
+    }
+    if self.managedHTTPS != false {
+      try visitor.visitSingularBoolField(value: self.managedHTTPS, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_IndexWebService, rhs: Arcbox_V1_IndexWebService) -> Bool {
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.ipv4Address != rhs.ipv4Address {return false}
+    if lhs.managedHTTPS != rhs.managedHTTPS {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReconcileHttpsAccessRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReconcileHttpsAccessRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}observation_id\0\u{3}host_addresses\0\u{1}enabled\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.observationID) }()
+      case 2: try { try decoder.decodeRepeatedStringField(value: &self.hostAddresses) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.enabled) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.observationID.isEmpty {
+      try visitor.visitSingularStringField(value: self.observationID, fieldNumber: 1)
+    }
+    if !self.hostAddresses.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.hostAddresses, fieldNumber: 2)
+    }
+    if self.enabled != false {
+      try visitor.visitSingularBoolField(value: self.enabled, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReconcileHttpsAccessRequest, rhs: Arcbox_V1_ReconcileHttpsAccessRequest) -> Bool {
+    if lhs.observationID != rhs.observationID {return false}
+    if lhs.hostAddresses != rhs.hostAddresses {return false}
+    if lhs.enabled != rhs.enabled {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReconcileHttpsAccessResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReconcileHttpsAccessResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hostname\0\u{3}destination_ip\0\u{1}sequence\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.destinationIp) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.sequence) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 1)
+    }
+    if !self.destinationIp.isEmpty {
+      try visitor.visitSingularStringField(value: self.destinationIp, fieldNumber: 2)
+    }
+    if self.sequence != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sequence, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReconcileHttpsAccessResponse, rhs: Arcbox_V1_ReconcileHttpsAccessResponse) -> Bool {
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.destinationIp != rhs.destinationIp {return false}
+    if lhs.sequence != rhs.sequence {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReconcileGuestTrustRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReconcileGuestTrustRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}certificate_pem\0\u{1}remove\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Data?
+        try decoder.decodeSingularBytesField(value: &v)
+        if let v = v {
+          if self.desired != nil {try decoder.handleConflictingOneOf()}
+          self.desired = .certificatePem(v)
+        }
+      }()
+      case 2: try {
+        var v: Arcbox_V1_Empty?
+        var hadOneofValue = false
+        if let current = self.desired {
+          hadOneofValue = true
+          if case .remove(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.desired = .remove(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.desired {
+    case .certificatePem?: try {
+      guard case .certificatePem(let v)? = self.desired else { preconditionFailure() }
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 1)
+    }()
+    case .remove?: try {
+      guard case .remove(let v)? = self.desired else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReconcileGuestTrustRequest, rhs: Arcbox_V1_ReconcileGuestTrustRequest) -> Bool {
+    if lhs.desired != rhs.desired {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReconcileGuestTrustResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReconcileGuestTrustResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}installed_sha256\0\u{1}removed\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: String?
+        try decoder.decodeSingularStringField(value: &v)
+        if let v = v {
+          if self.applied != nil {try decoder.handleConflictingOneOf()}
+          self.applied = .installedSha256(v)
+        }
+      }()
+      case 2: try {
+        var v: Arcbox_V1_Empty?
+        var hadOneofValue = false
+        if let current = self.applied {
+          hadOneofValue = true
+          if case .removed(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.applied = .removed(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.applied {
+    case .installedSha256?: try {
+      guard case .installedSha256(let v)? = self.applied else { preconditionFailure() }
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    }()
+    case .removed?: try {
+      guard case .removed(let v)? = self.applied else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReconcileGuestTrustResponse, rhs: Arcbox_V1_ReconcileGuestTrustResponse) -> Bool {
+    if lhs.applied != rhs.applied {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_OpenInstanceAuthorityRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".OpenInstanceAuthorityRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_OpenInstanceAuthorityRequest, rhs: Arcbox_V1_OpenInstanceAuthorityRequest) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_OpenInstanceAuthorityResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".OpenInstanceAuthorityResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_OpenInstanceAuthorityResponse, rhs: Arcbox_V1_OpenInstanceAuthorityResponse) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReplaceInstanceAuthorityRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplaceInstanceAuthorityRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}authority_revision\0\u{1}roots\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.authorityRevision) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.roots) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.authorityRevision != 0 {
+      try visitor.visitSingularUInt64Field(value: self.authorityRevision, fieldNumber: 1)
+    }
+    if !self.roots.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.roots, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReplaceInstanceAuthorityRequest, rhs: Arcbox_V1_ReplaceInstanceAuthorityRequest) -> Bool {
+    if lhs.authorityRevision != rhs.authorityRevision {return false}
+    if lhs.roots != rhs.roots {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_InstanceAuthorityRoot: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InstanceAuthorityRoot"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}root\0\u{1}target\0\u{3}dns_port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.root) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.target) }()
+      case 3: try { try decoder.decodeSingularUInt32Field(value: &self.dnsPort) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.root.isEmpty {
+      try visitor.visitSingularStringField(value: self.root, fieldNumber: 1)
+    }
+    if self.target != .unspecified {
+      try visitor.visitSingularEnumField(value: self.target, fieldNumber: 2)
+    }
+    if self.dnsPort != 0 {
+      try visitor.visitSingularUInt32Field(value: self.dnsPort, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_InstanceAuthorityRoot, rhs: Arcbox_V1_InstanceAuthorityRoot) -> Bool {
+    if lhs.root != rhs.root {return false}
+    if lhs.target != rhs.target {return false}
+    if lhs.dnsPort != rhs.dnsPort {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_InstanceAuthorityRoot.Target: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNSPECIFIED\0\u{1}CURRENT\0\u{1}OTHER\0\u{1}UNAVAILABLE\0")
+}
+
+extension Arcbox_V1_InstanceAuthorityAck: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InstanceAuthorityAck"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}authority_revision\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.authorityRevision) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.authorityRevision != 0 {
+      try visitor.visitSingularUInt64Field(value: self.authorityRevision, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_InstanceAuthorityAck, rhs: Arcbox_V1_InstanceAuthorityAck) -> Bool {
+    if lhs.authorityRevision != rhs.authorityRevision {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_OpenMachineWebRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".OpenMachineWebRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}machine_name\0\u{1}hostname\0\u{3}ipv4_address\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.machineName) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.ipv4Address) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.machineName.isEmpty {
+      try visitor.visitSingularStringField(value: self.machineName, fieldNumber: 1)
+    }
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 2)
+    }
+    if !self.ipv4Address.isEmpty {
+      try visitor.visitSingularStringField(value: self.ipv4Address, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_OpenMachineWebRequest, rhs: Arcbox_V1_OpenMachineWebRequest) -> Bool {
+    if lhs.machineName != rhs.machineName {return false}
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.ipv4Address != rhs.ipv4Address {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_OpenMachineWebResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".OpenMachineWebResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_OpenMachineWebResponse, rhs: Arcbox_V1_OpenMachineWebResponse) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ReplaceMachineWebRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplaceMachineWebRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}source_revision\0\u{1}ports\0\u{3}ca_certificate_pem\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.sourceRevision) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._ports) }()
+      case 3: try { try decoder.decodeSingularBytesField(value: &self._caCertificatePem) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.sourceRevision != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sourceRevision, fieldNumber: 1)
+    }
+    try { if let v = self._ports {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._caCertificatePem {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ReplaceMachineWebRequest, rhs: Arcbox_V1_ReplaceMachineWebRequest) -> Bool {
+    if lhs.sourceRevision != rhs.sourceRevision {return false}
+    if lhs._ports != rhs._ports {return false}
+    if lhs._caCertificatePem != rhs._caCertificatePem {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineWebAck: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineWebAck"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}source_revision\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.sourceRevision) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.sourceRevision != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sourceRevision, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineWebAck, rhs: Arcbox_V1_MachineWebAck) -> Bool {
+    if lhs.sourceRevision != rhs.sourceRevision {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ContainerWebService: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ContainerWebService"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}container_id\0\u{1}hostnames\0\u{3}ipv4_address\0\u{3}http_port\0\u{3}native_https_port\0\u{3}terminated_http_port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.containerID) }()
+      case 2: try { try decoder.decodeRepeatedStringField(value: &self.hostnames) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.ipv4Address) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.httpPort) }()
+      case 5: try {
+        var v: UInt32?
+        try decoder.decodeSingularUInt32Field(value: &v)
+        if let v = v {
+          if self.httpsBackend != nil {try decoder.handleConflictingOneOf()}
+          self.httpsBackend = .nativeHTTPSPort(v)
+        }
+      }()
+      case 6: try {
+        var v: UInt32?
+        try decoder.decodeSingularUInt32Field(value: &v)
+        if let v = v {
+          if self.httpsBackend != nil {try decoder.handleConflictingOneOf()}
+          self.httpsBackend = .terminatedHTTPPort(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.containerID.isEmpty {
+      try visitor.visitSingularStringField(value: self.containerID, fieldNumber: 1)
+    }
+    if !self.hostnames.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.hostnames, fieldNumber: 2)
+    }
+    if !self.ipv4Address.isEmpty {
+      try visitor.visitSingularStringField(value: self.ipv4Address, fieldNumber: 3)
+    }
+    if self.httpPort != 0 {
+      try visitor.visitSingularUInt32Field(value: self.httpPort, fieldNumber: 4)
+    }
+    switch self.httpsBackend {
+    case .nativeHTTPSPort?: try {
+      guard case .nativeHTTPSPort(let v)? = self.httpsBackend else { preconditionFailure() }
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 5)
+    }()
+    case .terminatedHTTPPort?: try {
+      guard case .terminatedHTTPPort(let v)? = self.httpsBackend else { preconditionFailure() }
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 6)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ContainerWebService, rhs: Arcbox_V1_ContainerWebService) -> Bool {
+    if lhs.containerID != rhs.containerID {return false}
+    if lhs.hostnames != rhs.hostnames {return false}
+    if lhs.ipv4Address != rhs.ipv4Address {return false}
+    if lhs.httpPort != rhs.httpPort {return false}
+    if lhs.httpsBackend != rhs.httpsBackend {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -144,6 +144,30 @@ public enum Arcbox_V1_AgentService {
                 method: "ListKubernetesLoadBalancers"
             )
         }
+        /// Namespace for "ListGuestWebServices" metadata.
+        public enum ListGuestWebServices {
+            /// Request type for "ListGuestWebServices".
+            public typealias Input = Arcbox_V1_ListGuestWebServicesRequest
+            /// Response type for "ListGuestWebServices".
+            public typealias Output = Arcbox_V1_ListGuestWebServicesResponse
+            /// Descriptor for "ListGuestWebServices".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "ListGuestWebServices"
+            )
+        }
+        /// Namespace for "ReconcileHttpsAccess" metadata.
+        public enum ReconcileHttpsAccess {
+            /// Request type for "ReconcileHttpsAccess".
+            public typealias Input = Arcbox_V1_ReconcileHttpsAccessRequest
+            /// Response type for "ReconcileHttpsAccess".
+            public typealias Output = Arcbox_V1_ReconcileHttpsAccessResponse
+            /// Descriptor for "ReconcileHttpsAccess".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.AgentService"),
+                method: "ReconcileHttpsAccess"
+            )
+        }
         /// Namespace for "Shutdown" metadata.
         public enum Shutdown {
             /// Request type for "Shutdown".
@@ -228,6 +252,8 @@ public enum Arcbox_V1_AgentService {
             GetKubernetesStatus.descriptor,
             GetKubeconfig.descriptor,
             ListKubernetesLoadBalancers.descriptor,
+            ListGuestWebServices.descriptor,
+            ReconcileHttpsAccess.descriptor,
             Shutdown.descriptor,
             DiskTrim.descriptor,
             WatchReadiness.descriptor,
@@ -442,6 +468,42 @@ extension Arcbox_V1_AgentService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_KubernetesLoadBalancersRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse>
+
+        /// Handle the "ListGuestWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed container and builtin web routes selected by the guest.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ListGuestWebServicesRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ListGuestWebServicesResponse` messages.
+        func listGuestWebServices(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListGuestWebServicesResponse>
+
+        /// Handle the "ReconcileHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Renews host HTTPS observation and returns the first managed access in that observation.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ReconcileHttpsAccessRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ReconcileHttpsAccessResponse` messages.
+        func reconcileHttpsAccess(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReconcileHttpsAccessResponse>
 
         /// Handle the "Shutdown" method.
         ///
@@ -746,6 +808,42 @@ extension Arcbox_V1_AgentService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse>
 
+        /// Handle the "ListGuestWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed container and builtin web routes selected by the guest.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ListGuestWebServicesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ListGuestWebServicesResponse` message.
+        func listGuestWebServices(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ListGuestWebServicesResponse>
+
+        /// Handle the "ReconcileHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Renews host HTTPS observation and returns the first managed access in that observation.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ReconcileHttpsAccessRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ReconcileHttpsAccessResponse` message.
+        func reconcileHttpsAccess(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ReconcileHttpsAccessResponse>
+
         /// Handle the "Shutdown" method.
         ///
         /// > Source IDL Documentation:
@@ -1047,6 +1145,42 @@ extension Arcbox_V1_AgentService {
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_KubernetesLoadBalancersResponse
 
+        /// Handle the "ListGuestWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed container and builtin web routes selected by the guest.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ListGuestWebServicesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ListGuestWebServicesResponse` to respond with.
+        func listGuestWebServices(
+            request: Arcbox_V1_ListGuestWebServicesRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ListGuestWebServicesResponse
+
+        /// Handle the "ReconcileHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Renews host HTTPS observation and returns the first managed access in that observation.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ReconcileHttpsAccessRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ReconcileHttpsAccessResponse` to respond with.
+        func reconcileHttpsAccess(
+            request: Arcbox_V1_ReconcileHttpsAccessRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ReconcileHttpsAccessResponse
+
         /// Handle the "Shutdown" method.
         ///
         /// > Source IDL Documentation:
@@ -1278,6 +1412,28 @@ extension Arcbox_V1_AgentService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.ListGuestWebServices.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ListGuestWebServicesRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ListGuestWebServicesResponse>(),
+            handler: { request, context in
+                try await self.listGuestWebServices(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_AgentService.Method.ReconcileHttpsAccess.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ReconcileHttpsAccessRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ReconcileHttpsAccessResponse>(),
+            handler: { request, context in
+                try await self.reconcileHttpsAccess(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_V1_AgentService.Method.Shutdown.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ShutdownRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ShutdownResponse>(),
@@ -1453,6 +1609,28 @@ extension Arcbox_V1_AgentService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse> {
         let response = try await self.listKubernetesLoadBalancers(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func listGuestWebServices(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListGuestWebServicesResponse> {
+        let response = try await self.listGuestWebServices(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func reconcileHttpsAccess(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ReconcileHttpsAccessResponse> {
+        let response = try await self.reconcileHttpsAccess(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1652,6 +1830,32 @@ extension Arcbox_V1_AgentService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_KubernetesLoadBalancersResponse>(
             message: try await self.listKubernetesLoadBalancers(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func listGuestWebServices(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ListGuestWebServicesResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ListGuestWebServicesResponse>(
+            message: try await self.listGuestWebServices(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func reconcileHttpsAccess(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ReconcileHttpsAccessResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ReconcileHttpsAccessResponse>(
+            message: try await self.reconcileHttpsAccess(
                 request: request.message,
                 context: context
             ),
@@ -1995,6 +2199,52 @@ extension Arcbox_V1_AgentService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_KubernetesLoadBalancersResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_KubernetesLoadBalancersResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ListGuestWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed container and builtin web routes selected by the guest.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ListGuestWebServicesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ListGuestWebServicesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ListGuestWebServicesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func listGuestWebServices<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ListGuestWebServicesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ListGuestWebServicesResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListGuestWebServicesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ReconcileHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Renews host HTTPS observation and returns the first managed access in that observation.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ReconcileHttpsAccessRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ReconcileHttpsAccessRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ReconcileHttpsAccessResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func reconcileHttpsAccess<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ReconcileHttpsAccessRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ReconcileHttpsAccessResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ReconcileHttpsAccessResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "Shutdown" method.
@@ -2498,6 +2748,74 @@ extension Arcbox_V1_AgentService {
             )
         }
 
+        /// Call the "ListGuestWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed container and builtin web routes selected by the guest.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ListGuestWebServicesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ListGuestWebServicesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ListGuestWebServicesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func listGuestWebServices<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ListGuestWebServicesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ListGuestWebServicesResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListGuestWebServicesResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.ListGuestWebServices.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "ReconcileHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Renews host HTTPS observation and returns the first managed access in that observation.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ReconcileHttpsAccessRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ReconcileHttpsAccessRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ReconcileHttpsAccessResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func reconcileHttpsAccess<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ReconcileHttpsAccessRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ReconcileHttpsAccessResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ReconcileHttpsAccessResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_AgentService.Method.ReconcileHttpsAccess.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "Shutdown" method.
         ///
         /// > Source IDL Documentation:
@@ -2986,6 +3304,64 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_KubernetesLoadBalancersRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_KubernetesLoadBalancersResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ListGuestWebServices" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Lists installed container and builtin web routes selected by the guest.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ListGuestWebServicesRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listGuestWebServices<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ListGuestWebServicesRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListGuestWebServicesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.listGuestWebServices(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ListGuestWebServicesRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ListGuestWebServicesResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ReconcileHttpsAccess" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Renews host HTTPS observation and returns the first managed access in that observation.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ReconcileHttpsAccessRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func reconcileHttpsAccess<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ReconcileHttpsAccessRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ReconcileHttpsAccessResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.reconcileHttpsAccess(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ReconcileHttpsAccessRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ReconcileHttpsAccessResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3487,6 +3863,72 @@ extension Arcbox_V1_AgentService.ClientProtocol {
             metadata: metadata
         )
         return try await self.listKubernetesLoadBalancers(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ListGuestWebServices" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Lists installed container and builtin web routes selected by the guest.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listGuestWebServices<Result>(
+        _ message: Arcbox_V1_ListGuestWebServicesRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListGuestWebServicesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ListGuestWebServicesRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.listGuestWebServices(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ReconcileHttpsAccess" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Renews host HTTPS observation and returns the first managed access in that observation.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func reconcileHttpsAccess<Result>(
+        _ message: Arcbox_V1_ReconcileHttpsAccessRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ReconcileHttpsAccessResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ReconcileHttpsAccessRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.reconcileHttpsAccess(
             request: request,
             options: options,
             onResponse: handleResponse

@@ -118,6 +118,88 @@ public struct Arcbox_V1_PortBinding: Sendable {
   public init() {}
 }
 
+/// Selection for one machine web protocol.
+public struct Arcbox_V1_WebPortPolicy: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var selection: Arcbox_V1_WebPortPolicy.OneOf_Selection? = nil
+
+  /// Discover a backend automatically.
+  public var auto: Arcbox_V1_Empty {
+    get {
+      if case .auto(let v)? = selection {return v}
+      return Arcbox_V1_Empty()
+    }
+    set {selection = .auto(newValue)}
+  }
+
+  /// Disable the protocol.
+  public var off: Arcbox_V1_Empty {
+    get {
+      if case .off(let v)? = selection {return v}
+      return Arcbox_V1_Empty()
+    }
+    set {selection = .off(newValue)}
+  }
+
+  /// Backend port, 1 through 65535. HTTPS expects native TLS on this port.
+  public var port: UInt32 {
+    get {
+      if case .port(let v)? = selection {return v}
+      return 0
+    }
+    set {selection = .port(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Selection: Equatable, Sendable {
+    /// Discover a backend automatically.
+    case auto(Arcbox_V1_Empty)
+    /// Disable the protocol.
+    case off(Arcbox_V1_Empty)
+    /// Backend port, 1 through 65535. HTTPS expects native TLS on this port.
+    case port(UInt32)
+
+  }
+
+  public init() {}
+}
+
+/// Complete backend policies; these fields do not report installed routes.
+public struct Arcbox_V1_MachineWebPorts: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var httpPort: Arcbox_V1_WebPortPolicy {
+    get {_httpPort ?? Arcbox_V1_WebPortPolicy()}
+    set {_httpPort = newValue}
+  }
+  /// Returns true if `httpPort` has been explicitly set.
+  public var hasHTTPPort: Bool {self._httpPort != nil}
+  /// Clears the value of `httpPort`. Subsequent reads from it will return its default value.
+  public mutating func clearHTTPPort() {self._httpPort = nil}
+
+  public var httpsPort: Arcbox_V1_WebPortPolicy {
+    get {_httpsPort ?? Arcbox_V1_WebPortPolicy()}
+    set {_httpsPort = newValue}
+  }
+  /// Returns true if `httpsPort` has been explicitly set.
+  public var hasHTTPSPort: Bool {self._httpsPort != nil}
+  /// Clears the value of `httpsPort`. Subsequent reads from it will return its default value.
+  public mutating func clearHTTPSPort() {self._httpsPort = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _httpPort: Arcbox_V1_WebPortPolicy? = nil
+  fileprivate var _httpsPort: Arcbox_V1_WebPortPolicy? = nil
+}
+
 /// Resource limits for containers.
 public struct Arcbox_V1_ResourceLimits: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -463,6 +545,124 @@ extension Arcbox_V1_PortBinding: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     if lhs.hostPort != rhs.hostPort {return false}
     if lhs.`protocol` != rhs.`protocol` {return false}
     if lhs.hostIp != rhs.hostIp {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_WebPortPolicy: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".WebPortPolicy"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}auto\0\u{1}off\0\u{1}port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Arcbox_V1_Empty?
+        var hadOneofValue = false
+        if let current = self.selection {
+          hadOneofValue = true
+          if case .auto(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.selection = .auto(v)
+        }
+      }()
+      case 2: try {
+        var v: Arcbox_V1_Empty?
+        var hadOneofValue = false
+        if let current = self.selection {
+          hadOneofValue = true
+          if case .off(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.selection = .off(v)
+        }
+      }()
+      case 3: try {
+        var v: UInt32?
+        try decoder.decodeSingularUInt32Field(value: &v)
+        if let v = v {
+          if self.selection != nil {try decoder.handleConflictingOneOf()}
+          self.selection = .port(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.selection {
+    case .auto?: try {
+      guard case .auto(let v)? = self.selection else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .off?: try {
+      guard case .off(let v)? = self.selection else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .port?: try {
+      guard case .port(let v)? = self.selection else { preconditionFailure() }
+      try visitor.visitSingularUInt32Field(value: v, fieldNumber: 3)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_WebPortPolicy, rhs: Arcbox_V1_WebPortPolicy) -> Bool {
+    if lhs.selection != rhs.selection {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_MachineWebPorts: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MachineWebPorts"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}http_port\0\u{3}https_port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._httpPort) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._httpsPort) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._httpPort {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._httpsPort {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_MachineWebPorts, rhs: Arcbox_V1_MachineWebPorts) -> Bool {
+    if lhs._httpPort != rhs._httpPort {return false}
+    if lhs._httpsPort != rhs._httpsPort {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
