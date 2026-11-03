@@ -101,16 +101,16 @@ public enum Arcbox_V1_MachineService {
                 method: "Export"
             )
         }
-        /// Namespace for "Import" metadata.
-        public enum Import {
-            /// Request type for "Import".
+        /// Namespace for "ImportMachine" metadata.
+        public enum ImportMachine {
+            /// Request type for "ImportMachine".
             public typealias Input = Arcbox_V1_ImportMachineRequest
-            /// Response type for "Import".
+            /// Response type for "ImportMachine".
             public typealias Output = Arcbox_V1_ImportMachineResponse
-            /// Descriptor for "Import".
+            /// Descriptor for "ImportMachine".
             public static let descriptor = GRPCCore.MethodDescriptor(
                 service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
-                method: "Import"
+                method: "ImportMachine"
             )
         }
         /// Namespace for "SetResources" metadata.
@@ -123,6 +123,18 @@ public enum Arcbox_V1_MachineService {
             public static let descriptor = GRPCCore.MethodDescriptor(
                 service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
                 method: "SetResources"
+            )
+        }
+        /// Namespace for "SetWebPorts" metadata.
+        public enum SetWebPorts {
+            /// Request type for "SetWebPorts".
+            public typealias Input = Arcbox_V1_SetMachineWebPortsRequest
+            /// Response type for "SetWebPorts".
+            public typealias Output = Arcbox_V1_MachineWebPorts
+            /// Descriptor for "SetWebPorts".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.MachineService"),
+                method: "SetWebPorts"
             )
         }
         /// Namespace for "SetDefault" metadata.
@@ -253,8 +265,9 @@ public enum Arcbox_V1_MachineService {
             Remove.descriptor,
             CloneMachine.descriptor,
             Export.descriptor,
-            Import.descriptor,
+            ImportMachine.descriptor,
             SetResources.descriptor,
+            SetWebPorts.descriptor,
             SetDefault.descriptor,
             List.descriptor,
             Inspect.descriptor,
@@ -436,13 +449,14 @@ extension Arcbox_V1_MachineService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ExportMachineResponse>
 
-        /// Handle the "Import" method.
+        /// Handle the "ImportMachine" method.
         ///
         /// > Source IDL Documentation:
         /// >
         /// > Creates a machine from an archive Export wrote. The image the
         /// > manifest names must be in the local image registry at the same
         /// > version; otherwise the error says which image is missing.
+        /// > ImportMachine avoids the Swift import keyword in generated clients.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_V1_ImportMachineRequest` messages.
@@ -451,7 +465,7 @@ extension Arcbox_V1_MachineService {
         ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
         ///     to an internal error.
         /// - Returns: A streaming response of `Arcbox_V1_ImportMachineResponse` messages.
-        func `import`(
+        func importMachine(
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_ImportMachineRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ImportMachineResponse>
@@ -477,6 +491,24 @@ extension Arcbox_V1_MachineService {
             request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetMachineResourcesRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetMachineResourcesResponse>
+
+        /// Handle the "SetWebPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_SetMachineWebPortsRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_MachineWebPorts` messages.
+        func setWebPorts(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineWebPorts>
 
         /// Handle the "SetDefault" method.
         ///
@@ -825,13 +857,14 @@ extension Arcbox_V1_MachineService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ExportMachineResponse>
 
-        /// Handle the "Import" method.
+        /// Handle the "ImportMachine" method.
         ///
         /// > Source IDL Documentation:
         /// >
         /// > Creates a machine from an archive Export wrote. The image the
         /// > manifest names must be in the local image registry at the same
         /// > version; otherwise the error says which image is missing.
+        /// > ImportMachine avoids the Swift import keyword in generated clients.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
@@ -840,7 +873,7 @@ extension Arcbox_V1_MachineService {
         ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
         ///     to an internal error.
         /// - Returns: A response containing a single `Arcbox_V1_ImportMachineResponse` message.
-        func `import`(
+        func importMachine(
             request: GRPCCore.ServerRequest<Arcbox_V1_ImportMachineRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ImportMachineResponse>
@@ -866,6 +899,24 @@ extension Arcbox_V1_MachineService {
             request: GRPCCore.ServerRequest<Arcbox_V1_SetMachineResourcesRequest>,
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SetMachineResourcesResponse>
+
+        /// Handle the "SetWebPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetMachineWebPortsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_MachineWebPorts` message.
+        func setWebPorts(
+            request: GRPCCore.ServerRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_MachineWebPorts>
 
         /// Handle the "SetDefault" method.
         ///
@@ -1212,13 +1263,14 @@ extension Arcbox_V1_MachineService {
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_ExportMachineResponse
 
-        /// Handle the "Import" method.
+        /// Handle the "ImportMachine" method.
         ///
         /// > Source IDL Documentation:
         /// >
         /// > Creates a machine from an archive Export wrote. The image the
         /// > manifest names must be in the local image registry at the same
         /// > version; otherwise the error says which image is missing.
+        /// > ImportMachine avoids the Swift import keyword in generated clients.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_V1_ImportMachineRequest` message.
@@ -1227,7 +1279,7 @@ extension Arcbox_V1_MachineService {
         ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
         ///     to an internal error.
         /// - Returns: A `Arcbox_V1_ImportMachineResponse` to respond with.
-        func `import`(
+        func importMachine(
             request: Arcbox_V1_ImportMachineRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_ImportMachineResponse
@@ -1253,6 +1305,24 @@ extension Arcbox_V1_MachineService {
             request: Arcbox_V1_SetMachineResourcesRequest,
             context: GRPCCore.ServerContext
         ) async throws -> Arcbox_V1_SetMachineResourcesResponse
+
+        /// Handle the "SetWebPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_SetMachineWebPortsRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_MachineWebPorts` to respond with.
+        func setWebPorts(
+            request: Arcbox_V1_SetMachineWebPortsRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_MachineWebPorts
 
         /// Handle the "SetDefault" method.
         ///
@@ -1522,11 +1592,11 @@ extension Arcbox_V1_MachineService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
-            forMethod: Arcbox_V1_MachineService.Method.Import.descriptor,
+            forMethod: Arcbox_V1_MachineService.Method.ImportMachine.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ImportMachineRequest>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ImportMachineResponse>(),
             handler: { request, context in
-                try await self.`import`(
+                try await self.importMachine(
                     request: request,
                     context: context
                 )
@@ -1538,6 +1608,17 @@ extension Arcbox_V1_MachineService.StreamingServiceProtocol {
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetMachineResourcesResponse>(),
             handler: { request, context in
                 try await self.setResources(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_MachineService.Method.SetWebPorts.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetMachineWebPortsRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_MachineWebPorts>(),
+            handler: { request, context in
+                try await self.setWebPorts(
                     request: request,
                     context: context
                 )
@@ -1725,11 +1806,11 @@ extension Arcbox_V1_MachineService.ServiceProtocol {
         return GRPCCore.StreamingServerResponse(single: response)
     }
 
-    public func `import`(
+    public func importMachine(
         request: GRPCCore.StreamingServerRequest<Arcbox_V1_ImportMachineRequest>,
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ImportMachineResponse> {
-        let response = try await self.`import`(
+        let response = try await self.importMachine(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1741,6 +1822,17 @@ extension Arcbox_V1_MachineService.ServiceProtocol {
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_SetMachineResourcesResponse> {
         let response = try await self.setResources(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func setWebPorts(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_MachineWebPorts> {
+        let response = try await self.setWebPorts(
             request: GRPCCore.ServerRequest(stream: request),
             context: context
         )
@@ -1928,12 +2020,12 @@ extension Arcbox_V1_MachineService.SimpleServiceProtocol {
         )
     }
 
-    public func `import`(
+    public func importMachine(
         request: GRPCCore.ServerRequest<Arcbox_V1_ImportMachineRequest>,
         context: GRPCCore.ServerContext
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ImportMachineResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_ImportMachineResponse>(
-            message: try await self.`import`(
+            message: try await self.importMachine(
                 request: request.message,
                 context: context
             ),
@@ -1947,6 +2039,19 @@ extension Arcbox_V1_MachineService.SimpleServiceProtocol {
     ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_SetMachineResourcesResponse> {
         return GRPCCore.ServerResponse<Arcbox_V1_SetMachineResourcesResponse>(
             message: try await self.setResources(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func setWebPorts(
+        request: GRPCCore.ServerRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_MachineWebPorts> {
+        return GRPCCore.ServerResponse<Arcbox_V1_MachineWebPorts>(
+            message: try await self.setWebPorts(
                 request: request.message,
                 context: context
             ),
@@ -2282,13 +2387,14 @@ extension Arcbox_V1_MachineService {
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ExportMachineResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
-        /// Call the "Import" method.
+        /// Call the "ImportMachine" method.
         ///
         /// > Source IDL Documentation:
         /// >
         /// > Creates a machine from an archive Export wrote. The image the
         /// > manifest names must be in the local image registry at the same
         /// > version; otherwise the error says which image is missing.
+        /// > ImportMachine avoids the Swift import keyword in generated clients.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
@@ -2299,7 +2405,7 @@ extension Arcbox_V1_MachineService {
         ///       returned to the caller. Returning from the closure will cancel the RPC if it
         ///       hasn't already finished.
         /// - Returns: The result of `handleResponse`.
-        func `import`<Result>(
+        func importMachine<Result>(
             request: GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>,
             serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ImportMachineRequest>,
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ImportMachineResponse>,
@@ -2332,6 +2438,29 @@ extension Arcbox_V1_MachineService {
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_SetMachineResourcesResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_SetMachineResourcesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetWebPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetMachineWebPortsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetMachineWebPortsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineWebPorts` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setWebPorts<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetMachineWebPortsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineWebPorts>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_MachineWebPorts>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "SetDefault" method.
@@ -2835,13 +2964,14 @@ extension Arcbox_V1_MachineService {
             )
         }
 
-        /// Call the "Import" method.
+        /// Call the "ImportMachine" method.
         ///
         /// > Source IDL Documentation:
         /// >
         /// > Creates a machine from an archive Export wrote. The image the
         /// > manifest names must be in the local image registry at the same
         /// > version; otherwise the error says which image is missing.
+        /// > ImportMachine avoids the Swift import keyword in generated clients.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
@@ -2852,7 +2982,7 @@ extension Arcbox_V1_MachineService {
         ///       returned to the caller. Returning from the closure will cancel the RPC if it
         ///       hasn't already finished.
         /// - Returns: The result of `handleResponse`.
-        public func `import`<Result>(
+        public func importMachine<Result>(
             request: GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>,
             serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ImportMachineRequest>,
             deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ImportMachineResponse>,
@@ -2863,7 +2993,7 @@ extension Arcbox_V1_MachineService {
         ) async throws -> Result where Result: Sendable {
             try await self.client.unary(
                 request: request,
-                descriptor: Arcbox_V1_MachineService.Method.Import.descriptor,
+                descriptor: Arcbox_V1_MachineService.Method.ImportMachine.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -2902,6 +3032,40 @@ extension Arcbox_V1_MachineService {
             try await self.client.unary(
                 request: request,
                 descriptor: Arcbox_V1_MachineService.Method.SetResources.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetWebPorts" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_SetMachineWebPortsRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_SetMachineWebPortsRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_MachineWebPorts` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setWebPorts<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_SetMachineWebPortsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_MachineWebPorts>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_MachineWebPorts>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_MachineService.Method.SetWebPorts.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -3467,13 +3631,14 @@ extension Arcbox_V1_MachineService.ClientProtocol {
         )
     }
 
-    /// Call the "Import" method.
+    /// Call the "ImportMachine" method.
     ///
     /// > Source IDL Documentation:
     /// >
     /// > Creates a machine from an archive Export wrote. The image the
     /// > manifest names must be in the local image registry at the same
     /// > version; otherwise the error says which image is missing.
+    /// > ImportMachine avoids the Swift import keyword in generated clients.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_V1_ImportMachineRequest` message.
@@ -3482,14 +3647,14 @@ extension Arcbox_V1_MachineService.ClientProtocol {
     ///       returned to the caller. Returning from the closure will cancel the RPC if it
     ///       hasn't already finished.
     /// - Returns: The result of `handleResponse`.
-    public func `import`<Result>(
+    public func importMachine<Result>(
         request: GRPCCore.ClientRequest<Arcbox_V1_ImportMachineRequest>,
         options: GRPCCore.CallOptions = .defaults,
         onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ImportMachineResponse>) async throws -> Result = { response in
             try response.message
         }
     ) async throws -> Result where Result: Sendable {
-        try await self.`import`(
+        try await self.importMachine(
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ImportMachineRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ImportMachineResponse>(),
@@ -3526,6 +3691,35 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetMachineResourcesRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_SetMachineResourcesResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetWebPorts" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_SetMachineWebPortsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setWebPorts<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_SetMachineWebPortsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_MachineWebPorts>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setWebPorts(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SetMachineWebPortsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_MachineWebPorts>(),
             options: options,
             onResponse: handleResponse
         )
@@ -4062,13 +4256,14 @@ extension Arcbox_V1_MachineService.ClientProtocol {
         )
     }
 
-    /// Call the "Import" method.
+    /// Call the "ImportMachine" method.
     ///
     /// > Source IDL Documentation:
     /// >
     /// > Creates a machine from an archive Export wrote. The image the
     /// > manifest names must be in the local image registry at the same
     /// > version; otherwise the error says which image is missing.
+    /// > ImportMachine avoids the Swift import keyword in generated clients.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -4078,7 +4273,7 @@ extension Arcbox_V1_MachineService.ClientProtocol {
     ///       returned to the caller. Returning from the closure will cancel the RPC if it
     ///       hasn't already finished.
     /// - Returns: The result of `handleResponse`.
-    public func `import`<Result>(
+    public func importMachine<Result>(
         _ message: Arcbox_V1_ImportMachineRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
@@ -4090,7 +4285,7 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             message: message,
             metadata: metadata
         )
-        return try await self.`import`(
+        return try await self.importMachine(
             request: request,
             options: options,
             onResponse: handleResponse
@@ -4128,6 +4323,39 @@ extension Arcbox_V1_MachineService.ClientProtocol {
             metadata: metadata
         )
         return try await self.setResources(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetWebPorts" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Saves web backend selection without applying routes. Omitted fields retain their values.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setWebPorts<Result>(
+        _ message: Arcbox_V1_SetMachineWebPortsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_MachineWebPorts>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_SetMachineWebPortsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setWebPorts(
             request: request,
             options: options,
             onResponse: handleResponse
