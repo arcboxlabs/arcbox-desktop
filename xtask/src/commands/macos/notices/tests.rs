@@ -11,6 +11,11 @@ const ASSETS_LOCK: &str = r#"
 version = "0.8.11"
 cdn = "https://boot.arcboxcdn.com"
 
+[qemu]
+version = "0.1.0"
+cdn = "https://boot.arcboxcdn.com/qemu"
+arch.arm64.sha256 = "ddd"
+
 [[tools]]
 name = "docker"
 group = "docker"
@@ -35,7 +40,7 @@ fn keys(keys: &[&str]) -> BTreeSet<String> {
 }
 
 #[test]
-fn shipped_keys_name_every_tool_boot_assets_and_host_runtime_binaries() {
+fn shipped_keys_name_every_tool_qemu_build_boot_assets_and_host_runtime_binaries() {
     let manifest = json!({
         "asset_version": "0.8.11",
         "targets": {
@@ -54,6 +59,7 @@ fn shipped_keys_name_every_tool_boot_assets_and_host_runtime_binaries() {
         keys(&[
             "boot:kernel@v0.0.25",
             "boot:rootfs@0.8.11",
+            "qemu:qemu@0.1.0",
             "runtime:FEX@FEX-2605-0.8.11",
             "runtime:dockerd@29.9.2",
             "tool:docker@29.9.2",
@@ -61,6 +67,12 @@ fn shipped_keys_name_every_tool_boot_assets_and_host_runtime_binaries() {
             "tool:pstramp@0.2.0",
         ])
     );
+
+    // An unpublished QEMU build is pinned with an empty sha256, and nothing downloads it.
+    let unpinned = ASSETS_LOCK.replace(r#"arch.arm64.sha256 = "ddd""#, r#"arch.arm64.sha256 = """#);
+    let keys = shipped_keys(&unpinned, &manifest).unwrap();
+    assert!(keys.contains("tool:docker@29.9.2"));
+    assert!(!keys.iter().any(|key| key.starts_with("qemu:")), "{keys:?}");
 }
 
 #[test]
