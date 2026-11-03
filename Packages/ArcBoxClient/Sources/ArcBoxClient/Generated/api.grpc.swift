@@ -1134,6 +1134,78 @@ public enum Arcbox_V1_SystemService {
                 method: "RecoverStorage"
             )
         }
+        /// Namespace for "ListWebServices" metadata.
+        public enum ListWebServices {
+            /// Request type for "ListWebServices".
+            public typealias Input = Arcbox_V1_ListWebServicesRequest
+            /// Response type for "ListWebServices".
+            public typealias Output = Arcbox_V1_ListWebServicesResponse
+            /// Descriptor for "ListWebServices".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "ListWebServices"
+            )
+        }
+        /// Namespace for "WatchWebServices" metadata.
+        public enum WatchWebServices {
+            /// Request type for "WatchWebServices".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "WatchWebServices".
+            public typealias Output = Arcbox_V1_ListWebServicesResponse
+            /// Descriptor for "WatchWebServices".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "WatchWebServices"
+            )
+        }
+        /// Namespace for "WatchHttpsAccess" metadata.
+        public enum WatchHttpsAccess {
+            /// Request type for "WatchHttpsAccess".
+            public typealias Input = Arcbox_V1_Empty
+            /// Response type for "WatchHttpsAccess".
+            public typealias Output = Arcbox_V1_LocalHttpsAccess
+            /// Descriptor for "WatchHttpsAccess".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "WatchHttpsAccess"
+            )
+        }
+        /// Namespace for "AcknowledgeHttpsAccess" metadata.
+        public enum AcknowledgeHttpsAccess {
+            /// Request type for "AcknowledgeHttpsAccess".
+            public typealias Input = Arcbox_V1_AcknowledgeHttpsAccessRequest
+            /// Response type for "AcknowledgeHttpsAccess".
+            public typealias Output = Arcbox_V1_Empty
+            /// Descriptor for "AcknowledgeHttpsAccess".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "AcknowledgeHttpsAccess"
+            )
+        }
+        /// Namespace for "PrepareLocalCaRotation" metadata.
+        public enum PrepareLocalCaRotation {
+            /// Request type for "PrepareLocalCaRotation".
+            public typealias Input = Arcbox_V1_PrepareLocalCaRotationRequest
+            /// Response type for "PrepareLocalCaRotation".
+            public typealias Output = Arcbox_V1_LocalCaRotation
+            /// Descriptor for "PrepareLocalCaRotation".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "PrepareLocalCaRotation"
+            )
+        }
+        /// Namespace for "CommitLocalCaRotation" metadata.
+        public enum CommitLocalCaRotation {
+            /// Request type for "CommitLocalCaRotation".
+            public typealias Input = Arcbox_V1_CommitLocalCaRotationRequest
+            /// Response type for "CommitLocalCaRotation".
+            public typealias Output = Arcbox_V1_Empty
+            /// Descriptor for "CommitLocalCaRotation".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "arcbox.v1.SystemService"),
+                method: "CommitLocalCaRotation"
+            )
+        }
         /// Namespace for "GetSystemVmBackend" metadata.
         public enum GetSystemVmBackend {
             /// Request type for "GetSystemVmBackend".
@@ -1228,6 +1300,12 @@ public enum Arcbox_V1_SystemService {
             GetSetupStatus.descriptor,
             WatchSetupStatus.descriptor,
             RecoverStorage.descriptor,
+            ListWebServices.descriptor,
+            WatchWebServices.descriptor,
+            WatchHttpsAccess.descriptor,
+            AcknowledgeHttpsAccess.descriptor,
+            PrepareLocalCaRotation.descriptor,
+            CommitLocalCaRotation.descriptor,
             GetSystemVmBackend.descriptor,
             SetSystemVmBackend.descriptor,
             GetSystemVmResources.descriptor,
@@ -1412,11 +1490,122 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress>
 
+        /// Handle the "ListWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed web routes. URLs describe routing, not a health probe.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_ListWebServicesRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ListWebServicesResponse` messages.
+        func listWebServices(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_ListWebServicesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse>
+
+        /// Handle the "WatchWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams complete route snapshots and fails when the guest is unavailable.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ListWebServicesResponse` messages.
+        func watchWebServices(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse>
+
+        /// Handle the "WatchHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes real managed HTTPS accesses that need login-session authorization.
+        /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_LocalHttpsAccess` messages.
+        func watchHttpsAccess(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_LocalHttpsAccess>
+
+        /// Handle the "AcknowledgeHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Ends one prompt without changing native certificate trust.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_AcknowledgeHttpsAccessRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_Empty` messages.
+        func acknowledgeHttpsAccess(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty>
+
+        /// Handle the "PrepareLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a replacement root without changing native trust or the published root.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_PrepareLocalCaRotationRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_LocalCaRotation` messages.
+        func prepareLocalCaRotation(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_LocalCaRotation>
+
+        /// Handle the "CommitLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Publishes the prepared root after native trust migration has completed.
+        /// > Accepted mutations continue if the client disconnects.
+        ///
+        /// - Parameters:
+        ///   - request: A streaming request of `Arcbox_V1_CommitLocalCaRotationRequest` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_Empty` messages.
+        func commitLocalCaRotation(
+            request: GRPCCore.StreamingServerRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty>
+
         /// Handle the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Gets the System VM's current hypervisor backend.
+        /// > Gets the System VM's configured hypervisor backend.
+        /// > SetupStatus.effective_backend reports whether this host can run it.
         ///
         /// - Parameters:
         ///   - request: A streaming request of `Arcbox_V1_Empty` messages.
@@ -1716,11 +1905,122 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_StorageRecoveryProgress>
 
+        /// Handle the "ListWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed web routes. URLs describe routing, not a health probe.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ListWebServicesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_ListWebServicesResponse` message.
+        func listWebServices(
+            request: GRPCCore.ServerRequest<Arcbox_V1_ListWebServicesRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ListWebServicesResponse>
+
+        /// Handle the "WatchWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams complete route snapshots and fails when the guest is unavailable.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_ListWebServicesResponse` messages.
+        func watchWebServices(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse>
+
+        /// Handle the "WatchHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes real managed HTTPS accesses that need login-session authorization.
+        /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A streaming response of `Arcbox_V1_LocalHttpsAccess` messages.
+        func watchHttpsAccess(
+            request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_LocalHttpsAccess>
+
+        /// Handle the "AcknowledgeHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Ends one prompt without changing native certificate trust.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_AcknowledgeHttpsAccessRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_Empty` message.
+        func acknowledgeHttpsAccess(
+            request: GRPCCore.ServerRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty>
+
+        /// Handle the "PrepareLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a replacement root without changing native trust or the published root.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_PrepareLocalCaRotationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_LocalCaRotation` message.
+        func prepareLocalCaRotation(
+            request: GRPCCore.ServerRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_LocalCaRotation>
+
+        /// Handle the "CommitLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Publishes the prepared root after native trust migration has completed.
+        /// > Accepted mutations continue if the client disconnects.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_CommitLocalCaRotationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A response containing a single `Arcbox_V1_Empty` message.
+        func commitLocalCaRotation(
+            request: GRPCCore.ServerRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+            context: GRPCCore.ServerContext
+        ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty>
+
         /// Handle the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Gets the System VM's current hypervisor backend.
+        /// > Gets the System VM's configured hypervisor backend.
+        /// > SetupStatus.effective_backend reports whether this host can run it.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_Empty` message.
@@ -2021,11 +2321,124 @@ extension Arcbox_V1_SystemService {
             context: GRPCCore.ServerContext
         ) async throws
 
+        /// Handle the "ListWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed web routes. URLs describe routing, not a health probe.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_ListWebServicesRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_ListWebServicesResponse` to respond with.
+        func listWebServices(
+            request: Arcbox_V1_ListWebServicesRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_ListWebServicesResponse
+
+        /// Handle the "WatchWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams complete route snapshots and fails when the guest is unavailable.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - response: A response stream of `Arcbox_V1_ListWebServicesResponse` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchWebServices(
+            request: Arcbox_V1_Empty,
+            response: GRPCCore.RPCWriter<Arcbox_V1_ListWebServicesResponse>,
+            context: GRPCCore.ServerContext
+        ) async throws
+
+        /// Handle the "WatchHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes real managed HTTPS accesses that need login-session authorization.
+        /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_Empty` message.
+        ///   - response: A response stream of `Arcbox_V1_LocalHttpsAccess` messages.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        func watchHttpsAccess(
+            request: Arcbox_V1_Empty,
+            response: GRPCCore.RPCWriter<Arcbox_V1_LocalHttpsAccess>,
+            context: GRPCCore.ServerContext
+        ) async throws
+
+        /// Handle the "AcknowledgeHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Ends one prompt without changing native certificate trust.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_AcknowledgeHttpsAccessRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_Empty` to respond with.
+        func acknowledgeHttpsAccess(
+            request: Arcbox_V1_AcknowledgeHttpsAccessRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_Empty
+
+        /// Handle the "PrepareLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a replacement root without changing native trust or the published root.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_PrepareLocalCaRotationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_LocalCaRotation` to respond with.
+        func prepareLocalCaRotation(
+            request: Arcbox_V1_PrepareLocalCaRotationRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_LocalCaRotation
+
+        /// Handle the "CommitLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Publishes the prepared root after native trust migration has completed.
+        /// > Accepted mutations continue if the client disconnects.
+        ///
+        /// - Parameters:
+        ///   - request: A `Arcbox_V1_CommitLocalCaRotationRequest` message.
+        ///   - context: Context providing information about the RPC.
+        /// - Throws: Any error which occurred during the processing of the request. Thrown errors
+        ///     of type `RPCError` are mapped to appropriate statuses. All other errors are converted
+        ///     to an internal error.
+        /// - Returns: A `Arcbox_V1_Empty` to respond with.
+        func commitLocalCaRotation(
+            request: Arcbox_V1_CommitLocalCaRotationRequest,
+            context: GRPCCore.ServerContext
+        ) async throws -> Arcbox_V1_Empty
+
         /// Handle the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Gets the System VM's current hypervisor backend.
+        /// > Gets the System VM's configured hypervisor backend.
+        /// > SetupStatus.effective_backend reports whether this host can run it.
         ///
         /// - Parameters:
         ///   - request: A `Arcbox_V1_Empty` message.
@@ -2259,6 +2672,72 @@ extension Arcbox_V1_SystemService.StreamingServiceProtocol {
             }
         )
         router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.ListWebServices.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ListWebServicesRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ListWebServicesResponse>(),
+            handler: { request, context in
+                try await self.listWebServices(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.WatchWebServices.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ListWebServicesResponse>(),
+            handler: { request, context in
+                try await self.watchWebServices(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.WatchHttpsAccess.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_LocalHttpsAccess>(),
+            handler: { request, context in
+                try await self.watchHttpsAccess(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.AcknowledgeHttpsAccess.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_AcknowledgeHttpsAccessRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            handler: { request, context in
+                try await self.acknowledgeHttpsAccess(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.PrepareLocalCaRotation.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_PrepareLocalCaRotationRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_LocalCaRotation>(),
+            handler: { request, context in
+                try await self.prepareLocalCaRotation(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
+            forMethod: Arcbox_V1_SystemService.Method.CommitLocalCaRotation.descriptor,
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_CommitLocalCaRotationRequest>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            handler: { request, context in
+                try await self.commitLocalCaRotation(
+                    request: request,
+                    context: context
+                )
+            }
+        )
+        router.registerHandler(
             forMethod: Arcbox_V1_SystemService.Method.GetSystemVmBackend.descriptor,
             deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
             serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_SystemVmBackendInfo>(),
@@ -2427,6 +2906,72 @@ extension Arcbox_V1_SystemService.ServiceProtocol {
             context: context
         )
         return response
+    }
+
+    public func listWebServices(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_ListWebServicesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse> {
+        let response = try await self.listWebServices(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func watchWebServices(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse> {
+        let response = try await self.watchWebServices(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+
+    public func watchHttpsAccess(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_LocalHttpsAccess> {
+        let response = try await self.watchHttpsAccess(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return response
+    }
+
+    public func acknowledgeHttpsAccess(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty> {
+        let response = try await self.acknowledgeHttpsAccess(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func prepareLocalCaRotation(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_LocalCaRotation> {
+        let response = try await self.prepareLocalCaRotation(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
+    }
+
+    public func commitLocalCaRotation(
+        request: GRPCCore.StreamingServerRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_Empty> {
+        let response = try await self.commitLocalCaRotation(
+            request: GRPCCore.ServerRequest(stream: request),
+            context: context
+        )
+        return GRPCCore.StreamingServerResponse(single: response)
     }
 
     public func getSystemVmBackend(
@@ -2623,6 +3168,92 @@ extension Arcbox_V1_SystemService.SimpleServiceProtocol {
                 )
                 return [:]
             }
+        )
+    }
+
+    public func listWebServices(
+        request: GRPCCore.ServerRequest<Arcbox_V1_ListWebServicesRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_ListWebServicesResponse> {
+        return GRPCCore.ServerResponse<Arcbox_V1_ListWebServicesResponse>(
+            message: try await self.listWebServices(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func watchWebServices(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_ListWebServicesResponse>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchWebServices(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    public func watchHttpsAccess(
+        request: GRPCCore.ServerRequest<Arcbox_V1_Empty>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.StreamingServerResponse<Arcbox_V1_LocalHttpsAccess> {
+        return GRPCCore.StreamingServerResponse<Arcbox_V1_LocalHttpsAccess>(
+            metadata: [:],
+            producer: { writer in
+                try await self.watchHttpsAccess(
+                    request: request.message,
+                    response: writer,
+                    context: context
+                )
+                return [:]
+            }
+        )
+    }
+
+    public func acknowledgeHttpsAccess(
+        request: GRPCCore.ServerRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty> {
+        return GRPCCore.ServerResponse<Arcbox_V1_Empty>(
+            message: try await self.acknowledgeHttpsAccess(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func prepareLocalCaRotation(
+        request: GRPCCore.ServerRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_LocalCaRotation> {
+        return GRPCCore.ServerResponse<Arcbox_V1_LocalCaRotation>(
+            message: try await self.prepareLocalCaRotation(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
+        )
+    }
+
+    public func commitLocalCaRotation(
+        request: GRPCCore.ServerRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+        context: GRPCCore.ServerContext
+    ) async throws -> GRPCCore.ServerResponse<Arcbox_V1_Empty> {
+        return GRPCCore.ServerResponse<Arcbox_V1_Empty>(
+            message: try await self.commitLocalCaRotation(
+                request: request.message,
+                context: context
+            ),
+            metadata: [:]
         )
     }
 
@@ -2919,11 +3550,152 @@ extension Arcbox_V1_SystemService {
             onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_StorageRecoveryProgress>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
+        /// Call the "ListWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed web routes. URLs describe routing, not a health probe.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ListWebServicesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ListWebServicesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ListWebServicesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func listWebServices<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ListWebServicesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ListWebServicesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ListWebServicesResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams complete route snapshots and fails when the guest is unavailable.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ListWebServicesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchWebServices<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ListWebServicesResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "WatchHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes real managed HTTPS accesses that need login-session authorization.
+        /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_LocalHttpsAccess` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func watchHttpsAccess<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_LocalHttpsAccess>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_LocalHttpsAccess>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "AcknowledgeHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Ends one prompt without changing native certificate trust.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_AcknowledgeHttpsAccessRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_AcknowledgeHttpsAccessRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_Empty` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func acknowledgeHttpsAccess<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "PrepareLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a replacement root without changing native trust or the published root.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_PrepareLocalCaRotationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_PrepareLocalCaRotationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_LocalCaRotation` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func prepareLocalCaRotation<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_PrepareLocalCaRotationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_LocalCaRotation>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_LocalCaRotation>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "CommitLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Publishes the prepared root after native trust migration has completed.
+        /// > Accepted mutations continue if the client disconnects.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_CommitLocalCaRotationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_CommitLocalCaRotationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_Empty` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func commitLocalCaRotation<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_CommitLocalCaRotationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
         /// Call the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Gets the System VM's current hypervisor backend.
+        /// > Gets the System VM's configured hypervisor backend.
+        /// > SetupStatus.effective_backend reports whether this host can run it.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_Empty` message.
@@ -3388,11 +4160,214 @@ extension Arcbox_V1_SystemService {
             )
         }
 
+        /// Call the "ListWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Lists installed web routes. URLs describe routing, not a health probe.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_ListWebServicesRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_ListWebServicesRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ListWebServicesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func listWebServices<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_ListWebServicesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_ListWebServicesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ListWebServicesResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.ListWebServices.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "WatchWebServices" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Streams complete route snapshots and fails when the guest is unavailable.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_ListWebServicesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchWebServices<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_ListWebServicesResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.WatchWebServices.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "WatchHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Observes real managed HTTPS accesses that need login-session authorization.
+        /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+        ///   - serializer: A serializer for `Arcbox_V1_Empty` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_LocalHttpsAccess` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func watchHttpsAccess<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_Empty>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_LocalHttpsAccess>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_LocalHttpsAccess>) async throws -> Result
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.serverStreaming(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.WatchHttpsAccess.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "AcknowledgeHttpsAccess" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Ends one prompt without changing native certificate trust.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_AcknowledgeHttpsAccessRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_AcknowledgeHttpsAccessRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_Empty` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func acknowledgeHttpsAccess<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.AcknowledgeHttpsAccess.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "PrepareLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Prepares a replacement root without changing native trust or the published root.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_PrepareLocalCaRotationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_PrepareLocalCaRotationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_LocalCaRotation` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func prepareLocalCaRotation<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_PrepareLocalCaRotationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_LocalCaRotation>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_LocalCaRotation>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.PrepareLocalCaRotation.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "CommitLocalCaRotation" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > Publishes the prepared root after native trust migration has completed.
+        /// > Accepted mutations continue if the client disconnects.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Arcbox_V1_CommitLocalCaRotationRequest` message.
+        ///   - serializer: A serializer for `Arcbox_V1_CommitLocalCaRotationRequest` messages.
+        ///   - deserializer: A deserializer for `Arcbox_V1_Empty` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func commitLocalCaRotation<Result>(
+            request: GRPCCore.ClientRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+            serializer: some GRPCCore.MessageSerializer<Arcbox_V1_CommitLocalCaRotationRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Arcbox_V1_Empty>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Arcbox_V1_SystemService.Method.CommitLocalCaRotation.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "GetSystemVmBackend" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > Gets the System VM's current hypervisor backend.
+        /// > Gets the System VM's configured hypervisor backend.
+        /// > SetupStatus.effective_backend reports whether this host can run it.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Arcbox_V1_Empty` message.
@@ -3878,11 +4853,184 @@ extension Arcbox_V1_SystemService.ClientProtocol {
         )
     }
 
+    /// Call the "ListWebServices" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Lists installed web routes. URLs describe routing, not a health probe.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_ListWebServicesRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listWebServices<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_ListWebServicesRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.listWebServices(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_ListWebServicesRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ListWebServicesResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchWebServices" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams complete route snapshots and fails when the guest is unavailable.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchWebServices<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchWebServices(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_ListWebServicesResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchHttpsAccess" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Observes real managed HTTPS accesses that need login-session authorization.
+    /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_Empty` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchHttpsAccess<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_Empty>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_LocalHttpsAccess>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        try await self.watchHttpsAccess(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_Empty>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_LocalHttpsAccess>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "AcknowledgeHttpsAccess" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Ends one prompt without changing native certificate trust.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_AcknowledgeHttpsAccessRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func acknowledgeHttpsAccess<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.acknowledgeHttpsAccess(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_AcknowledgeHttpsAccessRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "PrepareLocalCaRotation" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Prepares a replacement root without changing native trust or the published root.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_PrepareLocalCaRotationRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func prepareLocalCaRotation<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_PrepareLocalCaRotationRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_LocalCaRotation>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.prepareLocalCaRotation(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_PrepareLocalCaRotationRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_LocalCaRotation>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "CommitLocalCaRotation" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Publishes the prepared root after native trust migration has completed.
+    /// > Accepted mutations continue if the client disconnects.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Arcbox_V1_CommitLocalCaRotationRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func commitLocalCaRotation<Result>(
+        request: GRPCCore.ClientRequest<Arcbox_V1_CommitLocalCaRotationRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.commitLocalCaRotation(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Arcbox_V1_CommitLocalCaRotationRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Arcbox_V1_Empty>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "GetSystemVmBackend" method.
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Gets the System VM's current hypervisor backend.
+    /// > Gets the System VM's configured hypervisor backend.
+    /// > SetupStatus.effective_backend reports whether this host can run it.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Arcbox_V1_Empty` message.
@@ -4364,11 +5512,208 @@ extension Arcbox_V1_SystemService.ClientProtocol {
         )
     }
 
+    /// Call the "ListWebServices" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Lists installed web routes. URLs describe routing, not a health probe.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func listWebServices<Result>(
+        _ message: Arcbox_V1_ListWebServicesRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_ListWebServicesRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.listWebServices(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchWebServices" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Streams complete route snapshots and fails when the guest is unavailable.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchWebServices<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_ListWebServicesResponse>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchWebServices(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "WatchHttpsAccess" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Observes real managed HTTPS accesses that need login-session authorization.
+    /// > An empty request_id clears the pending request. Only an active observer enables prompts.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func watchHttpsAccess<Result>(
+        _ message: Arcbox_V1_Empty,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.StreamingClientResponse<Arcbox_V1_LocalHttpsAccess>) async throws -> Result
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_Empty>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.watchHttpsAccess(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "AcknowledgeHttpsAccess" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Ends one prompt without changing native certificate trust.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func acknowledgeHttpsAccess<Result>(
+        _ message: Arcbox_V1_AcknowledgeHttpsAccessRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_AcknowledgeHttpsAccessRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.acknowledgeHttpsAccess(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "PrepareLocalCaRotation" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Prepares a replacement root without changing native trust or the published root.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func prepareLocalCaRotation<Result>(
+        _ message: Arcbox_V1_PrepareLocalCaRotationRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_LocalCaRotation>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_PrepareLocalCaRotationRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.prepareLocalCaRotation(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "CommitLocalCaRotation" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > Publishes the prepared root after native trust migration has completed.
+    /// > Accepted mutations continue if the client disconnects.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func commitLocalCaRotation<Result>(
+        _ message: Arcbox_V1_CommitLocalCaRotationRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Arcbox_V1_Empty>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Arcbox_V1_CommitLocalCaRotationRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.commitLocalCaRotation(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "GetSystemVmBackend" method.
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > Gets the System VM's current hypervisor backend.
+    /// > Gets the System VM's configured hypervisor backend.
+    /// > SetupStatus.effective_backend reports whether this host can run it.
     ///
     /// - Parameters:
     ///   - message: request message to send.

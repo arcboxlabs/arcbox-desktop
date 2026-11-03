@@ -42,6 +42,11 @@ public enum Arcbox_V1_SystemVmBackend: SwiftProtobuf.Enum, Swift.CaseIterable {
 
   /// Virtualization.framework — Apple-managed execution. The default.
   case vz // = 2
+
+  /// QEMU with TCG emulation, for Macs without hardware virtualization.
+  /// Declared ahead of the backend: until a daemon implements it,
+  /// SetSystemVmBackend rejects it with UNIMPLEMENTED and no status reports it.
+  case qemu // = 3
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -53,6 +58,7 @@ public enum Arcbox_V1_SystemVmBackend: SwiftProtobuf.Enum, Swift.CaseIterable {
     case 0: self = .unspecified
     case 1: self = .hv
     case 2: self = .vz
+    case 3: self = .qemu
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -62,6 +68,7 @@ public enum Arcbox_V1_SystemVmBackend: SwiftProtobuf.Enum, Swift.CaseIterable {
     case .unspecified: return 0
     case .hv: return 1
     case .vz: return 2
+    case .qemu: return 3
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -71,6 +78,7 @@ public enum Arcbox_V1_SystemVmBackend: SwiftProtobuf.Enum, Swift.CaseIterable {
     .unspecified,
     .hv,
     .vz,
+    .qemu,
   ]
 
 }
@@ -2077,25 +2085,37 @@ public struct Arcbox_V1_TerminalSize: Sendable {
   public init() {}
 }
 
-/// Daemon startup progress and infrastructure health.
+/// Host startup progress and independent infrastructure health.
 /// Allows the desktop app (or any gRPC client) to observe daemon readiness
 /// without managing its lifecycle.
-public struct Arcbox_V1_SetupStatus: Sendable {
+public struct Arcbox_V1_SetupStatus: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// Current daemon phase.
-  public var phase: Arcbox_V1_SetupStatus.Phase = .unspecified
+  /// Current host phase. READY does not imply System runtime readiness.
+  public var phase: Arcbox_V1_SetupStatus.Phase {
+    get {_storage._phase}
+    set {_uniqueStorage()._phase = newValue}
+  }
 
   /// Whether the DNS resolver file is installed.
-  public var dnsResolverInstalled: Bool = false
+  public var dnsResolverInstalled: Bool {
+    get {_storage._dnsResolverInstalled}
+    set {_uniqueStorage()._dnsResolverInstalled = newValue}
+  }
 
   /// Whether /var/run/docker.sock is symlinked to ArcBox.
-  public var dockerSocketLinked: Bool = false
+  public var dockerSocketLinked: Bool {
+    get {_storage._dockerSocketLinked}
+    set {_uniqueStorage()._dockerSocketLinked = newValue}
+  }
 
   /// Whether the container subnet route is installed.
-  public var routeInstalled: Bool = false
+  public var routeInstalled: Bool {
+    get {_storage._routeInstalled}
+    set {_uniqueStorage()._routeInstalled = newValue}
+  }
 
   /// Whether the System VM is up with its guest agent answering — the point
   /// at which RPCs against it succeed. Mirrors the VM's lifecycle state for
@@ -2104,55 +2124,112 @@ public struct Arcbox_V1_SetupStatus: Sendable {
   /// guest that dies without the lifecycle noticing keeps it true: there is
   /// no crash detection yet, so treat it as "the daemon believes the VM is
   /// up", not as a liveness probe.
-  public var vmRunning: Bool = false
+  public var vmRunning: Bool {
+    get {_storage._vmRunning}
+    set {_uniqueStorage()._vmRunning = newValue}
+  }
 
   /// Human-readable status message.
-  public var message: String = String()
+  public var message: String {
+    get {_storage._message}
+    set {_uniqueStorage()._message = newValue}
+  }
 
   /// Whether Docker CLI tools are installed.
-  public var dockerToolsInstalled: Bool = false
+  public var dockerToolsInstalled: Bool {
+    get {_storage._dockerToolsInstalled}
+    set {_uniqueStorage()._dockerToolsInstalled = newValue}
+  }
 
   /// Fatal startup error description. Set only when phase == FAILED,
   /// so streaming clients learn the cause instead of seeing a bare
   /// disconnect when the daemon exits.
-  public var error: String = String()
+  public var error: String {
+    get {_storage._error}
+    set {_uniqueStorage()._error = newValue}
+  }
 
   /// Independent of startup phase and daemon liveness. Missing when the
   /// guest is stopped, observation disconnected, or the agent is too old.
   public var storageHealth: Arcbox_V1_StorageHealth {
-    get {_storageHealth ?? Arcbox_V1_StorageHealth()}
-    set {_storageHealth = newValue}
+    get {_storage._storageHealth ?? Arcbox_V1_StorageHealth()}
+    set {_uniqueStorage()._storageHealth = newValue}
   }
   /// Returns true if `storageHealth` has been explicitly set.
-  public var hasStorageHealth: Bool {self._storageHealth != nil}
+  public var hasStorageHealth: Bool {_storage._storageHealth != nil}
   /// Clears the value of `storageHealth`. Subsequent reads from it will return its default value.
-  public mutating func clearStorageHealth() {self._storageHealth = nil}
+  public mutating func clearStorageHealth() {_uniqueStorage()._storageHealth = nil}
 
   /// Current or most recent recovery operation, including terminal results.
   public var storageRecovery: Arcbox_V1_StorageRecoveryProgress {
-    get {_storageRecovery ?? Arcbox_V1_StorageRecoveryProgress()}
-    set {_storageRecovery = newValue}
+    get {_storage._storageRecovery ?? Arcbox_V1_StorageRecoveryProgress()}
+    set {_uniqueStorage()._storageRecovery = newValue}
   }
   /// Returns true if `storageRecovery` has been explicitly set.
-  public var hasStorageRecovery: Bool {self._storageRecovery != nil}
+  public var hasStorageRecovery: Bool {_storage._storageRecovery != nil}
   /// Clears the value of `storageRecovery`. Subsequent reads from it will return its default value.
-  public mutating func clearStorageRecovery() {self._storageRecovery = nil}
+  public mutating func clearStorageRecovery() {_uniqueStorage()._storageRecovery = nil}
+
+  /// Local HTTPS trust does not gate VM or Docker readiness.
+  public var localHTTPS: Arcbox_V1_LocalHttpsStatus {
+    get {_storage._localHTTPS ?? Arcbox_V1_LocalHttpsStatus()}
+    set {_uniqueStorage()._localHTTPS = newValue}
+  }
+  /// Returns true if `localHTTPS` has been explicitly set.
+  public var hasLocalHTTPS: Bool {_storage._localHTTPS != nil}
+  /// Clears the value of `localHTTPS`. Subsequent reads from it will return its default value.
+  public mutating func clearLocalHTTPS() {_uniqueStorage()._localHTTPS = nil}
+
+  /// System runtime admission is independent of host and local HTTPS readiness.
+  public var systemRuntime: Arcbox_V1_SystemRuntimeStatus {
+    get {_storage._systemRuntime ?? Arcbox_V1_SystemRuntimeStatus()}
+    set {_uniqueStorage()._systemRuntime = newValue}
+  }
+  /// Returns true if `systemRuntime` has been explicitly set.
+  public var hasSystemRuntime: Bool {_storage._systemRuntime != nil}
+  /// Clears the value of `systemRuntime`. Subsequent reads from it will return its default value.
+  public mutating func clearSystemRuntime() {_uniqueStorage()._systemRuntime = nil}
+
+  /// Whether this Mac provides hardware virtualization: Virtualization.framework
+  /// or Hypervisor.framework can create a VM. Probed once at daemon start and
+  /// fixed for the daemon's life. False on a macOS virtual machine (cloud Macs,
+  /// CI runners); there neither HV nor VZ can run, so no backend is effective
+  /// and system_runtime is FAILED with the cause in its reason. Requests that
+  /// would boot a VM (SetSystemVmBackend, SetSystemVmResources, StartMachine)
+  /// fail with UNIMPLEMENTED carrying that cause before they change or
+  /// download anything. The host phase still reaches READY and the daemon
+  /// keeps running. Absent from a daemon that predates the field: check
+  /// presence before reading false as unavailable.
+  public var hardwareVirtualizationAvailable: Bool {
+    get {_storage._hardwareVirtualizationAvailable ?? false}
+    set {_uniqueStorage()._hardwareVirtualizationAvailable = newValue}
+  }
+  /// Returns true if `hardwareVirtualizationAvailable` has been explicitly set.
+  public var hasHardwareVirtualizationAvailable: Bool {_storage._hardwareVirtualizationAvailable != nil}
+  /// Clears the value of `hardwareVirtualizationAvailable`. Subsequent reads from it will return its default value.
+  public mutating func clearHardwareVirtualizationAvailable() {_uniqueStorage()._hardwareVirtualizationAvailable = nil}
+
+  /// The backend the System VM runs on, or boots with next: the configured
+  /// backend (GetSystemVmBackend) once the daemon has checked this host can run
+  /// it. UNSPECIFIED before the daemon has resolved it and while no backend can
+  /// run here. Updated when SetSystemVmBackend changes the backend.
+  public var effectiveBackend: Arcbox_V1_SystemVmBackend {
+    get {_storage._effectiveBackend}
+    set {_uniqueStorage()._effectiveBackend = newValue}
+  }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  /// Daemon startup phases.
+  /// Host startup phases. System runtime state is reported separately.
   ///
-  /// Numbers follow the order phases were introduced, NOT the order they
-  /// occur in (DOWNLOADING_ASSETS = 8 precedes READY = 6), so match on the
-  /// value and never compare ordinals. The happy path is:
+  /// Numbers follow the order phases were introduced, not startup order.
+  /// Match on the enum; never compare numeric values. Happy-path sequence:
   ///
-  ///   INITIALIZING -> [CLEANING_UP -> INITIALIZING] -> [DOWNLOADING_ASSETS]
-  ///   -> ASSETS_READY -> [VM_STARTING -> VM_READY] -> NETWORK_READY -> READY
+  ///   INITIALIZING -> [CLEANING_UP -> INITIALIZING] -> ASSETS_READY
+  ///   -> NETWORK_READY -> READY
   ///
-  /// Bracketed steps are conditional: CLEANING_UP only when a displaced
-  /// daemon's resources must be released, DOWNLOADING_ASSETS only when boot
-  /// assets are missing, and the VM pair only when the Linux VM is enabled
-  /// (a --no-linux-vm daemon boots no guest and publishes neither). FAILED
+  /// CLEANING_UP applies when a displaced daemon's resources must be released.
+  /// System asset downloads and VM phases are not published here. FAILED
   /// can replace any of them. A phase already passed before a client
   /// subscribes is simply never seen, so treat an unobserved phase as
   /// unknown rather than waiting for it.
@@ -2163,30 +2240,25 @@ public struct Arcbox_V1_SetupStatus: Sendable {
     /// Host directories, config, and sockets are being prepared.
     case initializing // = 1
 
-    /// Kernel, rootfs, and guest binaries are present and verified.
+    /// Available bundle and cached assets are staged for host admission.
     case assetsReady // = 2
 
-    /// The System VM is booting. Guest binaries are already staged by
-    /// this point, so the phase covers the guest boot and nothing else.
+    /// Unused. Observe system_runtime for System VM startup.
     case vmStarting // = 3
 
-    /// The System VM booted and its guest agent answered, so the VM
-    /// accepts commands. Its container runtime may still be starting.
+    /// Unused. Observe system_runtime for System VM readiness.
     case vmReady // = 4
 
-    /// The host services this daemon promises are up: DNS and, with a Linux
-    /// VM, Docker plus any explicitly requested Kubernetes proxy are bound.
-    /// The canonical best-effort 16443 proxy remains the exception: a port
-    /// conflict leaves Kubernetes RPCs unavailable but does not fail startup.
+    /// Host networking services are bound. System services may still be starting.
     case networkReady // = 5
 
-    /// Startup complete.
+    /// Host preparation is complete. Machine operations are available.
     case ready // = 6
 
     /// Reserved; never published.
     case degraded // = 7
 
-    /// Boot assets are being downloaded.
+    /// Unused. Observe system_runtime for System asset preparation.
     case downloadingAssets // = 8
 
     /// Waiting for a displaced daemon to release its disk images.
@@ -2254,8 +2326,231 @@ public struct Arcbox_V1_SetupStatus: Sendable {
 
   public init() {}
 
-  fileprivate var _storageHealth: Arcbox_V1_StorageHealth? = nil
-  fileprivate var _storageRecovery: Arcbox_V1_StorageRecoveryProgress? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+/// Readiness of the System VM and its dependent services.
+public struct Arcbox_V1_SystemRuntimeStatus: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var state: Arcbox_V1_SystemRuntimeStatus.State = .unspecified
+
+  /// Failure cause or current startup detail. Empty when no detail applies.
+  public var reason: String = String()
+
+  /// Set exactly while state is DOWNLOADING.
+  public var download: Arcbox_V1_ComponentDownload {
+    get {_download ?? Arcbox_V1_ComponentDownload()}
+    set {_download = newValue}
+  }
+  /// Returns true if `download` has been explicitly set.
+  public var hasDownload: Bool {self._download != nil}
+  /// Clears the value of `download`. Subsequent reads from it will return its default value.
+  public mutating func clearDownload() {self._download = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum State: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// System VM autostart is disabled.
+    case disabled // = 1
+
+    /// System VM assets and runtime binaries are being prepared.
+    case starting // = 2
+
+    /// System services accept requests.
+    case ready // = 3
+
+    /// System startup or operation failed. Host services remain available.
+    case failed // = 4
+
+    /// Guest binaries are staged and the System VM is booting.
+    case vmStarting // = 5
+
+    /// The guest agent answered. Docker runtime readiness is still pending.
+    case vmReady // = 6
+
+    /// The System VM waits for a component the daemon installs on demand:
+    /// the QEMU build that emulates it on a Mac without hardware
+    /// virtualization. `download` carries the progress; `reason` names the
+    /// stage, and while waiting to retry it holds the error. Followed by
+    /// STARTING once the component is installed, FAILED when installing
+    /// it cannot succeed. Never published while the component is already
+    /// installed.
+    case downloading // = 7
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .disabled
+      case 2: self = .starting
+      case 3: self = .ready
+      case 4: self = .failed
+      case 5: self = .vmStarting
+      case 6: self = .vmReady
+      case 7: self = .downloading
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .disabled: return 1
+      case .starting: return 2
+      case .ready: return 3
+      case .failed: return 4
+      case .vmStarting: return 5
+      case .vmReady: return 6
+      case .downloading: return 7
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_SystemRuntimeStatus.State] = [
+      .unspecified,
+      .disabled,
+      .starting,
+      .ready,
+      .failed,
+      .vmStarting,
+      .vmReady,
+      .downloading,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _download: Arcbox_V1_ComponentDownload? = nil
+}
+
+/// Progress of a component the daemon downloads and installs on demand.
+public struct Arcbox_V1_ComponentDownload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var component: Arcbox_V1_ComponentDownload.Component = .unspecified
+
+  /// Version being installed, e.g. "0.1.0".
+  public var version: String = String()
+
+  public var stage: Arcbox_V1_ComponentDownload.Stage = .unspecified
+
+  /// Bytes of the archive on disk, including bytes kept from an interrupted
+  /// attempt or an earlier daemon run.
+  public var downloadedBytes: UInt64 = 0
+
+  /// Size of the archive; 0 until the server has reported it.
+  public var totalBytes: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Component: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// The QEMU build that runs the System VM without hardware
+    /// virtualization.
+    case qemu // = 1
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .qemu
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .qemu: return 1
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_ComponentDownload.Component] = [
+      .unspecified,
+      .qemu,
+    ]
+
+  }
+
+  /// Stages, in order; WAITING_TO_RETRY returns to TRANSFERRING.
+  public enum Stage: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// Receiving the archive; downloaded_bytes advances.
+    case transferring // = 1
+
+    /// Checking the archive against the SHA-256 compiled into the daemon.
+    case verifying // = 2
+
+    /// Extracting, checking code signatures, and moving it into place.
+    case installing // = 3
+
+    /// A transfer failed and the daemon retries after a delay, resuming
+    /// from downloaded_bytes. SystemRuntimeStatus.reason has the error.
+    case waitingToRetry // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .transferring
+      case 2: self = .verifying
+      case 3: self = .installing
+      case 4: self = .waitingToRetry
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .transferring: return 1
+      case .verifying: return 2
+      case .installing: return 3
+      case .waitingToRetry: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_ComponentDownload.Stage] = [
+      .unspecified,
+      .transferring,
+      .verifying,
+      .installing,
+      .waitingToRetry,
+    ]
+
+  }
+
+  public init() {}
 }
 
 /// Explicitly starts a storage check or recovery. Both actions stop workloads.
@@ -2395,12 +2690,361 @@ public struct Arcbox_V1_StorageRecoveryProgress: Sendable {
   public init() {}
 }
 
+public struct Arcbox_V1_ListWebServicesRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Empty lists exact aliases. A concrete name returns at most one current service.
+  public var hostname: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Installed routes validated against current DNS ownership.
+public struct Arcbox_V1_ListWebServicesResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var services: [Arcbox_V1_WebService] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// A runtime-confirmed or explicitly configured web service.
+public struct Arcbox_V1_WebService: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Stable resource key: container:<id>, machine:<name>, or k8s:<namespace>/<name>.
+  public var owner: String = String()
+
+  public var hostname: String = String()
+
+  public var domains: [String] = []
+
+  /// Empty when the route is absent. Clients must not reconstruct these URLs from ports.
+  public var httpURL: String = String()
+
+  public var httpsURL: String = String()
+
+  public var httpsMode: Arcbox_V1_WebService.HttpsMode = .none
+
+  /// Upstream ports; these are not the ports in the public URLs.
+  public var httpPort: UInt32 = 0
+
+  public var httpsPort: UInt32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum HttpsMode: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case none // = 0
+    case managed // = 1
+    case passthrough // = 2
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .none
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .none
+      case 1: self = .managed
+      case 2: self = .passthrough
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .none: return 0
+      case .managed: return 1
+      case .passthrough: return 2
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_WebService.HttpsMode] = [
+      .none,
+      .managed,
+      .passthrough,
+    ]
+
+  }
+
+  public init() {}
+}
+
+/// The daemon selects the profile; clients cannot supply a filesystem path.
+public struct Arcbox_V1_PrepareLocalCaRotationRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// SHA-256 fingerprint of the current root observed by the client.
+  public var expectedCurrentSha256: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_LocalCaRotation: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Exact public certificates for login-session trust migration. No private keys.
+  public var previousCertificateDer: Data = Data()
+
+  public var candidateCertificateDer: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_CommitLocalCaRotationRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Fingerprints pin both sides of the prepared rotation.
+  public var expectedOldSha256: String = String()
+
+  public var expectedNewSha256: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_LocalHttpsStatus: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var trustState: Arcbox_V1_LocalHttpsStatus.TrustState = .unspecified
+
+  public var message: String = String()
+
+  /// Uppercase colon-separated SHA-256 fingerprint of the public root.
+  public var certificateSha256: String = String()
+
+  /// UTC Unix seconds; zero when no certificate is available.
+  public var certificateNotBeforeUnixSeconds: Int64 = 0
+
+  public var certificateNotAfterUnixSeconds: Int64 = 0
+
+  public var legacyUserTrust: Bool = false
+
+  /// Certificate lifetime is independent of native trust and publication.
+  public var certificateState: Arcbox_V1_LocalHttpsStatus.CertificateState = .unknown
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum TrustState: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+
+    /// The current CA needs explicit authorization or migration.
+    case untrusted // = 1
+
+    /// The current, valid CA has TLS-only Admin trust and no User override.
+    case trusted // = 2
+
+    /// Inspection or certificate preparation failed. See message.
+    case error // = 3
+
+    /// This daemon does not provide automatic HTTPS.
+    case unavailable // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .untrusted
+      case 2: self = .trusted
+      case 3: self = .error
+      case 4: self = .unavailable
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .untrusted: return 1
+      case .trusted: return 2
+      case .error: return 3
+      case .unavailable: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_LocalHttpsStatus.TrustState] = [
+      .unspecified,
+      .untrusted,
+      .trusted,
+      .error,
+      .unavailable,
+    ]
+
+  }
+
+  public enum CertificateState: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+
+    /// Certificate inspection has not completed or failed.
+    case unknown // = 0
+    case missing // = 1
+    case valid // = 2
+
+    /// The certificate is valid and expires within 30 days.
+    case renewalDue // = 3
+    case expired // = 4
+
+    /// Check the host clock before replacing the certificate.
+    case notYetValid // = 5
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unknown
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unknown
+      case 1: self = .missing
+      case 2: self = .valid
+      case 3: self = .renewalDue
+      case 4: self = .expired
+      case 5: self = .notYetValid
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unknown: return 0
+      case .missing: return 1
+      case .valid: return 2
+      case .renewalDue: return 3
+      case .expired: return 4
+      case .notYetValid: return 5
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_LocalHttpsStatus.CertificateState] = [
+      .unknown,
+      .missing,
+      .valid,
+      .renewalDue,
+      .expired,
+      .notYetValid,
+    ]
+
+  }
+
+  public init() {}
+}
+
+public struct Arcbox_V1_LocalHttpsAccess: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var requestID: String = String()
+
+  public var hostname: String = String()
+
+  public var certificateSha256: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+public struct Arcbox_V1_AcknowledgeHttpsAccessRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var requestID: String = String()
+
+  /// Clients persist CANCELLED and FAILED per profile and CA fingerprint before acknowledgement.
+  /// An explicit Enable or Repair action may bypass that suppression.
+  public var outcome: Arcbox_V1_AcknowledgeHttpsAccessRequest.Outcome = .unspecified
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Outcome: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unspecified // = 0
+    case completed // = 1
+    case cancelled // = 2
+    case failed // = 3
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unspecified
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unspecified
+      case 1: self = .completed
+      case 2: self = .cancelled
+      case 3: self = .failed
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unspecified: return 0
+      case .completed: return 1
+      case .cancelled: return 2
+      case .failed: return 3
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Arcbox_V1_AcknowledgeHttpsAccessRequest.Outcome] = [
+      .unspecified,
+      .completed,
+      .cancelled,
+      .failed,
+    ]
+
+  }
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "arcbox.v1"
 
 extension Arcbox_V1_SystemVmBackend: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SYSTEM_VM_BACKEND_UNSPECIFIED\0\u{1}SYSTEM_VM_BACKEND_HV\0\u{1}SYSTEM_VM_BACKEND_VZ\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SYSTEM_VM_BACKEND_UNSPECIFIED\0\u{1}SYSTEM_VM_BACKEND_HV\0\u{1}SYSTEM_VM_BACKEND_VZ\0\u{1}SYSTEM_VM_BACKEND_QEMU\0")
 }
 
 extension Arcbox_V1_MigrationNetworkMode: SwiftProtobuf._ProtoNameProviding {
@@ -5672,7 +6316,172 @@ extension Arcbox_V1_TerminalSize: SwiftProtobuf.Message, SwiftProtobuf._MessageI
 
 extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SetupStatus"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0\u{1}error\0\u{3}storage_health\0\u{3}storage_recovery\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phase\0\u{3}dns_resolver_installed\0\u{3}docker_socket_linked\0\u{3}route_installed\0\u{3}vm_running\0\u{1}message\0\u{3}docker_tools_installed\0\u{1}error\0\u{3}storage_health\0\u{3}storage_recovery\0\u{3}local_https\0\u{3}system_runtime\0\u{3}hardware_virtualization_available\0\u{3}effective_backend\0")
+
+  fileprivate class _StorageClass {
+    var _phase: Arcbox_V1_SetupStatus.Phase = .unspecified
+    var _dnsResolverInstalled: Bool = false
+    var _dockerSocketLinked: Bool = false
+    var _routeInstalled: Bool = false
+    var _vmRunning: Bool = false
+    var _message: String = String()
+    var _dockerToolsInstalled: Bool = false
+    var _error: String = String()
+    var _storageHealth: Arcbox_V1_StorageHealth? = nil
+    var _storageRecovery: Arcbox_V1_StorageRecoveryProgress? = nil
+    var _localHTTPS: Arcbox_V1_LocalHttpsStatus? = nil
+    var _systemRuntime: Arcbox_V1_SystemRuntimeStatus? = nil
+    var _hardwareVirtualizationAvailable: Bool? = nil
+    var _effectiveBackend: Arcbox_V1_SystemVmBackend = .unspecified
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _phase = source._phase
+      _dnsResolverInstalled = source._dnsResolverInstalled
+      _dockerSocketLinked = source._dockerSocketLinked
+      _routeInstalled = source._routeInstalled
+      _vmRunning = source._vmRunning
+      _message = source._message
+      _dockerToolsInstalled = source._dockerToolsInstalled
+      _error = source._error
+      _storageHealth = source._storageHealth
+      _storageRecovery = source._storageRecovery
+      _localHTTPS = source._localHTTPS
+      _systemRuntime = source._systemRuntime
+      _hardwareVirtualizationAvailable = source._hardwareVirtualizationAvailable
+      _effectiveBackend = source._effectiveBackend
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularEnumField(value: &_storage._phase) }()
+        case 2: try { try decoder.decodeSingularBoolField(value: &_storage._dnsResolverInstalled) }()
+        case 3: try { try decoder.decodeSingularBoolField(value: &_storage._dockerSocketLinked) }()
+        case 4: try { try decoder.decodeSingularBoolField(value: &_storage._routeInstalled) }()
+        case 5: try { try decoder.decodeSingularBoolField(value: &_storage._vmRunning) }()
+        case 6: try { try decoder.decodeSingularStringField(value: &_storage._message) }()
+        case 7: try { try decoder.decodeSingularBoolField(value: &_storage._dockerToolsInstalled) }()
+        case 8: try { try decoder.decodeSingularStringField(value: &_storage._error) }()
+        case 9: try { try decoder.decodeSingularMessageField(value: &_storage._storageHealth) }()
+        case 10: try { try decoder.decodeSingularMessageField(value: &_storage._storageRecovery) }()
+        case 11: try { try decoder.decodeSingularMessageField(value: &_storage._localHTTPS) }()
+        case 12: try { try decoder.decodeSingularMessageField(value: &_storage._systemRuntime) }()
+        case 13: try { try decoder.decodeSingularBoolField(value: &_storage._hardwareVirtualizationAvailable) }()
+        case 14: try { try decoder.decodeSingularEnumField(value: &_storage._effectiveBackend) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if _storage._phase != .unspecified {
+        try visitor.visitSingularEnumField(value: _storage._phase, fieldNumber: 1)
+      }
+      if _storage._dnsResolverInstalled != false {
+        try visitor.visitSingularBoolField(value: _storage._dnsResolverInstalled, fieldNumber: 2)
+      }
+      if _storage._dockerSocketLinked != false {
+        try visitor.visitSingularBoolField(value: _storage._dockerSocketLinked, fieldNumber: 3)
+      }
+      if _storage._routeInstalled != false {
+        try visitor.visitSingularBoolField(value: _storage._routeInstalled, fieldNumber: 4)
+      }
+      if _storage._vmRunning != false {
+        try visitor.visitSingularBoolField(value: _storage._vmRunning, fieldNumber: 5)
+      }
+      if !_storage._message.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._message, fieldNumber: 6)
+      }
+      if _storage._dockerToolsInstalled != false {
+        try visitor.visitSingularBoolField(value: _storage._dockerToolsInstalled, fieldNumber: 7)
+      }
+      if !_storage._error.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._error, fieldNumber: 8)
+      }
+      try { if let v = _storage._storageHealth {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+      } }()
+      try { if let v = _storage._storageRecovery {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+      } }()
+      try { if let v = _storage._localHTTPS {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
+      } }()
+      try { if let v = _storage._systemRuntime {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+      } }()
+      try { if let v = _storage._hardwareVirtualizationAvailable {
+        try visitor.visitSingularBoolField(value: v, fieldNumber: 13)
+      } }()
+      if _storage._effectiveBackend != .unspecified {
+        try visitor.visitSingularEnumField(value: _storage._effectiveBackend, fieldNumber: 14)
+      }
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_SetupStatus, rhs: Arcbox_V1_SetupStatus) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._phase != rhs_storage._phase {return false}
+        if _storage._dnsResolverInstalled != rhs_storage._dnsResolverInstalled {return false}
+        if _storage._dockerSocketLinked != rhs_storage._dockerSocketLinked {return false}
+        if _storage._routeInstalled != rhs_storage._routeInstalled {return false}
+        if _storage._vmRunning != rhs_storage._vmRunning {return false}
+        if _storage._message != rhs_storage._message {return false}
+        if _storage._dockerToolsInstalled != rhs_storage._dockerToolsInstalled {return false}
+        if _storage._error != rhs_storage._error {return false}
+        if _storage._storageHealth != rhs_storage._storageHealth {return false}
+        if _storage._storageRecovery != rhs_storage._storageRecovery {return false}
+        if _storage._localHTTPS != rhs_storage._localHTTPS {return false}
+        if _storage._systemRuntime != rhs_storage._systemRuntime {return false}
+        if _storage._hardwareVirtualizationAvailable != rhs_storage._hardwareVirtualizationAvailable {return false}
+        if _storage._effectiveBackend != rhs_storage._effectiveBackend {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_SetupStatus.Phase: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0\u{1}CLEANING_UP\0\u{1}FAILED\0")
+}
+
+extension Arcbox_V1_SystemRuntimeStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SystemRuntimeStatus"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}state\0\u{1}reason\0\u{1}download\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -5680,16 +6489,9 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularEnumField(value: &self.phase) }()
-      case 2: try { try decoder.decodeSingularBoolField(value: &self.dnsResolverInstalled) }()
-      case 3: try { try decoder.decodeSingularBoolField(value: &self.dockerSocketLinked) }()
-      case 4: try { try decoder.decodeSingularBoolField(value: &self.routeInstalled) }()
-      case 5: try { try decoder.decodeSingularBoolField(value: &self.vmRunning) }()
-      case 6: try { try decoder.decodeSingularStringField(value: &self.message) }()
-      case 7: try { try decoder.decodeSingularBoolField(value: &self.dockerToolsInstalled) }()
-      case 8: try { try decoder.decodeSingularStringField(value: &self.error) }()
-      case 9: try { try decoder.decodeSingularMessageField(value: &self._storageHealth) }()
-      case 10: try { try decoder.decodeSingularMessageField(value: &self._storageRecovery) }()
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.state) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.reason) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._download) }()
       default: break
       }
     }
@@ -5700,57 +6502,87 @@ extension Arcbox_V1_SetupStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    if self.phase != .unspecified {
-      try visitor.visitSingularEnumField(value: self.phase, fieldNumber: 1)
+    if self.state != .unspecified {
+      try visitor.visitSingularEnumField(value: self.state, fieldNumber: 1)
     }
-    if self.dnsResolverInstalled != false {
-      try visitor.visitSingularBoolField(value: self.dnsResolverInstalled, fieldNumber: 2)
+    if !self.reason.isEmpty {
+      try visitor.visitSingularStringField(value: self.reason, fieldNumber: 2)
     }
-    if self.dockerSocketLinked != false {
-      try visitor.visitSingularBoolField(value: self.dockerSocketLinked, fieldNumber: 3)
-    }
-    if self.routeInstalled != false {
-      try visitor.visitSingularBoolField(value: self.routeInstalled, fieldNumber: 4)
-    }
-    if self.vmRunning != false {
-      try visitor.visitSingularBoolField(value: self.vmRunning, fieldNumber: 5)
-    }
-    if !self.message.isEmpty {
-      try visitor.visitSingularStringField(value: self.message, fieldNumber: 6)
-    }
-    if self.dockerToolsInstalled != false {
-      try visitor.visitSingularBoolField(value: self.dockerToolsInstalled, fieldNumber: 7)
-    }
-    if !self.error.isEmpty {
-      try visitor.visitSingularStringField(value: self.error, fieldNumber: 8)
-    }
-    try { if let v = self._storageHealth {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
-    } }()
-    try { if let v = self._storageRecovery {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    try { if let v = self._download {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Arcbox_V1_SetupStatus, rhs: Arcbox_V1_SetupStatus) -> Bool {
-    if lhs.phase != rhs.phase {return false}
-    if lhs.dnsResolverInstalled != rhs.dnsResolverInstalled {return false}
-    if lhs.dockerSocketLinked != rhs.dockerSocketLinked {return false}
-    if lhs.routeInstalled != rhs.routeInstalled {return false}
-    if lhs.vmRunning != rhs.vmRunning {return false}
-    if lhs.message != rhs.message {return false}
-    if lhs.dockerToolsInstalled != rhs.dockerToolsInstalled {return false}
-    if lhs.error != rhs.error {return false}
-    if lhs._storageHealth != rhs._storageHealth {return false}
-    if lhs._storageRecovery != rhs._storageRecovery {return false}
+  public static func ==(lhs: Arcbox_V1_SystemRuntimeStatus, rhs: Arcbox_V1_SystemRuntimeStatus) -> Bool {
+    if lhs.state != rhs.state {return false}
+    if lhs.reason != rhs.reason {return false}
+    if lhs._download != rhs._download {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Arcbox_V1_SetupStatus.Phase: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}INITIALIZING\0\u{1}ASSETS_READY\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}NETWORK_READY\0\u{1}READY\0\u{1}DEGRADED\0\u{1}DOWNLOADING_ASSETS\0\u{1}CLEANING_UP\0\u{1}FAILED\0")
+extension Arcbox_V1_SystemRuntimeStatus.State: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0STATE_UNSPECIFIED\0\u{1}DISABLED\0\u{1}STARTING\0\u{1}READY\0\u{1}FAILED\0\u{1}VM_STARTING\0\u{1}VM_READY\0\u{1}DOWNLOADING\0")
+}
+
+extension Arcbox_V1_ComponentDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ComponentDownload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}component\0\u{1}version\0\u{1}stage\0\u{3}downloaded_bytes\0\u{3}total_bytes\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.component) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.version) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.stage) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.downloadedBytes) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.totalBytes) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.component != .unspecified {
+      try visitor.visitSingularEnumField(value: self.component, fieldNumber: 1)
+    }
+    if !self.version.isEmpty {
+      try visitor.visitSingularStringField(value: self.version, fieldNumber: 2)
+    }
+    if self.stage != .unspecified {
+      try visitor.visitSingularEnumField(value: self.stage, fieldNumber: 3)
+    }
+    if self.downloadedBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.downloadedBytes, fieldNumber: 4)
+    }
+    if self.totalBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.totalBytes, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ComponentDownload, rhs: Arcbox_V1_ComponentDownload) -> Bool {
+    if lhs.component != rhs.component {return false}
+    if lhs.version != rhs.version {return false}
+    if lhs.stage != rhs.stage {return false}
+    if lhs.downloadedBytes != rhs.downloadedBytes {return false}
+    if lhs.totalBytes != rhs.totalBytes {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ComponentDownload.Component: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0COMPONENT_UNSPECIFIED\0\u{1}QEMU\0")
+}
+
+extension Arcbox_V1_ComponentDownload.Stage: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0STAGE_UNSPECIFIED\0\u{1}TRANSFERRING\0\u{1}VERIFYING\0\u{1}INSTALLING\0\u{1}WAITING_TO_RETRY\0")
 }
 
 extension Arcbox_V1_RecoverStorageRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -5839,4 +6671,380 @@ extension Arcbox_V1_StorageRecoveryProgress: SwiftProtobuf.Message, SwiftProtobu
 
 extension Arcbox_V1_StorageRecoveryProgress.Phase: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PHASE_UNSPECIFIED\0\u{1}STOPPING\0\u{1}PRESERVING\0\u{1}CHECKING\0\u{1}RESTARTING\0\u{1}VERIFYING\0\u{1}COMPLETE\0\u{1}FAILED\0")
+}
+
+extension Arcbox_V1_ListWebServicesRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListWebServicesRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hostname\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ListWebServicesRequest, rhs: Arcbox_V1_ListWebServicesRequest) -> Bool {
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_ListWebServicesResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListWebServicesResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}services\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.services) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.services.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.services, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_ListWebServicesResponse, rhs: Arcbox_V1_ListWebServicesResponse) -> Bool {
+    if lhs.services != rhs.services {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_WebService: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".WebService"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}owner\0\u{1}hostname\0\u{1}domains\0\u{3}http_url\0\u{3}https_url\0\u{3}https_mode\0\u{3}http_port\0\u{3}https_port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.owner) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      case 3: try { try decoder.decodeRepeatedStringField(value: &self.domains) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.httpURL) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.httpsURL) }()
+      case 6: try { try decoder.decodeSingularEnumField(value: &self.httpsMode) }()
+      case 7: try { try decoder.decodeSingularUInt32Field(value: &self.httpPort) }()
+      case 8: try { try decoder.decodeSingularUInt32Field(value: &self.httpsPort) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.owner.isEmpty {
+      try visitor.visitSingularStringField(value: self.owner, fieldNumber: 1)
+    }
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 2)
+    }
+    if !self.domains.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.domains, fieldNumber: 3)
+    }
+    if !self.httpURL.isEmpty {
+      try visitor.visitSingularStringField(value: self.httpURL, fieldNumber: 4)
+    }
+    if !self.httpsURL.isEmpty {
+      try visitor.visitSingularStringField(value: self.httpsURL, fieldNumber: 5)
+    }
+    if self.httpsMode != .none {
+      try visitor.visitSingularEnumField(value: self.httpsMode, fieldNumber: 6)
+    }
+    if self.httpPort != 0 {
+      try visitor.visitSingularUInt32Field(value: self.httpPort, fieldNumber: 7)
+    }
+    if self.httpsPort != 0 {
+      try visitor.visitSingularUInt32Field(value: self.httpsPort, fieldNumber: 8)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_WebService, rhs: Arcbox_V1_WebService) -> Bool {
+    if lhs.owner != rhs.owner {return false}
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.domains != rhs.domains {return false}
+    if lhs.httpURL != rhs.httpURL {return false}
+    if lhs.httpsURL != rhs.httpsURL {return false}
+    if lhs.httpsMode != rhs.httpsMode {return false}
+    if lhs.httpPort != rhs.httpPort {return false}
+    if lhs.httpsPort != rhs.httpsPort {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_WebService.HttpsMode: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0NONE\0\u{1}MANAGED\0\u{1}PASSTHROUGH\0")
+}
+
+extension Arcbox_V1_PrepareLocalCaRotationRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PrepareLocalCaRotationRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}expected_current_sha256\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.expectedCurrentSha256) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.expectedCurrentSha256.isEmpty {
+      try visitor.visitSingularStringField(value: self.expectedCurrentSha256, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_PrepareLocalCaRotationRequest, rhs: Arcbox_V1_PrepareLocalCaRotationRequest) -> Bool {
+    if lhs.expectedCurrentSha256 != rhs.expectedCurrentSha256 {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_LocalCaRotation: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LocalCaRotation"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}previous_certificate_der\0\u{3}candidate_certificate_der\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.previousCertificateDer) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self.candidateCertificateDer) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.previousCertificateDer.isEmpty {
+      try visitor.visitSingularBytesField(value: self.previousCertificateDer, fieldNumber: 1)
+    }
+    if !self.candidateCertificateDer.isEmpty {
+      try visitor.visitSingularBytesField(value: self.candidateCertificateDer, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_LocalCaRotation, rhs: Arcbox_V1_LocalCaRotation) -> Bool {
+    if lhs.previousCertificateDer != rhs.previousCertificateDer {return false}
+    if lhs.candidateCertificateDer != rhs.candidateCertificateDer {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_CommitLocalCaRotationRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CommitLocalCaRotationRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}expected_old_sha256\0\u{3}expected_new_sha256\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.expectedOldSha256) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.expectedNewSha256) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.expectedOldSha256.isEmpty {
+      try visitor.visitSingularStringField(value: self.expectedOldSha256, fieldNumber: 1)
+    }
+    if !self.expectedNewSha256.isEmpty {
+      try visitor.visitSingularStringField(value: self.expectedNewSha256, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_CommitLocalCaRotationRequest, rhs: Arcbox_V1_CommitLocalCaRotationRequest) -> Bool {
+    if lhs.expectedOldSha256 != rhs.expectedOldSha256 {return false}
+    if lhs.expectedNewSha256 != rhs.expectedNewSha256 {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_LocalHttpsStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LocalHttpsStatus"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}trust_state\0\u{1}message\0\u{3}certificate_sha256\0\u{3}certificate_not_before_unix_seconds\0\u{3}certificate_not_after_unix_seconds\0\u{3}legacy_user_trust\0\u{3}certificate_state\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.trustState) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.message) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.certificateSha256) }()
+      case 4: try { try decoder.decodeSingularInt64Field(value: &self.certificateNotBeforeUnixSeconds) }()
+      case 5: try { try decoder.decodeSingularInt64Field(value: &self.certificateNotAfterUnixSeconds) }()
+      case 6: try { try decoder.decodeSingularBoolField(value: &self.legacyUserTrust) }()
+      case 7: try { try decoder.decodeSingularEnumField(value: &self.certificateState) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.trustState != .unspecified {
+      try visitor.visitSingularEnumField(value: self.trustState, fieldNumber: 1)
+    }
+    if !self.message.isEmpty {
+      try visitor.visitSingularStringField(value: self.message, fieldNumber: 2)
+    }
+    if !self.certificateSha256.isEmpty {
+      try visitor.visitSingularStringField(value: self.certificateSha256, fieldNumber: 3)
+    }
+    if self.certificateNotBeforeUnixSeconds != 0 {
+      try visitor.visitSingularInt64Field(value: self.certificateNotBeforeUnixSeconds, fieldNumber: 4)
+    }
+    if self.certificateNotAfterUnixSeconds != 0 {
+      try visitor.visitSingularInt64Field(value: self.certificateNotAfterUnixSeconds, fieldNumber: 5)
+    }
+    if self.legacyUserTrust != false {
+      try visitor.visitSingularBoolField(value: self.legacyUserTrust, fieldNumber: 6)
+    }
+    if self.certificateState != .unknown {
+      try visitor.visitSingularEnumField(value: self.certificateState, fieldNumber: 7)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_LocalHttpsStatus, rhs: Arcbox_V1_LocalHttpsStatus) -> Bool {
+    if lhs.trustState != rhs.trustState {return false}
+    if lhs.message != rhs.message {return false}
+    if lhs.certificateSha256 != rhs.certificateSha256 {return false}
+    if lhs.certificateNotBeforeUnixSeconds != rhs.certificateNotBeforeUnixSeconds {return false}
+    if lhs.certificateNotAfterUnixSeconds != rhs.certificateNotAfterUnixSeconds {return false}
+    if lhs.legacyUserTrust != rhs.legacyUserTrust {return false}
+    if lhs.certificateState != rhs.certificateState {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_LocalHttpsStatus.TrustState: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0TRUST_STATE_UNSPECIFIED\0\u{1}UNTRUSTED\0\u{1}TRUSTED\0\u{1}ERROR\0\u{1}UNAVAILABLE\0")
+}
+
+extension Arcbox_V1_LocalHttpsStatus.CertificateState: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}MISSING\0\u{1}VALID\0\u{1}RENEWAL_DUE\0\u{1}EXPIRED\0\u{1}NOT_YET_VALID\0")
+}
+
+extension Arcbox_V1_LocalHttpsAccess: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LocalHttpsAccess"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}hostname\0\u{3}certificate_sha256\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.hostname) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.certificateSha256) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.requestID.isEmpty {
+      try visitor.visitSingularStringField(value: self.requestID, fieldNumber: 1)
+    }
+    if !self.hostname.isEmpty {
+      try visitor.visitSingularStringField(value: self.hostname, fieldNumber: 2)
+    }
+    if !self.certificateSha256.isEmpty {
+      try visitor.visitSingularStringField(value: self.certificateSha256, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_LocalHttpsAccess, rhs: Arcbox_V1_LocalHttpsAccess) -> Bool {
+    if lhs.requestID != rhs.requestID {return false}
+    if lhs.hostname != rhs.hostname {return false}
+    if lhs.certificateSha256 != rhs.certificateSha256 {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_AcknowledgeHttpsAccessRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".AcknowledgeHttpsAccessRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}outcome\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.requestID) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.outcome) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.requestID.isEmpty {
+      try visitor.visitSingularStringField(value: self.requestID, fieldNumber: 1)
+    }
+    if self.outcome != .unspecified {
+      try visitor.visitSingularEnumField(value: self.outcome, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Arcbox_V1_AcknowledgeHttpsAccessRequest, rhs: Arcbox_V1_AcknowledgeHttpsAccessRequest) -> Bool {
+    if lhs.requestID != rhs.requestID {return false}
+    if lhs.outcome != rhs.outcome {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Arcbox_V1_AcknowledgeHttpsAccessRequest.Outcome: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OUTCOME_UNSPECIFIED\0\u{1}COMPLETED\0\u{1}CANCELLED\0\u{1}FAILED\0")
 }
