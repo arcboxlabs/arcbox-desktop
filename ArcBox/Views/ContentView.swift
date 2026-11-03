@@ -52,18 +52,10 @@ struct ContentView: View {
                 NavigationSplitView {
                     sidebar
                 } detail: {
-                    detailPanel
-                        .background(AppColors.sidebar)
-                        .toolbarSeparator()
+                    detailColumn
                 }
             } else {
                 threeColumnLayout
-            }
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            VStack(spacing: 0) {
-                SoftwareEmulationBanner()
-                RuntimeStorageBanner(onDetails: onStorage)
             }
         }
         .task(id: appVM.pendingResourceDeepLink) {
@@ -98,10 +90,26 @@ struct ContentView: View {
                     max: ColumnWidth.contentMax
                 )
         } detail: {
-            detailPanel
-                .background(AppColors.sidebar)
-                .toolbarSeparator()
+            detailColumn
         }
+    }
+
+    /// The detail panel under the status banners. They sit in the detail column, the only
+    /// one both layouts have that is wide enough for them: inset on the whole split view,
+    /// they covered the first section of macOS 26's floating sidebar, which ignores it.
+    /// The panel fills the column first; a `ContentUnavailableView` is only as tall as its
+    /// text and the column centers it, so an inset on it sat mid-window.
+    private var detailColumn: some View {
+        detailPanel
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    SoftwareEmulationBanner()
+                    RuntimeStorageBanner(onDetails: onStorage)
+                }
+            }
+            .background(AppColors.sidebar)
+            .toolbarSeparator()
     }
 
     // MARK: - Sidebar
