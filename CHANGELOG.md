@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.39.2](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.1...v1.39.2) (2026-11-03)
+
+### Highlights
+
+On a Mac that cannot run sandboxes, such as one without hardware virtualization or with an M1 or M2 chip, the Sandboxes page now says why instead of showing an error with a Retry button that cannot help. `abctl sandbox` commands give the same reason.
+
+
+### Bug Fixes
+
+* **sandboxes:** say why this Mac cannot run sandboxes ([12a608e](https://github.com/arcboxlabs/arcbox-desktop/commit/12a608ecf5c9fc76db384ad71bb0ec40f602e312))
+* **sandboxes:** watch sandbox events once the System VM is up ([a8c5dbd](https://github.com/arcboxlabs/arcbox-desktop/commit/a8c5dbd77af1ada32fc2509dc22ce9cb1ed417cf))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.11.3 ([1e68a69](https://github.com/arcboxlabs/arcbox-desktop/commit/1e68a6977db2509ef8c1e08ab71993869f52d7ef))
+
 ## [1.39.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.0...v1.39.1) (2026-11-03)
 
 ### Highlights
