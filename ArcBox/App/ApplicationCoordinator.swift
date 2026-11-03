@@ -395,6 +395,7 @@ final class ApplicationCoordinator: NSObject {
     private func trackDaemonState() {
         withObservationTracking {
             _ = daemonManager.state
+            _ = daemonManager.isDockerReady
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.daemonStateDidChange()
@@ -405,6 +406,9 @@ final class ApplicationCoordinator: NSObject {
     private func daemonStateDidChange() {
         guard !isTerminating else { return }
         trackDaemonState()
+        // After the state handling below, which creates the Docker client. One observer
+        // for both, so readiness never arrives before the client does.
+        defer { eventMonitor.follow(daemonManager, docker: dockerClient) }
         let state = daemonManager.state
         guard state != lastDaemonState else { return }
         let previousState = lastDaemonState
@@ -418,7 +422,6 @@ final class ApplicationCoordinator: NSObject {
                 refreshHostedRoots()
             }
             if let dockerClient {
-                eventMonitor.start(docker: dockerClient)
                 sleepWakeManager.dockerClientRef = dockerClient
                 sleepWakeManager.start()
             }
@@ -430,7 +433,6 @@ final class ApplicationCoordinator: NSObject {
                 updateDockerContext(useArcBox: true)
             }
         } else {
-            eventMonitor.stop()
             sandboxEventMonitor.stop()
             machineEventMonitor.stop()
             sleepWakeManager.stop()
