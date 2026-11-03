@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.39.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.0...v1.39.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **docker:** open the event stream only once Docker answers ([7b31a02](https://github.com/arcboxlabs/arcbox-desktop/commit/7b31a0234ed234595c1ecb84751fd540ce0d1838))
+* **sandboxes:** stop resubscribing to sandbox events every 2 s ([54e82a8](https://github.com/arcboxlabs/arcbox-desktop/commit/54e82a86d690f4bc28e6338ee8890e61c1a19096))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.11.2 ([0808320](https://github.com/arcboxlabs/arcbox-desktop/commit/080832064e7b85ae2a92876a6bd4a17cef17b7c4))
+
 ## [1.39.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.5...v1.39.0) (2026-11-03)
 
 ### Highlights
