@@ -2,6 +2,14 @@
 
 ## [1.39.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.5...v1.39.0) (2026-11-03)
 
+### Highlights
+
+ArcBox now runs on Macs without hardware virtualization, such as cloud Macs and CI runners that are themselves virtual machines. On these Macs the Linux VM runs under software emulation: the first start downloads QEMU (about 6 MB), and starting and running containers takes noticeably longer. The main window, the menu bar and the startup screen say when emulation is in use. Linux Machines and macOS virtual machines still need hardware virtualization.
+
+If the Linux VM cannot start, the main window now says why and offers **Retry**.
+
+**Help › Third-Party Notices**, also linked from the About window, lists the open-source software ArcBox ships with and its licenses.
+
 
 ### Features
 
