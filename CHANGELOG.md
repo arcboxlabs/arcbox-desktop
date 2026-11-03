@@ -2,6 +2,14 @@
 
 ## [1.39.1](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.0...v1.39.1) (2026-11-03)
 
+### Highlights
+
+On a Mac that cannot run sandboxes, such as one using software emulation, the Sandboxes page no longer reloads every 2 seconds.
+
+Right after ArcBox starts, the container and image lists follow Docker changes at once. Before, their first connection to Docker could fail and take about 10 seconds to recover.
+
+Stopping the ArcBox runtime no longer waits 5 seconds for the Kubernetes API proxy, and `abctl system backend` now shows the backend the Linux VM actually runs on, such as QEMU under software emulation.
+
 
 ### Bug Fixes
 
