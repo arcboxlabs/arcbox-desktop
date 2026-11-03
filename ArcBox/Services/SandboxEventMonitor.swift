@@ -38,11 +38,12 @@ final class SandboxEventMonitor {
 
     // MARK: - Lifecycle
 
-    /// Subscribes while the daemon runs. A backend that cannot run sandboxes rejects the
-    /// subscription for good, so after that only a change of effective backend subscribes
-    /// again. Pass every daemon update.
+    /// Subscribes while the System VM, which runs the sandboxes, is up; before that every
+    /// attempt fails and logs a reconnect warning. A backend that cannot run sandboxes
+    /// rejects the subscription for good, so after that only a change of effective backend
+    /// subscribes again. Pass every daemon update.
     func follow(_ daemon: DaemonManager, client: ArcBoxClient?, machineID: String) {
-        guard daemon.state.isRunning, let client else {
+        guard daemon.state.isRunning, daemon.isDockerReady, let client else {
             if !isStopped { stop() }
             return
         }
