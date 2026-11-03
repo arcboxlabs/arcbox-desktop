@@ -68,6 +68,28 @@ final class SandboxEventMonitorTests: XCTestCase {
 
         await daemon.close()
     }
+
+    /// The System VM runs the sandboxes. Subscribing while it starts fails, and every
+    /// startup logged a reconnect warning per attempt.
+    func testWaitsForTheSystemVM() async throws {
+        let daemon = try await SandboxDaemon(events: .acceptThenRefuse)
+        daemon.status.systemRuntime.state = .vmStarting
+        daemon.manager.applySetupStatusSync(daemon.status)
+        daemon.monitor.follow(daemon.manager, client: daemon.client, machineID: "default")
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertEqual(daemon.subscriptions, 0, "subscribed before the System VM was up")
+
+        daemon.status.systemRuntime.state = .ready
+        daemon.manager.applySetupStatusSync(daemon.status)
+        daemon.monitor.follow(daemon.manager, client: daemon.client, machineID: "default")
+        let end = ContinuousClock.now.advanced(by: .seconds(5))
+        while daemon.subscriptions < 1, ContinuousClock.now < end {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(daemon.subscriptions, 1, "did not subscribe once the System VM was up")
+
+        await daemon.close()
+    }
 }
 
 /// The sandbox list on a Mac that cannot run sandboxes, against the same daemon.
