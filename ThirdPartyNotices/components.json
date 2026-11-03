@@ -508,6 +508,81 @@
       ]
     },
     {
+      "id": "software-emulation",
+      "title": "Software emulation (QEMU)",
+      "summary": "Not included in ArcBox.app. On a Mac without hardware virtualization, ArcBox downloads this QEMU build and runs its Linux virtual machine under software emulation. The complete corresponding source of the build is published at https://boot.arcboxcdn.com/qemu/v0.1.0/qemu-darwin-arm64-v0.1.0-sources.tar.",
+      "location": "Downloaded to ~/.arcbox/runtime/qemu",
+      "covers": [
+        "qemu:qemu@0.1.0"
+      ],
+      "components": [
+        {
+          "name": "QEMU",
+          "version": "10.2.4 (arcboxlabs/qemu v0.1.0)",
+          "license": "GPL-2.0-only",
+          "source": "https://github.com/arcboxlabs/qemu/tree/v0.1.0",
+          "licenseFiles": [
+            "upstream/qemu/LICENSE",
+            "upstream/qemu/COPYING",
+            "upstream/qemu/COPYING.LIB"
+          ],
+          "notes": "qemu-system-aarch64 with TCG only, built from https://download.qemu.org/qemu-10.2.4.tar.xz with the patches in patches/ at the source link. Parts of QEMU are under other GPL-2.0-compatible licenses; see LICENSE."
+        },
+        {
+          "name": "GLib",
+          "version": "2.88.4",
+          "license": "LGPL-2.1-or-later",
+          "source": "https://download.gnome.org/sources/glib/2.88/glib-2.88.4.tar.xz",
+          "licenseFiles": [
+            "upstream/glib/COPYING"
+          ],
+          "notes": "lib/libglib-2.0.0.dylib, loaded by qemu-system-aarch64."
+        },
+        {
+          "name": "PCRE2",
+          "version": "10.46",
+          "license": "BSD-3-Clause WITH PCRE2-exception",
+          "source": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.46/pcre2-10.46.tar.bz2",
+          "licenseFiles": [
+            "upstream/pcre2/LICENCE.md"
+          ],
+          "notes": "Statically linked into GLib."
+        },
+        {
+          "name": "proxy-libintl",
+          "version": "0.5",
+          "license": "LGPL-2.0-or-later",
+          "source": "https://github.com/frida/proxy-libintl/archive/refs/tags/0.5.tar.gz",
+          "licenseFiles": [
+            "upstream/proxy-libintl/COPYING"
+          ],
+          "notes": "Statically linked into GLib."
+        },
+        {
+          "name": "libfdt (dtc)",
+          "version": "1.6.0 (git b6910bec)",
+          "license": "GPL-2.0-or-later OR BSD-2-Clause",
+          "source": "https://gitlab.com/qemu-project/dtc/-/tree/b6910bec11614980a21e46fbccc35934b671bd81",
+          "licenseFiles": [
+            "upstream/dtc/README.license",
+            "upstream/dtc/BSD-2-Clause",
+            "upstream/dtc/GPL"
+          ],
+          "notes": "QEMU's dtc subproject; its device tree library is statically linked into qemu-system-aarch64."
+        },
+        {
+          "name": "Berkeley SoftFloat",
+          "version": "3e (git b64af41c)",
+          "license": "BSD-3-Clause",
+          "source": "https://gitlab.com/qemu-project/berkeley-softfloat-3/-/tree/b64af41c3276f97f0e181920400ee056b9c88037",
+          "licenseFiles": [
+            "upstream/berkeley-softfloat-3/COPYING.txt"
+          ],
+          "notes": "QEMU's berkeley-softfloat-3 subproject, whose license the QEMU build ships."
+        }
+      ]
+    },
+    {
       "id": "on-demand",
       "title": "Downloaded on demand",
       "summary": "Not included in ArcBox.app. ArcBox downloads these when you use the feature that needs them.",
