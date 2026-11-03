@@ -2,6 +2,12 @@
 
 ## [1.39.3](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.39.2...v1.39.3) (2026-11-03)
 
+### Highlights
+
+Installing ArcBox's helper service works again. Since 1.39.0, approving the administrator prompt ended in "installation requires the login user's nonzero --user-uid or SUDO_UID" and startup stopped there.
+
+The software emulation and runtime storage banners no longer cover the top of the sidebar; they now appear above the detail pane.
+
 
 ### Bug Fixes
 
