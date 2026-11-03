@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.39.0](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.5...v1.39.0) (2026-11-03)
+
+### Highlights
+
+ArcBox now runs on Macs without hardware virtualization, such as cloud Macs and CI runners that are themselves virtual machines. On these Macs the Linux VM runs under software emulation: the first start downloads QEMU (about 6 MB), and starting and running containers takes noticeably longer. The main window, the menu bar and the startup screen say when emulation is in use. Linux Machines and macOS virtual machines still need hardware virtualization.
+
+If the Linux VM cannot start, the main window now says why and offers **Retry**.
+
+**Help › Third-Party Notices**, also linked from the About window, lists the open-source software ArcBox ships with and its licenses.
+
+
+### Features
+
+* **about:** ship third-party notices and show them in the app ([5f90d0d](https://github.com/arcboxlabs/arcbox-desktop/commit/5f90d0d89d4a5098564d2a77d1d318d98ae03894))
+* **notices:** require notices for the QEMU build assets.lock pins ([cf51581](https://github.com/arcboxlabs/arcbox-desktop/commit/cf515814758e2f2699507c97c673d29307f26496))
+* offer software emulation as a System VM backend ([c7fc774](https://github.com/arcboxlabs/arcbox-desktop/commit/c7fc774437622a98d77bef943e32c94715a48ea8))
+* show when the System VM runs under software emulation ([436c018](https://github.com/arcboxlabs/arcbox-desktop/commit/436c0181837c32fbc9862d82c9f4b9765109b0cc))
+* start ArcBox on Macs without hardware virtualization ([ba65871](https://github.com/arcboxlabs/arcbox-desktop/commit/ba65871e9ededffe7664247118a553ebe4ea91e9))
+* start the daemon without virtualization once it can emulate ([d462d89](https://github.com/arcboxlabs/arcbox-desktop/commit/d462d89fbddee60e9781569473e6a82d27bcce78))
+* stop startup on Macs without hardware virtualization ([a0fbbc5](https://github.com/arcboxlabs/arcbox-desktop/commit/a0fbbc574026f8cd2b6ec9d0e9b39fad2372776c))
+* wait for the System runtime before calling Docker ([79aef92](https://github.com/arcboxlabs/arcbox-desktop/commit/79aef92342a30d294021447cc7b3ec82f4a8bdcb))
+
+
+### Bug Fixes
+
+* **about:** keep a superseded license read from replacing the shown text ([80e50c2](https://github.com/arcboxlabs/arcbox-desktop/commit/80e50c263ad76c0bd9ae7af9d8b745cbe76f0882))
+* **notices:** describe boot-assets v0.8.12, which arcbox v0.11.0 pins ([2ace669](https://github.com/arcboxlabs/arcbox-desktop/commit/2ace669c03ebb526482c2de286574a6b4a78da65))
+
+
+### Miscellaneous
+
+* bump arcbox version to v0.11.0 ([c5f5e2c](https://github.com/arcboxlabs/arcbox-desktop/commit/c5f5e2c909be3ce9447f807cc63f607d3af94d3d))
+* bump arcbox version to v0.11.1 ([c103ab8](https://github.com/arcboxlabs/arcbox-desktop/commit/c103ab84a5507dfd50621d6ef01e7f966e9a57ab))
+
 ## [1.38.5](https://github.com/arcboxlabs/arcbox-desktop/compare/v1.38.4...v1.38.5) (2026-10-22)
 
 ### Highlights
