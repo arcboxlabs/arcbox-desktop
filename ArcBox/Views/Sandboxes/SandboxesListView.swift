@@ -20,6 +20,9 @@ struct SandboxesListView: View {
                 SystemRuntimeStatusView()
             } else if client == nil {
                 DaemonLoadingView(state: .registered)
+            } else if let reason = vm.unsupportedReason {
+                // Ahead of the load state, so a reload keeps the reason until it finds otherwise.
+                SandboxesUnsupportedView(reason: reason)
             } else {
                 sandboxListContent
             }
@@ -95,6 +98,7 @@ struct SandboxesListView: View {
             && daemonManager.state.isRunning
             && daemonManager.isDockerReady
             && client != nil
+            && vm.unsupportedReason == nil
     }
 
     @ViewBuilder

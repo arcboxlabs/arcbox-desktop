@@ -53,10 +53,20 @@ extension SandboxesViewModel {
             }
             sandboxes = viewModels
             loadState = .loaded
+            unsupportedReason = nil
             refreshError = nil
             lastSuccessfulListLoad = ContinuousClock().now
         } catch {
             if loadState.cancelLoading(for: error, retainingLoadedContent: isRefresh) {
+                return
+            }
+            unsupportedReason = await Self.unsupportedReason(after: error, client: client)
+            if let unsupportedReason {
+                // Not a fault: no retry changes it, so it reaches neither Sentry nor PostHog.
+                Log.sandbox.info("Sandboxes cannot run on this host: \(unsupportedReason, privacy: .private)")
+                sandboxes = []
+                loadState = .failed(unsupportedReason)
+                refreshError = nil
                 return
             }
             let message = reportError(error, operation: "list", surface: false)
@@ -65,6 +75,26 @@ extension SandboxesViewModel {
                 retainingLoadedContent: isRefresh
             )
         }
+    }
+
+    /// Why this Mac cannot run sandboxes, when `error` is the daemon refusing for that reason.
+    ///
+    /// The refusal is `FAILED_PRECONDITION`, which also covers transient states, and arcbox
+    /// v0.11.2 relays the guest's missing-KVM error, whose message names the wrong fix on a
+    /// Mac without hardware virtualization. The daemon's capabilities, answered on the host
+    /// for the current backend, decide and give the reason.
+    private static func unsupportedReason(
+        after error: any Error,
+        client: ArcBoxClient
+    ) async -> String? {
+        guard (error as? RPCError)?.code == .failedPrecondition,
+            let capabilities = try? await client.sandboxes.getCapabilities(
+                Arcbox_Sandbox_V1_GetCapabilitiesRequest(),
+                options: ArcBoxClient.defaultCallOptions
+            ),
+            capabilities.hasNestedVirt, !capabilities.nestedVirt.supported
+        else { return nil }
+        return capabilities.nestedVirt.reason
     }
 
     /// Load full details of one sandbox via Inspect.

@@ -160,6 +160,22 @@ final class SystemRuntimeSnapshotTests: XCTestCase {
                 name: name,
                 in: output)
         }
+
+        // The sandbox list column where sandboxes cannot run, with the daemon's reasons.
+        for (name, reason) in [
+            (
+                "sandboxes-no-virtualization",
+                "this Mac does not provide hardware virtualization (neither Virtualization.framework nor "
+                    + "Hypervisor.framework is available, as inside a macOS virtual machine)"
+            ),
+            ("sandboxes-chip", "nested virtualization requires Apple Silicon M3 or newer with macOS 15 or newer"),
+        ] {
+            try render(
+                SandboxesUnsupportedView(reason: reason),
+                size: NSSize(width: ColumnWidth.contentIdeal, height: 420),
+                name: name,
+                in: output)
+        }
     }
 
     private func render(_ view: some View, size: NSSize, name: String, in directory: URL) throws {
