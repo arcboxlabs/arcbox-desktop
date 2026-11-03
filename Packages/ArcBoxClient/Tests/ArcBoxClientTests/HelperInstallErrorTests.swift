@@ -1,4 +1,6 @@
 import Foundation
+import ProcessSupport
+import ProcessSupportTesting
 import Testing
 
 @testable import ArcBoxClient
@@ -127,5 +129,30 @@ struct AppleScriptStringLiteralTests {
 
         #expect(error == nil)
         #expect(result.stringValue == value)
+    }
+}
+
+struct PrivilegedHelperInstallCommandTests {
+    /// The administrator prompt runs the command as root without `SUDO_UID`, where abctl
+    /// v0.11.0 and later refuse to install for anyone `--user-uid` does not name. Without it
+    /// every helper install from ArcBox 1.39.0 to 1.39.2 failed.
+    @Test func namesTheUserRunningTheApp() async throws {
+        let abctl = try await FakeExecutable.recordingArguments()
+        defer { abctl.remove() }
+        let helper = "/Applications/Arc Box's copy.app/Contents/MacOS/bin/arcbox-helper"
+
+        let shell = Process()
+        shell.executableURL = URL(fileURLWithPath: "/bin/sh")
+        shell.arguments = ["-c", DaemonManager.privilegedInstallCommand(abctl: abctl.path, helper: helper)]
+        shell.environment = ["PATH": "/usr/bin:/bin"]
+        try await runCancellableProcess(shell, timeout: .seconds(30))
+
+        #expect(shell.terminationStatus == 0)
+        #expect(getuid() != 0)
+        #expect(
+            try abctl.recordedArguments()
+                == DaemonManager.profileArguments + [
+                    "_install", "--no-daemon", "--no-shell", "--user-uid", String(getuid()), "--helper-path", helper,
+                ])
     }
 }

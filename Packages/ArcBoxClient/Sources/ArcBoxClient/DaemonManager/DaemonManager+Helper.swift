@@ -107,6 +107,22 @@ extension DaemonManager {
         )
     }
 
+    /// The shell command the administrator prompt runs: `abctl _install` of the bundled
+    /// helper for the user running the app.
+    ///
+    /// The prompt runs it as root without `SUDO_UID`, and abctl refuses to install for
+    /// uid 0, so `--user-uid` names the login user.
+    nonisolated static func privilegedInstallCommand(abctl: String, helper: String) -> String {
+        func shellQuote(_ s: String) -> String {
+            "'\(s.replacingOccurrences(of: "'", with: "'\\''"))'"
+        }
+        let arguments =
+            [abctl] + profileArguments + [
+                "_install", "--no-daemon", "--no-shell", "--user-uid", String(getuid()), "--helper-path", helper,
+            ]
+        return arguments.map(shellQuote).joined(separator: " ")
+    }
+
     /// Run the elevated `abctl _install` AppleScript. Returns `nil` on success
     /// or a typed error describing the failure.
     private func runPrivilegedHelperInstall(
@@ -114,12 +130,7 @@ extension DaemonManager {
     ) async throws
         -> HelperInstallError?
     {
-        func shellQuote(_ s: String) -> String {
-            "'\(s.replacingOccurrences(of: "'", with: "'\\''"))'"
-        }
-        let profileArgs = Self.profileArguments.map(shellQuote).joined(separator: " ")
-        let cmd =
-            "\(shellQuote(abctl)) \(profileArgs) _install --no-daemon --no-shell --helper-path \(shellQuote(helper))"
+        let cmd = Self.privilegedInstallCommand(abctl: abctl, helper: helper)
         let script =
             "do shell script \(appleScriptStringLiteral(cmd)) with administrator privileges"
 
