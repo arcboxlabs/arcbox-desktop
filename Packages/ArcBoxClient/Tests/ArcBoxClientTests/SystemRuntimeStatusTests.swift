@@ -119,6 +119,11 @@ final class SystemRuntimeStatusTests: XCTestCase {
         XCTAssertFalse(
             EmbeddedRuntime.supportsSoftwareEmulation(bundledVersion: "v9.9.9", minimum: nil),
             "no release supports emulation until a minimum is set")
+
+        // The daemon this app bundles emulates; a minimum that fails to parse would not.
+        XCTAssertTrue(
+            EmbeddedRuntime.supportsSoftwareEmulation,
+            "bundled arcbox \(EmbeddedRuntime.bundledVersion ?? "missing")")
     }
 
     /// Retrying a failed System startup restarts the daemon, which stops every Machine and

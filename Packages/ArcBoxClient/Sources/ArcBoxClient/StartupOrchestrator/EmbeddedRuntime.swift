@@ -7,15 +7,14 @@ import Foundation
 /// reachable — in particular whether a Mac without hardware virtualization may start it.
 public enum EmbeddedRuntime {
     /// The first arcbox release whose daemon boots the System VM under QEMU software
-    /// emulation on a Mac without hardware virtualization. `nil` until that release exists.
+    /// emulation on a Mac without hardware virtualization. From it on, startup no longer
+    /// turns such Macs away (see `StartupOrchestrator`), and Settings offers the backend.
     ///
-    /// The QEMU backend alone is not that release: without the vhost-user device backends
-    /// and the DIC=0 QEMU build, the System VM fails in rcS, and with `[qemu]`
-    /// `arch.arm64.sha256` empty in `assets.lock` the daemon never downloads QEMU. Set this
-    /// in the `make bump-arcbox` that embeds the first release with all of them and a
-    /// published QEMU build pinned. Startup then stops turning such Macs away (see
-    /// `StartupOrchestrator`).
-    static let softwareEmulationMinimumVersion: Version? = nil
+    /// v0.11.0 had the QEMU backend but not this: the System VM failed in rcS without the
+    /// vhost-user device backends and the DIC=0 QEMU build, and with `[qemu]`
+    /// `arch.arm64.sha256` empty in `assets.lock` the daemon never downloaded QEMU.
+    /// v0.11.1 has both and pins the published QEMU v0.1.0 build.
+    static let softwareEmulationMinimumVersion = Version("v0.11.1")
 
     /// The `arcbox.version` bundled with the app; `nil` when it is missing or unreadable.
     public static let bundledVersion: String? = Bundle.main
