@@ -63,7 +63,7 @@
       "summary": "The kernel of ArcBox's Linux virtual machine.",
       "location": "ArcBox.app/Contents/Resources/assets (kernel)",
       "covers": [
-        "boot:kernel@v0.0.25"
+        "boot:kernel@latest"
       ],
       "components": [
         {
@@ -75,17 +75,17 @@
             "licenses/GPL-2.0.txt",
             "licenses/Linux-syscall-note.txt"
           ],
-          "notes": "Built from https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.38.tar.xz with the configuration (configs/arcbox-arm64.config), patches, ArcBox HVC block driver and build script in the source repository."
+          "notes": "Built from https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.38.tar.xz with the configuration (configs/arcbox-arm64.config), patches, ArcBox HVC block driver and build script in the source repository. boot-assets v0.8.12 records this kernel's ref as \"latest\"; it is the v0.0.25 build (sha256 a122ce7a69a77408eeef9423afd9f6915828ba74a767e3e1eace635f913e02c4)."
         }
       ]
     },
     {
       "id": "rootfs",
       "title": "Linux root file system",
-      "summary": "The read-only root file system of ArcBox's Linux virtual machine, built by boot-assets v0.8.11 (https://github.com/arcboxlabs/boot-assets/tree/v0.8.11) from upstream source releases and Alpine Linux 3.19 packages.",
+      "summary": "The read-only root file system of ArcBox's Linux virtual machine, built by boot-assets v0.8.12 (https://github.com/arcboxlabs/boot-assets/tree/v0.8.12) from upstream source releases and Alpine Linux 3.19 packages.",
       "location": "ArcBox.app/Contents/Resources/assets (rootfs.erofs)",
       "covers": [
-        "boot:rootfs@0.8.11"
+        "boot:rootfs@0.8.12"
       ],
       "components": [
         {
@@ -148,7 +148,35 @@
           "licenseFiles": [
             "licenses/GPL-2.0.txt"
           ],
-          "notes": "rpc.nfsd, rpc.mountd and exportfs. Alpine's build recipe: https://gitlab.alpinelinux.org/alpine/aports/-/tree/3.19-stable/main/nfs-utils"
+          "notes": "rpc.nfsd, rpc.mountd, exportfs and nfsdcld. Alpine's build recipe: https://gitlab.alpinelinux.org/alpine/aports/-/tree/3.19-stable/main/nfs-utils"
+        },
+        {
+          "name": "SQLite (sqlite-libs)",
+          "version": "3.44.2 (Alpine 3.44.2-r2)",
+          "license": "blessing",
+          "source": "https://www.sqlite.org/2023/sqlite-autoconf-3440200.tar.gz",
+          "licenseFiles": [],
+          "notes": "Linked by nfsdcld. SQLite is in the public domain: https://www.sqlite.org/copyright.html"
+        },
+        {
+          "name": "libevent (libevent_core)",
+          "version": "2.1.12 (Alpine 2.1.12-r7)",
+          "license": "BSD-3-Clause",
+          "source": "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz",
+          "licenseFiles": [
+            "upstream/libevent/LICENSE"
+          ],
+          "notes": "Linked by nfsdcld."
+        },
+        {
+          "name": "libcap",
+          "version": "2.69 (Alpine libcap2 2.69-r1)",
+          "license": "BSD-3-Clause OR GPL-2.0-only",
+          "source": "https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.69.tar.xz",
+          "licenseFiles": [
+            "upstream/libcap/License"
+          ],
+          "notes": "Linked by nfsdcld."
         },
         {
           "name": "util-linux (libblkid, libuuid)",
@@ -411,7 +439,7 @@
       "summary": "Runs x86_64 Linux programs inside ArcBox's Arm virtual machine.",
       "location": "ArcBox.app/Contents/Resources/runtime (FEX)",
       "covers": [
-        "runtime:FEX@FEX-2605-0.8.11"
+        "runtime:FEX@FEX-2605-0.8.12"
       ],
       "components": [
         {
@@ -422,7 +450,7 @@
           "licenseFiles": [
             "upstream/fex/LICENSE"
           ],
-          "notes": "Built by boot-assets v0.8.11 with the patches in patches/fex (https://github.com/arcboxlabs/boot-assets/tree/v0.8.11/patches/fex). Includes third-party code under its own licenses in External/ at the source link: vixl, fmt, xxHash, jemalloc, rpmalloc, range-v3, Zydis, unordered_dense, tiny-json, SoftFloat-3e, cephes and cpp-optparse."
+          "notes": "Built by boot-assets v0.8.12 with the patches in patches/fex (https://github.com/arcboxlabs/boot-assets/tree/v0.8.12/patches/fex). Includes third-party code under its own licenses in External/ at the source link: vixl, fmt, xxHash, jemalloc, rpmalloc, range-v3, Zydis, unordered_dense, tiny-json, SoftFloat-3e, cephes and cpp-optparse."
         },
         {
           "name": "GNU C Library",
