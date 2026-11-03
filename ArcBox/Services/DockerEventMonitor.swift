@@ -1,3 +1,4 @@
+import ArcBoxClient
 import DockerClient
 import Foundation
 import OSLog
@@ -62,6 +63,21 @@ final class DockerEventMonitor {
     private static let debounceInterval: TimeInterval = 0.3
 
     // MARK: Lifecycle
+
+    /// Whether the event stream is open or reconnecting.
+    var isStreaming: Bool { !isStopped }
+
+    /// Streams events only while Docker answers. The daemon reports `running` before the
+    /// System VM boots, and an `/events` request sent then hangs until the daemon fails it
+    /// about ten seconds later. Pass every daemon update: an open stream is left alone, so
+    /// a change that keeps Docker ready does not reopen it.
+    func follow(_ daemon: DaemonManager, docker: DockerClient?) {
+        if daemon.state.isRunning, daemon.isDockerReady, let docker {
+            if isStopped { start(docker: docker) }
+        } else if !isStopped {
+            stop()
+        }
+    }
 
     func start(docker: DockerClient) {
         // Idempotent: cancel existing task before starting a new one.

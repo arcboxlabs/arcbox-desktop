@@ -1,6 +1,7 @@
 import XCTest
 
 @testable import ArcBox
+@testable import ArcBoxClient
 @testable import DockerClient
 
 /// Tests for DockerEventMonitor's event filtering, notification dispatch, and debounce logic.
@@ -51,6 +52,36 @@ final class DockerEventMonitorTests: XCTestCase {
         expectation.isInverted = true
         block()
         wait(for: [expectation], timeout: timeout)
+    }
+
+    // MARK: - Readiness
+
+    /// The daemon reports `running` at host READY, before the System VM boots, and an
+    /// `/events` request sent then hangs until the daemon fails it. The stream waits for
+    /// the System runtime and ends when it fails.
+    func test_streamsOnlyWhileTheSystemRuntimeIsReady() async throws {
+        let daemon = DaemonManager()
+        var status = Arcbox_V1_SetupStatus()
+        status.phase = .ready
+        status.systemRuntime = .with { $0.state = .vmStarting }
+        daemon.applySetupStatusSync(status)
+        XCTAssertTrue(daemon.state.isRunning)
+        let docker = DockerClient(socketPath: "/nonexistent/arcbox-tests/docker.sock")
+
+        monitor.follow(daemon, docker: docker)
+        XCTAssertFalse(monitor.isStreaming, "streamed Docker events before the System runtime was ready")
+
+        status.systemRuntime.state = .ready
+        daemon.applySetupStatusSync(status)
+        monitor.follow(daemon, docker: docker)
+        XCTAssertTrue(monitor.isStreaming)
+
+        status.systemRuntime.state = .failed
+        daemon.applySetupStatusSync(status)
+        monitor.follow(daemon, docker: docker)
+        XCTAssertFalse(monitor.isStreaming)
+
+        try await docker.shutdown()
     }
 
     // MARK: - Container Events
