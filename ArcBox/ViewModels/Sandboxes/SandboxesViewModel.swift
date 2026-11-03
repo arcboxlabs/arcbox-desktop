@@ -44,6 +44,9 @@ struct SandboxCreateSpec {
 class SandboxesViewModel {
     var sandboxes: [SandboxViewModel] = []
     var loadState: LoadPhase = .waiting
+    /// The daemon's reason this Mac cannot run sandboxes, when the last list load failed
+    /// because of it. The list then shows that reason instead of a retryable failure.
+    var unsupportedReason: String?
     var refreshError: String?
     var lastSuccessfulListLoad: ContinuousClock.Instant?
     let listLoadGate = SingleFlightLoadGate()

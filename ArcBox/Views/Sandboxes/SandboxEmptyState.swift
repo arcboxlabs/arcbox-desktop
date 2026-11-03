@@ -20,3 +20,25 @@ struct SandboxEmptyState: View {
         }
     }
 }
+
+/// Fills the sandbox list on a Mac whose hardware or System VM backend cannot run
+/// sandboxes. Nothing to retry: only another backend or another Mac changes it.
+struct SandboxesUnsupportedView: View {
+    /// The daemon's `nested_virt.reason`, a lowercase clause such as "nested
+    /// virtualization requires Apple Silicon M3 or newer with macOS 15 or newer".
+    let reason: String
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("This Mac Can’t Run Sandboxes", systemImage: "cpu")
+        } description: {
+            Text(sentence)
+        }
+    }
+
+    private var sentence: String {
+        guard let first = reason.first else { return reason }
+        let sentence = first.uppercased() + reason.dropFirst()
+        return sentence.hasSuffix(".") ? sentence : sentence + "."
+    }
+}
