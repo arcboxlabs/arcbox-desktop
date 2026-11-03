@@ -14,9 +14,9 @@ import XCTest
 /// monitor against a gRPC server on a Unix socket that answers the way the daemon does.
 @MainActor
 final class SandboxEventMonitorTests: XCTestCase {
-    /// arcbox v0.11.1 accepts the subscription on a backend that runs no sandboxes, then
-    /// ends it with the guest's refusal. Resetting the backoff on every accepted
-    /// subscription resubscribed and resynced every 2 s for as long as the app ran.
+    /// A subscription the daemon accepts and ends at once, with an error that does not say
+    /// the failure lasts, backs off. Resetting the backoff on every accepted subscription
+    /// resubscribed and resynced every 2 s for as long as the app ran.
     func testASubscriptionTheDaemonEndsAtOnceBacksOff() async throws {
         let daemon = try await SandboxEventsDaemon(answer: .acceptThenFail)
         let first = expectation(forNotification: .sandboxChanged, object: nil)
@@ -34,15 +34,21 @@ final class SandboxEventMonitorTests: XCTestCase {
         await daemon.close()
     }
 
-    /// A backend that cannot run sandboxes rejects the subscription with
-    /// `NESTED_VIRT_UNSUPPORTED`. Nothing changes that until the effective backend does.
+    /// A backend that cannot run sandboxes refuses with `NESTED_VIRT_UNSUPPORTED`, which
+    /// nothing changes until the effective backend does. arcbox writes the response
+    /// headers before the trailers that carry the refusal, so grpc-swift accepts the
+    /// subscription and the refusal ends its stream.
     func testAHostThatCannotRunSandboxesWaitsForAnotherBackend() async throws {
-        let daemon = try await SandboxEventsDaemon(answer: .rejectNestedVirtUnsupported)
-        let resync = expectation(forNotification: .sandboxChanged, object: nil)
-        resync.isInverted = true
+        let daemon = try await SandboxEventsDaemon(answer: .acceptThenRefuse)
+        let accepted = expectation(forNotification: .sandboxChanged, object: nil)
+        accepted.assertForOverFulfill = false
         daemon.monitor.follow(daemon.manager, client: daemon.client, machineID: "default")
+        await fulfillment(of: [accepted], timeout: 10)
+
+        let retry = expectation(forNotification: .sandboxChanged, object: nil)
+        retry.isInverted = true
         // A retry would come 2 s after the first subscription.
-        await fulfillment(of: [resync], timeout: 3)
+        await fulfillment(of: [retry], timeout: 3)
         XCTAssertEqual(daemon.subscriptions, 1)
 
         daemon.status.phase = .degraded
@@ -115,10 +121,11 @@ private final class SandboxEventsDaemon {
 
 nonisolated private final class EventsService: RegistrableRPCService {
     enum Answer: Sendable {
-        /// Accept, then end the stream with the guest's refusal, as arcbox v0.11.1 does.
+        /// Accept, then end the stream with an error that carries no detail.
         case acceptThenFail
-        /// Refuse the subscription itself with the `NESTED_VIRT_UNSUPPORTED` detail.
-        case rejectNestedVirtUnsupported
+        /// Accept, then end the stream refusing with `NESTED_VIRT_UNSUPPORTED`, as arcbox
+        /// v0.11.1 and later do.
+        case acceptThenRefuse
     }
 
     let answer: Answer
@@ -140,13 +147,18 @@ nonisolated private final class EventsService: RegistrableRPCService {
                 return StreamingServerResponse { _ in
                     throw RPCError(code: .failedPrecondition, message: "the guest runs no sandboxes")
                 }
-            case .rejectNestedVirtUnsupported:
-                let info = Arcbox_Sandbox_V1_ErrorInfo.with { $0.code = .nestedVirtUnsupported }
-                throw GoogleRPCStatus(
-                    code: .failedPrecondition,
-                    message: "sandboxes cannot run on this host: no nested virtualization",
-                    details: .any(try Google_Protobuf_Any(message: info))
-                )
+            case .acceptThenRefuse:
+                return StreamingServerResponse { _ in
+                    let info = Arcbox_Sandbox_V1_ErrorInfo.with { $0.code = .nestedVirtUnsupported }
+                    // A producer keeps only an RPCError's status and metadata; the server
+                    // turns any other error into UNKNOWN.
+                    throw RPCError(
+                        GoogleRPCStatus(
+                            code: .failedPrecondition,
+                            message: "sandboxes cannot run on this host: no nested virtualization",
+                            details: .any(try Google_Protobuf_Any(message: info))
+                        ))
+                }
             }
         }
     }
