@@ -37,6 +37,7 @@ PROTOS=(
     "image.proto"
     "api.proto"
     "machine.proto"
+    "arcbox/sandbox/v1/errors.proto"
     "arcbox/sandbox/v1/sandbox.proto"
     "arcbox/sandbox/v1/process.proto"
     "arcbox/sandbox/v1/filesystem.proto"
