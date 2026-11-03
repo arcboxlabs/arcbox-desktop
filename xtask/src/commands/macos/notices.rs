@@ -112,11 +112,29 @@ fn boot_version(assets_lock: &str) -> Result<String> {
 
 /// One key per third-party artifact the bundle ships or the runtime pins:
 /// `tool:<name>@<version>` for each third-party `assets.lock` tool,
-/// `boot:kernel@<kernel ref>` and `boot:rootfs@<boot-assets version>`, and
-/// `runtime:<name>@<version>` for each boot-manifest binary with a host target.
+/// `qemu:qemu@<version>` for the QEMU build the daemon downloads on a Mac
+/// without hardware virtualization, `boot:kernel@<kernel ref>` and
+/// `boot:rootfs@<boot-assets version>`, and `runtime:<name>@<version>` for
+/// each boot-manifest binary with a host target.
 fn shipped_keys(assets_lock: &str, manifest: &Value) -> Result<BTreeSet<String>> {
     let lock: toml::Table = assets_lock.parse().context("parsing assets.lock")?;
     let mut keys = BTreeSet::new();
+    // An empty sha256 pins no build: the daemon downloads nothing.
+    if let Some(qemu) = lock.get("qemu") {
+        let sha256 = qemu
+            .get("arch")
+            .and_then(|arch| arch.get(HOST_ARCH))
+            .and_then(|arch| arch.get("sha256"))
+            .and_then(toml::Value::as_str)
+            .unwrap_or_default();
+        if !sha256.is_empty() {
+            let version = qemu
+                .get("version")
+                .and_then(toml::Value::as_str)
+                .context("assets.lock [qemu] pins a build but has no version")?;
+            keys.insert(format!("qemu:qemu@{version}"));
+        }
+    }
     for tool in lock
         .get("tools")
         .and_then(toml::Value::as_array)
